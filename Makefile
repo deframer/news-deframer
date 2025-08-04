@@ -13,7 +13,6 @@ deps:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
 	go install go.uber.org/mock/mockgen@latest
-	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
 
 .PHONY: build
 build:

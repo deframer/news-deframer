@@ -1,0 +1,15 @@
+{
+    "feeds": [
+        {
+            "rss_url": "https://www.tagesschau.de/index~rss2.xml",
+            "language": "de"
+        }
+    ],
+    "prompts": [
+        {
+            "user": "Parse den folgenden Text. Prüfe ob die Sprache ideologisch geframed wird. Erstelle die korrigierte Schlagzeile - aus dem direkten Inhalt der Schlagzeile - in einer objektiven Form falls Framing vorhanden ist (Feld 'title_corrected'). Gib das Framing an in einem Wert von 0.0 (gar kein Framing) bis 1.0 (maximales Framing). (Feld 'framing'). Gibt eine Begründung an warum du auf diesen Framing Wert kommst (max 10 Worte) (Feld 'reason'). Der Titel ist: %TITLE% -  Der Inhalt ist: %DESCRIPTION%",
+            "system": "Du bist ein neutraler Reporter der objektiv ist. Antworte immer auf Deutsch. Die Ausgabe ist strikt in dem JSON Format zu geben. { \"title_corrected\": \"Corrected title\", \"framing\": 0.1, \"reason\": \"my reason\" }",
+            "language": "de"
+        }
+    ]
+}
