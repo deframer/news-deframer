@@ -14,6 +14,7 @@ func init() {
 }
 
 func TestQuery(t *testing.T) {
+	t.Skip("this requires a LM-Studio connection")
 	ctx := context.Background()
 
 	cfg, err := config.GetConfig()
