@@ -22,17 +22,17 @@ type Source struct {
 }
 
 // ParseString parses the feed from a JSON string and returns feeds
-func ParseString(feedJSON string) (Source, error) {
+func ParseString(feedJSON string) (*Source, error) {
 	var source Source
 	err := json.Unmarshal([]byte(feedJSON), &source)
-	return source, err
+	return &source, err
 }
 
 // ParseFile parses the feed from a JSON file and returns feeds
-func ParseFile(filePath string) (Source, error) {
+func ParseFile(filePath string) (*Source, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		return Source{}, err
+		return nil, err
 	}
 	return ParseString(string(data))
 }

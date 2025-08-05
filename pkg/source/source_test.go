@@ -35,6 +35,7 @@ func TestParseString(t *testing.T) {
 	`
 	source, err := ParseString(feedJSON)
 	assert.NoError(t, err)
+	assert.NotNil(t, source)
 	assert.Len(t, source.Feeds, 2)
 
 	feed1 := source.Feeds[0]
