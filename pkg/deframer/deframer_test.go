@@ -1,6 +1,7 @@
 package deframer
 
 import (
+	"context"
 	_ "embed"
 	"testing"
 
@@ -22,6 +23,8 @@ var rssContent string
 var sourceContent string
 
 func setupTestDeframer(t *testing.T, ai openai.OpenAI, src *source.Source, downloader downloader.Downloader) (Deframer, error) {
+	ctx := context.Background()
+
 	// Use in-memory SQLite for testing
 	db, err := database.NewDatabase(":memory:")
 	//db, err := database.NewDatabase("./test.db")
@@ -37,6 +40,7 @@ func setupTestDeframer(t *testing.T, ai openai.OpenAI, src *source.Source, downl
 	}
 
 	res := &deframer{
+		ctx:        ctx,
 		db:         db,
 		ai:         ai,
 		src:        src,
@@ -65,11 +69,17 @@ func TestNewUpdateFeeds(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
+	openAIMock := mock_openai.NewMockOpenAI(ctrl)
+	openAIMock.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("", nil).Times(3)
+	openAIMock.EXPECT().FuzzyParseJSON(gomock.Any()).
+		Return(nil, nil).Times(3)
+
 	source, err := source.ParseString(sourceContent)
 	downloaderMock := mock_downloader.NewMockDownloader(ctrl)
 	downloaderMock.EXPECT().DownloadRSSFeed(gomock.Any()).Return(rssContent, nil).Times(1)
 
-	d, err := setupTestDeframer(t, nil, source, downloaderMock)
+	d, err := setupTestDeframer(t, openAIMock, source, downloaderMock)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, d, "Deframer should be initialized")
@@ -91,7 +101,13 @@ func TestDeframe(t *testing.T) {
 	defer ctrl.Finish()
 
 	openAIMock := mock_openai.NewMockOpenAI(ctrl)
-	d, err := setupTestDeframer(t, openAIMock, nil, nil)
+	openAIMock.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return("", nil).Times(3)
+	openAIMock.EXPECT().FuzzyParseJSON(gomock.Any()).
+		Return(nil, nil).Times(3)
+
+	source, err := source.ParseString(sourceContent)
+	d, err := setupTestDeframer(t, openAIMock, source, nil)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, d, "Deframer should be initialized")
@@ -100,7 +116,42 @@ func TestDeframe(t *testing.T) {
 	parsedData, err := parser.ParseString(string(rssContent))
 	assert.NoError(t, err)
 
-	str, err := d.Deframe(parsedData)
+	str, err := d.DeframeFeed(parsedData, source.Feeds[0])
+	assert.NoError(t, err)
+	assert.NotEmpty(t, str, "")
+}
+
+func TestDeframeItem(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	jsonString := `json
+	{
+		"title_corrected": "dummy title",
+		"framing": 0.2,
+		"reason": "My Reason"
+	}
+	`
+
+	openAI := openai.NewAI("", "", "dummy")
+	fuzzy, errFuzzy := openAI.FuzzyParseJSON(jsonString)
+
+	openAIMock := mock_openai.NewMockOpenAI(ctrl)
+	openAIMock.EXPECT().Query(gomock.Any(), gomock.Any(), gomock.Any()).
+		Return(jsonString, nil).Times(1)
+	openAIMock.EXPECT().FuzzyParseJSON(gomock.Any()).
+		Return(fuzzy, errFuzzy).Times(1)
+	source, err := source.ParseString(sourceContent)
+	d, err := setupTestDeframer(t, openAIMock, source, nil)
+
+	assert.NoError(t, err)
+	assert.NotNil(t, d, "Deframer should be initialized")
+
+	parser := gofeed.NewParser()
+	parsedData, err := parser.ParseString(string(rssContent))
+	assert.NoError(t, err)
+
+	str, err := d.DeframeItem(parsedData.Items[0], source.Feeds[0])
 	assert.NoError(t, err)
 	assert.NotEmpty(t, str, "")
 }

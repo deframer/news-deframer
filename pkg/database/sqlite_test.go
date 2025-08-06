@@ -50,7 +50,8 @@ func TestCreateItem(t *testing.T) {
 		Guid:        "dummy1",
 		Title:       "dummy1",
 		Description: "dummy1",
-		Framing:     new(float32),
+		Content:     "dummy1",
+		Framing:     new(float64),
 		TitleAI:     new(string),
 		ReasonAI:    new(string),
 	}
@@ -79,7 +80,8 @@ func TestCreateItem(t *testing.T) {
 		Guid:        "dummy2",
 		Title:       "dummy2",
 		Description: "dummy2",
-		Framing:     new(float32),
+		Content:     "dummy2",
+		Framing:     new(float64),
 		TitleAI:     new(string),
 		ReasonAI:    new(string),
 	}
@@ -109,7 +111,8 @@ func TestFindItemByHash(t *testing.T) {
 		Guid:        "dummy3",
 		Title:       "dummy3",
 		Description: "dummy3",
-		Framing:     new(float32),
+		Content:     "dummy3",
+		Framing:     new(float64),
 		TitleAI:     new(string),
 		ReasonAI:    new(string),
 	}
@@ -131,8 +134,9 @@ func TestFindItemByHash(t *testing.T) {
 	assert.Equal(t, *item.ReasonAI, *found.ReasonAI, "ReasonAI should match")
 
 	// Test non-existent hash
-	_, err = db.FindItemByHash("nonexistent")
-	assert.Error(t, err, "FindItemByHash should fail for non-existent hash")
+	item, err = db.FindItemByHash("nonexistent")
+	assert.NoError(t, err, "FindItemByHash should succeed")
+	assert.Nil(t, item, "Item should be nil")
 }
 
 func TestItemConstraints(t *testing.T) {
@@ -147,7 +151,8 @@ func TestItemConstraints(t *testing.T) {
 		Guid:        "dummy4",
 		Title:       "dummy4",
 		Description: "dummy4",
-		Framing:     new(float32),
+		Content:     "dummy4",
+		Framing:     new(float64),
 		TitleAI:     new(string),
 		ReasonAI:    new(string),
 	}
@@ -164,7 +169,8 @@ func TestItemConstraints(t *testing.T) {
 		Guid:        "dummy5",
 		Title:       "dummy5",
 		Description: "dummy5",
-		Framing:     new(float32),
+		Content:     "dummy5",
+		Framing:     new(float64),
 		TitleAI:     new(string),
 		ReasonAI:    new(string),
 	}

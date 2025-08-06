@@ -7,7 +7,7 @@
     ],
     "prompts": [
         {
-            "user": "user prompt %TITLE% - %DESCRIPTION%",
+            "user": "user prompt $TITLE - $DESCRIPTION",
             "system": "system prompt",
             "language": "dummy"
         }

@@ -18,7 +18,8 @@ type Item struct {
 	Guid        string   `gorm:"type:text;not null"`
 	Title       string   `gorm:"type:text;not null"`
 	Description string   `gorm:"type:text;not null"`
-	Framing     *float32 `gorm:"type:real"` // Nullable
+	Content     string   `gorm:"type:text;not null"`
+	Framing     *float64 `gorm:"type:real"` // Nullable
 	TitleAI     *string  `gorm:"type:text"` // Nullable
 	ReasonAI    *string  `gorm:"type:text"` // Nullable
 }
@@ -76,10 +77,11 @@ func (d *Database) CreateItem(item *Item) error {
 
 	return d.db.Exec(
 		`INSERT OR IGNORE INTO items
-		(hash, feed_url, link, guid, title, description, framing, title_ai, reason_ai, created_at, updated_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		(hash, feed_url, link, guid, title, description, content, framing, title_ai, reason_ai, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		item.Hash, item.FeedUrl, item.Link, item.Guid, item.Title, item.Description,
-		item.Framing, item.TitleAI, item.ReasonAI, item.CreatedAt, item.UpdatedAt,
+		item.Content, item.Framing, item.TitleAI, item.ReasonAI,
+		item.CreatedAt, item.UpdatedAt,
 	).Error
 }
 
@@ -87,9 +89,16 @@ func (d *Database) CreateItem(item *Item) error {
 func (d *Database) FindItemByHash(hash string) (*Item, error) {
 	var item Item
 	result := d.db.Where("hash = ?", hash).First(&item)
+
 	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			// No matching record found, return nil without error
+			return nil, nil
+		}
+		// Other errors should be returned
 		return nil, result.Error
 	}
+
 	return &item, nil
 }
 
