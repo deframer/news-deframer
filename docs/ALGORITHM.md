@@ -2,15 +2,17 @@
 
 ## Synopsis/Abstract
 
-This specification defines an algorithm for detecting **clickbait**, **framing**, **persuasive intent**, and **hyper-stimulus content** in digital journalism. By ingesting RSS feeds, the system utilizes server-side AI to compute content quality metrics. These metrics enable client-side applications to mitigate exposure to algorithmic emotional exploitation and attention-economy tactics, optimizing for user well-being and client-side energy efficiency.
+This specification defines an algorithm for detecting **clickbait**, **framing**, **persuasive intent**, and **hyper-stimulus content** in digital journalism. By ingesting RSS feeds, the system employs server-side AI to compute content quality metrics. These metrics enable client-side applications to mitigate exposure to algorithmic emotional exploitation and attention-economy tactics, optimizing for user well-being and client-side energy efficiency.
 
 The current implementation targets **Latin-script languages**. The architecture is modular, allowing for adaptation to other writing systems (e.g., logographic scripts like Chinese) through the integration of language-specific NLP models.
 
-The data can be utilized by Ad Blockers or privacy-focused browsers (e.g., Brave) to block or warn users about pages with high framing scores.
+The data can be leveraged by Ad Blockers or privacy-focused browsers (e.g., Brave) to block or warn users about pages with high framing scores.
 
 ## Input Specification
 
-The system utilizes **[RSS 2.0](https://cyber.harvard.edu/rss/rss.html)** feeds as the primary data ingestion vector. RSS is an established XML-based standard that facilitates platform-agnostic content distribution.
+The system uses **[RSS 2.0](https://cyber.harvard.edu/rss/rss.html)** feeds as the primary data ingestion vector. RSS is an established XML-based standard that facilitates platform-agnostic content distribution.
+
+Although the standard is mature, it remains ubiquitous; nearly every major news website maintains an active RSS feed. Additionally, it serves as a foundational protocol for various upstream services, including content aggregators and news tickers.
 
 The ingestion pipeline extracts the following components from each feed item:
 *   **Primary Attributes**: `title` (headline), `link` (content URL), and `description` (synopsis).
