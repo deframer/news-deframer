@@ -36,7 +36,7 @@ The server periodically polls RSS feeds. Results are cached per `<item>`. Change
 
 ### Output
 
-The analysis appends the AI generated values to the feed per `<item>.
+The analysis appends the AI generated values to the feed per `<item>`.
 
 
 ## Proxy Service Specification
