@@ -1,0 +1,119 @@
+---
+
+services:
+  db:
+    image: mariadb:latest
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: '1'
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
+      MYSQL_USER: ${MYSQL_USER:-wordpress}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+    ports:
+     - "3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  # ready-check-db:
+  #   image: alpine:latest
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   command: |
+  #     sh -c "echo 'SUCCESS: MariaDB is up, healthy, and the database [wordpress] has been created!'"
+
+  wordpress:
+    depends_on:
+      db:
+        condition: service_healthy
+    image: wordpress:latest
+    ports:
+      - "8000:80"
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE:-wordpress}
+    volumes:
+      - wp_data:/var/www/html
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # This 'cli' service runs our install script
+  wpcli:
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_healthy
+    image: wordpress:cli
+    volumes:
+      - wp_data:/var/www/html
+      - ./scripts:/scripts
+    user: "33:33"
+    command: /bin/bash -c "/scripts/install.sh"
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE:-wordpress}
+      HTTP_HOST: http://localhost:8000
+      WORDPRESS_TITLE: ${WORDPRESS_TITLE:-Global News Agency}
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-password}
+      WP_CLI_CACHE_DIR: /tmp/.wp-cli-cache
+
+  # ready-check-wpcli:
+  #   image: alpine:latest
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     wordpress:
+  #       condition: service_healthy
+  #     wpcli:
+  #       condition: service_completed_successfully
+  #   command: |
+  #     sh -c "'echo SUCCESS: WP running and initialized'"
+
+  theme-setup:
+    build:
+      context: ./setup-theme
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_healthy
+      wpcli:
+        condition: service_completed_successfully
+    environment:
+      HTTP_HOST:  "http://wordpress"
+      WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
+      WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-password}
+
+  ready-check-them-setup:
+    image: alpine:latest
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_healthy
+      wpcli:
+        condition: service_completed_successfully
+      theme-setup:
+        condition: service_completed_successfully
+    command: |
+      sh -c "'echo SUCCESS: WP theme initialized'"
+
+volumes:
+  db_data:
+  wp_data:

@@ -12,3 +12,4 @@ __debug_bin*
 *.xml
 developer-sqlite.db
 developer-source.json
+.python-venv
