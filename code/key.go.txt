@@ -1,0 +1,87 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/gorilla/feeds"
+)
+
+// GenerateStableID generates a deterministic hash (PK) and a time bucket.
+// It is idempotent: the same feed item will always generate the same Hash,
+// allowing you to detect updates easily.
+func GenerateStableID(item *feeds.RssItem) (string, time.Time) {
+	var seed string
+
+	// 1. SELECT THE SEED
+	// We proceed in order of stability.
+
+	// Priority A: GUID
+	// We check if the pointer is not nil, and the Value inside is not empty.
+	if item.Guid != nil && strings.TrimSpace(item.Guid.Id) != "" {
+		seed = item.Guid.Id
+	} else if strings.TrimSpace(item.Link) != "" {
+		// Priority B: Link
+		// Fallback if GUID is completely missing.
+		seed = item.Link
+	} else {
+		// Priority C: Title
+		// Absolute last resort.
+		seed = item.Title
+	}
+
+	// Normalize: Trim whitespace to prevent "phantom" duplicates
+	// caused by feed formatting changes.
+	seed = strings.TrimSpace(seed)
+
+	// 2. GENERATE HASH (SHA-256)
+	// SHA-256 is fast and collision-resistant.
+	hash := sha256.Sum256([]byte(seed))
+
+	// Return Hex string (64 chars) - easy to store in any DB.
+	primaryKey := hex.EncodeToString(hash[:])
+
+	// 3. DETERMINE BUCKET (Date)
+	// We parse the date for sorting/bucketing, but it is NOT part of the PK.
+	// This ensures updates to the date don't change the ID.
+	bucketDate, err := parseDate(item.PubDate)
+	if err != nil {
+		bucketDate = time.Now() // Default to ingestion time if parse fails
+	}
+
+	return primaryKey, bucketDate
+}
+
+// parseDate handles standard RSS date formats
+func parseDate(dateStr string) (time.Time, error) {
+	// RSS usually uses RFC1123Z, but sometimes RFC1123
+	formats := []string{time.RFC1123Z, time.RFC1123}
+	for _, f := range formats {
+		if t, err := time.Parse(f, dateStr); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unable to parse date")
+}
+
+// --- Usage Example ---
+
+func main() {
+	// Mocking an input item from the library
+	item := &feeds.RssItem{
+		Title: "Exploring New Mediums",
+		Link:  "http://localhost:8000/art-skills/",
+		// Guid is the stable identifier from the CMS
+		Guid: &feeds.RssGuid{Id: "https://site.com/?p=1811"},
+		// Even if this date changes tomorrow, the PK below will remain the same
+		PubDate: "Mon, 12 May 2025 06:15:00 +0000",
+	}
+
+	pk, bucket := GenerateStableID(item)
+
+	fmt.Printf("Primary Key (SHA256): %s\n", pk)
+	fmt.Printf("Time Bucket:          %s\n", bucket.Format("2006-01"))
+}
