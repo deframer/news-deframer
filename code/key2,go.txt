@@ -1,0 +1,98 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/gorilla/feeds"
+)
+
+// GenerateVersionedKey generates a key that changes whenever the content changes.
+// Use this if you want to store a history of updates (snapshots) rather than
+// just the latest state.
+func GenerateVersionedKey(item *feeds.RssItem) (string, time.Time) {
+	// 1. DETERMINE IDENTITY (The "Anchor")
+	// We still need to know "which" item this is, even if we are tracking versions.
+	var anchor string
+
+	if item.Guid != nil && strings.TrimSpace(item.Guid.Id) != "" {
+		anchor = item.Guid.Id
+	} else if strings.TrimSpace(item.Link) != "" {
+		anchor = item.Link
+	} else {
+		// If absolutely no ID exists, Title is the anchor (risky, but necessary fallback)
+		anchor = item.Title
+	}
+
+	// 2. GATHER CONTENT (The "Variable")
+	// We normalize these (TrimSpace) to avoid new keys just for invisible spaces,
+	// but we DO capture actual text changes.
+	cleanTitle := strings.TrimSpace(item.Title)
+	cleanDesc := strings.TrimSpace(item.Description)
+
+	// 3. CONSTRUCT SEED
+	// We use a pipe "|" separator to ensure distinct fields don't bleed into each other.
+	// Format: IDENTITY | TITLE | DESCRIPTION
+	seed := fmt.Sprintf("%s|%s|%s", anchor, cleanTitle, cleanDesc)
+
+	// 4. GENERATE HASH
+	hash := sha256.Sum256([]byte(seed))
+	versionKey := hex.EncodeToString(hash[:])
+
+	// 5. DETERMINE BUCKET (Standard logic)
+	bucketDate, err := parseDate(item.PubDate)
+	if err != nil {
+		bucketDate = time.Now()
+	}
+
+	return versionKey, bucketDate
+}
+
+// Helper for date parsing (Same as before)
+func parseDate(dateStr string) (time.Time, error) {
+	formats := []string{time.RFC1123Z, time.RFC1123}
+	for _, f := range formats {
+		if t, err := time.Parse(f, dateStr); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("unable to parse date")
+}
+
+// --- Usage Example ---
+
+func main() {
+	// Scenario: The feed sends an item
+	itemOriginal := &feeds.RssItem{
+		Title:       "Market Crashes",
+		Description: "The stock market went down by 5%.",
+		Link:        "http://news.com/market",
+		Guid:        &feeds.RssGuid{Id: "id-101"},
+		PubDate:     "Mon, 12 May 2025 09:00:00 +0000",
+	}
+
+	// Scenario: 10 minutes later, they update the description
+	// notice the Guid is the SAME, but Description changed.
+	itemUpdated := &feeds.RssItem{
+		Title:       "Market Crashes",
+		Description: "The stock market went down by 5% due to inflation.", // Changed
+		Link:        "http://news.com/market",
+		Guid:        &feeds.RssGuid{Id: "id-101"},
+		PubDate:     "Mon, 12 May 2025 09:10:00 +0000",
+	}
+
+	key1, _ := GenerateVersionedKey(itemOriginal)
+	key2, _ := GenerateVersionedKey(itemUpdated)
+
+	fmt.Printf("Original Key: %s\n", key1)
+	fmt.Printf("Updated Key:  %s\n", key2)
+
+	if key1 != key2 {
+		fmt.Println("Result: WE HAVE DETECTED A CONTENT CHANGE! New row created.")
+	} else {
+		fmt.Println("Result: Content is identical.")
+	}
+}
