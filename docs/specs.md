@@ -4,7 +4,7 @@
 
 These systems provide the controlled environment required to develop and test the core Deframer logic without relying on unstable external networks or rate-limited APIs.
 
-### 1.1 FreshRSS
+### 1.1 RSS-Bridge
 - **Purpose**:
   - Serves as the "Connector" logic.
   - Generates standard RSS Feeds for websites that lack them.
@@ -14,7 +14,7 @@ These systems provide the controlled environment required to develop and test th
   - Fetches `index.html`, parses via XPath/CSS Selectors.
   - **Constraint**: Does not render JavaScript (server-side scraping only).
 - **Network**:
-  - **Internal URL**: `http://freshrss` (Accessible by Deframer).
+  - **Internal URL**: `http://rssbridge` (Accessible by Deframer).
   - **External URL**: `http://localhost:8001` (Accessible by Developer).
 
 ### 1.2 Dummy News Site
@@ -26,8 +26,17 @@ These systems provide the controlled environment required to develop and test th
   - WordPress Stack.
   - Theme: `ColorMag` (Simulates a standard magazine layout).
 - **Network**:
-  - **Internal URL**: `http://wordpress`
-  - **External URL**: `http://localhost:8002`
+  - **Internal URL**: `http://wordpress` (Accessible by Deframer).
+  - **External URL**: `http://localhost:8002` (Accessible by Developer).
+
+### 1.3 FreshRSS
+- **Purpose**:
+  - Simple Web based RSS Reader
+  - Can read internal and external RSS Feeds
+- **Technology**:
+  - Docker
+- **Network**:
+  - **External URL**: `http://localhost:8003` (Accessible by Developer).
 
 ---
 
