@@ -15,6 +15,9 @@ test-env-start:
 test-env-stop:
 	$(MAKE) -C test-env stop
 
+test-env-down:
+	$(MAKE) -C test-env down
+
 test-env-zap:
 	$(MAKE) -C test-env zap
 

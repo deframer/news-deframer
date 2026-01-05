@@ -15,7 +15,7 @@ These systems provide the controlled environment required to develop and test th
   - **Constraint**: Does not render JavaScript (server-side scraping only).
 - **Network**:
   - **Internal URL**: `http://rssbridge` (Accessible by Deframer).
-  - **External URL**: `http://localhost:8001` (Accessible by Developer).
+  - **External URL**: `http://localhost:8002` (Accessible by Developer).
 
 ### 1.2 Dummy News Site
 - **Purpose**:
@@ -27,7 +27,7 @@ These systems provide the controlled environment required to develop and test th
   - Theme: `ColorMag` (Simulates a standard magazine layout).
 - **Network**:
   - **Internal URL**: `http://wordpress` (Accessible by Deframer).
-  - **External URL**: `http://localhost:8002` (Accessible by Developer).
+  - **External URL**: `http://localhost:8003` (Accessible by Developer).
 
 ### 1.3 FreshRSS
 - **Purpose**:
@@ -36,7 +36,7 @@ These systems provide the controlled environment required to develop and test th
 - **Technology**:
   - Docker
 - **Network**:
-  - **External URL**: `http://localhost:8003` (Accessible by Developer).
+  - **External URL**: `http://localhost:8001` (Accessible by Developer).
 
 ---
 

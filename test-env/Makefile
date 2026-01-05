@@ -1,25 +1,33 @@
+.PHONY: all zap start stop down clean test-env-network-create test-env-network-destroy
+
 all:
 	@echo all
 
-.PHONY: zap
 zap: down start
 
-.PHONY: start
-start:
-	docker compose up -d --build --force-recreate --no-deps
+test-env-network-create:
+	docker network inspect deframer-test-env-net >/dev/null 2>&1 || docker network create deframer-test-env-net
 
-.PHONY: stop
+test-env-network-destroy:
+	docker network rm deframer-test-env-net || true
+
+start: test-env-network-create
+	$(MAKE) -C freshrss $@
+	$(MAKE) -C rssbridge $@
+	$(MAKE) -C wordpress $@
+
 stop:
-	docker compose stop
+	$(MAKE) -C freshrss $@
+	$(MAKE) -C rssbridge $@
+	$(MAKE) -C wordpress $@
 
-.PHONY: down
 down:
-	docker compose down --remove-orphans --volumes
+	$(MAKE) -C freshrss $@
+	$(MAKE) -C rssbridge $@
+	$(MAKE) -C wordpress $@
+	$(MAKE) test-env-network-destroy
 
-.PHONY: wpcli-shell
-wpcli-shell:
-	docker compose run -it --rm wpcli /bin/bash
-
-.PHONY: clean
 clean: down
-	docker compose down --rmi local
+	$(MAKE) -C freshrss $@
+	$(MAKE) -C rssbridge $@
+	$(MAKE) -C wordpress $@

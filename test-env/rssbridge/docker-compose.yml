@@ -1,10 +1,10 @@
 ---
 
 services:
-  deframer-app:
-    build: .
-    environment:
-      - TARGET_URL=http://wordpress
+  rssbridge:
+    image: nginx:alpine
+    ports:
+      - "8002:80"
     networks:
       - test-env-network
 
