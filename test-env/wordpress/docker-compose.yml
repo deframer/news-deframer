@@ -28,6 +28,8 @@ services:
     ports:
       - "8003:80"
     restart: unless-stopped
+    networks:
+      - test-env-network
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
@@ -97,3 +99,8 @@ services:
 volumes:
   db_data:
   wp_data:
+
+networks:
+  test-env-network:
+    external: true
+    name: deframer-test-env-net

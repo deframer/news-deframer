@@ -25,9 +25,9 @@ down:
 	$(MAKE) -C freshrss $@
 	$(MAKE) -C rssbridge $@
 	$(MAKE) -C wordpress $@
-	$(MAKE) test-env-network-destroy
 
 clean: down
 	$(MAKE) -C freshrss $@
 	$(MAKE) -C rssbridge $@
 	$(MAKE) -C wordpress $@
+	$(MAKE) test-env-network-destroy
