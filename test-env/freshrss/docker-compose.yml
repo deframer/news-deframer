@@ -1,14 +1,55 @@
 ---
 
 services:
+  # https://github.com/FreshRSS/FreshRSS/blob/edge/Docker/README.md
   freshrss:
-    image: nginx:alpine
+    image:  freshrss/freshrss
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Berlin
+      # FRESHRSS_ENV: development
+      # CRON_MIN=1,31
+      FRESHRSS_INSTALL: |-
+        --api-enabled
+        --base-url ${BASE_URL:-http://freshrss:8001}
+        --db-type sqlite
+        --default-user admin
+        --language en
+      FRESHRSS_USER: |-
+        --api-password ${ADMIN_API_PASSWORD:-freshrss}
+        --email ${ADMIN_EMAIL:-admin@example.com}
+        --language en
+        --password ${ADMIN_PASSWORD:-password}
+        --user admin
+    volumes:
+      - data:/var/www/FreshRSS/data
+      - extensions:/var/www/FreshRSS/extensions
+      # Optional file providing custom global settings (used before a FreshRSS install)
+      #- ./config.custom.php:/var/www/FreshRSS/data/config.custom.php
+      # Optional file providing custom user settings (used before a new user is created)
+      #- ./config-user.custom.php:/var/www/FreshRSS/data/config-user.custom.php
     ports:
       - "8001:80"
+    restart: unless-stopped
     networks:
       - test-env-network
+    healthcheck:
+      test: ["CMD", "cli/health.php"]
+      timeout: 10s
+      start_period: 60s
+      start_interval: 11s
+      interval: 75s
+      retries: 3
 
 networks:
   test-env-network:
     external: true
     name: deframer-test-env-net
+
+volumes:
+  data:
+  extensions:
+
+# docker exec --user www-data freshrss cli/do-install.php --default-user freshrss
+# docker exec --user www-data freshrss cli/create-user.php --user freshrss --password freshrss

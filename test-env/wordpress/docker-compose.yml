@@ -5,7 +5,7 @@ services:
     image: mariadb:latest
     volumes:
       - db_data:/var/lib/mysql
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: '1'
       MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
@@ -27,7 +27,7 @@ services:
     image: wordpress:latest
     ports:
       - "8003:80"
-    restart: always
+    restart: unless-stopped
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
@@ -76,7 +76,7 @@ services:
       wpcli:
         condition: service_completed_successfully
     environment:
-      HTTP_HOST:  "http://wordpress"
+      HTTP_HOST: http://wordpress
       WORDPRESS_ADMIN_USER: ${WORDPRESS_ADMIN_USER:-admin}
       WORDPRESS_ADMIN_PASSWORD: ${WORDPRESS_ADMIN_PASSWORD:-password}
 

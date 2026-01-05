@@ -5,6 +5,7 @@ services:
     image: nginx:alpine
     ports:
       - "8002:80"
+    restart: unless-stopped
     networks:
       - test-env-network
 
