@@ -6,7 +6,6 @@ zap: down start
 
 .PHONY: start
 start:
-	#docker compose up -d
 	docker compose up -d --build --force-recreate --no-deps
 
 .PHONY: stop
