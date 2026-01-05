@@ -6,6 +6,8 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     restart: unless-stopped
+    networks:
+      - db-network
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: '1'
       MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
@@ -30,6 +32,7 @@ services:
     restart: unless-stopped
     networks:
       - test-env-network
+      - db-network
     environment:
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
@@ -51,6 +54,9 @@ services:
       wordpress:
         condition: service_healthy
     image: wordpress:cli
+    networks:
+      - test-env-network
+      - db-network
     volumes:
       - wp_data:/var/www/html
       - ./scripts:/scripts
@@ -70,6 +76,8 @@ services:
   theme-setup:
     build:
       context: ./setup-theme
+    networks:
+      - test-env-network
     depends_on:
       db:
         condition: service_healthy
@@ -101,6 +109,7 @@ volumes:
   wp_data:
 
 networks:
+  db-network:
   test-env-network:
     external: true
     name: deframer-test-env-net
