@@ -21,14 +21,35 @@ type RssAnalysis struct {
 func main() {
 	ctx := context.Background()
 
+	apiKey := os.Getenv("GEMINI_API_KEY")
+	if apiKey == "" {
+		log.Fatal("Please set the GEMINI_API_KEY environment variable")
+	}
+
 	// 2. Initialize Client (Unified SDK)
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey:  os.Getenv("GEMINI_API_KEY"),
-		Backend: genai.BackendGeminiAPI, // Use VertexAI if you are on Google Cloud
+		APIKey:  apiKey,
+		Backend: genai.BackendGeminiAPI, // Explicitly use the Gemini Developer API // Use VertexAI if you are on Google Cloud
 	})
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// DEBUG: List available models to check what is supported
+	// iter, err := client.Models.List(ctx, nil)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// for {
+	// 	resp, err := iter.Next(ctx)
+	// 	if err != nil {
+	// 		break
+	// 	}
+	// 	for _, model := range resp.Items {
+	// 		fmt.Printf("Model: %s (%s)\n", model.Name, model.DisplayName)
+	// 	}
+	// }
+	// fmt.Println("------------------------")
 
 	// 3. Define the Schema (The "Blueprint")
 	// This tells Gemini EXACTLY what fields to return.
@@ -48,19 +69,25 @@ func main() {
 	rssTitle := "Go 1.25 Released"
 	rssDesc := "The Go team has announced the release of Go 1.25."
 
+	// You can switch this to "gemini-1.5-pro" or "gemini-2.0-flash"
+	//modelName := "gemini-3-flash"
+	//modelName := "gemini-2.5-flash"
+	modelName := "gemini-2.5-flash-lite"
+
 	// 5. Call the API
-	// usage of "gemini-2.0-flash" is currently the sweet spot for speed/cost
-	resp, err := client.Models.GenerateContent(ctx, "gemini-2.0-flash",
+	fmt.Println("Starting Gemini API query... ", modelName)
+	fmt.Printf("Analyzing item: %s\n", rssTitle)
+	resp, err := client.Models.GenerateContent(ctx, modelName,
 		genai.Text(fmt.Sprintf("Title: %s\nDescription: %s", rssTitle, rssDesc)),
 		&genai.GenerateContentConfig{
 			ResponseMIMEType: "application/json",
 			ResponseSchema:   schema,
 			SystemInstruction: &genai.Content{
-				Parts: []genai.Part{
-					genai.Text("You are an RSS classifier. Classify the input strictly."),
+				Parts: []*genai.Part{
+					{Text: "You are an RSS classifier. Classify the input strictly."},
 				},
 			},
-			Temperature: DO_NOT_USE_POINTER_JUST_VALUE(0.0), // Set to 0 for consistency
+			Temperature: DO_NOT_USE_POINTER_JUST_VALUE(0.0),
 		},
 	)
 
@@ -71,7 +98,7 @@ func main() {
 	// 6. Parse Result
 	// Gemini returns the JSON text in the first candidate
 	var result RssAnalysis
-	rawJSON := resp.Candidates[0].Content.Parts[0].(genai.Text)
+	rawJSON := resp.Candidates[0].Content.Parts[0].Text
 
 	if err := json.Unmarshal([]byte(rawJSON), &result); err != nil {
 		log.Fatalf("JSON Parse Error: %v", err)
@@ -81,10 +108,21 @@ func main() {
 }
 
 // Helper to handle pointer types in config if needed (pseudo-code representation)
-func DO_NOT_USE_POINTER_JUST_VALUE(v float64) *float64 { return &v }
-
+func DO_NOT_USE_POINTER_JUST_VALUE(v float32) *float32 { return &v }
 
 /*
+
+check calls - https://ai.dev/usage?tab=rate-limit
+
+curl https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=$GEMINI_API_KEY \
+    -H 'Content-Type: application/json' \
+    -X POST \
+    -d '{
+      "contents": [{
+        "parts":[{"text": "Write a short poem about Go programming."}]
+      }]
+    }'
+
 Yes, you absolutely can. Google offers a generous **Free Tier** for the Gemini API that is perfect for what you are trying to do (testing RSS feeds without incurring costs).
 
 ### **How to get the Free API Key**
