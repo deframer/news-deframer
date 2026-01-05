@@ -14,3 +14,4 @@ developer-sqlite.db
 developer-source.json
 .python-venv
 *.swp
+news-deframer

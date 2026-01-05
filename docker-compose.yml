@@ -1,0 +1,15 @@
+---
+
+services:
+  deframer-app:
+    build: .
+    environment:
+      - TARGET_URL=http://wordpress
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    external: true
+    # Assumes the network created by test-env/docker-compose.yml is named 'test-env_deframer-test-net'
+    name: test-env_deframer-test-net

@@ -1,0 +1,28 @@
+package main
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+)
+
+func main() {
+	// Get the target URL from environment variable, default to internal docker name
+	targetURL := os.Getenv("TARGET_URL")
+	if targetURL == "" {
+		fmt.Println("TARGET_URL is not set, defaulting to http://wordpress")
+		targetURL = "http://wordpress"
+	}
+
+	fmt.Printf("Checking connection to: %s\n", targetURL)
+
+	resp, err := http.Get(targetURL)
+	if err != nil {
+		fmt.Printf("Failed to connect to %s: %v\n", targetURL, err)
+		os.Exit(1)
+	}
+	defer resp.Body.Close()
+
+	fmt.Printf("Success! Connected to %s. Status: %s\n", targetURL, resp.Status)
+	// sleep forever
+}

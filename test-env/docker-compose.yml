@@ -1,0 +1,30 @@
+---
+
+services:
+  rssbridge:
+    image: nginx:alpine
+    container_name: rssbridge
+    ports:
+      - "8001:80"
+    networks:
+      - deframer-test-net
+
+  wordpress:
+    image: nginx:alpine
+    container_name: wordpress
+    ports:
+      - "8002:80"
+    networks:
+      - deframer-test-net
+
+  freshrss:
+    image: nginx:alpine
+    container_name: freshrss
+    ports:
+      - "8003:80"
+    networks:
+      - deframer-test-net
+
+networks:
+  deframer-test-net:
+    driver: bridge
