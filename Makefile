@@ -2,8 +2,6 @@ APP_NAME := news-deframer
 DOCKER_REPO := egandro
 BUILD_DIR := bin
 CMD_DIR := cmd
-APPS := $(wildcard $(CMD_DIR)/*)
-BINS := $(patsubst $(CMD_DIR)/%,$(BUILD_DIR)/%,$(APPS))
 
 .PHONY: all build clean test help
 
@@ -53,11 +51,9 @@ stop:
 down:
 	docker compose down --remove-orphans --volumes
 
-build: $(BINS)
-
-$(BUILD_DIR)/%: $(CMD_DIR)/%
+build:
 	mkdir -p $(BUILD_DIR)
-	go build -o $@ ./$<
+	go build -o $(BUILD_DIR)/ ./$(CMD_DIR)/...
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -79,7 +75,7 @@ lint:
 tidy:
 	go mod tidy
 
-docker-all: $(addprefix docker-,$(notdir $(APPS)))
+docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
 
 docker-%:
 	@echo "Building Docker image for $*..."
