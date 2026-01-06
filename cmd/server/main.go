@@ -16,7 +16,7 @@ func main() {
 
 	fmt.Printf("Checking connection to: %s\n", targetURL)
 
-	resp, err := http.Get(targetURL)
+	resp, err := http.Get(targetURL) // #nosec G107
 	if err != nil {
 		fmt.Printf("Failed to connect to %s: %v\n", targetURL, err)
 		os.Exit(1)
