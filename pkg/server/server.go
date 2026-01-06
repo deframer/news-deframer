@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/egandro/news-deframer/pkg/facade"
@@ -47,6 +48,7 @@ func New(ctx context.Context, cfg *config.Config, f *facade.Facade) *Server {
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 	return s
 }
@@ -61,7 +63,9 @@ func (s *Server) Stop(ctx context.Context) error {
 
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 	s.logger.Debug("ping")
-	w.Write([]byte("pong"))
+	if _, err := w.Write([]byte("pong")); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
 }
 
 func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
@@ -77,13 +81,14 @@ func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := url.ParseRequestURI(req.URL); err != nil {
+	u, err := url.ParseRequestURI(req.URL)
+	if err != nil {
 		s.logger.Debug("invalid url", "error", err)
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
 
-	hasFeed, err := s.facade.HasFeed(r.Context(), req.URL)
+	hasFeed, err := s.facade.HasFeed(r.Context(), u)
 	if err != nil || !hasFeed {
 		if err != nil {
 			s.logger.Error("HasFeed failed", "error", err)
@@ -104,7 +109,7 @@ func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
 	// The requirement is to "accept and return xml only".
 	// We enforce the response Content-Type to XML.
 	w.Header().Set("Content-Type", "application/xml")
-	fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8" ?>
+	if _, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0" xmlns:debug="http://news-deframer/debug">
 <channel>
   <title>News Deframer</title>
@@ -114,7 +119,9 @@ func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
   <debug:embedded>%t</debug:embedded>
   <debug:has_feed>%t</debug:has_feed>
 </channel>
-</rss>`, req.URL, req.Lang, req.MaxScore, req.Embedded, hasFeed)
+</rss>`, req.URL, req.Lang, req.MaxScore, req.Embedded, hasFeed); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
 }
 
 func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
@@ -127,13 +134,14 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
+	u, err := url.ParseRequestURI(reqURL)
+	if err != nil {
 		s.logger.Debug("invalid url", "error", err)
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
 
-	hasFeed, err := s.facade.HasFeed(r.Context(), reqURL)
+	hasFeed, err := s.facade.HasFeed(r.Context(), u)
 	if err != nil || !hasFeed {
 		if err != nil {
 			s.logger.Error("HasFeed failed", "error", err)
@@ -145,10 +153,12 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"url":      reqURL,
 		"has_feed": hasFeed,
-	})
+	}); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
 }
 
 func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
@@ -161,13 +171,14 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := url.ParseRequestURI(reqURL); err != nil {
+	u, err := url.ParseRequestURI(reqURL)
+	if err != nil {
 		s.logger.Debug("invalid url", "error", err)
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
 
-	hasArticle, err := s.facade.HasArticle(r.Context(), reqURL)
+	hasArticle, err := s.facade.HasArticle(r.Context(), u)
 	if err != nil || !hasArticle {
 		if err != nil {
 			s.logger.Error("HasArticle failed", "error", err)
@@ -179,8 +190,10 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
+	if err := json.NewEncoder(w).Encode(map[string]interface{}{
 		"url":         reqURL,
 		"has_article": hasArticle,
-	})
+	}); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
 }

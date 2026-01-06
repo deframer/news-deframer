@@ -2,6 +2,7 @@ package facade
 
 import (
 	"context"
+	"net/url"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/egandro/news-deframer/pkg/database"
@@ -24,10 +25,10 @@ func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database
 	}
 }
 
-func (f *Facade) HasFeed(ctx context.Context, url string) (bool, error) {
+func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 	return false, nil
 }
 
-func (f *Facade) HasArticle(ctx context.Context, url string) (bool, error) {
+func (f *Facade) HasArticle(ctx context.Context, u *url.URL) (bool, error) {
 	return false, nil
 }

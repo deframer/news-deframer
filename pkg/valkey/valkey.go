@@ -3,19 +3,19 @@ package valkey
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/google/uuid"
 	driver "github.com/valkey-io/valkey-go"
 )
 
 type Valkey interface {
-	HasFeed(key uuid.UUID) (bool, error)
-	GetFeed(key uuid.UUID) (*uuid.UUID, error)
-	AddFeed(key uuid.UUID) error
-	DeleteFeed(key uuid.UUID) error
+	HasFeedUrl(u *url.URL) (bool, error)
+	GetFeedUrl(u *url.URL) (*string, error)
+	AddFeedUrl(u *url.URL, value string) error
+	DeleteFeedUrl(u *url.URL) error
 	Close() error
 }
 
@@ -55,28 +55,28 @@ func New(ctx context.Context, cfg *config.Config) (Valkey, error) {
 
 const prefix = "feed:"
 
-func (v *valkey) HasFeed(key uuid.UUID) (bool, error) {
-	n, err := v.client.Do(v.ctx, v.client.B().Exists().Key(prefix+key.String()).Build()).ToInt64()
+func (v *valkey) HasFeedUrl(u *url.URL) (bool, error) {
+	n, err := v.client.Do(v.ctx, v.client.B().Exists().Key(prefix+u.String()).Build()).ToInt64()
 	return n > 0, err
 }
 
-func (v *valkey) GetFeed(key uuid.UUID) (*uuid.UUID, error) {
-	_, err := v.client.Do(v.ctx, v.client.B().Get().Key(prefix+key.String()).Build()).ToString()
+func (v *valkey) GetFeedUrl(u *url.URL) (*string, error) {
+	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(prefix+u.String()).Build()).ToString()
 	if driver.IsValkeyNil(err) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &key, nil
+	return &val, nil
 }
 
-func (v *valkey) AddFeed(key uuid.UUID) error {
-	return v.client.Do(v.ctx, v.client.B().Set().Key(prefix+key.String()).Value(time.Now().Format(time.RFC3339)).Build()).Error()
+func (v *valkey) AddFeedUrl(u *url.URL, value string) error {
+	return v.client.Do(v.ctx, v.client.B().Set().Key(prefix+u.String()).Value(value).Build()).Error()
 }
 
-func (v *valkey) DeleteFeed(key uuid.UUID) error {
-	return v.client.Do(v.ctx, v.client.B().Del().Key(prefix+key.String()).Build()).Error()
+func (v *valkey) DeleteFeedUrl(u *url.URL) error {
+	return v.client.Do(v.ctx, v.client.B().Del().Key(prefix+u.String()).Build()).Error()
 }
 
 func (v *valkey) Close() error {

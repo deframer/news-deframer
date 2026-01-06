@@ -2,14 +2,14 @@ package valkey
 
 import (
 	"context"
+	"net/url"
 	"testing"
 
 	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFeedKeys(t *testing.T) {
+func TestFeedUrlKeys(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
@@ -20,34 +20,37 @@ func TestFeedKeys(t *testing.T) {
 		assert.NoError(t, c.Close())
 	}()
 
-	key := uuid.New()
+	rawURL := "http://example.com/feed"
+	u, err := url.Parse(rawURL)
+	assert.NoError(t, err)
+	value := "some-value"
 
 	// Ensure cleanup before and after
-	_ = c.DeleteFeed(key)
+	_ = c.DeleteFeedUrl(u)
 	defer func() {
-		_ = c.DeleteFeed(key)
+		_ = c.DeleteFeedUrl(u)
 	}()
 
-	err = c.AddFeed(key)
+	err = c.AddFeedUrl(u, value)
 	assert.NoError(t, err)
 
-	exists, err := c.HasFeed(key)
+	exists, err := c.HasFeedUrl(u)
 	assert.NoError(t, err)
 	assert.True(t, exists)
 
-	foundKey, err := c.GetFeed(key)
+	foundVal, err := c.GetFeedUrl(u)
 	assert.NoError(t, err)
-	assert.NotNil(t, foundKey)
-	assert.Equal(t, key, *foundKey)
+	assert.NotNil(t, foundVal)
+	assert.Equal(t, value, *foundVal)
 
-	err = c.DeleteFeed(key)
+	err = c.DeleteFeedUrl(u)
 	assert.NoError(t, err)
 
-	exists, err = c.HasFeed(key)
+	exists, err = c.HasFeedUrl(u)
 	assert.NoError(t, err)
 	assert.False(t, exists)
 
-	foundKey, err = c.GetFeed(key)
+	foundVal, err = c.GetFeedUrl(u)
 	assert.NoError(t, err)
-	assert.Nil(t, foundKey)
+	assert.Nil(t, foundVal)
 }
