@@ -12,18 +12,19 @@ import (
 )
 
 type Valkey interface {
-	HasFeed(ctx context.Context, key uuid.UUID) (bool, error)
-	GetFeed(ctx context.Context, key uuid.UUID) (*uuid.UUID, error)
-	AddFeed(ctx context.Context, key uuid.UUID) error
-	DeleteFeed(ctx context.Context, key uuid.UUID) error
+	HasFeed(key uuid.UUID) (bool, error)
+	GetFeed(key uuid.UUID) (*uuid.UUID, error)
+	AddFeed(key uuid.UUID) error
+	DeleteFeed(key uuid.UUID) error
 	Close() error
 }
 
 type valkey struct {
 	client driver.Client
+	ctx    context.Context
 }
 
-func New(cfg *config.Config) (Valkey, error) {
+func New(ctx context.Context, cfg *config.Config) (Valkey, error) {
 	db, err := strconv.Atoi(cfg.ValkeyDB)
 	if err != nil {
 		return nil, fmt.Errorf("invalid valkey db: %w", err)
@@ -41,26 +42,26 @@ func New(cfg *config.Config) (Valkey, error) {
 	}
 
 	// Verify connection
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	if err := client.Do(ctx, client.B().Ping().Build()).Error(); err != nil {
+	if err := client.Do(pingCtx, client.B().Ping().Build()).Error(); err != nil {
 		client.Close()
 		return nil, fmt.Errorf("failed to connect to valkey: %w", err)
 	}
 
-	return &valkey{client: client}, nil
+	return &valkey{client: client, ctx: ctx}, nil
 }
 
 const prefix = "feed:"
 
-func (v *valkey) HasFeed(ctx context.Context, key uuid.UUID) (bool, error) {
-	n, err := v.client.Do(ctx, v.client.B().Exists().Key(prefix+key.String()).Build()).ToInt64()
+func (v *valkey) HasFeed(key uuid.UUID) (bool, error) {
+	n, err := v.client.Do(v.ctx, v.client.B().Exists().Key(prefix+key.String()).Build()).ToInt64()
 	return n > 0, err
 }
 
-func (v *valkey) GetFeed(ctx context.Context, key uuid.UUID) (*uuid.UUID, error) {
-	_, err := v.client.Do(ctx, v.client.B().Get().Key(prefix+key.String()).Build()).ToString()
+func (v *valkey) GetFeed(key uuid.UUID) (*uuid.UUID, error) {
+	_, err := v.client.Do(v.ctx, v.client.B().Get().Key(prefix+key.String()).Build()).ToString()
 	if driver.IsValkeyNil(err) {
 		return nil, nil
 	}
@@ -70,12 +71,12 @@ func (v *valkey) GetFeed(ctx context.Context, key uuid.UUID) (*uuid.UUID, error)
 	return &key, nil
 }
 
-func (v *valkey) AddFeed(ctx context.Context, key uuid.UUID) error {
-	return v.client.Do(ctx, v.client.B().Set().Key(prefix+key.String()).Value(time.Now().Format(time.RFC3339)).Build()).Error()
+func (v *valkey) AddFeed(key uuid.UUID) error {
+	return v.client.Do(v.ctx, v.client.B().Set().Key(prefix+key.String()).Value(time.Now().Format(time.RFC3339)).Build()).Error()
 }
 
-func (v *valkey) DeleteFeed(ctx context.Context, key uuid.UUID) error {
-	return v.client.Do(ctx, v.client.B().Del().Key(prefix+key.String()).Build()).Error()
+func (v *valkey) DeleteFeed(key uuid.UUID) error {
+	return v.client.Do(v.ctx, v.client.B().Del().Key(prefix+key.String()).Build()).Error()
 }
 
 func (v *valkey) Close() error {
