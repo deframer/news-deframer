@@ -58,7 +58,7 @@ jobs:
       packages: write
     strategy:
       matrix:
-        app: [server] # List your apps here
+        app: [service, worker] # List your apps here
     steps:
       - uses: actions/checkout@v6
 

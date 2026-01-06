@@ -28,5 +28,5 @@ func main() {
 	}()
 
 	fmt.Printf("Success! Connected to %s. Status: %s\n", targetURL, resp.Status)
-	// sleep forever
+	select {}
 }

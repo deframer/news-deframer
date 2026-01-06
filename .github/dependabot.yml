@@ -28,7 +28,7 @@ updates:
 
   # Keep Dockerfiles up to date
   - package-ecosystem: "docker"
-    directory: "/build/package/server"
+    directory: "/build/package/*"
     schedule:
       interval: "weekly"
       day: "monday"

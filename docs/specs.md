@@ -49,13 +49,13 @@ The system is designed as a **Producer-Consumer** architecture. It decouples the
     - Written in **Golang**.
     - Stateless HTTP Server.
     - Handles User Traffic (10k concurrent users).
-    - Reads from **Redis** (Cache) and **PostgreSQL** (Source of Truth).
+    - Reads from **Valkey** (Cache) and **PostgreSQL** (Source of Truth).
 2.  **Deframer Worker (Service)**:
     - Written in **Golang**.
     - Background processor.
     - Handles fetching upstream HTML, running AI algorithms, and updating the database.
     - Scales horizontally based on Queue Depth.
-3.  **Redis (Infrastructure)**:
+3.  **Valkey (Infrastructure)**:
     - **Hot Cache**: Stores the ready-to-serve XML strings.
     - **Message Queue**: Handles tasks (`IngestQueue`, `ProcessingQueue`).
 4.  **PostgreSQL (Infrastructure)**:
@@ -76,7 +76,7 @@ To serve valid RSS 2.0 documents instantly. It acts as the "Read Model" of the s
 GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
 ```
 **Behavior**:
-1.  **Cache Hit**: If Redis contains `feed:{hash}`, return XML immediately (< 50ms).
+1.  **Cache Hit**: If Valkey contains `feed:{hash}`, return XML immediately (< 50ms).
 2.  **Cache Miss (Unknown Feed)**:
     - Register feed in DB.
     - Push to `IngestQueue`.
@@ -84,7 +84,7 @@ GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
 3.  **Cache Miss (Known Feed / Reboot)**:
     - Query DB for existing items.
     - Perform **Hybrid Merge** (mix of processed and pending items).
-    - Update Redis and Serve.
+    - Update Valkey and Serve.
 
 #### B. The JSON Lookup (New Feature)
 ```bash
@@ -140,15 +140,15 @@ When new items arrive from the upstream RSS:
 ### Phase 2: Processing (The Upgrade)
 As the Worker processes the queue:
 1.  Item status changes from `PENDING` -> `COMPLETED`.
-2.  Redis Cache is updated.
+2.  Valkey Cache is updated.
 3.  **Result**: On the next refresh, the user sees the "New" items have transformed into "Deframed" items.
 
 ### Phase 3: Bootstrap (Cold Start)
-If the Docker container restarts and Redis is empty:
+If the Docker container restarts and Valkey is empty:
 1.  API checks DB.
 2.  DB returns the last 30 items.
 3.  API generates the XML from DB data.
-4.  Redis is repopulated.
+4.  Valkey is repopulated.
 5.  **Result**: Zero external network calls required to recover service.
 
 ---
@@ -193,7 +193,7 @@ This component is an abstraction layer over Large Language Models (LLMs). It han
 - `status`: Enum (`PENDING`, `COMPLETED`, `FAILED`)
 - `created_at`: Timestamp
 
-### Cache (Redis)
+### Cache (Valkey)
 
 - **Key**: `feed:{hash_of_feed_url}`
   - **Value**: String (Complete XML Document)
@@ -215,15 +215,15 @@ This component is an abstraction layer over Large Language Models (LLMs). It han
 - **Users (10k concurrent)**:
   - Handled by the **API Service**.
   - Scales on Memory/CPU usage.
-  - Since 99% of requests hit Redis, a single small instance can handle thousands of req/sec.
+  - Since 99% of requests hit Valkey, a single small instance can handle thousands of req/sec.
 - **New Networks/Feeds**:
   - Handled by the **Worker Service**.
   - Scales on `ProcessingQueue` length.
   - If AI API is slow, add more Worker Replicas.
 
 ### Deployment
-- **Local**: `docker-compose` spins up 1 API, 1 Worker, 1 Redis, 1 DB.
+- **Local**: `docker-compose` spins up 1 API, 1 Worker, 1 Valkey, 1 DB.
 - **Kubernetes**:
   - `Deployment` for API (behind LoadBalancer).
   - `Deployment` for Worker (autoscaled via KEDA or HPA).
-  - `StatefulSet` for Redis/DB (or Cloud Managed Services).
+  - `StatefulSet` for Valkey/DB (or Cloud Managed Services).
