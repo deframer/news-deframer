@@ -16,7 +16,7 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: deframer
+          POSTGRES_USER: deframerfailtest
           POSTGRES_PASSWORD: deframer
           POSTGRES_DB: deframer
         options: >-
