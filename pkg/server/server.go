@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net"
@@ -34,6 +35,9 @@ func New(ctx context.Context, cfg *config.Config) *Server {
 	mux.HandleFunc("GET /ping", s.handlePing)
 	mux.HandleFunc("/rss", s.handleRSS)
 
+	mux.HandleFunc("/site", s.handleSite)
+	mux.HandleFunc("/item", s.handleItem)
+
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
 		Handler: mux,
@@ -42,6 +46,14 @@ func New(ctx context.Context, cfg *config.Config) *Server {
 		},
 	}
 	return s
+}
+
+func (s *Server) Start() error {
+	return s.httpServer.ListenAndServe()
+}
+
+func (s *Server) Stop(ctx context.Context) error {
+	return s.httpServer.Shutdown(ctx)
 }
 
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
@@ -90,10 +102,42 @@ func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
 </rss>`, req.URL, req.Lang, req.MaxScore, req.Embedded)
 }
 
-func (s *Server) Start() error {
-	return s.httpServer.ListenAndServe()
+func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
+	// curl "http://localhost:8080/site?url=http%3A%2F%2Fexample.com"
+	q := r.URL.Query()
+	reqURL := q.Get("url")
+
+	if reqURL == "" {
+		http.Error(w, "missing url", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := url.ParseRequestURI(reqURL); err != nil {
+		s.logger.Debug("invalid url", "error", err)
+		http.Error(w, "invalid url", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"url": reqURL})
 }
 
-func (s *Server) Stop(ctx context.Context) error {
-	return s.httpServer.Shutdown(ctx)
+func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
+	// curl "http://localhost:8080/item?url=http%3A%2F%2Fexample.com%2Farticle"
+	q := r.URL.Query()
+	reqURL := q.Get("url")
+
+	if reqURL == "" {
+		http.Error(w, "missing url", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := url.ParseRequestURI(reqURL); err != nil {
+		s.logger.Debug("invalid url", "error", err)
+		http.Error(w, "invalid url", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"url": reqURL})
 }
