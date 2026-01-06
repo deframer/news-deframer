@@ -3,12 +3,14 @@ package database
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 type Repository interface {
@@ -22,7 +24,14 @@ type repository struct {
 
 // NewRepository initializes a new repository with a database connection from config.
 func NewRepository(cfg *config.Config) (Repository, error) {
-	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{})
+	lvl := logger.Error // maybe Silent is better
+	if cfg.LogDatabase {
+		lvl = logger.Info
+	}
+
+	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
+		Logger: newSlogGormLogger(slog.Default(), lvl),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}

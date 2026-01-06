@@ -13,7 +13,8 @@ type Config struct {
 	Port string `env:"PORT" envDefault:"8080"`
 
 	// Gorm DNS
-	DSN string `env:"DSN" envDefault:"host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"`
+	DSN         string `env:"DSN" envDefault:"host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"`
+	LogDatabase bool   `env:"LOG_DATABASE" envDefault:"false"`
 
 	// Valkey
 	ValkeyHost     string `env:"VALKEY_HOST" envDefault:"valkey:6379"`
