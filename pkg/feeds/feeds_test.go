@@ -76,6 +76,30 @@ func TestRenderFeed(t *testing.T) {
 	assert.Contains(t, xmlStr, "<content:encoded>Full Content</content:encoded>")
 }
 
+func TestGetValidItems(t *testing.T) {
+	ctx := context.Background()
+	cfg := &config.Config{}
+	f := NewFeeds(ctx, cfg)
+
+	feed := &gofeed.Feed{
+		Title: "Test Feed",
+		Items: []*gofeed.Item{
+			{Title: "Valid Item", Link: "http://example.com/1"},
+			{Title: "Invalid Item", Link: ""}, // Missing link -> error in ItemHashKey
+		},
+	}
+
+	processedFeed, pairs := f.GetValidItems(ctx, feed)
+
+	assert.NotNil(t, processedFeed)
+	assert.Equal(t, 1, len(processedFeed.Items))
+	assert.Equal(t, "Valid Item", processedFeed.Items[0].Title)
+
+	assert.Equal(t, 1, len(pairs))
+	assert.Equal(t, "Valid Item", pairs[0].Item.Title)
+	assert.NotEmpty(t, pairs[0].Key)
+}
+
 func TestItemHashKey(t *testing.T) {
 	now := time.Now()
 

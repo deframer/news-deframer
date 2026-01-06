@@ -17,12 +17,19 @@ import (
 type Feeds interface {
 	ParseFeed(ctx context.Context, content io.Reader) (*gofeed.Feed, error)
 	RenderFeed(ctx context.Context, feed *gofeed.Feed) (string, error)
+	GetValidItems(ctx context.Context, feed *gofeed.Feed) (*gofeed.Feed, []ItemKeyPair)
 }
 
 type feeds struct {
 	ctx    context.Context
 	cfg    *config.Config
 	logger *slog.Logger
+}
+
+// ItemKeyPair holds a feed item and its generated key
+type ItemKeyPair struct {
+	Key  string
+	Item *gofeed.Item
 }
 
 // NewFeeds initializes a new feeds service
@@ -71,6 +78,31 @@ func (f *feeds) RenderFeed(ctx context.Context, feed *gofeed.Feed) (string, erro
 	}
 
 	return xml.Header + string(output), nil
+}
+
+// GetValidItems iterates over the items, calculates the hash.
+// If there is an error calculating the hash, the item is removed from the feed.
+// It returns a new feed with valid items and a list of key/item pairs.
+func (f *feeds) GetValidItems(ctx context.Context, feed *gofeed.Feed) (*gofeed.Feed, []ItemKeyPair) {
+	if feed == nil {
+		return nil, nil
+	}
+
+	newFeed := *feed
+	newFeed.Items = make([]*gofeed.Item, 0, len(feed.Items))
+	var results []ItemKeyPair
+
+	for _, item := range feed.Items {
+		key, err := ItemHashKey(item)
+		if err != nil {
+			f.logger.DebugContext(ctx, "skipping item", "error", err, "item_title", item.Title)
+			continue
+		}
+		newFeed.Items = append(newFeed.Items, item)
+		results = append(results, ItemKeyPair{Key: key, Item: item})
+	}
+
+	return &newFeed, results
 }
 
 func (f *feeds) toRSS2Item(item *gofeed.Item) rss2Item {

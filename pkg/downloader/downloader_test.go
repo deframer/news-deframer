@@ -2,6 +2,7 @@ package downloader
 
 import (
 	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -26,9 +27,12 @@ func TestDownloadRSSFeed_HTTP(t *testing.T) {
 
 	u, err := url.Parse(server.URL)
 	assert.NoError(t, err)
-	content, err := d.DownloadRSSFeed(ctx, u)
+	rc, err := d.DownloadRSSFeed(ctx, u)
 	assert.NoError(t, err)
-	assert.Equal(t, "mock content", content)
+	defer func() { _ = rc.Close() }()
+	content, err := io.ReadAll(rc)
+	assert.NoError(t, err)
+	assert.Equal(t, "mock content", string(content))
 }
 
 func TestDownloadRSSFeed_File(t *testing.T) {
@@ -46,16 +50,22 @@ func TestDownloadRSSFeed_File(t *testing.T) {
 	// Test with file path (relative to root)
 	u1, err := url.Parse("test.xml")
 	assert.NoError(t, err)
-	content1, err := d.DownloadRSSFeed(ctx, u1)
+	rc1, err := d.DownloadRSSFeed(ctx, u1)
 	assert.NoError(t, err)
-	assert.Equal(t, "file content", content1)
+	defer func() { _ = rc1.Close() }()
+	content1, err := io.ReadAll(rc1)
+	assert.NoError(t, err)
+	assert.Equal(t, "file content", string(content1))
 
 	// Test with file:// prefix (path /test.xml relative to root)
 	u2, err := url.Parse("file:///test.xml")
 	assert.NoError(t, err)
-	content2, err := d.DownloadRSSFeed(ctx, u2)
+	rc2, err := d.DownloadRSSFeed(ctx, u2)
 	assert.NoError(t, err)
-	assert.Equal(t, "file content", content2)
+	defer func() { _ = rc2.Close() }()
+	content2, err := io.ReadAll(rc2)
+	assert.NoError(t, err)
+	assert.Equal(t, "file content", string(content2))
 }
 
 func TestDownloadRSSFeed_File_Disabled(t *testing.T) {
