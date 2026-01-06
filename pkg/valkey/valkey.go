@@ -1,4 +1,4 @@
-package cache
+package valkey
 
 import (
 	"context"
@@ -8,10 +8,10 @@ import (
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/google/uuid"
-	"github.com/valkey-io/valkey-go"
+	driver "github.com/valkey-io/valkey-go"
 )
 
-type Cache interface {
+type Valkey interface {
 	HasFeed(ctx context.Context, key uuid.UUID) (bool, error)
 	GetFeed(ctx context.Context, key uuid.UUID) (*uuid.UUID, error)
 	AddFeed(ctx context.Context, key uuid.UUID) error
@@ -19,23 +19,23 @@ type Cache interface {
 	Close() error
 }
 
-type cache struct {
-	client valkey.Client
+type valkey struct {
+	client driver.Client
 }
 
-func New(cfg *config.Config) (Cache, error) {
+func New(cfg *config.Config) (Valkey, error) {
 	db, err := strconv.Atoi(cfg.ValkeyDB)
 	if err != nil {
 		return nil, fmt.Errorf("invalid valkey db: %w", err)
 	}
 
-	opt := valkey.ClientOption{
+	opt := driver.ClientOption{
 		InitAddress: []string{cfg.ValkeyHost},
 		Password:    cfg.ValkeyPassword,
 		SelectDB:    db,
 	}
 
-	client, err := valkey.NewClient(opt)
+	client, err := driver.NewClient(opt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create valkey client: %w", err)
 	}
@@ -49,19 +49,19 @@ func New(cfg *config.Config) (Cache, error) {
 		return nil, fmt.Errorf("failed to connect to valkey: %w", err)
 	}
 
-	return &cache{client: client}, nil
+	return &valkey{client: client}, nil
 }
 
 const prefix = "feed:"
 
-func (c *cache) HasFeed(ctx context.Context, key uuid.UUID) (bool, error) {
-	n, err := c.client.Do(ctx, c.client.B().Exists().Key(prefix+key.String()).Build()).ToInt64()
+func (v *valkey) HasFeed(ctx context.Context, key uuid.UUID) (bool, error) {
+	n, err := v.client.Do(ctx, v.client.B().Exists().Key(prefix+key.String()).Build()).ToInt64()
 	return n > 0, err
 }
 
-func (c *cache) GetFeed(ctx context.Context, key uuid.UUID) (*uuid.UUID, error) {
-	_, err := c.client.Do(ctx, c.client.B().Get().Key(prefix+key.String()).Build()).ToString()
-	if valkey.IsValkeyNil(err) {
+func (v *valkey) GetFeed(ctx context.Context, key uuid.UUID) (*uuid.UUID, error) {
+	_, err := v.client.Do(ctx, v.client.B().Get().Key(prefix+key.String()).Build()).ToString()
+	if driver.IsValkeyNil(err) {
 		return nil, nil
 	}
 	if err != nil {
@@ -70,15 +70,15 @@ func (c *cache) GetFeed(ctx context.Context, key uuid.UUID) (*uuid.UUID, error) 
 	return &key, nil
 }
 
-func (c *cache) AddFeed(ctx context.Context, key uuid.UUID) error {
-	return c.client.Do(ctx, c.client.B().Set().Key(prefix+key.String()).Value(time.Now().Format(time.RFC3339)).Build()).Error()
+func (v *valkey) AddFeed(ctx context.Context, key uuid.UUID) error {
+	return v.client.Do(ctx, v.client.B().Set().Key(prefix+key.String()).Value(time.Now().Format(time.RFC3339)).Build()).Error()
 }
 
-func (c *cache) DeleteFeed(ctx context.Context, key uuid.UUID) error {
-	return c.client.Do(ctx, c.client.B().Del().Key(prefix+key.String()).Build()).Error()
+func (v *valkey) DeleteFeed(ctx context.Context, key uuid.UUID) error {
+	return v.client.Do(ctx, v.client.B().Del().Key(prefix+key.String()).Build()).Error()
 }
 
-func (c *cache) Close() error {
-	c.client.Close()
+func (v *valkey) Close() error {
+	v.client.Close()
 	return nil
 }
