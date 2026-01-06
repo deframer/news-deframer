@@ -13,7 +13,8 @@ import (
 
 type Valkey interface {
 	GetFeedUrl(u *url.URL) (*string, error)
-	AddFeedUrl(u *url.URL, value string, ttl time.Duration) error
+	UpdateFeedUrl(u *url.URL, value string, ttl time.Duration) error
+	TryLockFeedUrl(u *url.URL, value string, ttl time.Duration) (bool, error)
 	DeleteFeedUrl(u *url.URL) error
 	Close() error
 }
@@ -69,8 +70,21 @@ func (v *valkey) GetFeedUrl(u *url.URL) (*string, error) {
 	return &val, nil
 }
 
-func (v *valkey) AddFeedUrl(u *url.URL, value string, ttl time.Duration) error {
+func (v *valkey) UpdateFeedUrl(u *url.URL, value string, ttl time.Duration) error {
 	return v.client.Do(v.ctx, v.client.B().Set().Key(urlToValkeyKey(u)).Value(value).Ex(ttl).Build()).Error()
+}
+
+func (v *valkey) TryLockFeedUrl(u *url.URL, value string, ttl time.Duration) (bool, error) {
+	// TryLockFeedUrl uses Nx() (Set if Not Exists) to ensure atomic locking.
+	// It returns true if the lock was acquired (key didn't exist), false otherwise.
+	err := v.client.Do(v.ctx, v.client.B().Set().Key(urlToValkeyKey(u)).Value(value).Nx().Ex(ttl).Build()).Error()
+	if driver.IsValkeyNil(err) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (v *valkey) DeleteFeedUrl(u *url.URL) error {

@@ -36,7 +36,7 @@ func TestFeedUrlKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, foundVal)
 
-	err = c.AddFeedUrl(u, value, time.Minute)
+	err = c.UpdateFeedUrl(u, value, time.Minute)
 	assert.NoError(t, err)
 
 	foundVal, err = c.GetFeedUrl(u)

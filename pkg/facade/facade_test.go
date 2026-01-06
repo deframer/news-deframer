@@ -11,10 +11,11 @@ import (
 )
 
 type mockValkey struct {
-	getFeedUrl    func(u *url.URL) (*string, error)
-	addFeedUrl    func(u *url.URL, value string, ttl time.Duration) error
-	deleteFeedUrl func(u *url.URL) error
-	close         func() error
+	getFeedUrl     func(u *url.URL) (*string, error)
+	updateFeedUrl  func(u *url.URL, value string, ttl time.Duration) error
+	tryLockFeedUrl func(u *url.URL, value string, ttl time.Duration) (bool, error)
+	deleteFeedUrl  func(u *url.URL) error
+	close          func() error
 }
 
 func (m *mockValkey) GetFeedUrl(u *url.URL) (*string, error) {
@@ -24,11 +25,18 @@ func (m *mockValkey) GetFeedUrl(u *url.URL) (*string, error) {
 	return nil, nil
 }
 
-func (m *mockValkey) AddFeedUrl(u *url.URL, value string, ttl time.Duration) error {
-	if m.addFeedUrl != nil {
-		return m.addFeedUrl(u, value, ttl)
+func (m *mockValkey) UpdateFeedUrl(u *url.URL, value string, ttl time.Duration) error {
+	if m.updateFeedUrl != nil {
+		return m.updateFeedUrl(u, value, ttl)
 	}
 	return nil
+}
+
+func (m *mockValkey) TryLockFeedUrl(u *url.URL, value string, ttl time.Duration) (bool, error) {
+	if m.tryLockFeedUrl != nil {
+		return m.tryLockFeedUrl(u, value, ttl)
+	}
+	return true, nil
 }
 
 func (m *mockValkey) DeleteFeedUrl(u *url.URL) error {
