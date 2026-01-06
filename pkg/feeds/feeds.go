@@ -121,16 +121,16 @@ type rss2Item struct {
 type HashType int
 
 const (
-	// HashTypeStable generates a hash based only on the item's identity (GUID/Link/Title)
-	HashTypeStable HashType = iota
+	// HashTypeDefault generates a hash based only on the item's identity (GUID/Link/Title)
+	HashTypeDefault HashType = iota
 	// HashTypeVersioned generates a hash based on identity + content (Title + Description)
 	HashTypeVersioned
 )
 
 // ItemHashKey creates a deterministic ID based on the item's attributes.
-// By default, it uses HashTypeStable. You can pass a specific HashType as a second argument.
+// By default, it uses HashTypeDefault. You can pass a specific HashType as a second argument.
 func ItemHashKey(item *gofeed.Item, ht ...HashType) (string, error) {
-	mode := HashTypeStable
+	mode := HashTypeDefault
 	if len(ht) > 0 {
 		mode = ht[0]
 	}

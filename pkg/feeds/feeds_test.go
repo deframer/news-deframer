@@ -76,95 +76,131 @@ func TestRenderFeed(t *testing.T) {
 	assert.Contains(t, xmlStr, "<content:encoded>Full Content</content:encoded>")
 }
 
-func TestItemHashKey_Stable(t *testing.T) {
+func TestItemHashKey(t *testing.T) {
 	now := time.Now()
 
-	t.Run("Stability", func(t *testing.T) {
-		item := &gofeed.Item{
-			GUID:            "test-guid",
-			Title:           "Test Title",
-			Link:            "http://example.com",
-			PublishedParsed: &now,
-		}
-		id1, err := ItemHashKey(item) // Test default (Stable)
-		assert.NoError(t, err)
-		id2, err := ItemHashKey(item, HashTypeStable)
-		assert.NoError(t, err)
-		assert.Equal(t, id1, id2)
-	})
+	tests := []struct {
+		name      string
+		item1     *gofeed.Item
+		type1     HashType
+		item2     *gofeed.Item
+		type2     HashType
+		wantErr   bool
+		wantEqual bool
+	}{
+		{
+			name:      "Stability",
+			item1:     &gofeed.Item{GUID: "test-guid", Title: "Test Title", Link: "http://example.com", PublishedParsed: &now},
+			type1:     HashTypeDefault,
+			item2:     &gofeed.Item{GUID: "test-guid", Title: "Test Title", Link: "http://example.com", PublishedParsed: &now},
+			type2:     HashTypeDefault,
+			wantEqual: true,
+		},
+		{
+			name:      "Priority GUID",
+			item1:     &gofeed.Item{GUID: "id1", Link: "http://link1", Title: "Title1"},
+			type1:     HashTypeDefault,
+			item2:     &gofeed.Item{GUID: "id1", Link: "http://link2", Title: "Title2"},
+			type2:     HashTypeDefault,
+			wantEqual: true,
+		},
+		{
+			name:      "Priority Link",
+			item1:     &gofeed.Item{GUID: "", Link: "http://link1", Title: "Title1"},
+			type1:     HashTypeDefault,
+			item2:     &gofeed.Item{GUID: "", Link: "http://link1", Title: "Title2"},
+			type2:     HashTypeDefault,
+			wantEqual: true,
+		},
+		{
+			name:      "Whitespace Handling",
+			item1:     &gofeed.Item{GUID: " id1 ", Link: " http://link1 ", Title: "Title1"},
+			type1:     HashTypeDefault,
+			item2:     &gofeed.Item{GUID: "id1", Link: "http://link1", Title: "Title1"},
+			type2:     HashTypeDefault,
+			wantEqual: true,
+		},
+		{
+			name:  "Valid Item (Link only)",
+			item1: &gofeed.Item{Title: "Some Title", Link: "http://example.com"},
+			type1: HashTypeDefault,
+		},
+		{
+			name:    "Empty Seed Error",
+			item1:   &gofeed.Item{},
+			type1:   HashTypeDefault,
+			wantErr: true,
+		},
+		{
+			name:    "Empty Link Error",
+			item1:   &gofeed.Item{Title: "Title", GUID: "GUID"},
+			type1:   HashTypeDefault,
+			wantErr: true,
+		},
+		{
+			name:      "Content Change",
+			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
+			type1:     HashTypeVersioned,
+			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc B", Link: "http://example.com"},
+			type2:     HashTypeVersioned,
+			wantEqual: false,
+		},
+		{
+			name:      "Title Change",
+			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
+			type1:     HashTypeVersioned,
+			item2:     &gofeed.Item{GUID: "id1", Title: "Title B", Description: "Desc A", Link: "http://example.com"},
+			type2:     HashTypeVersioned,
+			wantEqual: false,
+		},
+		{
+			name:      "Same Content",
+			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
+			type1:     HashTypeVersioned,
+			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
+			type2:     HashTypeVersioned,
+			wantEqual: true,
+		},
+		{
+			name:      "Whitespace Content",
+			item1:     &gofeed.Item{GUID: "id1", Title: " Title A ", Description: " Desc A ", Link: "http://example.com"},
+			type1:     HashTypeVersioned,
+			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
+			type2:     HashTypeVersioned,
+			wantEqual: true,
+		},
+		{
+			name:      "Stable vs Versioned",
+			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
+			type1:     HashTypeDefault,
+			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
+			type2:     HashTypeVersioned,
+			wantEqual: false,
+		},
+	}
 
-	t.Run("Priority GUID", func(t *testing.T) {
-		item1 := &gofeed.Item{GUID: "id1", Link: "http://link1", Title: "Title1"}
-		item2 := &gofeed.Item{GUID: "id1", Link: "http://link2", Title: "Title2"}
-		// Should be same because GUID is same
-		id1, err := ItemHashKey(item1)
-		assert.NoError(t, err)
-		id2, err := ItemHashKey(item2)
-		assert.NoError(t, err)
-		assert.Equal(t, id1, id2)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			k1, err1 := ItemHashKey(tt.item1, tt.type1)
+			if tt.wantErr {
+				assert.Error(t, err1)
+				if err1 != nil {
+					assert.Contains(t, err1.Error(), "item link is empty")
+				}
+				return
+			}
+			assert.NoError(t, err1)
 
-	t.Run("Priority Link", func(t *testing.T) {
-		item1 := &gofeed.Item{GUID: "", Link: "http://link1", Title: "Title1"}
-		item2 := &gofeed.Item{GUID: "", Link: "http://link1", Title: "Title2"}
-		// Should be same because Link is same and GUID is empty
-		id1, err := ItemHashKey(item1)
-		assert.NoError(t, err)
-		id2, err := ItemHashKey(item2)
-		assert.NoError(t, err)
-		assert.Equal(t, id1, id2)
-	})
+			if tt.item2 != nil {
+				k2, err2 := ItemHashKey(tt.item2, tt.type2)
+				assert.NoError(t, err2)
 
-	t.Run("Fallback Date", func(t *testing.T) {
-		item := &gofeed.Item{Title: "Some Title", Link: "http://example.com"}
-		_, err := ItemHashKey(item)
-		assert.NoError(t, err)
-	})
-
-	t.Run("Empty Seed Error", func(t *testing.T) {
-		item := &gofeed.Item{}
-		_, err := ItemHashKey(item, HashTypeStable)
-		assert.Error(t, err)
-	})
-
-	t.Run("Empty Link Error", func(t *testing.T) {
-		item := &gofeed.Item{Title: "Title", GUID: "GUID"}
-		_, err := ItemHashKey(item)
-		assert.Error(t, err)
-	})
-}
-
-func TestItemHashKey_Versioned(t *testing.T) {
-	t.Run("Content Change", func(t *testing.T) {
-		item1 := &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"}
-		item2 := &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc B", Link: "http://example.com"}
-
-		k1, err := ItemHashKey(item1, HashTypeVersioned)
-		assert.NoError(t, err)
-		k2, err := ItemHashKey(item2, HashTypeVersioned)
-		assert.NoError(t, err)
-		assert.NotEqual(t, k1, k2)
-	})
-
-	t.Run("Title Change", func(t *testing.T) {
-		item1 := &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"}
-		item2 := &gofeed.Item{GUID: "id1", Title: "Title B", Description: "Desc A", Link: "http://example.com"}
-
-		k1, err := ItemHashKey(item1, HashTypeVersioned)
-		assert.NoError(t, err)
-		k2, err := ItemHashKey(item2, HashTypeVersioned)
-		assert.NoError(t, err)
-		assert.NotEqual(t, k1, k2)
-	})
-
-	t.Run("Same Content", func(t *testing.T) {
-		item1 := &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"}
-		item2 := &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"}
-
-		k1, err := ItemHashKey(item1, HashTypeVersioned)
-		assert.NoError(t, err)
-		k2, err := ItemHashKey(item2, HashTypeVersioned)
-		assert.NoError(t, err)
-		assert.Equal(t, k1, k2)
-	})
+				if tt.wantEqual {
+					assert.Equal(t, k1, k2)
+				} else {
+					assert.NotEqual(t, k1, k2)
+				}
+			}
+		})
+	}
 }
