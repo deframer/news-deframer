@@ -57,7 +57,7 @@ func (r *repository) GetTime() (time.Time, error) {
 
 func (r *repository) FindFeedByUrl(u *url.URL) (*Feed, error) {
 	var feed Feed
-	if err := r.db.Where("url = ?", u.String()).First(&feed).Error; err != nil {
+	if err := r.db.Where("url = ? AND enabled = ?", u.String(), true).First(&feed).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
