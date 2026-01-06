@@ -21,7 +21,11 @@ func main() {
 		fmt.Printf("Failed to connect to %s: %v\n", targetURL, err)
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			fmt.Printf("Error closing response body: %v\n", err)
+		}
+	}()
 
 	fmt.Printf("Success! Connected to %s. Status: %s\n", targetURL, resp.Status)
 	// sleep forever
