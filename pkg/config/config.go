@@ -20,7 +20,7 @@ type Config struct {
 	ValkeyPassword string `env:"VALKEY_PASSWORD" envDefault:"deframer"`
 	ValkeyDB       string `env:"VALKEY_DB" envDefault:"0"`
 
-	DebugLevel string `env:"DEBUG_LEVEL" envDefault:"debug"`
+	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
 }
 
 func Load() (*Config, error) {

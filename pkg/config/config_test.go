@@ -15,7 +15,7 @@ func TestLoad(t *testing.T) {
 		_ = os.Unsetenv("VALKEY_HOST")
 		_ = os.Unsetenv("VALKEY_PASSWORD")
 		_ = os.Unsetenv("VALKEY_DB")
-		_ = os.Unsetenv("DEBUG_LEVEL")
+		_ = os.Unsetenv("LOG_LEVEL")
 	}
 
 	t.Run("Defaults", func(t *testing.T) {
@@ -27,14 +27,14 @@ func TestLoad(t *testing.T) {
 
 		assert.NotEmpty(t, cfg.Port)
 		assert.NotEmpty(t, cfg.ValkeyHost)
-		assert.NotEmpty(t, cfg.DebugLevel)
+		assert.NotEmpty(t, cfg.LogLevel)
 		assert.NotEmpty(t, cfg.DSN)
 	})
 
 	t.Run("Environment Variables Override", func(t *testing.T) {
 		unsetEnv()
 		_ = os.Setenv("PORT", "9090")
-		_ = os.Setenv("DEBUG_LEVEL", "info")
+		_ = os.Setenv("LOG_LEVEL", "info")
 		_ = os.Setenv("VALKEY_HOST", "127.0.0.1:6379")
 
 		defer unsetEnv() // Cleanup
@@ -43,7 +43,7 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, "9090", cfg.Port)
-		assert.Equal(t, "info", cfg.DebugLevel)
+		assert.Equal(t, "info", cfg.LogLevel)
 		assert.Equal(t, "127.0.0.1:6379", cfg.ValkeyHost)
 	})
 }

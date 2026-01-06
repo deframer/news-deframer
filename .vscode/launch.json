@@ -20,7 +20,7 @@
       "type": "pickString",
       "description": "Select the application to launch",
       "options": [
-        "server",
+        "service",
         "worker",
         "migration"
       ],

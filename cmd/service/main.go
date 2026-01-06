@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -20,6 +21,13 @@ func main() {
 		slog.Error("Failed to load config", "error", err)
 		os.Exit(1)
 	}
+
+	var lvl slog.Level
+	if err := lvl.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
+		lvl = slog.LevelInfo
+	}
+	fmt.Printf("Log level: %v\n", lvl)
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
