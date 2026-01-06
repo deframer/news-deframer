@@ -5,14 +5,26 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch Package",
+      "name": "Launch Command",
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "preLaunchTask": "build",
       "cwd": "${workspaceFolder}",
-      "program": "${workspaceFolder}/cmd/service",
+      "program": "${workspaceFolder}/cmd/${input:appName}",
       "envFile": "${workspaceFolder}/.env"
+    }
+  ],
+  "inputs": [
+    {
+      "id": "appName",
+      "type": "pickString",
+      "description": "Select the application to launch",
+      "options": [
+        "server",
+        "worker",
+        "migration"
+      ],
+      "default": "server"
     }
   ]
 }
