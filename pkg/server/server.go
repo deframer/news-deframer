@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
@@ -37,7 +38,7 @@ func New(ctx context.Context, cfg *config.Config, f *facade.Facade) *Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /ping", s.handlePing)
-	mux.HandleFunc("/rss", s.handleRSS)
+	mux.HandleFunc("/rss", s.handleRSSProxy)
 
 	mux.HandleFunc("/site", s.handleSite)
 	mux.HandleFunc("/item", s.handleItem)
@@ -68,11 +69,11 @@ func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fdummy&lang=en&max_score=0.5&embedded=true"
 	q := r.URL.Query()
 	req := RSSRequest{
-		URL:  q.Get("url"),
+		URL:  strings.TrimSuffix(q.Get("url"), "/"),
 		Lang: q.Get("lang"),
 	}
 
@@ -127,7 +128,7 @@ func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	// curl "http://localhost:8080/site?url=http%3A%2F%2Fexample.com"
 	q := r.URL.Query()
-	reqURL := q.Get("url")
+	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
 	if reqURL == "" {
 		http.Error(w, "missing url", http.StatusBadRequest)
@@ -164,7 +165,8 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 	// curl "http://localhost:8080/item?url=http%3A%2F%2Fexample.com%2Farticle"
 	q := r.URL.Query()
-	reqURL := q.Get("url")
+	// TODO: ensure that we also trim / strip URLs in the database
+	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
 	if reqURL == "" {
 		http.Error(w, "missing url", http.StatusBadRequest)
