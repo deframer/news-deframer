@@ -14,7 +14,7 @@ ifneq ("$(wildcard .env)","")
 endif
 
 .PHONY: all test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build
-#start stop down clean
+#start stop down zap
 
 all: build
 
@@ -42,6 +42,17 @@ infra-env-down:
 infra-env-zap:
 	$(MAKE) -C infra-env zap
 
+zap: down start
+
+start:
+	docker compose up -d --build --force-recreate --no-deps
+
+stop:
+	docker compose stop
+
+down:
+	docker compose down --remove-orphans --volumes
+
 build: $(BINS)
 
 $(BUILD_DIR)/%: $(CMD_DIR)/%
@@ -50,6 +61,7 @@ $(BUILD_DIR)/%: $(CMD_DIR)/%
 
 clean:
 	rm -rf $(BUILD_DIR)
+	docker compose down --rmi local
 
 test:
 	go test ./...

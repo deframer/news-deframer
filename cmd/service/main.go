@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -28,5 +30,9 @@ func main() {
 	}()
 
 	fmt.Printf("Success! Connected to %s. Status: %s\n", targetURL, resp.Status)
-	select {}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
+	fmt.Println("Shutting down...")
 }
