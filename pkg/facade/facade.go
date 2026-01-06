@@ -45,12 +45,12 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 		return false, err
 	}
 
-	// 1. If we have a definitive result, return it.
+	// If we have a definitive result, return it. (= cache hit)
 	if val != nil && *val != statusPending {
 		return *val == statusValid, nil
 	}
 
-	// 2. If it was missing (nil), try to acquire the lock to be the one fetching it.
+	// If it was missing (nil), try to acquire the lock to be the one fetching it.
 	if val == nil {
 		acquired, err := f.valkey.TryLockFeedUrl(u, statusPending, maxPendingTimeout)
 		if err != nil {
@@ -66,7 +66,7 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 		return f.fetchAndCache(u)
 	}
 
-	// 3. It is pending (either from GetFeedUrl or failed SetNX). Wait for it.
+	// It is pending (either from GetFeedUrl or failed UpdateFeedUrl). Wait for it.
 WAIT_LOOP:
 	ticker := time.NewTicker(checkInterval)
 	defer ticker.Stop()
@@ -87,7 +87,7 @@ WAIT_LOOP:
 				return *val == statusValid, nil
 			}
 			// If val is nil here, it means the pending key expired or was deleted without result.
-			// In a robust system, we might try to acquire the lock again here.
+			// we don't care and wait for the next query
 		}
 	}
 }
