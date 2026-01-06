@@ -23,7 +23,7 @@ type Config struct {
 
 	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
 
-	LocalFileFeeds bool `env:"LOCAL_FILE_FEEDS" envDefault:"false"`
+	LocalFeedFilesDir string `env:"LOCAL_FEED_FILES_DIR" envDefault:""`
 }
 
 func Load() (*Config, error) {
@@ -42,6 +42,16 @@ func Load() (*Config, error) {
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
 		return nil, err
+	}
+
+	// If LocalFileRoot is set, verify it exists. If not, disable it.
+	if cfg.LocalFeedFilesDir != "" {
+		if _, err := os.Stat(cfg.LocalFeedFilesDir); os.IsNotExist(err) {
+			cfg.LocalFeedFilesDir = ""
+		} else if abs, err := filepath.Abs(cfg.LocalFeedFilesDir); err == nil {
+			// Store absolute path to ensure safe scoping later
+			cfg.LocalFeedFilesDir = abs
+		}
 	}
 
 	return cfg, nil

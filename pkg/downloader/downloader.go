@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
@@ -57,7 +58,7 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (string
 		if err != nil {
 			return "", fmt.Errorf("failed to fetch URL %q: %w", feed.String(), err)
 		}
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 
 		if resp.StatusCode != http.StatusOK {
 			return "", fmt.Errorf("HTTP request failed: %s", resp.Status)
@@ -69,16 +70,33 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (string
 		}
 		return string(data), nil
 
-	default:
-		if !d.cfg.LocalFileFeeds {
+	case "file", "":
+		if d.cfg.LocalFeedFilesDir == "" {
 			return "", fmt.Errorf("unsupported scheme %s", feed.Scheme)
 		}
-		// Local file handling (with or without file:// prefix)
-		path := feed.Path
-		data, err := os.ReadFile(path)
+
+		// Use os.OpenRoot to scope file access (Go >= 1.24)
+		root, err := os.OpenRoot(d.cfg.LocalFeedFilesDir)
 		if err != nil {
-			return "", fmt.Errorf("failed to read file %q: %w", path, err)
+			return "", fmt.Errorf("failed to open local feed root: %w", err)
+		}
+		defer func() { _ = root.Close() }()
+
+		// URL paths start with '/', strip it to make it relative to root
+		relPath := strings.TrimPrefix(feed.Path, "/")
+		f, err := root.Open(relPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to open file %q: %w", relPath, err)
+		}
+		defer func() { _ = f.Close() }()
+
+		data, err := io.ReadAll(f)
+		if err != nil {
+			return "", fmt.Errorf("failed to read file %q: %w", relPath, err)
 		}
 		return string(data), nil
+
+	default:
+		return "", fmt.Errorf("unsupported scheme %s", feed.Scheme)
 	}
 }

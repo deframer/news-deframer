@@ -17,7 +17,7 @@ func TestDownloadRSSFeed_HTTP(t *testing.T) {
 	// Setup mock server
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("mock content"))
+		_, _ = w.Write([]byte("mock content"))
 	}))
 	defer server.Close()
 
@@ -40,28 +40,28 @@ func TestDownloadRSSFeed_File(t *testing.T) {
 
 	ctx := context.Background()
 	d := NewDownloader(ctx, &config.Config{
-		LocalFileFeeds: true,
+		LocalFeedFilesDir: tmpDir,
 	})
 
-	// Test with file path
-	u1, err := url.Parse(tmpFile)
+	// Test with file path (relative to root)
+	u1, err := url.Parse("test.xml")
 	assert.NoError(t, err)
-	content, err := d.DownloadRSSFeed(ctx, u1)
+	content1, err := d.DownloadRSSFeed(ctx, u1)
 	assert.NoError(t, err)
-	assert.Equal(t, "file content", content)
+	assert.Equal(t, "file content", content1)
 
-	// Test with file:// prefix
-	u2, err := url.Parse("file://" + tmpFile)
+	// Test with file:// prefix (path /test.xml relative to root)
+	u2, err := url.Parse("file:///test.xml")
 	assert.NoError(t, err)
-	content, err = d.DownloadRSSFeed(ctx, u2)
+	content2, err := d.DownloadRSSFeed(ctx, u2)
 	assert.NoError(t, err)
-	assert.Equal(t, "file content", content)
+	assert.Equal(t, "file content", content2)
 }
 
 func TestDownloadRSSFeed_File_Disabled(t *testing.T) {
 	ctx := context.Background()
 	d := NewDownloader(ctx, &config.Config{
-		LocalFileFeeds: false,
+		LocalFeedFilesDir: "",
 	})
 
 	// Even if the file existed, it should fail due to config
