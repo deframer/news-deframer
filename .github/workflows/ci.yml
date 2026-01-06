@@ -69,8 +69,8 @@ jobs:
           CGO_ENABLED: 1
           GOFLAGS: "-buildvcs=false"
           DSN: "host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"
-          VALKEY_HOST: "valkey:6379"
-          VALKEY_PASSWORD: "invalid"
+          VALKEY_HOST: "xvalkey:6379"
+          VALKEY_PASSWORD: ""
           VALKEY_DB: "0"
 
   docker:
