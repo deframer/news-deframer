@@ -113,3 +113,25 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 func (f *Facade) HasArticle(ctx context.Context, u *url.URL) (bool, error) {
 	return false, nil
 }
+
+type RSSProxyFilter struct {
+	Lang     string
+	MaxScore float64
+	Embedded bool
+}
+
+func (f *Facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error) {
+	if filter == nil {
+		filter = &RSSProxyFilter{}
+	}
+
+	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0" xmlns:debug="http://news-deframer/debug">
+<channel>
+  <title>News Deframer</title>
+  <debug:lang>%s</debug:lang>
+  <debug:max_score>%f</debug:max_score>
+  <debug:embedded>%t</debug:embedded>
+</channel>
+</rss>`, filter.Lang, filter.MaxScore, filter.Embedded), nil
+}

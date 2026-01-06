@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -107,20 +106,21 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 		req.Embedded = v
 	}
 
-	// The requirement is to "accept and return xml only".
-	// We enforce the response Content-Type to XML.
+	filter := facade.RSSProxyFilter{
+		Lang:     req.Lang,
+		MaxScore: req.MaxScore,
+		Embedded: req.Embedded,
+	}
+
+	xmlData, err := s.facade.GetRssProxyFeed(r.Context(), &filter)
+	if err != nil {
+		s.logger.Error("failed to get rss proxy feed", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/xml")
-	if _, err := fmt.Fprintf(w, `<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:debug="http://news-deframer/debug">
-<channel>
-  <title>News Deframer</title>
-  <debug:source_url>%s</debug:source_url>
-  <debug:lang>%s</debug:lang>
-  <debug:max_score>%f</debug:max_score>
-  <debug:embedded>%t</debug:embedded>
-  <debug:has_feed>%t</debug:has_feed>
-</channel>
-</rss>`, req.URL, req.Lang, req.MaxScore, req.Embedded, hasFeed); err != nil {
+	if _, err := w.Write([]byte(xmlData)); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }

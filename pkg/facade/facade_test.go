@@ -209,3 +209,20 @@ func TestHasFeed(t *testing.T) {
 // 	assert.NoError(t, err)
 // 	assert.False(t, exists)
 // }
+
+func TestGetRssProxyFeed(t *testing.T) {
+	ctx := context.Background()
+	f := New(ctx, nil, &mockValkey{}, &mockRepo{})
+
+	filter := RSSProxyFilter{
+		Lang:     "en",
+		MaxScore: 0.75,
+		Embedded: true,
+	}
+
+	xmlData, err := f.GetRssProxyFeed(ctx, &filter)
+	assert.NoError(t, err)
+	assert.Contains(t, xmlData, "<debug:lang>en</debug:lang>")
+	assert.Contains(t, xmlData, "<debug:max_score>0.750000</debug:max_score>")
+	assert.Contains(t, xmlData, "<debug:embedded>true</debug:embedded>")
+}
