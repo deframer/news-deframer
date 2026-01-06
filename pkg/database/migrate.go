@@ -45,6 +45,7 @@ func seed(db *gorm.DB) error {
 		{URL: "http://rssbridge/?action=display&bridge=TheVerge&format=Atom", Enabled: true},
 		{URL: "http://dummy", Enabled: true},
 		{URL: "http://wordpress/feed", Enabled: true},
+		{URL: "http://localhost:8003/feed", Enabled: true},
 	}
 
 	return db.Create(&feeds).Error

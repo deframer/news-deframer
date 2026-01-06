@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/mmcdole/gofeed"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,4 +45,32 @@ func TestParseFeed_Invalid(t *testing.T) {
 
 	_, err := f.ParseFeed(ctx, strings.NewReader("invalid xml"))
 	assert.Error(t, err)
+}
+
+func TestRenderFeed(t *testing.T) {
+	ctx := context.Background()
+	cfg := &config.Config{}
+	f := NewFeeds(ctx, cfg)
+
+	feed := &gofeed.Feed{
+		Title:       "Test Feed",
+		Link:        "http://example.com",
+		Description: "Test Description",
+		Items: []*gofeed.Item{
+			{
+				Title:       "Test Item",
+				Link:        "http://example.com/item",
+				Description: "Test Item Description",
+				Content:     "Full Content",
+				Published:   "Mon, 02 Jan 2006 15:04:05 MST",
+				GUID:        "12345",
+			},
+		},
+	}
+
+	xmlStr, err := f.RenderFeed(ctx, feed)
+	assert.NoError(t, err)
+	assert.Contains(t, xmlStr, "<rss version=\"2.0\"")
+	assert.Contains(t, xmlStr, "<title>Test Feed</title>")
+	assert.Contains(t, xmlStr, "<content:encoded>Full Content</content:encoded>")
 }
