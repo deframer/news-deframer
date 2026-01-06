@@ -1,7 +1,8 @@
 package config
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
@@ -22,15 +23,23 @@ type Config struct {
 	DebugLevel string `env:"DEBUG_LEVEL" envDefault:"debug"`
 }
 
-func Load() *Config {
-	// 1. Load .env file (if exists)
-	// We ignore the error because in production we might rely solely on real Env Vars
-	_ = godotenv.Load()
+func Load() (*Config, error) {
+	// Load .env file (if exists)
+	// We ignore the error because in production we rely solely on real Env Vars
+	if _, err := os.Stat("/.dockerenv"); os.IsNotExist(err) {
+		if root := os.Getenv("PROJECT_ROOT"); root != "" {
+			// running in visual studio code test
+			_ = godotenv.Load(filepath.Join(root, ".env"))
+		} else {
+			// running non docker / cli
+			_ = godotenv.Load()
+		}
+	}
 
 	cfg := &Config{}
 	if err := env.Parse(cfg); err != nil {
-		fmt.Printf("Config parse error: %v\n", err)
+		return nil, err
 	}
 
-	return cfg
+	return cfg, nil
 }

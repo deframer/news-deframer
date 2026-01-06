@@ -20,7 +20,10 @@ func TestLoad(t *testing.T) {
 		unsetEnv()
 		// We assume no .env file is present in pkg/config/ during test execution
 		// or that godotenv doesn't find one in the test CWD.
-		cfg := Load()
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("unexpected error loading config: %v", err)
+		}
 
 		if cfg.Port != "8080" {
 			t.Errorf("expected default Port '8080', got '%s'", cfg.Port)
@@ -41,7 +44,10 @@ func TestLoad(t *testing.T) {
 
 		defer unsetEnv() // Cleanup
 
-		cfg := Load()
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("unexpected error loading config: %v", err)
+		}
 
 		if cfg.Port != "9090" {
 			t.Errorf("expected Port '9090', got '%s'", cfg.Port)
