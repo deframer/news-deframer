@@ -12,6 +12,27 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container: debian:trixie
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: deframer
+          POSTGRES_PASSWORD: deframer
+          POSTGRES_DB: deframer
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      valkey:
+        image: bitnami/valkey:latest
+        env:
+          VALKEY_PASSWORD: deframer
+        options: >-
+          --health-cmd "valkey-cli -a deframer ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Install System Dependencies
         run: |
@@ -49,6 +70,10 @@ jobs:
         env:
           CGO_ENABLED: 1
           GOFLAGS: "-buildvcs=false"
+          DSN: "host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"
+          VALKEY_HOST: "valkey:6379"
+          VALKEY_PASSWORD: "deframer"
+          VALKEY_DB: "0"
 
   docker:
     needs: test
