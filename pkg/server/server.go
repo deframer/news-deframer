@@ -69,7 +69,7 @@ func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
-	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fexample.com%2Ffeed.xml&lang=en&max_score=0.5&embedded=true"
+	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fdummy&lang=en&max_score=0.5&embedded=true"
 	q := r.URL.Query()
 	req := RSSRequest{
 		URL:  q.Get("url"),

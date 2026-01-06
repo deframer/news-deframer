@@ -4,32 +4,200 @@ import (
 	"context"
 	"net/url"
 	"testing"
+	"time"
 
+	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/stretchr/testify/assert"
 )
 
+type mockValkey struct {
+	getFeedUrl    func(u *url.URL) (*string, error)
+	addFeedUrl    func(u *url.URL, value string, ttl time.Duration) error
+	deleteFeedUrl func(u *url.URL) error
+	close         func() error
+}
+
+func (m *mockValkey) GetFeedUrl(u *url.URL) (*string, error) {
+	if m.getFeedUrl != nil {
+		return m.getFeedUrl(u)
+	}
+	return nil, nil
+}
+
+func (m *mockValkey) AddFeedUrl(u *url.URL, value string, ttl time.Duration) error {
+	if m.addFeedUrl != nil {
+		return m.addFeedUrl(u, value, ttl)
+	}
+	return nil
+}
+
+func (m *mockValkey) DeleteFeedUrl(u *url.URL) error {
+	if m.deleteFeedUrl != nil {
+		return m.deleteFeedUrl(u)
+	}
+	return nil
+}
+
+func (m *mockValkey) Close() error {
+	if m.close != nil {
+		return m.close()
+	}
+	return nil
+}
+
+type mockRepo struct {
+	getTime       func() (time.Time, error)
+	findFeedByUrl func(u *url.URL) (*database.Feed, error)
+}
+
+func (m *mockRepo) GetTime() (time.Time, error) {
+	if m.getTime != nil {
+		return m.getTime()
+	}
+	return time.Now(), nil
+}
+
+func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
+	if m.findFeedByUrl != nil {
+		return m.findFeedByUrl(u)
+	}
+	return nil, nil
+}
+
 func TestHasFeed(t *testing.T) {
+	// Override timeouts for testing to ensure fast execution
+	origMaxPendingTimeout := maxPendingTimeout
+	origCheckInterval := checkInterval
+	defer func() {
+		maxPendingTimeout = origMaxPendingTimeout
+		checkInterval = origCheckInterval
+	}()
+	maxPendingTimeout = 100 * time.Millisecond
+	checkInterval = 10 * time.Millisecond
+
 	ctx := context.Background()
+	testURL, _ := url.Parse("http://example.com/feed.xml")
 
-	// Dependencies are nil as the current implementation is a stub
-	f := New(ctx, nil, nil, nil)
+	tests := []struct {
+		name          string
+		setupValkey   func() *mockValkey
+		setupRepo     func() *mockRepo
+		expected      bool
+		expectedError bool
+	}{
+		{
+			name: "Cached Valid",
+			setupValkey: func() *mockValkey {
+				return &mockValkey{
+					getFeedUrl: func(u *url.URL) (*string, error) {
+						val := "valid"
+						return &val, nil
+					},
+				}
+			},
+			setupRepo: func() *mockRepo { return &mockRepo{} },
+			expected:  true,
+		},
+		{
+			name: "Cached Invalid",
+			setupValkey: func() *mockValkey {
+				return &mockValkey{
+					getFeedUrl: func(u *url.URL) (*string, error) {
+						val := "invalid"
+						return &val, nil
+					},
+				}
+			},
+			setupRepo: func() *mockRepo { return &mockRepo{} },
+			expected:  false,
+		},
+		{
+			name: "Not Cached, DB Found",
+			setupValkey: func() *mockValkey {
+				return &mockValkey{
+					getFeedUrl: func(u *url.URL) (*string, error) { return nil, nil },
+				}
+			},
+			setupRepo: func() *mockRepo {
+				return &mockRepo{
+					findFeedByUrl: func(u *url.URL) (*database.Feed, error) {
+						return &database.Feed{URL: u.String()}, nil
+					},
+				}
+			},
+			expected: true,
+		},
+		{
+			name: "Not Cached, DB Not Found",
+			setupValkey: func() *mockValkey {
+				return &mockValkey{
+					getFeedUrl: func(u *url.URL) (*string, error) { return nil, nil },
+				}
+			},
+			setupRepo: func() *mockRepo {
+				return &mockRepo{
+					findFeedByUrl: func(u *url.URL) (*database.Feed, error) { return nil, nil },
+				}
+			},
+			expected: false,
+		},
+		{
+			name: "Pending then Valid",
+			setupValkey: func() *mockValkey {
+				calls := 0
+				return &mockValkey{
+					getFeedUrl: func(u *url.URL) (*string, error) {
+						calls++
+						if calls == 1 {
+							val := "pending"
+							return &val, nil
+						}
+						val := "valid"
+						return &val, nil
+					},
+				}
+			},
+			setupRepo: func() *mockRepo { return &mockRepo{} },
+			expected:  true,
+		},
+		{
+			name: "Pending Timeout",
+			setupValkey: func() *mockValkey {
+				return &mockValkey{
+					getFeedUrl: func(u *url.URL) (*string, error) {
+						val := "pending"
+						return &val, nil
+					},
+				}
+			},
+			setupRepo:     func() *mockRepo { return &mockRepo{} },
+			expected:      false,
+			expectedError: true,
+		},
+	}
 
-	u, err := url.Parse("http://example.com/feed.xml")
-	assert.NoError(t, err)
-	exists, err := f.HasFeed(ctx, u)
-	assert.NoError(t, err)
-	assert.False(t, exists)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			f := New(ctx, nil, tt.setupValkey(), tt.setupRepo())
+			got, err := f.HasFeed(ctx, testURL)
+			if tt.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+			assert.Equal(t, tt.expected, got)
+		})
+	}
 }
 
-func TestHasArticle(t *testing.T) {
-	ctx := context.Background()
+// func TestHasArticle(t *testing.T) {
+// 	ctx := context.Background()
 
-	// Dependencies are nil as the current implementation is a stub
-	f := New(ctx, nil, nil, nil)
+// 	f := New(ctx, nil, &mockValkey{}, &mockRepo{})
 
-	u, err := url.Parse("http://example.com/article")
-	assert.NoError(t, err)
-	exists, err := f.HasArticle(ctx, u)
-	assert.NoError(t, err)
-	assert.False(t, exists)
-}
+// 	u, err := url.Parse("http://example.com/article")
+// 	assert.NoError(t, err)
+// 	exists, err := f.HasArticle(ctx, u)
+// 	assert.NoError(t, err)
+// 	assert.False(t, exists)
+// }

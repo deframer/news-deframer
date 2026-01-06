@@ -43,6 +43,7 @@ func seed(db *gorm.DB) error {
 	slog.Info("Seeding dummy feeds...")
 	feeds := []Feed{
 		{URL: "http://rssbridge/?action=display&bridge=TheVerge&format=Atom", Enabled: true},
+		{URL: "http://dummy", Enabled: true},
 		{URL: "http://wordpress/feed", Enabled: true},
 	}
 

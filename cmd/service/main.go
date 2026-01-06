@@ -15,6 +15,7 @@ import (
 	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/egandro/news-deframer/pkg/facade"
 	"github.com/egandro/news-deframer/pkg/server"
+	"github.com/egandro/news-deframer/pkg/valkey"
 )
 
 func main() {
@@ -40,7 +41,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	f := facade.New(ctx, cfg, nil, repo)
+	valkeyClient, err := valkey.New(ctx, cfg)
+	if err != nil {
+		slog.Error("Failed to connect to valkey", "error", err)
+		os.Exit(1)
+	}
+	defer valkeyClient.Close()
+
+	f := facade.New(ctx, cfg, valkeyClient, repo)
 
 	srv := server.New(ctx, cfg, f)
 

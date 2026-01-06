@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/stretchr/testify/assert"
@@ -35,7 +36,7 @@ func TestFeedUrlKeys(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, foundVal)
 
-	err = c.AddFeedUrl(u, value)
+	err = c.AddFeedUrl(u, value, time.Minute)
 	assert.NoError(t, err)
 
 	foundVal, err = c.GetFeedUrl(u)

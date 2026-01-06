@@ -13,7 +13,7 @@ import (
 
 type Valkey interface {
 	GetFeedUrl(u *url.URL) (*string, error)
-	AddFeedUrl(u *url.URL, value string) error
+	AddFeedUrl(u *url.URL, value string, ttl time.Duration) error
 	DeleteFeedUrl(u *url.URL) error
 	Close() error
 }
@@ -65,8 +65,8 @@ func (v *valkey) GetFeedUrl(u *url.URL) (*string, error) {
 	return &val, nil
 }
 
-func (v *valkey) AddFeedUrl(u *url.URL, value string) error {
-	return v.client.Do(v.ctx, v.client.B().Set().Key(prefix+u.String()).Value(value).Build()).Error()
+func (v *valkey) AddFeedUrl(u *url.URL, value string, ttl time.Duration) error {
+	return v.client.Do(v.ctx, v.client.B().Set().Key(prefix+u.String()).Value(value).Ex(ttl).Build()).Error()
 }
 
 func (v *valkey) DeleteFeedUrl(u *url.URL) error {

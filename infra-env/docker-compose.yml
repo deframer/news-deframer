@@ -36,6 +36,16 @@ services:
       timeout: 5s
       retries: 5
 
+  ready-check:
+    image: alpine:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    command: |
+      sh -c "'echo SUCCESS: infra-env initialized'"
+
 networks:
   infra-env-net:
     name: deframer-infra-env-net

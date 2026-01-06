@@ -1,7 +1,9 @@
 package database
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
@@ -11,6 +13,7 @@ import (
 
 type Repository interface {
 	GetTime() (time.Time, error)
+	FindFeedByUrl(u *url.URL) (*Feed, error)
 }
 
 type repository struct {
@@ -24,9 +27,9 @@ func NewRepository(cfg *config.Config) (Repository, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	// if err := Migrate(db); err != nil {
-	// 	return nil, fmt.Errorf("failed to migrate database: %w", err)
-	// }
+	if err := Migrate(db); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	}
 
 	return &repository{db: db}, nil
 }
@@ -41,4 +44,15 @@ func (r *repository) GetTime() (time.Time, error) {
 	// Simple query to get DB time
 	result := r.db.Raw("SELECT NOW()").Scan(&t)
 	return t, result.Error
+}
+
+func (r *repository) FindFeedByUrl(u *url.URL) (*Feed, error) {
+	var feed Feed
+	if err := r.db.Where("url = ?", u.String()).First(&feed).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &feed, nil
 }
