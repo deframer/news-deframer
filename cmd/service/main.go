@@ -1,38 +1,52 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"errors"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/egandro/news-deframer/pkg/server"
 )
 
 func main() {
-	// Get the target URL from environment variable, default to internal docker name
-	targetURL := os.Getenv("TARGET_URL")
-	if targetURL == "" {
-		fmt.Println("TARGET_URL is not set, defaulting to http://wordpress")
-		targetURL = "http://wordpress"
-	}
-
-	fmt.Printf("Checking connection to: %s\n", targetURL)
-
-	resp, err := http.Get(targetURL) // #nosec G107
+	cfg, err := config.Load()
 	if err != nil {
-		fmt.Printf("Failed to connect to %s: %v\n", targetURL, err)
+		slog.Error("Failed to load config", "error", err)
 		os.Exit(1)
 	}
-	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			fmt.Printf("Error closing response body: %v\n", err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	srv := server.New(ctx, cfg)
+
+	go func() {
+		slog.Info("Starting server", "port", cfg.Port)
+		if err := srv.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			slog.Error("Server failed", "error", err)
+			os.Exit(1)
 		}
 	}()
 
-	fmt.Printf("Success! Connected to %s. Status: %s\n", targetURL, resp.Status)
-
+	// Wait for interrupt signal
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
-	fmt.Println("Shutting down...")
+
+	slog.Info("Shutting down...")
+
+	// Shutdown with timeout
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+
+	if err := srv.Stop(shutdownCtx); err != nil {
+		slog.Error("Server shutdown failed", "error", err)
+	}
+	slog.Info("Server stopped")
 }
