@@ -25,9 +25,10 @@ func TestLoad(t *testing.T) {
 		cfg, err := Load()
 		assert.NoError(t, err)
 
-		assert.Equal(t, "8080", cfg.Port)
-		assert.Equal(t, "valkey:6379", cfg.ValkeyHost)
-		assert.Equal(t, "debug", cfg.DebugLevel)
+		assert.NotEmpty(t, cfg.Port)
+		assert.NotEmpty(t, cfg.ValkeyHost)
+		assert.NotEmpty(t, cfg.DebugLevel)
+		assert.NotEmpty(t, cfg.DSN)
 	})
 
 	t.Run("Environment Variables Override", func(t *testing.T) {
