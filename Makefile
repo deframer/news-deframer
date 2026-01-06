@@ -64,6 +64,7 @@ clean:
 	docker compose down --rmi local
 
 test:
+	go clean -testcache
 	go test ./...
 
 coverage:

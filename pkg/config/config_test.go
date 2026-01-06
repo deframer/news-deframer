@@ -3,6 +3,8 @@ package config
 import (
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLoad(t *testing.T) {
@@ -21,19 +23,11 @@ func TestLoad(t *testing.T) {
 		// We assume no .env file is present in pkg/config/ during test execution
 		// or that godotenv doesn't find one in the test CWD.
 		cfg, err := Load()
-		if err != nil {
-			t.Fatalf("unexpected error loading config: %v", err)
-		}
+		assert.NoError(t, err)
 
-		if cfg.Port != "8080" {
-			t.Errorf("expected default Port '8080', got '%s'", cfg.Port)
-		}
-		if cfg.ValkeyHost != "valkey:6379" {
-			t.Errorf("expected default ValkeyHost 'valkey:6379', got '%s'", cfg.ValkeyHost)
-		}
-		if cfg.DebugLevel != "debug" {
-			t.Errorf("expected default DebugLevel 'debug', got '%s'", cfg.DebugLevel)
-		}
+		assert.Equal(t, "8080", cfg.Port)
+		assert.Equal(t, "valkey:6379", cfg.ValkeyHost)
+		assert.Equal(t, "debug", cfg.DebugLevel)
 	})
 
 	t.Run("Environment Variables Override", func(t *testing.T) {
@@ -45,18 +39,10 @@ func TestLoad(t *testing.T) {
 		defer unsetEnv() // Cleanup
 
 		cfg, err := Load()
-		if err != nil {
-			t.Fatalf("unexpected error loading config: %v", err)
-		}
+		assert.NoError(t, err)
 
-		if cfg.Port != "9090" {
-			t.Errorf("expected Port '9090', got '%s'", cfg.Port)
-		}
-		if cfg.DebugLevel != "info" {
-			t.Errorf("expected DebugLevel 'info', got '%s'", cfg.DebugLevel)
-		}
-		if cfg.ValkeyHost != "127.0.0.1:6379" {
-			t.Errorf("expected ValkeyHost '127.0.0.1:6379', got '%s'", cfg.ValkeyHost)
-		}
+		assert.Equal(t, "9090", cfg.Port)
+		assert.Equal(t, "info", cfg.DebugLevel)
+		assert.Equal(t, "127.0.0.1:6379", cfg.ValkeyHost)
 	})
 }
