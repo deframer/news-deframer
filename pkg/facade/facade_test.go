@@ -2,13 +2,26 @@ package facade
 
 import (
 	"context"
+	"io"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/stretchr/testify/assert"
 )
+
+type mockDownloader struct {
+	downloadRSSFeed func(ctx context.Context, feed *url.URL) (io.ReadCloser, error)
+}
+
+func (m *mockDownloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.ReadCloser, error) {
+	if m.downloadRSSFeed != nil {
+		return m.downloadRSSFeed(ctx, feed)
+	}
+	return nil, nil
+}
 
 type mockValkey struct {
 	getFeedUrl     func(u *url.URL) (*string, error)
@@ -186,7 +199,7 @@ func TestHasFeed(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			f := New(ctx, nil, tt.setupValkey(), tt.setupRepo())
+			f := New(ctx, nil, tt.setupValkey(), tt.setupRepo(), &mockDownloader{})
 			got, err := f.HasFeed(ctx, testURL)
 			if tt.expectedError {
 				assert.Error(t, err)
@@ -212,9 +225,21 @@ func TestHasFeed(t *testing.T) {
 
 func TestGetRssProxyFeed(t *testing.T) {
 	ctx := context.Background()
-	f := New(ctx, nil, &mockValkey{}, &mockRepo{})
+	rssContent := `
+	<rss version="2.0">
+		<channel>
+			<title>Test Feed</title>
+		</channel>
+	</rss>`
+	mockDL := &mockDownloader{
+		downloadRSSFeed: func(ctx context.Context, feed *url.URL) (io.ReadCloser, error) {
+			return io.NopCloser(strings.NewReader(rssContent)), nil
+		},
+	}
+	f := New(ctx, nil, &mockValkey{}, &mockRepo{}, mockDL)
 
 	filter := RSSProxyFilter{
+		URL:      "http://example.com",
 		Lang:     "en",
 		MaxScore: 0.75,
 		Embedded: true,
@@ -222,7 +247,5 @@ func TestGetRssProxyFeed(t *testing.T) {
 
 	xmlData, err := f.GetRssProxyFeed(ctx, &filter)
 	assert.NoError(t, err)
-	assert.Contains(t, xmlData, "<debug:lang>en</debug:lang>")
-	assert.Contains(t, xmlData, "<debug:max_score>0.750000</debug:max_score>")
-	assert.Contains(t, xmlData, "<debug:embedded>true</debug:embedded>")
+	assert.Contains(t, xmlData, "<title>Proxied: Test Feed</title>")
 }

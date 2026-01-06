@@ -3,27 +3,43 @@ package facade
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/egandro/news-deframer/pkg/downloader"
+	"github.com/egandro/news-deframer/pkg/feeds"
 	"github.com/egandro/news-deframer/pkg/valkey"
 )
 
 type Facade struct {
 	ctx    context.Context
 	cfg    *config.Config
+	logger *slog.Logger
 	valkey valkey.Valkey
 	repo   database.Repository
+	dl     downloader.Downloader
+	feeds  feeds.Feeds
 }
 
-func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database.Repository) *Facade {
+func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database.Repository, dl ...downloader.Downloader) *Facade {
+	var d downloader.Downloader
+	if len(dl) > 0 {
+		d = dl[0]
+	} else {
+		d = downloader.NewDownloader(ctx, cfg)
+	}
+
 	return &Facade{
 		ctx:    ctx,
 		cfg:    cfg,
+		logger: slog.With("component", "facade"),
 		valkey: v,
 		repo:   repo,
+		dl:     d,
+		feeds:  feeds.NewFeeds(ctx, cfg),
 	}
 }
 
@@ -115,6 +131,7 @@ func (f *Facade) HasArticle(ctx context.Context, u *url.URL) (bool, error) {
 }
 
 type RSSProxyFilter struct {
+	URL      string
 	Lang     string
 	MaxScore float64
 	Embedded bool
@@ -125,13 +142,25 @@ func (f *Facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 		filter = &RSSProxyFilter{}
 	}
 
-	return fmt.Sprintf(`<?xml version="1.0" encoding="UTF-8" ?>
-<rss version="2.0" xmlns:debug="http://news-deframer/debug">
-<channel>
-  <title>News Deframer</title>
-  <debug:lang>%s</debug:lang>
-  <debug:max_score>%f</debug:max_score>
-  <debug:embedded>%t</debug:embedded>
-</channel>
-</rss>`, filter.Lang, filter.MaxScore, filter.Embedded), nil
+	u, err := url.Parse(filter.URL)
+	if err != nil {
+		return "", fmt.Errorf("invalid url: %w", err)
+	}
+
+	f.logger.DebugContext(ctx, "downloading feed", "url", filter.URL)
+
+	rc, err := f.dl.DownloadRSSFeed(ctx, u)
+	if err != nil {
+		return "", err
+	}
+	defer func() { _ = rc.Close() }()
+
+	feed, err := f.feeds.ParseFeed(ctx, rc)
+	if err != nil {
+		return "", err
+	}
+
+	feed.Title = "Proxied: " + feed.Title
+
+	return f.feeds.RenderFeed(ctx, feed)
 }
