@@ -16,3 +16,15 @@ down:
 
 clean: down
 	docker compose down --rmi local
+
+postgres-bash:
+	docker compose exec postgres bash
+
+postgres-logs:
+	docker compose logs -f postgres
+
+psql:
+	docker compose exec -it postgres psql -U $(DB) -d $(DB)
+
+psql-deframer:
+	DB=deframer $(MAKE) psql
