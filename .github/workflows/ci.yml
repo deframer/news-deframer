@@ -3,6 +3,7 @@ name: CI/CD
 on:
   push:
     branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
     branches: [ "main" ]
 
@@ -28,6 +29,8 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
+        env:
+          GOFLAGS: "-buildvcs=false"
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
@@ -45,6 +48,7 @@ jobs:
           go tool cover -func=coverage.out
         env:
           CGO_ENABLED: 1
+          GOFLAGS: "-buildvcs=false"
 
   docker:
     needs: test
