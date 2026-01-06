@@ -31,7 +31,7 @@ services:
       - "8003:80"
     restart: unless-stopped
     networks:
-      - test-env-network
+      - test-env-net
       - db-network
     environment:
       WORDPRESS_DB_HOST: db
@@ -55,7 +55,7 @@ services:
         condition: service_healthy
     image: wordpress:cli
     networks:
-      - test-env-network
+      - test-env-net
       - db-network
     volumes:
       - wp_data:/var/www/html
@@ -77,7 +77,7 @@ services:
     build:
       context: ./setup-theme
     networks:
-      - test-env-network
+      - test-env-net
     depends_on:
       db:
         condition: service_healthy
@@ -110,6 +110,6 @@ volumes:
 
 networks:
   db-network:
-  test-env-network:
+  test-env-net:
     external: true
     name: deframer-test-env-net

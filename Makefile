@@ -13,7 +13,7 @@ ifneq ("$(wildcard .env)","")
   export $(shell sed 's/=.*//' .env)
 endif
 
-.PHONY: all test-env-start test-env-stop test-env-zap zap build clean test help docker-all docker-build
+.PHONY: all test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build
 #start stop down clean
 
 all: build
@@ -29,6 +29,18 @@ test-env-down:
 
 test-env-zap:
 	$(MAKE) -C test-env zap
+
+infra-env-start:
+	$(MAKE) -C infra-env start
+
+infra-env-stop:
+	$(MAKE) -C infra-env stop
+
+infra-env-down:
+	$(MAKE) -C infra-env down
+
+infra-env-zap:
+	$(MAKE) -C infra-env zap
 
 build: $(BINS)
 

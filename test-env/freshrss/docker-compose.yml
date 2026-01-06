@@ -33,7 +33,7 @@ services:
       - "8001:80"
     restart: unless-stopped
     networks:
-      - test-env-network
+      - test-env-net
     healthcheck:
       test: ["CMD", "cli/health.php"]
       timeout: 10s
@@ -43,7 +43,7 @@ services:
       retries: 3
 
 networks:
-  test-env-network:
+  test-env-net:
     external: true
     name: deframer-test-env-net
 

@@ -11,11 +11,11 @@ services:
       - ./bridges/SpiegelBridge.php:/app/bridges/SpiegelBridge.php
       - ./bridges/TagesschauBridge.php:/app/bridges/TagesschauBridge.php
     networks:
-      - test-env-network
+      - test-env-net
 
 # TODO: we might want a selenium/webdriver here
 
 networks:
-  test-env-network:
+  test-env-net:
     external: true
     name: deframer-test-env-net

@@ -1,0 +1,45 @@
+---
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-deframer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deframer}
+      POSTGRES_DB: ${POSTGRES_DB:-deframer}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - infra-env-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-deframer}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    image: valkey/valkey:latest
+    restart: unless-stopped
+    command: valkey-server --requirepass ${VALKEY_PASSWORD:-deframer}
+    ports:
+      - "6379:6379"
+    volumes:
+      - valkey_data:/data
+    networks:
+      - infra-env-net
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD:-deframer}", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  infra-env-net:
+    name: deframer-infra-env-net
+
+volumes:
+  postgres_data:
+  valkey_data:
