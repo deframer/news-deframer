@@ -33,6 +33,12 @@ var (
 	maxTimeout        = 5 * time.Minute
 )
 
+const (
+	statusValid   = "valid"
+	statusInvalid = "invalid"
+	statusPending = "pending"
+)
+
 func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 	val, err := f.valkey.GetFeedUrl(u)
 	if err != nil {
@@ -41,11 +47,11 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 
 	if val != nil {
 		switch *val {
-		case "valid":
+		case statusValid:
 			return true, nil
-		case "invalid":
+		case statusInvalid:
 			return false, nil
-		case "pending":
+		case statusPending:
 			ticker := time.NewTicker(checkInterval)
 			defer ticker.Stop()
 			timeout := time.After(maxPendingTimeout)
@@ -58,15 +64,15 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 					if err != nil {
 						return false, err
 					}
-					if val != nil && *val != "pending" {
-						return *val == "valid", nil
+					if val != nil && *val != statusPending {
+						return *val == statusValid, nil
 					}
 				}
 			}
 		}
 	}
 
-	if err := f.valkey.AddFeedUrl(u, "pending", maxPendingTimeout); err != nil {
+	if err := f.valkey.AddFeedUrl(u, statusPending, maxPendingTimeout); err != nil {
 		return false, err
 	}
 
@@ -75,16 +81,16 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 		return false, err
 	}
 
-	status := "invalid"
+	status := statusInvalid
 	if feed != nil {
-		status = "valid"
+		status = statusValid
 	}
 
 	if err := f.valkey.AddFeedUrl(u, status, maxTimeout); err != nil {
 		return false, err
 	}
 
-	return status == "valid", nil
+	return status == statusValid, nil
 }
 
 func (f *Facade) HasArticle(ctx context.Context, u *url.URL) (bool, error) {

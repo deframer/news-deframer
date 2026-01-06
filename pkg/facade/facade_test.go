@@ -90,7 +90,7 @@ func TestHasFeed(t *testing.T) {
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
 					getFeedUrl: func(u *url.URL) (*string, error) {
-						val := "valid"
+						val := statusValid
 						return &val, nil
 					},
 				}
@@ -103,7 +103,7 @@ func TestHasFeed(t *testing.T) {
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
 					getFeedUrl: func(u *url.URL) (*string, error) {
-						val := "invalid"
+						val := statusInvalid
 						return &val, nil
 					},
 				}
@@ -149,10 +149,10 @@ func TestHasFeed(t *testing.T) {
 					getFeedUrl: func(u *url.URL) (*string, error) {
 						calls++
 						if calls == 1 {
-							val := "pending"
+							val := statusPending
 							return &val, nil
 						}
-						val := "valid"
+						val := statusValid
 						return &val, nil
 					},
 				}
@@ -165,7 +165,7 @@ func TestHasFeed(t *testing.T) {
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
 					getFeedUrl: func(u *url.URL) (*string, error) {
-						val := "pending"
+						val := statusPending
 						return &val, nil
 					},
 				}

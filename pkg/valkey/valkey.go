@@ -54,8 +54,12 @@ func New(ctx context.Context, cfg *config.Config) (Valkey, error) {
 
 const prefix = "feed:"
 
+func urlToValkeyKey(u *url.URL) string {
+	return prefix + url.QueryEscape(u.String())
+}
+
 func (v *valkey) GetFeedUrl(u *url.URL) (*string, error) {
-	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(prefix+u.String()).Build()).ToString()
+	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(urlToValkeyKey(u)).Build()).ToString()
 	if driver.IsValkeyNil(err) {
 		return nil, nil
 	}
@@ -66,11 +70,11 @@ func (v *valkey) GetFeedUrl(u *url.URL) (*string, error) {
 }
 
 func (v *valkey) AddFeedUrl(u *url.URL, value string, ttl time.Duration) error {
-	return v.client.Do(v.ctx, v.client.B().Set().Key(prefix+u.String()).Value(value).Ex(ttl).Build()).Error()
+	return v.client.Do(v.ctx, v.client.B().Set().Key(urlToValkeyKey(u)).Value(value).Ex(ttl).Build()).Error()
 }
 
 func (v *valkey) DeleteFeedUrl(u *url.URL) error {
-	return v.client.Do(v.ctx, v.client.B().Del().Key(prefix+u.String()).Build()).Error()
+	return v.client.Do(v.ctx, v.client.B().Del().Key(urlToValkeyKey(u)).Build()).Error()
 }
 
 func (v *valkey) Close() error {
