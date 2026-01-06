@@ -31,24 +31,20 @@ func TestFeedUrlKeys(t *testing.T) {
 		_ = c.DeleteFeedUrl(u)
 	}()
 
+	foundVal, err := c.GetFeedUrl(u)
+	assert.NoError(t, err)
+	assert.Nil(t, foundVal)
+
 	err = c.AddFeedUrl(u, value)
 	assert.NoError(t, err)
 
-	exists, err := c.HasFeedUrl(u)
-	assert.NoError(t, err)
-	assert.True(t, exists)
-
-	foundVal, err := c.GetFeedUrl(u)
+	foundVal, err = c.GetFeedUrl(u)
 	assert.NoError(t, err)
 	assert.NotNil(t, foundVal)
 	assert.Equal(t, value, *foundVal)
 
 	err = c.DeleteFeedUrl(u)
 	assert.NoError(t, err)
-
-	exists, err = c.HasFeedUrl(u)
-	assert.NoError(t, err)
-	assert.False(t, exists)
 
 	foundVal, err = c.GetFeedUrl(u)
 	assert.NoError(t, err)

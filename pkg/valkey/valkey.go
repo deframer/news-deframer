@@ -12,7 +12,6 @@ import (
 )
 
 type Valkey interface {
-	HasFeedUrl(u *url.URL) (bool, error)
 	GetFeedUrl(u *url.URL) (*string, error)
 	AddFeedUrl(u *url.URL, value string) error
 	DeleteFeedUrl(u *url.URL) error
@@ -54,11 +53,6 @@ func New(ctx context.Context, cfg *config.Config) (Valkey, error) {
 }
 
 const prefix = "feed:"
-
-func (v *valkey) HasFeedUrl(u *url.URL) (bool, error) {
-	n, err := v.client.Do(v.ctx, v.client.B().Exists().Key(prefix+u.String()).Build()).ToInt64()
-	return n > 0, err
-}
 
 func (v *valkey) GetFeedUrl(u *url.URL) (*string, error) {
 	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(prefix+u.String()).Build()).ToString()
