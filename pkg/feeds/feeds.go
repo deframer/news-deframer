@@ -2,10 +2,13 @@ package feeds
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"log/slog"
+	"strings"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/mmcdole/gofeed"
@@ -112,4 +115,49 @@ type rss2Item struct {
 	PubDate     string   `xml:"pubDate,omitempty"`
 	GUID        string   `xml:"guid,omitempty"`
 	CustomField string   `xml:"deframer:custom,omitempty"`
+}
+
+// HashType defines the strategy for generating the item hash
+type HashType int
+
+const (
+	// HashTypeStable generates a hash based only on the item's identity (GUID/Link/Title)
+	HashTypeStable HashType = iota
+	// HashTypeVersioned generates a hash based on identity + content (Title + Description)
+	HashTypeVersioned
+)
+
+// ItemHashKey creates a deterministic ID based on the item's attributes.
+// By default, it uses HashTypeStable. You can pass a specific HashType as a second argument.
+func ItemHashKey(item *gofeed.Item, ht ...HashType) (string, error) {
+	mode := HashTypeStable
+	if len(ht) > 0 {
+		mode = ht[0]
+	}
+
+	link := strings.TrimSpace(item.Link)
+	if link == "" {
+		return "", fmt.Errorf("item link is empty")
+	}
+
+	seed := strings.TrimSpace(item.GUID)
+	if seed == "" {
+		seed = link
+	}
+
+	if mode == HashTypeVersioned {
+		cleanTitle := strings.TrimSpace(item.Title)
+		cleanDesc := strings.TrimSpace(item.Description)
+		// Combine identity with content to detect changes
+		seed = fmt.Sprintf("%s|%s|%s", seed, cleanTitle, cleanDesc)
+	}
+
+	if seed == "" {
+		return "", fmt.Errorf("seed is empty")
+	}
+
+	hash := sha256.Sum256([]byte(seed))
+	key := hex.EncodeToString(hash[:])
+
+	return key, nil
 }
