@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/egandro/news-deframer/pkg/facade"
 	"github.com/egandro/news-deframer/pkg/server"
 )
 
@@ -32,7 +34,15 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	srv := server.New(ctx, cfg)
+	repo, err := database.NewRepository(cfg)
+	if err != nil {
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
+	}
+
+	f := facade.New(ctx, cfg, nil, repo)
+
+	srv := server.New(ctx, cfg, f)
 
 	go func() {
 		slog.Info("Starting server", "port", cfg.Port)

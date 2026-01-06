@@ -11,11 +11,13 @@ import (
 	"strconv"
 
 	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/egandro/news-deframer/pkg/facade"
 )
 
 type Server struct {
 	httpServer *http.Server
 	logger     *slog.Logger
+	facade     *facade.Facade
 }
 
 type RSSRequest struct {
@@ -25,9 +27,10 @@ type RSSRequest struct {
 	Embedded bool
 }
 
-func New(ctx context.Context, cfg *config.Config) *Server {
+func New(ctx context.Context, cfg *config.Config, f *facade.Facade) *Server {
 	s := &Server{
 		logger: slog.With("component", "server"),
+		facade: f,
 	}
 
 	mux := http.NewServeMux()
@@ -80,6 +83,17 @@ func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hasFeed, err := s.facade.HasFeed(r.Context(), req.URL)
+	if err != nil || !hasFeed {
+		if err != nil {
+			s.logger.Error("HasFeed failed", "error", err)
+		} else {
+			s.logger.Debug("feed not found", "url", req.URL)
+		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
 	if v, err := strconv.ParseFloat(q.Get("max_score"), 64); err == nil {
 		req.MaxScore = v
 	}
@@ -98,8 +112,9 @@ func (s *Server) handleRSS(w http.ResponseWriter, r *http.Request) {
   <debug:lang>%s</debug:lang>
   <debug:max_score>%f</debug:max_score>
   <debug:embedded>%t</debug:embedded>
+  <debug:has_feed>%t</debug:has_feed>
 </channel>
-</rss>`, req.URL, req.Lang, req.MaxScore, req.Embedded)
+</rss>`, req.URL, req.Lang, req.MaxScore, req.Embedded, hasFeed)
 }
 
 func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
@@ -118,8 +133,22 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hasFeed, err := s.facade.HasFeed(r.Context(), reqURL)
+	if err != nil || !hasFeed {
+		if err != nil {
+			s.logger.Error("HasFeed failed", "error", err)
+		} else {
+			s.logger.Debug("feed not found", "url", reqURL)
+		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"url": reqURL})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"url":      reqURL,
+		"has_feed": hasFeed,
+	})
 }
 
 func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
@@ -138,6 +167,20 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hasArticle, err := s.facade.HasArticle(r.Context(), reqURL)
+	if err != nil || !hasArticle {
+		if err != nil {
+			s.logger.Error("HasArticle failed", "error", err)
+		} else {
+			s.logger.Debug("article not found", "url", reqURL)
+		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"url": reqURL})
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"url":         reqURL,
+		"has_article": hasArticle,
+	})
 }
