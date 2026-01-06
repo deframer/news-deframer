@@ -16,7 +16,7 @@ jobs:
       postgres:
         image: postgres:17
         env:
-          POSTGRES_USER: deframerfailtest
+          POSTGRES_USER: deframer
           POSTGRES_PASSWORD: deframer
           POSTGRES_DB: deframer
         options: >-
@@ -68,7 +68,7 @@ jobs:
         env:
           CGO_ENABLED: 1
           GOFLAGS: "-buildvcs=false"
-          DSN: "host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"
+          DSN: "xhost=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"
           VALKEY_HOST: "valkey:6379"
           VALKEY_PASSWORD: ""
           VALKEY_DB: "0"
