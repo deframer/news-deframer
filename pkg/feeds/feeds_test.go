@@ -76,6 +76,54 @@ func TestRenderFeed(t *testing.T) {
 	assert.Contains(t, xmlStr, "<content:encoded>Full Content</content:encoded>")
 }
 
+func TestRenderFeed_Complex(t *testing.T) {
+	ctx := context.Background()
+	cfg := &config.Config{}
+	f := NewFeeds(ctx, cfg)
+
+	rssContent := `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:atom="http://www.w3.org/2005/Atom"
+	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:slash="http://purl.org/rss/1.0/modules/slash/">
+	<channel>
+		<title>Global News Agency</title>
+		<atom:link href="http://localhost:8003/feed/" rel="self" type="application/rss+xml" />
+		<link>http://localhost:8003</link>
+		<description></description>
+		<lastBuildDate>Tue, 13 May 2025 03:49:00 +0000</lastBuildDate>
+		<language>en-US</language>
+		<sy:updatePeriod>hourly</sy:updatePeriod>
+		<sy:updateFrequency>1</sy:updateFrequency>
+		<generator>https://wordpress.org/?v=6.9</generator>
+	</channel>
+</rss>`
+
+	feed, err := f.ParseFeed(ctx, strings.NewReader(rssContent))
+	assert.NoError(t, err)
+
+	xmlStr, err := f.RenderFeed(ctx, feed)
+	assert.NoError(t, err)
+
+	assert.Contains(t, xmlStr, `xmlns:content="http://purl.org/rss/1.0/modules/content/"`)
+	assert.Contains(t, xmlStr, `xmlns:wfw="http://wellformedweb.org/CommentAPI/"`)
+	assert.Contains(t, xmlStr, `xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"`)
+	assert.Contains(t, xmlStr, `<sy:updatePeriod>hourly</sy:updatePeriod>`)
+	assert.Contains(t, xmlStr, `<atom:link href="http://localhost:8003/feed/" rel="self" type="application/rss+xml"`)
+
+	// go one more round - parse this and render it and test it again
+	feed2, err := f.ParseFeed(ctx, strings.NewReader(xmlStr))
+	assert.NoError(t, err)
+
+	xmlStr2, err := f.RenderFeed(ctx, feed2)
+	assert.NoError(t, err)
+	assert.Contains(t, xmlStr2, `xmlns:content="http://purl.org/rss/1.0/modules/content/"`)
+	assert.Contains(t, xmlStr2, `<sy:updatePeriod>hourly</sy:updatePeriod>`)
+}
+
 func TestGetValidItems(t *testing.T) {
 	ctx := context.Background()
 	cfg := &config.Config{}
