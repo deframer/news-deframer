@@ -22,6 +22,8 @@ type Config struct {
 	ValkeyDB       string `env:"VALKEY_DB" envDefault:"0"`
 
 	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
+
+	LocalFileFeeds bool `env:"LOCAL_FILE_FEEDS" envDefault:"false"`
 }
 
 func Load() (*Config, error) {
