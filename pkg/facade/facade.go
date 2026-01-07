@@ -162,5 +162,19 @@ func (f *Facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 
 	feed.Title = "Proxied: " + feed.Title
 
-	return f.feeds.RenderFeed(ctx, feed)
+	newFeed, items := f.feeds.GetValidItems(f.ctx, feed)
+	f.logger.Debug("items", "len", len(items))
+
+	// timeStr := time.Now().Format(time.RFC1123Z)
+
+	// dummy := &gofeed.Item{
+	// 	Title:       "News Deframer Proxy",
+	// 	Description: fmt.Sprintf("Proxied feed for: %s", filter.URL),
+	// 	Link:        "https://github.com/egandro/news-deframer",
+	// 	Published:   timeStr,
+	// 	GUID:        "news-deframer-status: " + timeStr,
+	// }
+	// newFeed.Items = append([]*gofeed.Item{dummy}, newFeed.Items...)
+
+	return f.feeds.RenderFeed(ctx, newFeed)
 }

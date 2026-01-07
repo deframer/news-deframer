@@ -72,6 +72,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fdummy&lang=en&max_score=0.5&embedded=true"
 	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fwordpress%2Ffeed"
 	// curl "http://localhost:8080/rss?url=http%3A%2F%2Flocalhost%3A8003%2Ffeed"
+	// inside freshrss http://service:8080/rss?url=http%3A%2F%2Fwordpress%2Ffeed
 	q := r.URL.Query()
 	req := RSSRequest{
 		URL:  strings.TrimSuffix(q.Get("url"), "/"),

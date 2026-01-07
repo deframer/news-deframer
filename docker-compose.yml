@@ -5,18 +5,27 @@ services:
       context: .
       dockerfile: build/package/service/Dockerfile
     environment:
-      - TARGET_URL=http://wordpress
+      - PORT=8080
+      - DSN=host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable
+      - LOG_DATABASE=false
+      - VALKEY_HOST=valkey:6379
+      - VALKEY_PASSWORD=deframer
+      - VALKEY_DB=0
+      - LOG_LEVEL=debug
+      - LOCAL_FEED_FILES_DIR=
+    ports:
+      - "8080:8080"
     networks:
       - infra-net
       - test-net
 
-  worker:
-    build:
-      context: .
-      dockerfile: build/package/worker/Dockerfile
-    networks:
-      - infra-net
-      - test-net
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: build/package/worker/Dockerfile
+  #   networks:
+  #     - infra-net
+  #     - test-net
 
 networks:
   infra-net:
