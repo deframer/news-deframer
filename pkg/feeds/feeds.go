@@ -87,6 +87,50 @@ func (f *feeds) ParseFeed(ctx context.Context, content io.Reader) (*gofeed.Feed,
 		feed.Custom[k] = v
 	}
 
+	// Re-scan to capture category attributes which gofeed drops
+	decoder = xml.NewDecoder(bytes.NewReader(data))
+	inItem := false
+	itemIdx := 0
+
+	for {
+		t, err := decoder.Token()
+		if err != nil {
+			break
+		}
+		switch se := t.(type) {
+		case xml.StartElement:
+			if se.Name.Local == "item" {
+				inItem = true
+			} else if inItem && se.Name.Local == "category" {
+				var c struct {
+					Domain string `xml:"domain,attr"`
+					Value  string `xml:",chardata"`
+				}
+				if err := decoder.DecodeElement(&c, &se); err == nil {
+					if itemIdx < len(feed.Items) {
+						if feed.Items[itemIdx].Extensions == nil {
+							feed.Items[itemIdx].Extensions = make(ext.Extensions)
+						}
+						if feed.Items[itemIdx].Extensions[""] == nil {
+							feed.Items[itemIdx].Extensions[""] = make(map[string][]ext.Extension)
+						}
+						attrs := make(map[string]string)
+						if c.Domain != "" {
+							attrs["domain"] = c.Domain
+						}
+						extCat := ext.Extension{Name: "category", Value: c.Value, Attrs: attrs}
+						feed.Items[itemIdx].Extensions[""]["category"] = append(feed.Items[itemIdx].Extensions[""]["category"], extCat)
+					}
+				}
+			}
+		case xml.EndElement:
+			if se.Name.Local == "item" {
+				inItem = false
+				itemIdx++
+			}
+		}
+	}
+
 	return feed, nil
 }
 
@@ -150,6 +194,24 @@ func (f *feeds) toRSS2Item(item *gofeed.Item) rss2Item {
 		custom = item.Custom["custom_field"]
 	}
 
+	// Clone extensions to avoid mutating the original item
+	extensions := make(ext.Extensions)
+	for k, v := range item.Extensions {
+		extensions[k] = v
+	}
+
+	// If we don't have rich categories in extensions (from our manual scan), use the string ones from gofeed
+	if _, ok := extensions[""]["category"]; !ok && len(item.Categories) > 0 {
+		if extensions[""] == nil {
+			extensions[""] = make(map[string][]ext.Extension)
+		}
+		var cats []ext.Extension
+		for _, cat := range item.Categories {
+			cats = append(cats, ext.Extension{Name: "category", Value: cat})
+		}
+		extensions[""]["category"] = cats
+	}
+
 	return rss2Item{
 		Title:       item.Title,
 		Link:        item.Link,
@@ -158,7 +220,7 @@ func (f *feeds) toRSS2Item(item *gofeed.Item) rss2Item {
 		PubDate:     item.Published,
 		GUID:        item.GUID,
 		CustomField: custom,
-		Extensions:  item.Extensions,
+		Extensions:  extensions,
 		Custom:      item.Custom,
 	}
 }
@@ -297,8 +359,12 @@ func (r rss2Item) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 	if err := encode("description", r.Description); err != nil {
 		return err
 	}
-	if err := encode("content:encoded", r.Content); err != nil {
-		return err
+	if r.Content != "" {
+		if err := e.EncodeElement(struct {
+			Data string `xml:",cdata"`
+		}{Data: r.Content}, xml.StartElement{Name: xml.Name{Local: "content:encoded"}}); err != nil {
+			return err
+		}
 	}
 	if err := encode("pubDate", r.PubDate); err != nil {
 		return err

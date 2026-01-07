@@ -73,7 +73,7 @@ func TestRenderFeed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, xmlStr, "<rss version=\"2.0\"")
 	assert.Contains(t, xmlStr, "<title>Test Feed</title>")
-	assert.Contains(t, xmlStr, "<content:encoded>Full Content</content:encoded>")
+	assert.Contains(t, xmlStr, "<content:encoded><![CDATA[Full Content]]></content:encoded>")
 }
 
 func TestRenderFeed_Complex(t *testing.T) {
@@ -88,6 +88,7 @@ func TestRenderFeed_Complex(t *testing.T) {
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:atom="http://www.w3.org/2005/Atom"
 	xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"
+	xmlns:media="http://search.yahoo.com/mrss/"
 	xmlns:slash="http://purl.org/rss/1.0/modules/slash/">
 	<channel>
 		<title>Global News Agency</title>
@@ -99,6 +100,22 @@ func TestRenderFeed_Complex(t *testing.T) {
 		<sy:updatePeriod>hourly</sy:updatePeriod>
 		<sy:updateFrequency>1</sy:updateFrequency>
 		<generator>https://wordpress.org/?v=6.9</generator>
+		<item>
+			<title>My Title</title>
+			<link>http://example.com/data</link>
+			<dc:creator><![CDATA[admin]]></dc:creator>
+			<pubDate>Tue, 13 May 2025 03:49:00 +0000</pubDate>
+			<category domain="http://example.com/foo"><![CDATA[Latest News]]></category>
+			<category domain="http://example.com/foo"><![CDATA[Banner Posts]]></category>
+			<guid isPermaLink="false">http://example.com/data</guid>
+			<description><![CDATA[foo]]></description>
+			<media:content height="1800" medium="image" url="https://cdn/picture.jpg" width="1800"/>
+			<media:credit>Foobar/Wordpress</media:credit>
+			<media:description>A nice picture.</media:description>
+			<content:encoded>
+				<![CDATA[ <p> something in <br/> html </p> ]]>
+			</content:encoded>
+		</item>
 	</channel>
 </rss>`
 
@@ -113,6 +130,12 @@ func TestRenderFeed_Complex(t *testing.T) {
 	assert.Contains(t, xmlStr, `xmlns:sy="http://purl.org/rss/1.0/modules/syndication/"`)
 	assert.Contains(t, xmlStr, `<sy:updatePeriod>hourly</sy:updatePeriod>`)
 	assert.Contains(t, xmlStr, `<atom:link href="http://localhost:8003/feed/" rel="self" type="application/rss+xml"`)
+	assert.Contains(t, xmlStr, `<title>My Title</title>`)
+	assert.Contains(t, xmlStr, `<dc:creator>admin</dc:creator>`)
+	assert.Contains(t, xmlStr, `<category domain="http://example.com/foo">Latest News</category>`)
+	assert.Contains(t, xmlStr, `<category domain="http://example.com/foo">Banner Posts</category>`)
+	assert.Contains(t, xmlStr, `<media:content height="1800" medium="image" url="https://cdn/picture.jpg" width="1800"></media:content>`)
+	assert.Contains(t, xmlStr, `<content:encoded><![CDATA[ <p> something in <br/> html </p> ]]></content:encoded>`)
 
 	// go one more round - parse this and render it and test it again
 	feed2, err := f.ParseFeed(ctx, strings.NewReader(xmlStr))
@@ -122,6 +145,12 @@ func TestRenderFeed_Complex(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Contains(t, xmlStr2, `xmlns:content="http://purl.org/rss/1.0/modules/content/"`)
 	assert.Contains(t, xmlStr2, `<sy:updatePeriod>hourly</sy:updatePeriod>`)
+	assert.Contains(t, xmlStr2, `<title>My Title</title>`)
+	assert.Contains(t, xmlStr2, `<dc:creator>admin</dc:creator>`)
+	assert.Contains(t, xmlStr2, `<category domain="http://example.com/foo">Latest News</category>`)
+	assert.Contains(t, xmlStr2, `<category domain="http://example.com/foo">Banner Posts</category>`)
+	assert.Contains(t, xmlStr2, `<media:content height="1800" medium="image" url="https://cdn/picture.jpg" width="1800"></media:content>`)
+	assert.Contains(t, xmlStr2, `<content:encoded><![CDATA[ <p> something in <br/> html </p> ]]></content:encoded>`)
 }
 
 func TestGetValidItems(t *testing.T) {
