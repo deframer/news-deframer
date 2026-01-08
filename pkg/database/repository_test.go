@@ -374,4 +374,54 @@ func TestFindItemsByUrl(t *testing.T) {
 		assert.True(t, feedIDs[sourceFeed.ID])
 		assert.True(t, feedIDs[aggFeed.ID])
 	})
+
+	t.Run("FeedDisabled", func(t *testing.T) {
+		feedURL := "http://disabled-feed.test/rss"
+		itemURL := "http://disabled-feed.test/article"
+
+		feed := Feed{
+			URL:     feedURL,
+			Enabled: false,
+		}
+		assert.NoError(t, db.Create(&feed).Error)
+
+		item := Item{
+			Hash:     makeHash("disabled-content"),
+			FeedID:   feed.ID,
+			URL:      itemURL,
+			AIResult: JSONB{"title": "Disabled"},
+		}
+		assert.NoError(t, db.Create(&item).Error)
+
+		u, _ := url.Parse(itemURL)
+		items, err := repo.FindItemsByUrl(u)
+		assert.NoError(t, err)
+		assert.Empty(t, items)
+	})
+
+	t.Run("FeedDeleted", func(t *testing.T) {
+		feedURL := "http://deleted-feed.test/rss"
+		itemURL := "http://deleted-feed.test/article"
+
+		feed := Feed{
+			URL:     feedURL,
+			Enabled: true,
+		}
+		assert.NoError(t, db.Create(&feed).Error)
+
+		item := Item{
+			Hash:     makeHash("deleted-content"),
+			FeedID:   feed.ID,
+			URL:      itemURL,
+			AIResult: JSONB{"title": "Deleted"},
+		}
+		assert.NoError(t, db.Create(&item).Error)
+
+		assert.NoError(t, db.Delete(&feed).Error)
+
+		u, _ := url.Parse(itemURL)
+		items, err := repo.FindItemsByUrl(u)
+		assert.NoError(t, err)
+		assert.Empty(t, items)
+	})
 }

@@ -107,8 +107,9 @@ func (r *repository) FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, erro
 func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {
 	var items []Item
 	// We query by URL. Since URL is not unique (unique only per Feed), this returns a list.
-	// We preload the Feed to provide context.
-	if err := r.db.Preload("Feed").Where("url = ?", u.String()).Find(&items).Error; err != nil {
+	if err := r.db.Joins("JOIN feeds ON feeds.id = items.feed_id").
+		Where("items.url = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", u.String(), true).
+		Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil

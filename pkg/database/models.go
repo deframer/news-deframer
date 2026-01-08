@@ -76,7 +76,7 @@ type Item struct {
 	CreatedAt    time.Time `gorm:"not null;default:now()"`
 	UpdatedAt    time.Time `gorm:"not null;default:now()"`
 	Hash         string    `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	FeedID       uuid.UUID `gorm:"type:uuid;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	FeedID       uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
 	Feed         Feed      `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	URL          string    `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
 	AIResult     JSONB     `gorm:"type:jsonb;not null"`
