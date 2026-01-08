@@ -13,8 +13,8 @@ import (
 
 type Base struct {
 	ID        uuid.UUID      `gorm:"primary_key;type:uuid;default:uuid_generate_v4()"`
-	CreatedAt time.Time      // not null default now
-	UpdatedAt time.Time      // not null default false
+	CreatedAt time.Time      `gorm:"not null;default:now()"`
+	UpdatedAt time.Time      `gorm:"not null;default:now()"`
 	DeletedAt gorm.DeletedAt `gorm:"index"`
 }
 
@@ -45,11 +45,11 @@ func (a StringArray) Value() (driver.Value, error) {
 }
 
 type CachedFeed struct {
-	Base
-	FeedID    uuid.UUID   `gorm:"type:uuid;uniqueIndex;not null"` // not null
-	Feed      Feed        `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	XMLHeader string      `gorm:"type:text;not null"`                // not null
-	ItemRefs  StringArray `gorm:"type:text[];not null;default:'{}'"` // not null default []
+	ID        uuid.UUID   `gorm:"primaryKey;type:uuid"` // this is a FK to Feed.ID
+	CreatedAt time.Time   `gorm:"not null;default:now()"`
+	UpdatedAt time.Time   `gorm:"not null;default:now()"`
+	XMLHeader string      `gorm:"type:text;not null"`
+	ItemRefs  StringArray `gorm:"type:text[];not null;default:'{}'"`
 }
 
 type JSONB map[string]interface{}
@@ -72,11 +72,11 @@ func (j *JSONB) Scan(value interface{}) error {
 
 type Item struct {
 	Base
-	Hash         string    `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`                      // not null
-	FeedID       uuid.UUID `gorm:"type:uuid;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"` // not null
+	Hash         string    `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	FeedID       uuid.UUID `gorm:"type:uuid;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
 	Feed         Feed      `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	URL          string    `gorm:"uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"` // not null
-	AIResult     JSONB     `gorm:"type:jsonb;not null"`                                             // not null
-	DebugContent string    `gorm:"type:text;default:null"`                                          // null
-	MinHash      string    `gorm:"default:null"`                                                    // null
+	URL          string    `gorm:"uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	AIResult     JSONB     `gorm:"type:jsonb;not null"`
+	DebugContent string    `gorm:"type:text;default:null"`
+	MinHash      string    `gorm:"default:null"`
 }

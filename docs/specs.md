@@ -195,8 +195,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - `created_at`: Timestamp
 
 **Table: `cached_feeds` (Cold Store)**
-- `id`: UUID (PK)
-- `feed_id`: FK
+- `id`: UUID (PK & FK to feeds.id)
 - `xml_header`: Text
 - `item_refs`: Array of String (SHA256 references)
 - `last_update`: Timestamp (Managed by GORM)

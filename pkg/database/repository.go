@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -16,6 +17,8 @@ import (
 type Repository interface {
 	GetTime() (time.Time, error)
 	FindFeedByUrl(u *url.URL) (*Feed, error)
+	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
+	FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, error)
 }
 
 type repository struct {
@@ -64,4 +67,33 @@ func (r *repository) FindFeedByUrl(u *url.URL) (*Feed, error) {
 		return nil, err
 	}
 	return &feed, nil
+}
+
+func (r *repository) FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error) {
+	var cachedFeed CachedFeed
+	if err := r.db.Joins("JOIN feeds ON feeds.id = cached_feeds.id").
+		Where("cached_feeds.id = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", feedID, true).
+		First(&cachedFeed).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &cachedFeed, nil
+}
+
+func (r *repository) FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, error) {
+	cachedFeed, err := r.FindCachedFeedById(feedID)
+	if err != nil {
+		return nil, err
+	}
+	if cachedFeed == nil || len(cachedFeed.ItemRefs) == 0 {
+		return []Item{}, nil
+	}
+
+	var items []Item
+	if err := r.db.Where("feed_id = ? AND hash IN ?", feedID, []string(cachedFeed.ItemRefs)).Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
 }

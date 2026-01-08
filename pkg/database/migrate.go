@@ -26,7 +26,17 @@ func Migrate(db *gorm.DB) error {
 		return err
 	}
 
-	// 2. Seed Dummy Data
+	// 2. Manually add FK for CachedFeed -> Feed (Shared PK)
+	// Workaround for GORM AutoMigrate issue:
+	// GORM struggles with Shared PK + Belongs To direction inference,
+	// causing circular dependency errors during table creation if defined in the struct.
+	_ = db.Exec(`DO $$ BEGIN
+		IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_cached_feeds_feeds') THEN
+			ALTER TABLE cached_feeds ADD CONSTRAINT fk_cached_feeds_feeds FOREIGN KEY (id) REFERENCES feeds(id) ON DELETE CASCADE ON UPDATE CASCADE;
+		END IF;
+	END $$;`)
+
+	// 3. Seed Dummy Data
 	return seed(db)
 }
 
