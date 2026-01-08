@@ -30,21 +30,29 @@ func TestFindFeedByUrl(t *testing.T) {
 
 	repo, err := NewRepository(cfg)
 	assert.NoError(t, err)
+	db := repo.(*repository).db
 
 	t.Run("Found", func(t *testing.T) {
-		// This URL is seeded in pkg/database/migrate.go
-		rawURL := "http://dummy"
+		// Create isolated test data
+		rawURL := "http://test-find-feed-" + uuid.New().String() + ".test"
+		feed := Feed{
+			URL:     rawURL,
+			Enabled: true,
+		}
+		assert.NoError(t, db.Create(&feed).Error)
+
 		u, err := url.Parse(rawURL)
 		assert.NoError(t, err)
 
-		feed, err := repo.FindFeedByUrl(u)
+		found, err := repo.FindFeedByUrl(u)
 		assert.NoError(t, err)
-		assert.NotNil(t, feed)
-		assert.Equal(t, rawURL, feed.URL)
+		if assert.NotNil(t, found) {
+			assert.Equal(t, rawURL, found.URL)
+		}
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
-		u, err := url.Parse("http://does-not-exist.com/feed")
+		u, err := url.Parse("http://does-not-exist.test/feed")
 		assert.NoError(t, err)
 
 		feed, err := repo.FindFeedByUrl(u)
@@ -259,4 +267,111 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFindItemsByUrl(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	repo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	db := repo.(*repository).db
+
+	// Helper to create valid SHA256 hash string
+	makeHash := func(s string) string {
+		h := sha256.Sum256([]byte(s))
+		return hex.EncodeToString(h[:])
+	}
+
+	t.Run("EnforceDomain_True_MatchingDomain", func(t *testing.T) {
+		// Scenario: A standard news site where items belong to the site.
+		feedURL := "http://nytimes.test/services/xml/rss/nyt/HomePage.xml"
+		itemURL := "http://nytimes.test/2024/01/01/world/test-article.html"
+
+		feed := Feed{
+			URL:               feedURL,
+			Enabled:           true,
+			EnforceFeedDomain: true,
+		}
+		assert.NoError(t, db.Create(&feed).Error)
+
+		item := Item{
+			Hash:     makeHash("unique-content-1"),
+			FeedID:   feed.ID,
+			URL:      itemURL,
+			AIResult: JSONB{"title": "NYT Article"},
+		}
+		assert.NoError(t, db.Create(&item).Error)
+
+		// Test
+		u, _ := url.Parse(itemURL)
+		items, err := repo.FindItemsByUrl(u)
+		assert.NoError(t, err)
+		assert.Len(t, items, 1)
+		assert.Equal(t, itemURL, items[0].URL)
+		assert.Equal(t, feed.ID, items[0].FeedID)
+	})
+
+	t.Run("EnforceDomain_False_Aggregator", func(t *testing.T) {
+		// Scenario: An aggregator feed that links to external content.
+		feedURL := "http://techmeme.test/feed.xml"
+		itemURL := "http://theverge.test/2024/01/01/tech-news.html"
+
+		feed := Feed{
+			URL:               feedURL,
+			Enabled:           true,
+			EnforceFeedDomain: false, // Allows external URLs
+		}
+		assert.NoError(t, db.Create(&feed).Error)
+
+		item := Item{
+			Hash:     makeHash("unique-content-2"),
+			FeedID:   feed.ID,
+			URL:      itemURL,
+			AIResult: JSONB{"title": "Aggregated Tech News"},
+		}
+		assert.NoError(t, db.Create(&item).Error)
+
+		// Test
+		u, _ := url.Parse(itemURL)
+		items, err := repo.FindItemsByUrl(u)
+		assert.NoError(t, err)
+		assert.Len(t, items, 1)
+		assert.Equal(t, itemURL, items[0].URL)
+		assert.Equal(t, feed.ID, items[0].FeedID)
+	})
+
+	t.Run("Syndication_SameUrlInMultipleFeeds", func(t *testing.T) {
+		// Scenario: The same article URL appears in two different feeds.
+		// 1. The original source (Enforced)
+		// 2. An aggregator (Not Enforced)
+		sharedURL := "http://example.com/shared-story"
+
+		// Create Source Feed & Item
+		sourceFeed := Feed{URL: "http://example.com/rss", Enabled: true, EnforceFeedDomain: true}
+		assert.NoError(t, db.Create(&sourceFeed).Error)
+		// We use the same content hash to simulate exact syndication, though hashes can differ if content varies.
+		contentHash := makeHash("shared-content-body")
+
+		sourceItem := Item{Hash: contentHash, FeedID: sourceFeed.ID, URL: sharedURL, AIResult: JSONB{"src": "original"}}
+		assert.NoError(t, db.Create(&sourceItem).Error)
+
+		// Create Aggregator Feed & Item
+		aggFeed := Feed{URL: "http://aggregator.test/rss", Enabled: true, EnforceFeedDomain: false}
+		assert.NoError(t, db.Create(&aggFeed).Error)
+
+		aggItem := Item{Hash: contentHash, FeedID: aggFeed.ID, URL: sharedURL, AIResult: JSONB{"src": "aggregator"}}
+		assert.NoError(t, db.Create(&aggItem).Error)
+
+		// Test: Should find BOTH items
+		u, _ := url.Parse(sharedURL)
+		items, err := repo.FindItemsByUrl(u)
+		assert.NoError(t, err)
+		assert.Len(t, items, 2)
+
+		// Verify we got one from each feed
+		feedIDs := map[uuid.UUID]bool{items[0].FeedID: true, items[1].FeedID: true}
+		assert.True(t, feedIDs[sourceFeed.ID])
+		assert.True(t, feedIDs[aggFeed.ID])
+	})
 }

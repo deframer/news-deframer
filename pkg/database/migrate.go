@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -51,12 +52,32 @@ func seed(db *gorm.DB) error {
 	}
 
 	slog.Info("Seeding dummy feeds...")
+
+	idEnforced := uuid.New()
+	idOpen := uuid.New()
+
 	feeds := []Feed{
 		{URL: "http://rssbridge/?action=display&bridge=TheVerge&format=Atom", Enabled: true, EnforceFeedDomain: true},
-		{URL: "http://dummy", Enabled: true, EnforceFeedDomain: true},
+		{Base: Base{ID: idEnforced}, URL: "http://dummy-enforced", Enabled: true, EnforceFeedDomain: true},
+		{Base: Base{ID: idOpen}, URL: "http://dummy-open", Enabled: true, EnforceFeedDomain: false},
 		{URL: "http://wordpress/feed", Enabled: true, EnforceFeedDomain: true},
 		{URL: "http://localhost:8003/feed", Enabled: true, EnforceFeedDomain: true},
 	}
 
-	return db.Create(&feeds).Error
+	if err := db.Create(&feeds).Error; err != nil {
+		return err
+	}
+
+	slog.Info("Seeding dummy items...")
+	items := []Item{
+		// Enforced Feed: Item pointing to itself
+		{Hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", FeedID: idEnforced, URL: "http://dummy-enforced/item-1", AIResult: JSONB{"title": "Enforced Item 1"}},
+		// Open Feed: Item pointing to itself
+		{Hash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", FeedID: idOpen, URL: "http://dummy-open/item-2", AIResult: JSONB{"title": "Open Item 2"}},
+		// Open Feed: Item pointing to Enforced Domain (Syndication)
+		// Same content hash as item 1, same URL as item 1, but different FeedID
+		{Hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", FeedID: idOpen, URL: "http://dummy-enforced/item-1", AIResult: JSONB{"title": "Syndicated Item 1"}},
+	}
+
+	return db.Create(&items).Error
 }

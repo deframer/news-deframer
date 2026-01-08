@@ -19,6 +19,12 @@ type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, error)
+	// FindItemsByUrl retrieves all items associated with a specific URL.
+	// As per the specification (Syndication), a single URL can legitimately appear in multiple feeds.
+	// Therefore, the system allows multiple Item records for the same URL, distinguished by their FeedID.
+	// This means the same content (probably different Hashes) can exist multiple times if it is syndicated across different feeds.
+	// Feed.EnforceFeedDomain = will enforce only items with the same base domain as the Feed URL
+	FindItemsByUrl(u *url.URL) ([]Item, error)
 }
 
 type repository struct {
@@ -93,6 +99,16 @@ func (r *repository) FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, erro
 
 	var items []Item
 	if err := r.db.Where("feed_id = ? AND hash IN ?", feedID, []string(cachedFeed.ItemRefs)).Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {
+	var items []Item
+	// We query by URL. Since URL is not unique (unique only per Feed), this returns a list.
+	// We preload the Feed to provide context.
+	if err := r.db.Preload("Feed").Where("url = ?", u.String()).Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil

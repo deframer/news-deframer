@@ -73,6 +73,7 @@ type mockRepo struct {
 	findFeedByUrl               func(u *url.URL) (*database.Feed, error)
 	findCachedFeedById          func(feedID uuid.UUID) (*database.CachedFeed, error)
 	findItemsByCachedFeedFeedId func(feedID uuid.UUID) ([]database.Item, error)
+	findItemsByUrl              func(u *url.URL) ([]database.Item, error)
 }
 
 func (m *mockRepo) GetTime() (time.Time, error) {
@@ -99,6 +100,13 @@ func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, e
 func (m *mockRepo) FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]database.Item, error) {
 	if m.findItemsByCachedFeedFeedId != nil {
 		return m.findItemsByCachedFeedFeedId(feedID)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error) {
+	if m.findItemsByUrl != nil {
+		return m.findItemsByUrl(u)
 	}
 	return nil, nil
 }
