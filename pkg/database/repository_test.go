@@ -10,6 +10,7 @@ import (
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
 func TestGetTime(t *testing.T) {
@@ -28,18 +29,22 @@ func TestFindFeedByUrl(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
-	repo, err := NewRepository(cfg)
+	baseRepo, err := NewRepository(cfg)
 	assert.NoError(t, err)
-	db := repo.(*repository).db
+	baseDB := baseRepo.(*repository).db
 
 	t.Run("Found", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
 		// Create isolated test data
 		rawURL := "http://test-find-feed-" + uuid.New().String() + ".test"
 		feed := Feed{
 			URL:     rawURL,
 			Enabled: true,
 		}
-		assert.NoError(t, db.Create(&feed).Error)
+		assert.NoError(t, tx.Create(&feed).Error)
 
 		u, err := url.Parse(rawURL)
 		assert.NoError(t, err)
@@ -52,6 +57,8 @@ func TestFindFeedByUrl(t *testing.T) {
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
+		repo := baseRepo
+
 		u, err := url.Parse("http://does-not-exist.test/feed")
 		assert.NoError(t, err)
 
@@ -65,77 +72,77 @@ func TestFindCachedFeedById(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
-	repo, err := NewRepository(cfg)
+	baseRepo, err := NewRepository(cfg)
 	assert.NoError(t, err)
-	db := repo.(*repository).db
+	baseDB := baseRepo.(*repository).db
 
 	tests := []struct {
 		name          string
-		setup         func() uuid.UUID
+		setup         func(tx *gorm.DB) uuid.UUID
 		expectedFound bool
 	}{
 		{
 			name: "Found (Enabled)",
-			setup: func() uuid.UUID {
+			setup: func(tx *gorm.DB) uuid.UUID {
 				feed := Feed{
 					URL:     "http://test-cached-feed-enabled-" + uuid.New().String(),
 					Enabled: true,
 				}
-				assert.NoError(t, db.Create(&feed).Error)
+				assert.NoError(t, tx.Create(&feed).Error)
 
 				cachedFeed := CachedFeed{
 					ID:        feed.ID,
 					XMLHeader: "<rss></rss>",
 					ItemRefs:  StringArray{},
 				}
-				assert.NoError(t, db.Create(&cachedFeed).Error)
+				assert.NoError(t, tx.Create(&cachedFeed).Error)
 				return feed.ID
 			},
 			expectedFound: true,
 		},
 		{
 			name: "NotFound (Disabled)",
-			setup: func() uuid.UUID {
+			setup: func(tx *gorm.DB) uuid.UUID {
 				feed := Feed{
 					URL:     "http://test-cached-feed-disabled-" + uuid.New().String(),
 					Enabled: false,
 				}
-				assert.NoError(t, db.Create(&feed).Error)
+				assert.NoError(t, tx.Create(&feed).Error)
 
 				cachedFeed := CachedFeed{
 					ID:        feed.ID,
 					XMLHeader: "<rss></rss>",
 					ItemRefs:  StringArray{},
 				}
-				assert.NoError(t, db.Create(&cachedFeed).Error)
+				assert.NoError(t, tx.Create(&cachedFeed).Error)
 				return feed.ID
 			},
 			expectedFound: false,
 		},
 		{
 			name: "NotFound (Deleted)",
-			setup: func() uuid.UUID {
+			setup: func(tx *gorm.DB) uuid.UUID {
 				feed := Feed{
 					URL:     "http://test-cached-feed-deleted-" + uuid.New().String(),
 					Enabled: true,
 				}
-				assert.NoError(t, db.Create(&feed).Error)
+				assert.NoError(t, tx.Create(&feed).Error)
 
 				cachedFeed := CachedFeed{
 					ID:        feed.ID,
 					XMLHeader: "<rss></rss>",
 					ItemRefs:  StringArray{},
 				}
-				assert.NoError(t, db.Create(&cachedFeed).Error)
+				assert.NoError(t, tx.Create(&cachedFeed).Error)
 
-				assert.NoError(t, db.Delete(&feed).Error)
+				assert.NoError(t, tx.Delete(&feed).Error)
 				return feed.ID
 			},
 			expectedFound: false,
 		},
 		{
 			name: "NotFound (NonExistent)",
-			setup: func() uuid.UUID {
+			setup: func(tx *gorm.DB) uuid.UUID {
 				return uuid.New()
 			},
 			expectedFound: false,
@@ -144,7 +151,11 @@ func TestFindCachedFeedById(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id := tt.setup()
+			tx := baseDB.Begin()
+			defer tx.Rollback()
+			repo := NewFromDB(tx)
+
+			id := tt.setup(tx)
 			found, err := repo.FindCachedFeedById(id)
 			assert.NoError(t, err)
 			if tt.expectedFound {
@@ -161,9 +172,9 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
-	repo, err := NewRepository(cfg)
+	baseRepo, err := NewRepository(cfg)
 	assert.NoError(t, err)
-	db := repo.(*repository).db
+	baseDB := baseRepo.(*repository).db
 
 	// Helper to create valid SHA256 hash string
 	makeHash := func(s string) string {
@@ -173,83 +184,83 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		setup         func() (uuid.UUID, string)
+		setup         func(tx *gorm.DB) (uuid.UUID, string)
 		expectedCount int
 	}{
 		{
 			name: "Found (Enabled)",
-			setup: func() (uuid.UUID, string) {
+			setup: func(tx *gorm.DB) (uuid.UUID, string) {
 				feed := Feed{
 					URL:     "http://test-items-enabled-" + uuid.New().String(),
 					Enabled: true,
 				}
-				assert.NoError(t, db.Create(&feed).Error)
+				assert.NoError(t, tx.Create(&feed).Error)
 
 				hash := makeHash("item-enabled-" + feed.ID.String())
 				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: JSONB{"a": 1}}
-				assert.NoError(t, db.Create(&item).Error)
+				assert.NoError(t, tx.Create(&item).Error)
 
 				cachedFeed := CachedFeed{
 					ID:        feed.ID,
 					XMLHeader: "<rss></rss>",
 					ItemRefs:  StringArray{hash},
 				}
-				assert.NoError(t, db.Create(&cachedFeed).Error)
+				assert.NoError(t, tx.Create(&cachedFeed).Error)
 				return feed.ID, hash
 			},
 			expectedCount: 1,
 		},
 		{
 			name: "Empty (Disabled)",
-			setup: func() (uuid.UUID, string) {
+			setup: func(tx *gorm.DB) (uuid.UUID, string) {
 				feed := Feed{
 					URL:     "http://test-items-disabled-" + uuid.New().String(),
 					Enabled: false,
 				}
-				assert.NoError(t, db.Create(&feed).Error)
+				assert.NoError(t, tx.Create(&feed).Error)
 
 				hash := makeHash("item-disabled-" + feed.ID.String())
 				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: JSONB{"a": 1}}
-				assert.NoError(t, db.Create(&item).Error)
+				assert.NoError(t, tx.Create(&item).Error)
 
 				cachedFeed := CachedFeed{
 					ID:        feed.ID,
 					XMLHeader: "<rss></rss>",
 					ItemRefs:  StringArray{hash},
 				}
-				assert.NoError(t, db.Create(&cachedFeed).Error)
+				assert.NoError(t, tx.Create(&cachedFeed).Error)
 				return feed.ID, hash
 			},
 			expectedCount: 0,
 		},
 		{
 			name: "Empty (Deleted)",
-			setup: func() (uuid.UUID, string) {
+			setup: func(tx *gorm.DB) (uuid.UUID, string) {
 				feed := Feed{
 					URL:     "http://test-items-deleted-" + uuid.New().String(),
 					Enabled: true,
 				}
-				assert.NoError(t, db.Create(&feed).Error)
+				assert.NoError(t, tx.Create(&feed).Error)
 
 				hash := makeHash("item-deleted-" + feed.ID.String())
 				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: JSONB{"a": 1}}
-				assert.NoError(t, db.Create(&item).Error)
+				assert.NoError(t, tx.Create(&item).Error)
 
 				cachedFeed := CachedFeed{
 					ID:        feed.ID,
 					XMLHeader: "<rss></rss>",
 					ItemRefs:  StringArray{hash},
 				}
-				assert.NoError(t, db.Create(&cachedFeed).Error)
+				assert.NoError(t, tx.Create(&cachedFeed).Error)
 
-				assert.NoError(t, db.Delete(&feed).Error)
+				assert.NoError(t, tx.Delete(&feed).Error)
 				return feed.ID, hash
 			},
 			expectedCount: 0,
 		},
 		{
 			name: "Empty (NonExistent)",
-			setup: func() (uuid.UUID, string) {
+			setup: func(tx *gorm.DB) (uuid.UUID, string) {
 				return uuid.New(), ""
 			},
 			expectedCount: 0,
@@ -258,7 +269,11 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			id, hash := tt.setup()
+			tx := baseDB.Begin()
+			defer tx.Rollback()
+			repo := NewFromDB(tx)
+
+			id, hash := tt.setup(tx)
 			items, err := repo.FindItemsByCachedFeedFeedId(id)
 			assert.NoError(t, err)
 			assert.Len(t, items, tt.expectedCount)
@@ -273,9 +288,9 @@ func TestFindItemsByUrl(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
-	repo, err := NewRepository(cfg)
+	baseRepo, err := NewRepository(cfg)
 	assert.NoError(t, err)
-	db := repo.(*repository).db
+	baseDB := baseRepo.(*repository).db
 
 	// Helper to create valid SHA256 hash string
 	makeHash := func(s string) string {
@@ -284,13 +299,18 @@ func TestFindItemsByUrl(t *testing.T) {
 	}
 
 	t.Run("MatchingDomain", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		uid := uuid.New().String()
 		// Scenario: A standard news site where items belong to the site.
-		feedURL := "http://nytimes.test/services/xml/rss/nyt/HomePage.xml"
-		itemURL := "http://nytimes.test/2024/01/01/world/test-article.html"
+		feedURL := "http://nytimes.test/services/xml/rss/nyt/HomePage-" + uid + ".xml"
+		itemURL := "http://nytimes.test/2024/01/01/world/test-article-" + uid + ".html"
 
 		// EnforceFeedDomain not enforced by Database (!)
 		feed := Feed{URL: feedURL, Enabled: true, EnforceFeedDomain: true}
-		assert.NoError(t, db.Create(&feed).Error)
+		assert.NoError(t, tx.Create(&feed).Error)
 
 		// Test
 		u, _ := url.Parse(itemURL)
@@ -300,27 +320,32 @@ func TestFindItemsByUrl(t *testing.T) {
 	})
 
 	t.Run("Syndication_SameUrlInMultipleFeeds", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		uid := uuid.New().String()
 		// Scenario: The same article URL appears in two different feeds.
 		// 1. The original source (Enforced)
 		// 2. An aggregator (Not Enforced)
-		sharedURL := "http://example.com/shared-story"
+		sharedURL := "http://example.com/shared-story-" + uid
 
 		// Create Source Feed & Item
-		sourceFeed := Feed{URL: "http://example.com/rss", Enabled: true, EnforceFeedDomain: true}
-		assert.NoError(t, db.Create(&sourceFeed).Error)
+		sourceFeed := Feed{URL: "http://example.com/rss-" + uid, Enabled: true, EnforceFeedDomain: true}
+		assert.NoError(t, tx.Create(&sourceFeed).Error)
 
 		// We use the same content hash to simulate exact syndication, though hashes can differ if content varies.
 		contentHash := makeHash("shared-content-body")
 
 		sourceItem := Item{Hash: contentHash, FeedID: sourceFeed.ID, URL: sharedURL, AnalyzerResult: JSONB{"src": "original"}}
-		assert.NoError(t, db.Create(&sourceItem).Error)
+		assert.NoError(t, tx.Create(&sourceItem).Error)
 
 		// Create Aggregator Feed & Item
-		aggFeed := Feed{URL: "http://aggregator.test/rss", Enabled: true, EnforceFeedDomain: false}
-		assert.NoError(t, db.Create(&aggFeed).Error)
+		aggFeed := Feed{URL: "http://aggregator.test/rss-" + uid, Enabled: true, EnforceFeedDomain: false}
+		assert.NoError(t, tx.Create(&aggFeed).Error)
 
 		aggItem := Item{Hash: contentHash, FeedID: aggFeed.ID, URL: sharedURL, AnalyzerResult: JSONB{"src": "aggregator"}}
-		assert.NoError(t, db.Create(&aggItem).Error)
+		assert.NoError(t, tx.Create(&aggItem).Error)
 
 		// Test: Should find BOTH items
 		u, _ := url.Parse(sharedURL)
@@ -335,11 +360,16 @@ func TestFindItemsByUrl(t *testing.T) {
 	})
 
 	t.Run("FeedDisabled", func(t *testing.T) {
-		feedURL := "http://disabled-feed.test/rss"
-		itemURL := "http://disabled-feed.test/article"
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		uid := uuid.New().String()
+		feedURL := "http://disabled-feed.test/rss-" + uid
+		itemURL := "http://disabled-feed.test/article-" + uid
 
 		feed := Feed{URL: feedURL, Enabled: false}
-		assert.NoError(t, db.Create(&feed).Error)
+		assert.NoError(t, tx.Create(&feed).Error)
 
 		item := Item{
 			Hash:           makeHash("disabled-content"),
@@ -347,7 +377,7 @@ func TestFindItemsByUrl(t *testing.T) {
 			URL:            itemURL,
 			AnalyzerResult: JSONB{"title": "Disabled"},
 		}
-		assert.NoError(t, db.Create(&item).Error)
+		assert.NoError(t, tx.Create(&item).Error)
 
 		u, _ := url.Parse(itemURL)
 		items, err := repo.FindItemsByUrl(u)
@@ -356,14 +386,19 @@ func TestFindItemsByUrl(t *testing.T) {
 	})
 
 	t.Run("FeedDeleted", func(t *testing.T) {
-		feedURL := "http://deleted-feed.test/rss"
-		itemURL := "http://deleted-feed.test/article"
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		uid := uuid.New().String()
+		feedURL := "http://deleted-feed.test/rss-" + uid
+		itemURL := "http://deleted-feed.test/article-" + uid
 
 		feed := Feed{
 			URL:     feedURL,
 			Enabled: true,
 		}
-		assert.NoError(t, db.Create(&feed).Error)
+		assert.NoError(t, tx.Create(&feed).Error)
 
 		item := Item{
 			Hash:           makeHash("deleted-content"),
@@ -371,9 +406,9 @@ func TestFindItemsByUrl(t *testing.T) {
 			URL:            itemURL,
 			AnalyzerResult: JSONB{"title": "Deleted"},
 		}
-		assert.NoError(t, db.Create(&item).Error)
+		assert.NoError(t, tx.Create(&item).Error)
 
-		assert.NoError(t, db.Delete(&feed).Error)
+		assert.NoError(t, tx.Delete(&feed).Error)
 
 		u, _ := url.Parse(itemURL)
 		items, err := repo.FindItemsByUrl(u)

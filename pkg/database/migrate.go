@@ -79,5 +79,23 @@ func seed(db *gorm.DB) error {
 		{Hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", FeedID: idOpen, URL: "http://dummy-enforced/item-1", AnalyzerResult: JSONB{"title": "Syndicated Item 1"}},
 	}
 
-	return db.Create(&items).Error
+	if err := db.Create(&items).Error; err != nil {
+		return err
+	}
+
+	// add a dummy cached read for  idEnforced and idOpen
+	cachedFeeds := []CachedFeed{
+		{
+			ID:        idEnforced,
+			XMLHeader: `<rss version="2.0"><channel><title>Dummy Enforced</title></channel></rss>`,
+			ItemRefs:  StringArray{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		},
+		{
+			ID:        idOpen,
+			XMLHeader: `<rss version="2.0"><channel><title>Dummy Open</title></channel></rss>`,
+			ItemRefs:  StringArray{"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		},
+	}
+
+	return db.Create(&cachedFeeds).Error
 }
