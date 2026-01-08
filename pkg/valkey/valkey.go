@@ -21,8 +21,9 @@ const (
 )
 
 type FeedUUIDCache struct {
-	Cache Cache
-	UUID  uuid.UUID
+	Cache      Cache
+	UUID       uuid.UUID
+	BaseDomain []string
 }
 
 type Valkey interface {

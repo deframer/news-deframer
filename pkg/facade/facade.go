@@ -12,6 +12,7 @@ import (
 	"github.com/egandro/news-deframer/pkg/downloader"
 	"github.com/egandro/news-deframer/pkg/feeds"
 	"github.com/egandro/news-deframer/pkg/valkey"
+	"golang.org/x/net/publicsuffix"
 )
 
 type Facade struct {
@@ -120,9 +121,20 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 
 	state := valkey.FeedUUIDCache{Cache: valkey.ValueUnknown}
 	if feed != nil {
+		var baseDomains []string
+		if feed.EnforceFeedDomain {
+			// we need to enforce the base domain
+			if bd, err := publicsuffix.EffectiveTLDPlusOne(u.Hostname()); err == nil {
+				baseDomains = append(baseDomains, bd)
+			} else {
+				baseDomains = append(baseDomains, u.Hostname())
+			}
+			// TODO we might have an allow list table later for each feed
+		}
 		state = valkey.FeedUUIDCache{
-			Cache: valkey.Ok,
-			UUID:  feed.ID,
+			Cache:      valkey.Ok,
+			UUID:       feed.ID,
+			BaseDomain: baseDomains,
 		}
 	}
 

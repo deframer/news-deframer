@@ -29,8 +29,9 @@ func (base *Base) BeforeCreate(tx *gorm.DB) error {
 type Feed struct {
 	// gorm.Model
 	Base
-	URL     string `gorm:"index"`
-	Enabled bool   `gorm:"not null;default:false"` // not null default false
+	URL               string `gorm:"index"`
+	EnforceFeedDomain bool   `gorm:"not null;default:true"`  // item url must be from our URL
+	Enabled           bool   `gorm:"not null;default:false"` // not null default false
 }
 
 // StringArray aliases []string to implement sql.Scanner and driver.Valuer for PostgreSQL text[]
@@ -71,12 +72,22 @@ func (j *JSONB) Scan(value interface{}) error {
 }
 
 type Item struct {
-	Base
+	ID           uuid.UUID `gorm:"primaryKey;type:uuid"`
+	CreatedAt    time.Time `gorm:"not null;default:now()"`
+	UpdatedAt    time.Time `gorm:"not null;default:now()"`
 	Hash         string    `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
 	FeedID       uuid.UUID `gorm:"type:uuid;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
 	Feed         Feed      `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	URL          string    `gorm:"uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	URL          string    `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
 	AIResult     JSONB     `gorm:"type:jsonb;not null"`
 	DebugContent string    `gorm:"type:text;default:null"`
 	MinHash      string    `gorm:"default:null"`
+}
+
+// BeforeCreate will set a UUID rather than numeric ID.
+func (item *Item) BeforeCreate(tx *gorm.DB) error {
+	if item.ID == uuid.Nil {
+		item.ID = uuid.New()
+	}
+	return nil
 }

@@ -59,7 +59,7 @@ The system is designed as a **Producer-Consumer** architecture. It decouples the
     - **Message Queue**: Handles tasks (`IngestQueue`, `FeedQueue`).
     - **State Machine**: Handles Distributed Locks and Pending Counters.
 4.  **PostgreSQL (Infrastructure)**:
-    - **Persistent Storage**: Stores configuration (`Feeds`), processed data (`Items`), and cold cache (`Feeds`).
+    - **Persistent Storage**: Stores configuration (`Feeds`), processed data (`Items`), and cold cache (`cached_feeds`).
     - Ensures data survival across container restarts.
 
 ---
@@ -77,7 +77,7 @@ GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
 ```
 **Behavior (The Fallback Chain)**:
 1.  **Hot Cache Hit**: If Valkey contains `feed:{uuid}:final`, return XML immediately (< 50ms).
-2.  **Cold Cache Hit**: If Valkey is empty, query PostgreSQL `FeedCache` table. If found, return XML and populate Valkey.
+2.  **Cold Cache Hit**: If Valkey is empty, query PostgreSQL `cached_feeds` table. If found, return XML and populate Valkey.
 3.  **Miss (New/Empty Feed)**:
     - Register feed in DB if new.
     - **Push Feed UUID** to `IngestQueue`.
@@ -112,6 +112,7 @@ To handle the heavy lifting: Polling, Scraping, AI Processing, and XML Reconstru
   - **Deduplication**: If triggered by Queue but lock is held, the task is discarded (prevents duplicate processing).
 - **Logic**:
   - Fetches upstream XML.
+  - **Validate Domain**: Checks if the Item URL matches the Feed's domain (if `enforce_feed_domain` is true).
   - Diffs content against DB.
   - Saves new raw items to Postgres (`items` table).
   - Sets Valkey `Pending Counter` = `Count(New Items)`.
@@ -130,12 +131,12 @@ To handle the heavy lifting: Polling, Scraping, AI Processing, and XML Reconstru
 #### 3. The Feed Builder (Aggregator)
 - **Trigger**: Runs when `Pending Counter` for a feed reaches `0`.
 - **Logic**:
-  - Loads `FeedCache` structure (Header) from Postgres.
+  - Loads `cached_feeds` structure (Header) from Postgres.
   - Fetches all valid items (with `AI_Result`) from Postgres.
   - Updates `pubDate` and `lastUpdate`.
   - Builds the Final XML.
   - **Write 1**: Updates Valkey `Final Feed Cache`.
-  - **Write 2**: Updates Postgres `FeedCache` (Cold Store).
+  - **Write 2**: Updates Postgres `cached_feeds` (Cold Store).
 
 ---
 
@@ -154,7 +155,7 @@ Once the `Feed Builder` runs (all items processed):
 
 ### Phase 3: Bootstrap (Cold Start)
 If the system restarts and Valkey is empty:
-1.  API checks Postgres `FeedCache`.
+1.  API checks Postgres `cached_feeds`.
 2.  If data exists, it is served immediately and re-cached in Valkey.
 3.  If no data exists, an Empty Feed is served and a download is triggered.
 
@@ -184,15 +185,19 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - `url`: String (Upstream RSS URL)
 - `enabled`: Boolean
 - `config`: JSON (Interval, specific parsing rules)
+- `enforce_feed_domain`: Boolean (Flag: Only allow items from the Feed Base URL).
 
 **Table: `items`**
 - `hash`: String (SHA256 of Title + Description - PK)
 - `feed_id`: FK
-- `url`: String
+- `url`: String (**Indexed**, Non-Unique)
 - `ai_result`: JSONB (The processed content)
 - `debug_content`: Text (Optional: Original XML or full HTML source)
 - `min_hash`: Text (Optional: Content change detection)
 - `created_at`: Timestamp
+- **Constraints**:
+  - `FeedID` + `URL` is **UNIQUE**.
+  - `URL` alone is **NOT UNIQUE** (One URL can appear in multiple Feeds).
 
 **Table: `cached_feeds` (Cold Store)**
 - `id`: UUID (PK & FK to feeds.id)
@@ -202,7 +207,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 
 ### Cache (Valkey)
 
-- **Key**: `feed_uuid:{url_coded_url}` -> UUID of the feed, or invalid/pending (cache to avoid query the DB with the URL)
+- **Key**: `feed_uuid:{url_coded_url}` -> UUID of the feed, or invalid/pending (cache to avoid query the DB with the URL).
 - **Key**: `feed:{uuid}:final` -> Final XML String.
 - **Key**: `feed:{uuid}:pending` -> Integer (Counter).
 - **Key**: `queue:ingest` -> List of Feed UUIDs.
@@ -243,6 +248,12 @@ This component is an abstraction layer over Large Language Models (LLMs).
 
 ## 9. Implementation Notes & Hints
 
+- **URL Ambiguity & Security**:
+  - A single URL (e.g., `example.com/foo`) can legitimately appear in multiple feeds (Syndication).
+  - **Risk**: A malicious RSS feed could theoretically "claim" popular URLs to inject bad data into the system.
+  - **Mitigation**: The `enforce_feed_domain` boolean on the Feed config enforces strict domain matching.
+  - **TODO**: We might need a more granular allow-list (Regex/Glob) for items if we encounter feeds that legitimately host items on 3rd party domains.
+  - **Lookup**: When querying by URL, the application must handle multiple results (e.g., sort by latest).
 - **Trigger Mechanism**: The Webserver pushes the `Feed UUID` to a Redis List. The Worker uses a `SETNX` lock to ensure it doesn't process the same feed twice if the queue accumulates duplicates.
 - **Future AI Scalability**: We intend to replace the local AI worker with an external decentralized network where multiple AIs process the item in parallel and "vote" on the best result before returning it.
 - **Rate Limits**: **TOTAL TBD** (Needs further investigation). Limits should likely be applied at the Queue consumption level.

@@ -52,10 +52,10 @@ func seed(db *gorm.DB) error {
 
 	slog.Info("Seeding dummy feeds...")
 	feeds := []Feed{
-		{URL: "http://rssbridge/?action=display&bridge=TheVerge&format=Atom", Enabled: true},
-		{URL: "http://dummy", Enabled: true},
-		{URL: "http://wordpress/feed", Enabled: true},
-		{URL: "http://localhost:8003/feed", Enabled: true},
+		{URL: "http://rssbridge/?action=display&bridge=TheVerge&format=Atom", Enabled: true, EnforceFeedDomain: true},
+		{URL: "http://dummy", Enabled: true, EnforceFeedDomain: true},
+		{URL: "http://wordpress/feed", Enabled: true, EnforceFeedDomain: true},
+		{URL: "http://localhost:8003/feed", Enabled: true, EnforceFeedDomain: true},
 	}
 
 	return db.Create(&feeds).Error
