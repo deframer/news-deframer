@@ -194,8 +194,9 @@ func (f *Facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 }
 
 type ItemResult struct {
-	Hash     string `json:"hash"`
 	FeedURL  string `json:"feed_url"`
+	URL      string `json:"url"`
+	Hash     string `json:"hash"`
 	AIResult string `json:"ai_result"`
 }
 

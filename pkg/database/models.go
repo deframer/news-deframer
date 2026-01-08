@@ -72,16 +72,16 @@ func (j *JSONB) Scan(value interface{}) error {
 }
 
 type Item struct {
-	ID           uuid.UUID `gorm:"primaryKey;type:uuid"`
-	CreatedAt    time.Time `gorm:"not null;default:now()"`
-	UpdatedAt    time.Time `gorm:"not null;default:now()"`
-	Hash         string    `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	FeedID       uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	Feed         Feed      `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	URL          string    `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
-	AIResult     JSONB     `gorm:"type:jsonb;not null"`
-	DebugContent string    `gorm:"type:text;default:null"`
-	MinHash      string    `gorm:"default:null"`
+	ID             uuid.UUID `gorm:"primaryKey;type:uuid"`
+	CreatedAt      time.Time `gorm:"not null;default:now()"`
+	UpdatedAt      time.Time `gorm:"not null;default:now()"`
+	Hash           string    `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	FeedID         uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	Feed           Feed      `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	URL            string    `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	AnalyzerResult JSONB     `gorm:"type:jsonb;not null"`
+	Content        string    `gorm:"type:text;not null"`
+	MinHash        string    `gorm:"default:null"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.

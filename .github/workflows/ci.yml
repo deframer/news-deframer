@@ -12,12 +12,14 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container: debian:trixie
+    env:
+      PGPASSWORD: deframer
     services:
       postgres:
         image: postgres:17
         env:
           POSTGRES_USER: deframer
-          POSTGRES_PASSWORD: deframer
+          POSTGRES_PASSWORD: ${{ env.PGPASSWORD }}
           POSTGRES_DB: deframer
         options: >-
           --health-cmd pg_isready
@@ -34,7 +36,7 @@ jobs:
     steps:
       - name: Install System Dependencies
         run: |
-          apt-get update && apt-get install -y git make curl bash binutils build-essential
+          apt-get update && apt-get install -y git make curl bash binutils build-essential postgresql-client
 
       - name: Checkout code
         uses: actions/checkout@v6
@@ -69,6 +71,10 @@ jobs:
           go install golang.org/x/vuln/cmd/govulncheck@latest
           govulncheck ./...
 
+      - name: Setup Database
+        run: |
+          psql -h postgres -U deframer -d deframer -c 'CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'
+
       - name: Run Tests
         run: |
           go test -v -count=1 -race -coverprofile=coverage.out ./...
@@ -76,7 +82,7 @@ jobs:
         env:
           CGO_ENABLED: 1
           GOFLAGS: "-buildvcs=false"
-          DSN: "host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"
+          DSN: "host=postgres user=deframer password=${{ env.PGPASSWORD }} dbname=deframer port=5432 sslmode=disable"
           VALKEY_HOST: "valkey:6379"
           VALKEY_PASSWORD: ""
           VALKEY_DB: "0"

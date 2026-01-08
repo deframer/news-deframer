@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/egandro/news-deframer/pkg/analyzer"
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/google/uuid"
 	driver "github.com/valkey-io/valkey-go"
@@ -26,11 +27,22 @@ type FeedUUIDCache struct {
 	BaseDomain []string
 }
 
+type ItemHashCache struct {
+	Cache          Cache
+	Hash           string
+	Content        string
+	AnalyzerResult analyzer.AnalyzerResult
+}
+
 type Valkey interface {
 	GetFeedUUID(u *url.URL) (*FeedUUIDCache, error)
 	UpdateFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) error
 	TryLockFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) (bool, error)
 	DeleteFeedUUID(u *url.URL) error
+
+	// for hash -> Item
+	// for url -> feedURL / ItemURL /Array of (Hash/AIResult)
+
 	Close() error
 }
 
