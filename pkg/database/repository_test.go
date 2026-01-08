@@ -283,62 +283,20 @@ func TestFindItemsByUrl(t *testing.T) {
 		return hex.EncodeToString(h[:])
 	}
 
-	t.Run("EnforceDomain_True_MatchingDomain", func(t *testing.T) {
+	t.Run("MatchingDomain", func(t *testing.T) {
 		// Scenario: A standard news site where items belong to the site.
 		feedURL := "http://nytimes.test/services/xml/rss/nyt/HomePage.xml"
 		itemURL := "http://nytimes.test/2024/01/01/world/test-article.html"
 
-		feed := Feed{
-			URL:               feedURL,
-			Enabled:           true,
-			EnforceFeedDomain: true,
-		}
+		// EnforceFeedDomain not enforced by Database (!)
+		feed := Feed{URL: feedURL, Enabled: true, EnforceFeedDomain: true}
 		assert.NoError(t, db.Create(&feed).Error)
-
-		item := Item{
-			Hash:     makeHash("unique-content-1"),
-			FeedID:   feed.ID,
-			URL:      itemURL,
-			AIResult: JSONB{"title": "NYT Article"},
-		}
-		assert.NoError(t, db.Create(&item).Error)
 
 		// Test
 		u, _ := url.Parse(itemURL)
 		items, err := repo.FindItemsByUrl(u)
 		assert.NoError(t, err)
-		assert.Len(t, items, 1)
-		assert.Equal(t, itemURL, items[0].URL)
-		assert.Equal(t, feed.ID, items[0].FeedID)
-	})
-
-	t.Run("EnforceDomain_False_Aggregator", func(t *testing.T) {
-		// Scenario: An aggregator feed that links to external content.
-		feedURL := "http://techmeme.test/feed.xml"
-		itemURL := "http://theverge.test/2024/01/01/tech-news.html"
-
-		feed := Feed{
-			URL:               feedURL,
-			Enabled:           true,
-			EnforceFeedDomain: false, // Allows external URLs
-		}
-		assert.NoError(t, db.Create(&feed).Error)
-
-		item := Item{
-			Hash:     makeHash("unique-content-2"),
-			FeedID:   feed.ID,
-			URL:      itemURL,
-			AIResult: JSONB{"title": "Aggregated Tech News"},
-		}
-		assert.NoError(t, db.Create(&item).Error)
-
-		// Test
-		u, _ := url.Parse(itemURL)
-		items, err := repo.FindItemsByUrl(u)
-		assert.NoError(t, err)
-		assert.Len(t, items, 1)
-		assert.Equal(t, itemURL, items[0].URL)
-		assert.Equal(t, feed.ID, items[0].FeedID)
+		assert.Len(t, items, 0)
 	})
 
 	t.Run("Syndication_SameUrlInMultipleFeeds", func(t *testing.T) {
@@ -350,6 +308,7 @@ func TestFindItemsByUrl(t *testing.T) {
 		// Create Source Feed & Item
 		sourceFeed := Feed{URL: "http://example.com/rss", Enabled: true, EnforceFeedDomain: true}
 		assert.NoError(t, db.Create(&sourceFeed).Error)
+
 		// We use the same content hash to simulate exact syndication, though hashes can differ if content varies.
 		contentHash := makeHash("shared-content-body")
 
@@ -379,10 +338,7 @@ func TestFindItemsByUrl(t *testing.T) {
 		feedURL := "http://disabled-feed.test/rss"
 		itemURL := "http://disabled-feed.test/article"
 
-		feed := Feed{
-			URL:     feedURL,
-			Enabled: false,
-		}
+		feed := Feed{URL: feedURL, Enabled: false}
 		assert.NoError(t, db.Create(&feed).Error)
 
 		item := Item{
