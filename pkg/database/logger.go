@@ -20,7 +20,7 @@ type slogGormLogger struct {
 
 func newSlogGormLogger(l *slog.Logger, lvl logger.LogLevel) logger.Interface {
 	return &slogGormLogger{
-		logger:                    l,
+		logger:                    l.With("component", "database"),
 		LogLevel:                  lvl,
 		IgnoreRecordNotFoundError: true,
 		SlowThreshold:             200 * time.Millisecond,

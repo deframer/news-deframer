@@ -184,7 +184,6 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - `url`: String (Upstream RSS URL)
 - `enabled`: Boolean
 - `config`: JSON (Interval, specific parsing rules)
-- `last_polled`: Timestamp
 
 **Table: `items`**
 - `hash`: String (SHA256 of Title + Description - PK)
@@ -196,7 +195,8 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - `created_at`: Timestamp
 
 **Table: `cached_feeds` (Cold Store)**
-- `id`: UUID (PK & FK to feeds.id)
+- `id`: UUID (PK)
+- `feed_id`: FK
 - `xml_header`: Text
 - `item_refs`: Array of String (SHA256 references)
 - `last_update`: Timestamp (Managed by GORM)

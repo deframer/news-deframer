@@ -22,7 +22,7 @@ func RunMigrations(cfg *config.Config) error {
 // Migrate updates the database schema and seeds initial data.
 func Migrate(db *gorm.DB) error {
 	// 1. AutoMigrate the schema
-	if err := db.AutoMigrate(&Feed{}); err != nil {
+	if err := db.AutoMigrate(&Feed{}, &CachedFeed{}, &Item{}); err != nil {
 		return err
 	}
 
