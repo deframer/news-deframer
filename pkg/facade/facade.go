@@ -49,25 +49,25 @@ var (
 	maxTimeout        = 5 * time.Minute
 )
 
-const (
-	statusInvalid = "invalid"
-	statusPending = "pending"
-)
-
 func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
-	val, err := f.valkey.GetFeedUrl(u)
+	val, err := f.valkey.GetFeedUUID(u)
 	if err != nil {
 		return false, err
 	}
 
 	// If we have a definitive result, return it. (= cache hit)
-	if val != nil && *val != statusPending {
-		return *val != statusInvalid, nil
+	if val != nil {
+		switch val.Cache {
+		case valkey.Ok:
+			return true, nil
+		case valkey.ValueUnknown:
+			return false, nil
+		}
 	}
 
 	// If it was missing (nil), try to acquire the lock to be the one fetching it.
 	if val == nil {
-		acquired, err := f.valkey.TryLockFeedUrl(u, statusPending, maxPendingTimeout)
+		acquired, err := f.valkey.TryLockFeedUUID(u, valkey.FeedUUIDCache{Cache: valkey.Updating}, maxPendingTimeout)
 		if err != nil {
 			return false, err
 		}
@@ -81,7 +81,7 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 		return f.fetchAndCache(u)
 	}
 
-	// It is pending (either from GetFeedUrl or failed UpdateFeedUrl). Wait for it.
+	// It is pending (either from GetFeedUUID or failed UpdateFeedUUID). Wait for it.
 WAIT_LOOP:
 	ticker := time.NewTicker(checkInterval)
 	defer ticker.Stop()
@@ -94,12 +94,17 @@ WAIT_LOOP:
 		case <-timeout:
 			return false, fmt.Errorf("timeout waiting for pending feed")
 		case <-ticker.C:
-			val, err := f.valkey.GetFeedUrl(u)
+			val, err := f.valkey.GetFeedUUID(u)
 			if err != nil {
 				return false, err
 			}
-			if val != nil && *val != statusPending {
-				return *val != statusInvalid, nil
+			if val != nil {
+				switch val.Cache {
+				case valkey.Ok:
+					return true, nil
+				case valkey.ValueUnknown:
+					return false, nil
+				}
 			}
 			// If val is nil here, it means the pending key expired or was deleted without result.
 			// we don't care and wait for the next query
@@ -113,15 +118,18 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 		return false, err
 	}
 
-	status := statusInvalid
+	state := valkey.FeedUUIDCache{Cache: valkey.ValueUnknown}
 	if feed != nil {
-		status = feed.ID.String()
+		state = valkey.FeedUUIDCache{
+			Cache: valkey.Ok,
+			UUID:  feed.ID,
+		}
 	}
 
-	if err := f.valkey.UpdateFeedUrl(u, status, maxTimeout); err != nil {
+	if err := f.valkey.UpdateFeedUUID(u, state, maxTimeout); err != nil {
 		return false, err
 	}
-	return status != statusInvalid, nil
+	return state.Cache != valkey.ValueUnknown, nil
 }
 
 func (f *Facade) HasArticle(ctx context.Context, u *url.URL) (bool, error) {

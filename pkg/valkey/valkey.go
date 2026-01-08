@@ -8,14 +8,28 @@ import (
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/google/uuid"
 	driver "github.com/valkey-io/valkey-go"
 )
 
+type Cache int
+
+const (
+	Ok Cache = iota
+	ValueUnknown
+	Updating
+)
+
+type FeedUUIDCache struct {
+	Cache Cache
+	UUID  uuid.UUID
+}
+
 type Valkey interface {
-	GetFeedUrl(u *url.URL) (*string, error)
-	UpdateFeedUrl(u *url.URL, value string, ttl time.Duration) error
-	TryLockFeedUrl(u *url.URL, value string, ttl time.Duration) (bool, error)
-	DeleteFeedUrl(u *url.URL) error
+	GetFeedUUID(u *url.URL) (*FeedUUIDCache, error)
+	UpdateFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) error
+	TryLockFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) (bool, error)
+	DeleteFeedUUID(u *url.URL) error
 	Close() error
 }
 
@@ -53,31 +67,53 @@ func New(ctx context.Context, cfg *config.Config) (Valkey, error) {
 	return &valkey{client: client, ctx: ctx}, nil
 }
 
-const prefix = "feed_uuid:"
+const key_prefix_feed_uuid = "feed_uuid:"
 
-func urlToValkeyKey(u *url.URL) string {
-	return prefix + url.QueryEscape(u.String())
+func feedUUIDKey(u *url.URL) string {
+	return key_prefix_feed_uuid + url.QueryEscape(u.String())
 }
 
-func (v *valkey) GetFeedUrl(u *url.URL) (*string, error) {
-	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(urlToValkeyKey(u)).Build()).ToString()
+func (v *valkey) GetFeedUUID(u *url.URL) (*FeedUUIDCache, error) {
+	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(feedUUIDKey(u)).Build()).ToString()
 	if driver.IsValkeyNil(err) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	return &val, nil
+
+	state := &FeedUUIDCache{}
+	if i, err := strconv.Atoi(val); err == nil {
+		state.Cache = Cache(i)
+		state.UUID = uuid.Nil
+		return state, nil
+	}
+
+	id, err := uuid.Parse(val)
+	if err != nil {
+		return nil, fmt.Errorf("invalid uuid in cache %q: %w", val, err)
+	}
+	state.Cache = Ok
+	state.UUID = id
+	return state, nil
 }
 
-func (v *valkey) UpdateFeedUrl(u *url.URL, value string, ttl time.Duration) error {
-	return v.client.Do(v.ctx, v.client.B().Set().Key(urlToValkeyKey(u)).Value(value).Ex(ttl).Build()).Error()
+func (v *valkey) UpdateFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) error {
+	val := state.UUID.String()
+	if state.Cache != Ok {
+		val = strconv.Itoa(int(state.Cache))
+	}
+	return v.client.Do(v.ctx, v.client.B().Set().Key(feedUUIDKey(u)).Value(val).Ex(ttl).Build()).Error()
 }
 
-func (v *valkey) TryLockFeedUrl(u *url.URL, value string, ttl time.Duration) (bool, error) {
-	// TryLockFeedUrl uses Nx() (Set if Not Exists) to ensure atomic locking.
+func (v *valkey) TryLockFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) (bool, error) {
+	// TryLockFeedUUID uses Nx() (Set if Not Exists) to ensure atomic locking.
 	// It returns true if the lock was acquired (key didn't exist), false otherwise.
-	err := v.client.Do(v.ctx, v.client.B().Set().Key(urlToValkeyKey(u)).Value(value).Nx().Ex(ttl).Build()).Error()
+	val := state.UUID.String()
+	if state.Cache != Ok {
+		val = strconv.Itoa(int(state.Cache))
+	}
+	err := v.client.Do(v.ctx, v.client.B().Set().Key(feedUUIDKey(u)).Value(val).Nx().Ex(ttl).Build()).Error()
 	if driver.IsValkeyNil(err) {
 		return false, nil
 	}
@@ -87,8 +123,8 @@ func (v *valkey) TryLockFeedUrl(u *url.URL, value string, ttl time.Duration) (bo
 	return true, nil
 }
 
-func (v *valkey) DeleteFeedUrl(u *url.URL) error {
-	return v.client.Do(v.ctx, v.client.B().Del().Key(urlToValkeyKey(u)).Build()).Error()
+func (v *valkey) DeleteFeedUUID(u *url.URL) error {
+	return v.client.Do(v.ctx, v.client.B().Del().Key(feedUUIDKey(u)).Build()).Error()
 }
 
 func (v *valkey) Close() error {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -24,30 +25,34 @@ func TestFeedUrlKeys(t *testing.T) {
 	rawURL := "http://example.com/feed"
 	u, err := url.Parse(rawURL)
 	assert.NoError(t, err)
-	value := "some-value"
+	value := uuid.New()
 
 	// Ensure cleanup before and after
-	_ = c.DeleteFeedUrl(u)
+	_ = c.DeleteFeedUUID(u)
 	defer func() {
-		_ = c.DeleteFeedUrl(u)
+		_ = c.DeleteFeedUUID(u)
 	}()
 
-	foundVal, err := c.GetFeedUrl(u)
+	foundVal, err := c.GetFeedUUID(u)
 	assert.NoError(t, err)
 	assert.Nil(t, foundVal)
 
-	err = c.UpdateFeedUrl(u, value, time.Minute)
+	err = c.UpdateFeedUUID(u, FeedUUIDCache{
+		Cache: Ok,
+		UUID:  value,
+	}, time.Minute)
 	assert.NoError(t, err)
 
-	foundVal, err = c.GetFeedUrl(u)
+	foundVal, err = c.GetFeedUUID(u)
 	assert.NoError(t, err)
 	assert.NotNil(t, foundVal)
-	assert.Equal(t, value, *foundVal)
+	assert.Equal(t, Ok, foundVal.Cache)
+	assert.Equal(t, value, foundVal.UUID)
 
-	err = c.DeleteFeedUrl(u)
+	err = c.DeleteFeedUUID(u)
 	assert.NoError(t, err)
 
-	foundVal, err = c.GetFeedUrl(u)
+	foundVal, err = c.GetFeedUUID(u)
 	assert.NoError(t, err)
 	assert.Nil(t, foundVal)
 }
