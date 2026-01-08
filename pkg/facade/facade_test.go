@@ -111,7 +111,7 @@ func TestHasFeed(t *testing.T) {
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
 					getFeedUrl: func(u *url.URL) (*string, error) {
-						val := statusValid
+						val := "valid-uuid"
 						return &val, nil
 					},
 				}
@@ -173,7 +173,7 @@ func TestHasFeed(t *testing.T) {
 							val := statusPending
 							return &val, nil
 						}
-						val := statusValid
+						val := "valid-uuid"
 						return &val, nil
 					},
 				}

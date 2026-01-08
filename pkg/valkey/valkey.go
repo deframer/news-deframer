@@ -53,7 +53,7 @@ func New(ctx context.Context, cfg *config.Config) (Valkey, error) {
 	return &valkey{client: client, ctx: ctx}, nil
 }
 
-const prefix = "feed:"
+const prefix = "feed_uuid:"
 
 func urlToValkeyKey(u *url.URL) string {
 	return prefix + url.QueryEscape(u.String())

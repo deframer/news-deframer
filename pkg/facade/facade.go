@@ -50,7 +50,6 @@ var (
 )
 
 const (
-	statusValid   = "valid"
 	statusInvalid = "invalid"
 	statusPending = "pending"
 )
@@ -63,7 +62,7 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 
 	// If we have a definitive result, return it. (= cache hit)
 	if val != nil && *val != statusPending {
-		return *val == statusValid, nil
+		return *val != statusInvalid, nil
 	}
 
 	// If it was missing (nil), try to acquire the lock to be the one fetching it.
@@ -100,7 +99,7 @@ WAIT_LOOP:
 				return false, err
 			}
 			if val != nil && *val != statusPending {
-				return *val == statusValid, nil
+				return *val != statusInvalid, nil
 			}
 			// If val is nil here, it means the pending key expired or was deleted without result.
 			// we don't care and wait for the next query
@@ -116,14 +115,13 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 
 	status := statusInvalid
 	if feed != nil {
-		status = statusValid
+		status = feed.ID.String()
 	}
 
 	if err := f.valkey.UpdateFeedUrl(u, status, maxTimeout); err != nil {
 		return false, err
 	}
-
-	return status == statusValid, nil
+	return status != statusInvalid, nil
 }
 
 func (f *Facade) HasArticle(ctx context.Context, u *url.URL) (bool, error) {

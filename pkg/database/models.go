@@ -23,7 +23,8 @@ func (base *Base) BeforeCreate(tx *gorm.DB) error {
 }
 
 type Feed struct {
-	gorm.Model
+	// gorm.Model
+	Base
 	URL        string `gorm:"index"`
 	Enabled    bool
 	LastPolled time.Time
