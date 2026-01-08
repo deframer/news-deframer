@@ -144,10 +144,6 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 	return state.Cache != valkey.ValueUnknown, nil
 }
 
-func (f *Facade) HasArticle(ctx context.Context, u *url.URL) (bool, error) {
-	return false, nil
-}
-
 type RSSProxyFilter struct {
 	URL      string
 	Lang     string
@@ -195,4 +191,15 @@ func (f *Facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 	// newFeed.Items = append([]*gofeed.Item{dummy}, newFeed.Items...)
 
 	return f.feeds.RenderFeed(ctx, newFeed)
+}
+
+type ItemResult struct {
+	Hash     string `json:"hash"`
+	FeedURL  string `json:"feed_url"`
+	AIResult string `json:"ai_result"`
+}
+
+func (f *Facade) GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error) {
+	var results []ItemResult
+	return results, nil
 }

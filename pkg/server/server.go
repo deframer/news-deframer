@@ -167,7 +167,13 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
+	// 0 entries
 	// curl "http://localhost:8080/item?url=http%3A%2F%2Fexample.com%2Farticle"
+	// 2 entries
+	// curl "http://localhost:8080/item?url=http%3A%2F%2Fdummy-enforced%2Fitem-1"
+	// 1 entry
+	// curl "http://localhost:8080/item?url=http%3A%2F%2Fdummy-open%2Fitem-2"
+
 	q := r.URL.Query()
 	// TODO: ensure that we also trim / strip URLs in the database
 	reqURL := strings.TrimSuffix(q.Get("url"), "/")
@@ -184,22 +190,19 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasArticle, err := s.facade.HasArticle(r.Context(), u)
-	if err != nil || !hasArticle {
+	items, err := s.facade.GetItems(r.Context(), u)
+	if err != nil || len(items) == 0 {
 		if err != nil {
-			s.logger.Error("HasArticle failed", "error", err)
+			s.logger.Error("GetItems failed", "error", err)
 		} else {
-			s.logger.Debug("article not found", "url", reqURL)
+			s.logger.Debug("no items found", "url", reqURL)
 		}
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]interface{}{
-		"url":         reqURL,
-		"has_article": hasArticle,
-	}); err != nil {
+	if err := json.NewEncoder(w).Encode(items); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }
