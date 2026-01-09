@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log/slog"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -31,35 +31,59 @@ var feedCmd = &cobra.Command{
 	Short: "Manage feeds",
 	Run: func(cmd *cobra.Command, args []string) {
 		if feedList {
-			slog.Info("Listing feeds")
+			listFeeds()
 			return
 		}
 
 		if feedAdd != "" {
-			slog.Info("Adding feed", "url", feedAdd)
+			addFeed(feedAdd)
 			return
 		}
 
 		if feedDeleteUrl != "" {
-			slog.Info("Deleting feed", "url", feedDeleteUrl)
+			deleteFeedByUrl(feedDeleteUrl)
 			return
 		}
 
 		if feedDelete != "" {
-			slog.Info("Deleting feed", "uuid", feedDelete)
+			deleteFeedByUUID(feedDelete)
 			return
 		}
 
 		if feedEnable != "" {
-			slog.Info("Enabling feed", "uuid", feedEnable)
+			enableFeedByUUID(feedEnable)
 			return
 		}
 
 		if feedEnableUrl != "" {
-			slog.Info("Enabling feed", "url", feedEnableUrl)
+			enableFeedByUrl(feedEnableUrl)
 			return
 		}
 
 		cmd.Help()
 	},
+}
+
+func listFeeds() {
+	fmt.Println("Listing feeds")
+}
+
+func addFeed(url string) {
+	fmt.Printf("Adding feed url=%s\n", url)
+}
+
+func deleteFeedByUrl(url string) {
+	fmt.Printf("Deleting feed url=%s\n", url)
+}
+
+func deleteFeedByUUID(uuid string) {
+	fmt.Printf("Deleting feed uuid=%s\n", uuid)
+}
+
+func enableFeedByUUID(uuid string) {
+	fmt.Printf("Enabling feed uuid=%s\n", uuid)
+}
+
+func enableFeedByUrl(url string) {
+	fmt.Printf("Enabling feed url=%s\n", url)
 }
