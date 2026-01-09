@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,7 @@ func New(ctx context.Context, cfg *config.Config, f *facade.Facade) *Server {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /ping", s.handlePing)
+	mux.HandleFunc("GET /hostname", s.handleHostname)
 	mux.HandleFunc("/rss", s.handleRSSProxy)
 
 	mux.HandleFunc("/site", s.handleSite)
@@ -64,6 +66,20 @@ func (s *Server) Stop(ctx context.Context) error {
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 	s.logger.Debug("ping")
 	if _, err := w.Write([]byte("pong")); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleHostname(w http.ResponseWriter, r *http.Request) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		s.logger.Error("failed to get hostname", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(map[string]string{"hostname": hostname}); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }

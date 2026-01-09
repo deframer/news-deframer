@@ -30,6 +30,8 @@ func main() {
 		lvl = slog.LevelInfo
 	}
 	fmt.Printf("Log level: %v\n", lvl)
+	hostname, _ := os.Hostname()
+	fmt.Printf("Hostname: %v\n", hostname)
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
 
 	ctx, cancel := context.WithCancel(context.Background())

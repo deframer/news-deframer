@@ -2,17 +2,15 @@ APP_NAME := news-deframer
 DOCKER_REPO := egandro
 BUILD_DIR := bin
 CMD_DIR := cmd
+DOCKER_COMPOSE_FILE ?= docker-compose.yml
+
+# we want to avoid to share the developer .env file with docker compose (the DSN hosts etc. are different)
+COMPOSE_ENV_FILE ?= .env-compose
+DOCKER_ENV_FLAG := $(if $(wildcard $(COMPOSE_ENV_FILE)),--env-file $(COMPOSE_ENV_FILE),--env-file /dev/null)
 
 .PHONY: all build clean test help
 
-ifneq ("$(wildcard .env)","")
-  #$(info using .env file)
-  include .env
-  export $(shell sed 's/=.*//' .env)
-endif
-
 .PHONY: all test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build
-#start stop down zap
 
 all: build
 
@@ -42,14 +40,19 @@ infra-env-zap:
 
 zap: down start
 
+# DOCKER_COMPOSE_FILE=docker-compose-lb.yml make start/stop/down/logs
+
 start:
-	docker compose up -d --build --force-recreate --no-deps
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) up -d --build --force-recreate --no-deps
 
 stop:
-	docker compose stop
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) stop
 
 down:
-	docker compose down --remove-orphans --volumes
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --remove-orphans --volumes
+
+logs:
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) logs -f
 
 build:
 	mkdir -p $(BUILD_DIR)
@@ -57,7 +60,7 @@ build:
 
 clean:
 	rm -rf $(BUILD_DIR)
-	docker compose down --rmi local
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --rmi local
 
 test:
 	go clean -testcache

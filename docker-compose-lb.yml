@@ -13,8 +13,27 @@ services:
       - VALKEY_DB=${VALKEY_DB:-0}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+    deploy:
+      replicas: ${DOCKER_SERVICE_REPLICAS:-3}
+    labels:
+      - "traefik.http.routers.webapp.rule=PathPrefix(`/`)"
+      - "traefik.http.services.webapp.loadbalancer.server.port=${PORT:-8080}"
+    networks:
+      - infra-net
+      - test-net
+
+  traefik-lb:
+    image: traefik:latest
+    command: --api.insecure=true --providers.docker --entrypoints.web.address=:80
     ports:
-      - "${PORT:-8080}:${PORT:-8080}"
+      - "8080:80"
+      - "8090:8080"
+    labels:
+      - "traefik.http.routers.api.rule=Host(`admin.localhost`)"
+      - "traefik.http.routers.api.insecure=true"
+      - "traefik.http.routers.api.service=api@internal"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - infra-net
       - test-net
@@ -31,6 +50,8 @@ services:
       - VALKEY_DB=${VALKEY_DB:-0}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+    deploy:
+      replicas: ${DOCKER_WORKER_REPLICAS:-2}
     networks:
       - infra-net
       - test-net
