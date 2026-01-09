@@ -119,6 +119,10 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 		return false, err
 	}
 
+	if feed == nil {
+		return false, nil
+	}
+
 	state := valkey.FeedUUIDCache{Cache: valkey.ValueUnknown}
 	if feed != nil {
 		var baseDomains []string

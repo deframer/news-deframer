@@ -25,7 +25,7 @@ func TestGetTime(t *testing.T) {
 	assert.WithinDuration(t, time.Now(), got, 1*time.Minute)
 }
 
-func TestFindFeedByUrl(t *testing.T) {
+func TestFindFeedByUrlAndAvailability(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
@@ -33,12 +33,81 @@ func TestFindFeedByUrl(t *testing.T) {
 	assert.NoError(t, err)
 	baseDB := baseRepo.(*repository).db
 
-	t.Run("Found", func(t *testing.T) {
+	t.Run("Found_Enabled", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
 
 		// Create isolated test data
+		rawURL := "http://test-find-feed-" + uuid.New().String() + ".test"
+		feed := Feed{
+			URL:     rawURL,
+			Enabled: true,
+		}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		u, err := url.Parse(rawURL)
+		assert.NoError(t, err)
+
+		// Test with onlyEnabled=true
+		found, err := repo.FindFeedByUrlAndAvailability(u, true)
+		assert.NoError(t, err)
+		if assert.NotNil(t, found) {
+			assert.Equal(t, rawURL, found.URL)
+		}
+
+		// Test with onlyEnabled=false
+		found, err = repo.FindFeedByUrlAndAvailability(u, false)
+		assert.NoError(t, err)
+		assert.NotNil(t, found)
+	})
+
+	t.Run("Found_Disabled", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		rawURL := "http://test-find-feed-disabled-" + uuid.New().String() + ".test"
+		feed := Feed{
+			URL:     rawURL,
+			Enabled: false,
+		}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		u, err := url.Parse(rawURL)
+		assert.NoError(t, err)
+
+		// Test with onlyEnabled=true (Should NOT find)
+		found, err := repo.FindFeedByUrlAndAvailability(u, true)
+		assert.NoError(t, err)
+		assert.Nil(t, found)
+
+		// Test with onlyEnabled=false (Should find)
+		found, err = repo.FindFeedByUrlAndAvailability(u, false)
+		assert.NoError(t, err)
+		assert.NotNil(t, found)
+	})
+
+	t.Run("NotFound_NonExistent", func(t *testing.T) {
+		repo := baseRepo
+
+		u, err := url.Parse("http://does-not-exist.test/feed")
+		assert.NoError(t, err)
+
+		feed, err := repo.FindFeedByUrlAndAvailability(u, true)
+		assert.NoError(t, err)
+		assert.Nil(t, feed)
+
+		feed, err = repo.FindFeedByUrlAndAvailability(u, false)
+		assert.NoError(t, err)
+		assert.Nil(t, feed)
+	})
+
+	t.Run("FindFeedByUrl", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
 		rawURL := "http://test-find-feed-" + uuid.New().String() + ".test"
 		feed := Feed{
 			URL:     rawURL,
@@ -55,16 +124,183 @@ func TestFindFeedByUrl(t *testing.T) {
 			assert.Equal(t, rawURL, found.URL)
 		}
 	})
+}
 
-	t.Run("NotFound", func(t *testing.T) {
+func TestFindFeedById(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("Found", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		id := uuid.New()
+		feed := Feed{
+			Base:    Base{ID: id},
+			URL:     "http://test-find-feed-id-" + id.String() + ".test",
+			Enabled: true,
+		}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		found, err := repo.FindFeedById(feed.ID)
+		assert.NoError(t, err)
+		if assert.NotNil(t, found) {
+			assert.Equal(t, feed.ID, found.ID)
+			assert.Equal(t, feed.URL, found.URL)
+		}
+	})
+
+	t.Run("Found_Disabled", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		id := uuid.New()
+		feed := Feed{
+			Base:    Base{ID: id},
+			URL:     "http://test-find-feed-id-disabled-" + id.String() + ".test",
+			Enabled: false,
+		}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		found, err := repo.FindFeedById(feed.ID)
+		assert.NoError(t, err)
+		assert.NotNil(t, found)
+		assert.Equal(t, feed.ID, found.ID)
+	})
+
+	t.Run("NotFound_NonExistent", func(t *testing.T) {
 		repo := baseRepo
-
-		u, err := url.Parse("http://does-not-exist.test/feed")
+		found, err := repo.FindFeedById(uuid.New())
 		assert.NoError(t, err)
+		assert.Nil(t, found)
+	})
 
-		feed, err := repo.FindFeedByUrl(u)
+	t.Run("Found_Deleted", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		id := uuid.New()
+		feed := Feed{
+			Base:    Base{ID: id},
+			URL:     "http://test-find-feed-id-deleted-" + id.String() + ".test",
+			Enabled: true,
+		}
+		assert.NoError(t, tx.Create(&feed).Error)
+		assert.NoError(t, repo.DeleteFeedById(id))
+
+		found, err := repo.FindFeedById(feed.ID)
 		assert.NoError(t, err)
-		assert.Nil(t, feed)
+		assert.NotNil(t, found)
+		assert.Equal(t, feed.ID, found.ID)
+	})
+}
+
+func TestUpsertFeed(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("Create", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := &Feed{
+			URL:     "http://upsert-create.test/" + uuid.New().String(),
+			Enabled: true,
+		}
+		err := repo.UpsertFeed(feed)
+		assert.NoError(t, err)
+		assert.NotEqual(t, uuid.Nil, feed.ID)
+
+		found, err := repo.FindFeedById(feed.ID)
+		assert.NoError(t, err)
+		assert.NotNil(t, found)
+		assert.Equal(t, feed.URL, found.URL)
+	})
+
+	t.Run("Update", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		// Create first
+		feed := &Feed{
+			URL:     "http://upsert-update.test/" + uuid.New().String(),
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		// Modify
+		feed.Enabled = false
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		found, err := repo.FindFeedById(feed.ID)
+		assert.NoError(t, err)
+		assert.NotNil(t, found)
+		assert.False(t, found.Enabled)
+	})
+
+	t.Run("Create_Disabled", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := &Feed{
+			URL:     "http://upsert-disabled.test/" + uuid.New().String(),
+			Enabled: false,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		// FindById should find it (it ignores enabled status)
+		foundId, err := repo.FindFeedById(feed.ID)
+		assert.NoError(t, err)
+		assert.NotNil(t, foundId)
+		assert.Equal(t, feed.ID, foundId.ID)
+		assert.False(t, foundId.Enabled)
+
+		// FindByUrl should NOT find it (it requires enabled=true)
+		u, _ := url.Parse(feed.URL)
+		foundUrl, err := repo.FindFeedByUrl(u)
+		assert.NoError(t, err)
+		assert.Nil(t, foundUrl)
+	})
+
+	t.Run("Create_Then_Delete", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := &Feed{
+			URL:     "http://upsert-delete.test/" + uuid.New().String(),
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		// Delete it
+		assert.NoError(t, repo.DeleteFeedById(feed.ID))
+
+		// FindById should find it (Unscoped)
+		foundId, err := repo.FindFeedById(feed.ID)
+		assert.NoError(t, err)
+		assert.NotNil(t, foundId)
+		assert.True(t, foundId.DeletedAt.Valid)
+
+		// FindByUrl should NOT find it (Soft deleted)
+		u, _ := url.Parse(feed.URL)
+		foundUrl, err := repo.FindFeedByUrl(u)
+		assert.NoError(t, err)
+		assert.Nil(t, foundUrl)
 	})
 }
 

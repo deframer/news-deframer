@@ -69,12 +69,16 @@ func (m *mockValkey) Close() error {
 }
 
 type mockRepo struct {
-	getTime                     func() (time.Time, error)
-	findFeedByUrl               func(u *url.URL) (*database.Feed, error)
-	findCachedFeedById          func(feedID uuid.UUID) (*database.CachedFeed, error)
-	findItemsByCachedFeedFeedId func(feedID uuid.UUID) ([]database.Item, error)
-	findItemsByUrl              func(u *url.URL) ([]database.Item, error)
-	getAllFeeds                 func(deleted bool) ([]database.Feed, error)
+	getTime                      func() (time.Time, error)
+	findFeedByUrl                func(u *url.URL) (*database.Feed, error)
+	findFeedByUrlAndAvailability func(u *url.URL, onlyEnabled bool) (*database.Feed, error)
+	findFeedById                 func(feedID uuid.UUID) (*database.Feed, error)
+	upsertFeed                   func(feed *database.Feed) error
+	findCachedFeedById           func(feedID uuid.UUID) (*database.CachedFeed, error)
+	findItemsByCachedFeedFeedId  func(feedID uuid.UUID) ([]database.Item, error)
+	findItemsByUrl               func(u *url.URL) ([]database.Item, error)
+	getAllFeeds                  func(deleted bool) ([]database.Feed, error)
+	deleteFeedById               func(id uuid.UUID) error
 }
 
 func (m *mockRepo) GetTime() (time.Time, error) {
@@ -89,6 +93,27 @@ func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
 		return m.findFeedByUrl(u)
 	}
 	return nil, nil
+}
+
+func (m *mockRepo) FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*database.Feed, error) {
+	if m.findFeedByUrlAndAvailability != nil {
+		return m.findFeedByUrlAndAvailability(u, onlyEnabled)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) FindFeedById(feedID uuid.UUID) (*database.Feed, error) {
+	if m.findFeedById != nil {
+		return m.findFeedById(feedID)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) UpsertFeed(feed *database.Feed) error {
+	if m.upsertFeed != nil {
+		return m.upsertFeed(feed)
+	}
+	return nil
 }
 
 func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, error) {
@@ -117,6 +142,13 @@ func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error) {
 		return m.getAllFeeds(deleted)
 	}
 	return nil, nil
+}
+
+func (m *mockRepo) DeleteFeedById(id uuid.UUID) error {
+	if m.deleteFeedById != nil {
+		return m.deleteFeedById(id)
+	}
+	return nil
 }
 
 func TestHasFeed(t *testing.T) {

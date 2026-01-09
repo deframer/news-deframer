@@ -18,6 +18,9 @@ import (
 type Repository interface {
 	GetTime() (time.Time, error)
 	FindFeedByUrl(u *url.URL) (*Feed, error)
+	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
+	FindFeedById(feedID uuid.UUID) (*Feed, error)
+	UpsertFeed(feed *Feed) error
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, error)
 	// FindItemsByUrl retrieves all items associated with a specific URL.
@@ -27,6 +30,7 @@ type Repository interface {
 	// Feed.EnforceFeedDomain = will enforce only items with the same base domain as the Feed URL
 	FindItemsByUrl(u *url.URL) ([]Item, error)
 	GetAllFeeds(deleted bool) ([]Feed, error)
+	DeleteFeedById(id uuid.UUID) error
 }
 
 type repository struct {
@@ -67,14 +71,37 @@ func (r *repository) GetTime() (time.Time, error) {
 }
 
 func (r *repository) FindFeedByUrl(u *url.URL) (*Feed, error) {
+	return r.FindFeedByUrlAndAvailability(u, true)
+}
+
+func (r *repository) FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error) {
 	var feed Feed
-	if err := r.db.Where("url = ? AND enabled = ?", u.String(), true).First(&feed).Error; err != nil {
+	query := r.db.Where("url = ?", u.String())
+	if onlyEnabled {
+		query = query.Where("enabled = ?", true)
+	}
+	if err := query.First(&feed).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
 	return &feed, nil
+}
+
+func (r *repository) FindFeedById(feedID uuid.UUID) (*Feed, error) {
+	var feed Feed
+	if err := r.db.Unscoped().Where("id = ?", feedID).First(&feed).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &feed, nil
+}
+
+func (r *repository) UpsertFeed(feed *Feed) error {
+	return r.db.Save(feed).Error
 }
 
 func (r *repository) FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error) {
@@ -104,6 +131,10 @@ func (r *repository) FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, erro
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) DeleteFeedById(id uuid.UUID) error {
+	return r.db.Delete(&Feed{Base: Base{ID: id}}).Error
 }
 
 func (r *repository) GetAllFeeds(deleted bool) ([]Feed, error) {
