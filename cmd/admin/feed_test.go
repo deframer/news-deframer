@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/egandro/news-deframer/pkg/valkey"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
@@ -64,15 +64,13 @@ func TestParseAndNormalizeURL(t *testing.T) {
 }
 
 func TestFeedCommands(t *testing.T) {
-	// Initialize global cfg to avoid panic in drainFeed -> valkey.New
-	cfg = &config.Config{
-		ValkeyDB:   "0",
-		ValkeyHost: "localhost:6379",
-	}
-
 	// Setup Mock
 	mock := NewMockRepo()
 	repo = mock
+
+	// Setup Mock Valkey
+	mockValkey := &MockValkey{}
+	vk = mockValkey
 
 	testURL := "http://example.com/rss"
 
@@ -111,6 +109,9 @@ func TestFeedCommands(t *testing.T) {
 	// Verify in Mock
 	feed, _ = mock.FindFeedById(feedID)
 	assert.False(t, feed.Enabled)
+	// Verify DrainFeed was called
+	assert.NotEmpty(t, mockValkey.drained)
+	assert.Equal(t, feedID, mockValkey.drained[0])
 
 	// 4. List Feeds (JSON) check disabled
 	out = captureOutput(func() {
@@ -140,6 +141,9 @@ func TestFeedCommands(t *testing.T) {
 	// Verify in Mock
 	feed, _ = mock.FindFeedById(feedID)
 	assert.True(t, feed.DeletedAt.Valid)
+	// Verify DrainFeed was called again
+	assert.Len(t, mockValkey.drained, 2)
+	assert.Equal(t, feedID, mockValkey.drained[1])
 
 	// 7. List Feeds (JSON) check deleted
 	out = captureOutput(func() {
@@ -242,4 +246,35 @@ func captureOutput(f func()) string {
 	var buf bytes.Buffer
 	_, _ = io.Copy(&buf, r)
 	return buf.String()
+}
+
+// --- Mock Valkey ---
+
+type MockValkey struct {
+	drained []uuid.UUID
+}
+
+func (m *MockValkey) DrainFeed(id uuid.UUID) error {
+	m.drained = append(m.drained, id)
+	return nil
+}
+
+func (m *MockValkey) GetFeedUUID(u *url.URL) (*valkey.FeedUUIDCache, error) {
+	return nil, nil
+}
+
+func (m *MockValkey) UpdateFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) error {
+	return nil
+}
+
+func (m *MockValkey) TryLockFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) (bool, error) {
+	return true, nil
+}
+
+func (m *MockValkey) DeleteFeedUUID(u *url.URL) error {
+	return nil
+}
+
+func (m *MockValkey) Close() error {
+	return nil
 }

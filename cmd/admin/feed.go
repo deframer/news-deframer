@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -20,6 +19,7 @@ var (
 	showDeleted bool
 	feedEnabled bool
 	repo        database.Repository
+	vk          valkey.Valkey
 )
 
 func init() {
@@ -48,6 +48,11 @@ var feedCmd = &cobra.Command{
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to connect to database: %v\n", err)
 			os.Exit(1)
+		}
+
+		vk, err = valkey.New(cmd.Context(), cfg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to connect to valkey: %v\n", err)
 		}
 	},
 }
@@ -251,13 +256,11 @@ func parseAndNormalizeURL(rawURL string) (*url.URL, error) {
 }
 
 func drainFeed(feedID uuid.UUID) {
-	ctx := context.Background()
-	if vk, err := valkey.New(ctx, cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to connect to valkey: %v\n", err)
-	} else {
-		defer vk.Close()
-		if err := vk.DrainFeed(feedID); err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to drain feed: %v\n", err)
-		}
+	if vk == nil {
+		fmt.Fprintf(os.Stderr, "Warning: Valkey not connected, skipping drain feed\n")
+		return
+	}
+	if err := vk.DrainFeed(feedID); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to drain feed: %v\n", err)
 	}
 }
