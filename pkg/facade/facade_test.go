@@ -69,7 +69,6 @@ func (m *mockValkey) Close() error {
 }
 
 type mockRepo struct {
-	getTime                      func() (time.Time, error)
 	findFeedByUrl                func(u *url.URL) (*database.Feed, error)
 	findFeedByUrlAndAvailability func(u *url.URL, onlyEnabled bool) (*database.Feed, error)
 	findFeedById                 func(feedID uuid.UUID) (*database.Feed, error)
@@ -79,13 +78,6 @@ type mockRepo struct {
 	findItemsByUrl               func(u *url.URL) ([]database.Item, error)
 	getAllFeeds                  func(deleted bool) ([]database.Feed, error)
 	deleteFeedById               func(id uuid.UUID) error
-}
-
-func (m *mockRepo) GetTime() (time.Time, error) {
-	if m.getTime != nil {
-		return m.getTime()
-	}
-	return time.Now(), nil
 }
 
 func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {

@@ -191,7 +191,6 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 	// curl "http://localhost:8080/item?url=http%3A%2F%2Fdummy-open%2Fitem-2"
 
 	q := r.URL.Query()
-	// TODO: ensure that we also trim / strip URLs in the database
 	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
 	if reqURL == "" {

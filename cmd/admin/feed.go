@@ -193,7 +193,7 @@ func addFeed(feedUrl string, enabled bool) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Added feed for url=%s with id=%s\n", feedUrl, newFeed.ID)
+	fmt.Printf("Added feed for url=%s with id=%s enabled=%v\n", feedUrl, newFeed.ID, newFeed.Enabled)
 }
 
 func resolveFeed(input string, isUrl bool, onlyEnabled bool) *database.Feed {

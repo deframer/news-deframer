@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	mylogger "github.com/egandro/news-deframer/pkg/logger"
@@ -16,7 +15,6 @@ import (
 )
 
 type Repository interface {
-	GetTime() (time.Time, error)
 	FindFeedByUrl(u *url.URL) (*Feed, error)
 	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
 	FindFeedById(feedID uuid.UUID) (*Feed, error)
@@ -61,13 +59,6 @@ func NewRepository(cfg *config.Config) (Repository, error) {
 // NewFromDB creates a repository from an existing GORM connection.
 func NewFromDB(db *gorm.DB) Repository {
 	return &repository{db: db}
-}
-
-func (r *repository) GetTime() (time.Time, error) {
-	var t time.Time
-	// Simple query to get DB time
-	result := r.db.Raw("SELECT NOW()").Scan(&t)
-	return t, result.Error
 }
 
 func (r *repository) FindFeedByUrl(u *url.URL) (*Feed, error) {
