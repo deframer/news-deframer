@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -63,6 +64,12 @@ func TestParseAndNormalizeURL(t *testing.T) {
 }
 
 func TestFeedCommands(t *testing.T) {
+	// Initialize global cfg to avoid panic in drainFeed -> valkey.New
+	cfg = &config.Config{
+		ValkeyDB:   "0",
+		ValkeyHost: "localhost:6379",
+	}
+
 	// Setup Mock
 	mock := NewMockRepo()
 	repo = mock
