@@ -15,6 +15,7 @@ import (
 
 var (
 	jsonOutput  bool
+	showDeleted bool
 	feedEnabled bool
 	repo        database.Repository
 )
@@ -28,6 +29,7 @@ func init() {
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
+	listCmd.Flags().BoolVar(&showDeleted, "deleted", false, "Show deleted feeds")
 
 	rootCmd.AddCommand(feedCmd)
 }
@@ -88,12 +90,12 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all feeds",
 	Run: func(cmd *cobra.Command, args []string) {
-		listFeeds(jsonOutput)
+		listFeeds(jsonOutput, showDeleted)
 	},
 }
 
-func listFeeds(asJson bool) {
-	feeds, err := repo.GetAllFeeds(true)
+func listFeeds(asJson bool, showDeleted bool) {
+	feeds, err := repo.GetAllFeeds(showDeleted)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to list feeds: %v\n", err)
 		os.Exit(1)

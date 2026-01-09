@@ -86,7 +86,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 2. List Feeds (JSON)
 	out = captureOutput(func() {
-		listFeeds(true)
+		listFeeds(true, false)
 	})
 	var feeds []database.Feed
 	err = json.Unmarshal([]byte(out), &feeds)
@@ -107,7 +107,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 4. List Feeds (JSON) check disabled
 	out = captureOutput(func() {
-		listFeeds(true)
+		listFeeds(true, false)
 	})
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
@@ -136,7 +136,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 7. List Feeds (JSON) check deleted
 	out = captureOutput(func() {
-		listFeeds(true)
+		listFeeds(true, true)
 	})
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
