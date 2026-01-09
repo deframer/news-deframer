@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -9,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/egandro/news-deframer/pkg/valkey"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
@@ -214,6 +216,7 @@ func deleteFeed(input string) {
 		os.Exit(1)
 	}
 
+	drainFeed(feed.ID)
 	fmt.Printf("Deleted feed for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
@@ -236,6 +239,8 @@ func disableFeed(input string) {
 		fmt.Fprintf(os.Stderr, "Failed to disable feed: %v\n", err)
 		os.Exit(1)
 	}
+
+	drainFeed(feed.ID)
 	fmt.Printf("Disabled feed for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
@@ -243,4 +248,16 @@ func parseAndNormalizeURL(rawURL string) (*url.URL, error) {
 	rawURL = strings.TrimSpace(rawURL)
 	rawURL = strings.TrimSuffix(rawURL, "/")
 	return url.ParseRequestURI(rawURL)
+}
+
+func drainFeed(feedID uuid.UUID) {
+	ctx := context.Background()
+	if vk, err := valkey.New(ctx, cfg); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to connect to valkey: %v\n", err)
+	} else {
+		defer vk.Close()
+		if err := vk.DrainFeed(feedID); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to drain feed: %v\n", err)
+		}
+	}
 }

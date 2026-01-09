@@ -24,8 +24,8 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// make the default logger always LogError
-		lvl := slog.LevelError
+		// make the default logger always LevelWarn
+		lvl := slog.LevelWarn
 		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
 	},
 }

@@ -3,6 +3,7 @@ package valkey
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strconv"
 	"time"
@@ -35,6 +36,7 @@ type ItemHashCache struct {
 }
 
 type Valkey interface {
+	DrainFeed(id uuid.UUID) error
 	GetFeedUUID(u *url.URL) (*FeedUUIDCache, error)
 	UpdateFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) error
 	TryLockFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Duration) (bool, error)
@@ -138,6 +140,12 @@ func (v *valkey) TryLockFeedUUID(u *url.URL, state FeedUUIDCache, ttl time.Durat
 
 func (v *valkey) DeleteFeedUUID(u *url.URL) error {
 	return v.client.Do(v.ctx, v.client.B().Del().Key(feedUUIDKey(u)).Build()).Error()
+}
+
+func (v *valkey) DrainFeed(id uuid.UUID) error {
+	// TODO: drain all feeds e.g. with a lua script with the given ID
+	slog.Warn("DrainFeed not implemented", "uuid", id)
+	return nil
 }
 
 func (v *valkey) Close() error {
