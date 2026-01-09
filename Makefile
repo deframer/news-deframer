@@ -8,6 +8,12 @@ DOCKER_COMPOSE_FILE ?= docker-compose.yml
 COMPOSE_ENV_FILE ?= .env-compose
 DOCKER_ENV_FLAG := $(if $(wildcard $(COMPOSE_ENV_FILE)),--env-file $(COMPOSE_ENV_FILE),--env-file /dev/null)
 
+ifneq ("$(wildcard .env)","")
+  #$(info using .env file)
+  include .env
+  export $(shell sed 's/=.*//' .env)
+endif
+
 .PHONY: all build clean test help
 
 .PHONY: all test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build

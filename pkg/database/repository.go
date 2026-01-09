@@ -26,6 +26,7 @@ type Repository interface {
 	// This means the same content (probably different Hashes) can exist multiple times if it is syndicated across different feeds.
 	// Feed.EnforceFeedDomain = will enforce only items with the same base domain as the Feed URL
 	FindItemsByUrl(u *url.URL) ([]Item, error)
+	GetAllFeeds(deleted bool) ([]Feed, error)
 }
 
 type repository struct {
@@ -103,6 +104,18 @@ func (r *repository) FindItemsByCachedFeedFeedId(feedID uuid.UUID) ([]Item, erro
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) GetAllFeeds(deleted bool) ([]Feed, error) {
+	var feeds []Feed
+	query := r.db.Order("url ASC")
+	if deleted {
+		query = query.Unscoped()
+	}
+	if err := query.Find(&feeds).Error; err != nil {
+		return nil, err
+	}
+	return feeds, nil
 }
 
 func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {

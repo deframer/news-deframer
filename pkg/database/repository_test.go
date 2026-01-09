@@ -416,3 +416,67 @@ func TestFindItemsByUrl(t *testing.T) {
 		assert.Empty(t, items)
 	})
 }
+
+func TestGetAllFeeds(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("ListFeeds", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		// Create active feed
+		feed1 := Feed{
+			URL:     "http://active-feed.test/" + uuid.New().String(),
+			Enabled: true,
+		}
+		assert.NoError(t, tx.Create(&feed1).Error)
+
+		// Create deleted feed
+		feed2 := Feed{
+			URL:     "http://deleted-feed.test/" + uuid.New().String(),
+			Enabled: true,
+		}
+		assert.NoError(t, tx.Create(&feed2).Error)
+		assert.NoError(t, tx.Delete(&feed2).Error)
+
+		// Test GetAllFeeds(false) - should only return active feeds
+		feeds, err := repo.GetAllFeeds(false)
+		assert.NoError(t, err)
+
+		foundFeed1 := false
+		foundFeed2 := false
+		for _, f := range feeds {
+			if f.ID == feed1.ID {
+				foundFeed1 = true
+			}
+			if f.ID == feed2.ID {
+				foundFeed2 = true
+			}
+		}
+		assert.True(t, foundFeed1, "Active feed should be found")
+		assert.False(t, foundFeed2, "Deleted feed should not be found when deleted=false")
+
+		// Test GetAllFeeds(true) - should return both
+		feedsAll, err := repo.GetAllFeeds(true)
+		assert.NoError(t, err)
+
+		foundFeed1 = false
+		foundFeed2 = false
+		for _, f := range feedsAll {
+			if f.ID == feed1.ID {
+				foundFeed1 = true
+			}
+			if f.ID == feed2.ID {
+				foundFeed2 = true
+			}
+		}
+		assert.True(t, foundFeed1, "Active feed should be found")
+		assert.True(t, foundFeed2, "Deleted feed should be found when deleted=true")
+	})
+}
