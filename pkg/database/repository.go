@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
-	pkglogger "github.com/egandro/news-deframer/pkg/logger"
+	mylogger "github.com/egandro/news-deframer/pkg/logger"
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -40,7 +40,7 @@ func NewRepository(cfg *config.Config) (Repository, error) {
 	}
 
 	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
-		Logger: pkglogger.NewSlogGormLogger(slog.Default(), lvl),
+		Logger: mylogger.NewSlogGormLogger(slog.Default(), lvl),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)

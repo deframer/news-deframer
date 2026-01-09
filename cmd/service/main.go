@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -19,6 +20,13 @@ import (
 )
 
 func main() {
+	jsonLog := flag.Bool("json-log", false, "Enable JSON logging")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("Failed to load config", "error", err)
@@ -29,10 +37,25 @@ func main() {
 	if err := lvl.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
 		lvl = slog.LevelInfo
 	}
-	fmt.Printf("Log level: %v\n", lvl)
+
+	useJSON := *jsonLog
+	if !useJSON {
+		// Check if stdout is a terminal (interactive)
+		if fi, err := os.Stdout.Stat(); err == nil {
+			if (fi.Mode() & os.ModeCharDevice) == 0 {
+				useJSON = true
+			}
+		}
+	}
+
+	if useJSON {
+		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
+	} else {
+		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
+	}
+
 	hostname, _ := os.Hostname()
-	fmt.Printf("Hostname: %v\n", hostname)
-	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
+	slog.Info("Service", "level", lvl, "hostname", hostname)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

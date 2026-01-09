@@ -22,7 +22,8 @@
       "options": [
         "service",
         "worker",
-        "migration"
+        "migration",
+        "admin"
       ],
       "default": "server"
     }
