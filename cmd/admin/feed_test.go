@@ -97,7 +97,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 3. Disable Feed
 	out = captureOutput(func() {
-		disableFeed(testURL, true)
+		disableFeed(testURL)
 	})
 	assert.Contains(t, out, "Disabled feed")
 
@@ -116,7 +116,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 5. Enable Feed
 	out = captureOutput(func() {
-		enableFeed(testURL, true)
+		enableFeed(testURL)
 	})
 	assert.Contains(t, out, "Enabled feed")
 
@@ -126,7 +126,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 6. Delete Feed
 	out = captureOutput(func() {
-		deleteFeed(testURL, true)
+		deleteFeed(testURL)
 	})
 	assert.Contains(t, out, "Deleted feed")
 

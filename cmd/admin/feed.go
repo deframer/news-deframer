@@ -14,7 +14,6 @@ import (
 )
 
 var (
-	targetUrl   string
 	jsonOutput  bool
 	feedEnabled bool
 	repo        database.Repository
@@ -28,9 +27,6 @@ func init() {
 	feedCmd.AddCommand(listCmd)
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
-	deleteCmd.Flags().StringVar(&targetUrl, "url", "", "Delete a feed by URL")
-	enableCmd.Flags().StringVar(&targetUrl, "url", "", "Enable a feed by URL")
-	disableCmd.Flags().StringVar(&targetUrl, "url", "", "Disable a feed by URL")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 
 	rootCmd.AddCommand(feedCmd)
@@ -62,56 +58,29 @@ var addCmd = &cobra.Command{
 }
 
 var deleteCmd = &cobra.Command{
-	Use:   "delete [uuid]",
+	Use:   "delete <uuid|url>",
 	Short: "Delete a feed",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if targetUrl != "" {
-			deleteFeed(targetUrl, true)
-			return
-		}
-		if len(args) > 0 {
-			deleteFeed(args[0], false)
-			return
-		}
-		_ = cmd.Help()
-		os.Exit(1)
+		deleteFeed(args[0])
 	},
 }
 
 var enableCmd = &cobra.Command{
-	Use:   "enable [uuid]",
+	Use:   "enable <uuid|url>",
 	Short: "Enable a feed",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if targetUrl != "" {
-			enableFeed(targetUrl, true)
-			return
-		}
-		if len(args) > 0 {
-			enableFeed(args[0], false)
-			return
-		}
-		_ = cmd.Help()
-		os.Exit(1)
+		enableFeed(args[0])
 	},
 }
 
 var disableCmd = &cobra.Command{
-	Use:   "disable [uuid]",
+	Use:   "disable <uuid|url>",
 	Short: "Disable a feed",
-	Args:  cobra.MaximumNArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		if targetUrl != "" {
-			disableFeed(targetUrl, true)
-			return
-		}
-		if len(args) > 0 {
-			disableFeed(args[0], false)
-			return
-		}
-		_ = cmd.Help()
-		os.Exit(1)
+		disableFeed(args[0])
 	},
 }
 
@@ -196,43 +165,47 @@ func addFeed(feedUrl string, enabled bool) {
 	fmt.Printf("Added feed for url=%s with id=%s enabled=%v\n", feedUrl, newFeed.ID, newFeed.Enabled)
 }
 
-func resolveFeed(input string, isUrl bool, onlyEnabled bool) *database.Feed {
+func resolveFeed(input string, onlyEnabled bool) *database.Feed {
 	var feed *database.Feed
 	var err error
 
-	if isUrl {
-		var u *url.URL
-		u, err = parseAndNormalizeURL(input)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid URL: %v\n", err)
-			os.Exit(1)
-		}
-		feed, err = repo.FindFeedByUrlAndAvailability(u, onlyEnabled)
-	} else {
-		var id uuid.UUID
-		id, err = uuid.Parse(input)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Invalid UUID: %v\n", err)
-			os.Exit(1)
-		}
+	// Try to parse as UUID first
+	if id, err := uuid.Parse(input); err == nil {
 		feed, err = repo.FindFeedById(id)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
+			os.Exit(1)
+		}
+		if feed == nil {
+			fmt.Fprintf(os.Stderr, "Feed does not exist with UUID: %s\n", id)
+			os.Exit(1)
+		}
+		return feed
 	}
 
+	// If not UUID, treat as URL
+	u, err := parseAndNormalizeURL(input)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid input (neither UUID nor URL): %v\n", err)
+		os.Exit(1)
+	}
+
+	feed, err = repo.FindFeedByUrlAndAvailability(u, onlyEnabled)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
 		os.Exit(1)
 	}
 
 	if feed == nil {
-		fmt.Fprintf(os.Stderr, "Feed does not exist: %s\n", input)
+		fmt.Fprintf(os.Stderr, "Feed does not exist with URL: %s\n", u)
 		os.Exit(1)
 	}
 
 	return feed
 }
 
-func deleteFeed(input string, isUrl bool) {
-	feed := resolveFeed(input, isUrl, true)
+func deleteFeed(input string) {
+	feed := resolveFeed(input, true)
 
 	if err := repo.DeleteFeedById(feed.ID); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to delete feed: %v\n", err)
@@ -242,8 +215,8 @@ func deleteFeed(input string, isUrl bool) {
 	fmt.Printf("Deleted feed for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
-func enableFeed(input string, isUrl bool) {
-	feed := resolveFeed(input, isUrl, false)
+func enableFeed(input string) {
+	feed := resolveFeed(input, false)
 
 	feed.Enabled = true
 	if err := repo.UpsertFeed(feed); err != nil {
@@ -253,8 +226,8 @@ func enableFeed(input string, isUrl bool) {
 	fmt.Printf("Enabled feed for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
-func disableFeed(input string, isUrl bool) {
-	feed := resolveFeed(input, isUrl, true)
+func disableFeed(input string) {
+	feed := resolveFeed(input, true)
 
 	feed.Enabled = false
 	if err := repo.UpsertFeed(feed); err != nil {
