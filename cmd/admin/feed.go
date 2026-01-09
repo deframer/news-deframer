@@ -67,11 +67,11 @@ var deleteCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if targetUrl != "" {
-			deleteFeedByUrl(targetUrl)
+			deleteFeed(targetUrl, true)
 			return
 		}
 		if len(args) > 0 {
-			deleteFeedByUUID(args[0])
+			deleteFeed(args[0], false)
 			return
 		}
 		_ = cmd.Help()
@@ -85,11 +85,11 @@ var enableCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if targetUrl != "" {
-			enableFeedByUrl(targetUrl)
+			enableFeed(targetUrl, true)
 			return
 		}
 		if len(args) > 0 {
-			enableFeedByUUID(args[0])
+			enableFeed(args[0], false)
 			return
 		}
 		_ = cmd.Help()
@@ -103,11 +103,11 @@ var disableCmd = &cobra.Command{
 	Args:  cobra.MaximumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		if targetUrl != "" {
-			disableFeedByUrl(targetUrl)
+			disableFeed(targetUrl, true)
 			return
 		}
 		if len(args) > 0 {
-			disableFeedByUUID(args[0])
+			disableFeed(args[0], false)
 			return
 		}
 		_ = cmd.Help()
@@ -196,24 +196,43 @@ func addFeed(feedUrl string, enabled bool) {
 	fmt.Printf("Added feed for url=%s with id=%s\n", feedUrl, newFeed.ID)
 }
 
-func deleteFeedByUrl(feedUrl string) {
-	u, err := parseAndNormalizeURL(feedUrl)
+func resolveFeed(input string, isUrl bool, onlyEnabled bool) *database.Feed {
+	var feed *database.Feed
+	var err error
 
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid URL: %v\n", err)
-		os.Exit(1)
+	if isUrl {
+		var u *url.URL
+		u, err = parseAndNormalizeURL(input)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid URL: %v\n", err)
+			os.Exit(1)
+		}
+		feed, err = repo.FindFeedByUrlAndAvailability(u, onlyEnabled)
+	} else {
+		var id uuid.UUID
+		id, err = uuid.Parse(input)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Invalid UUID: %v\n", err)
+			os.Exit(1)
+		}
+		feed, err = repo.FindFeedById(id)
 	}
 
-	feed, err := repo.FindFeedByUrl(u)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
 		os.Exit(1)
 	}
 
 	if feed == nil {
-		fmt.Fprintf(os.Stderr, "Feed does not exists: %s\n", feedUrl)
+		fmt.Fprintf(os.Stderr, "Feed does not exist: %s\n", input)
 		os.Exit(1)
 	}
+
+	return feed
+}
+
+func deleteFeed(input string, isUrl bool) {
+	feed := resolveFeed(input, isUrl, true)
 
 	if err := repo.DeleteFeedById(feed.ID); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to delete feed: %v\n", err)
@@ -223,49 +242,8 @@ func deleteFeedByUrl(feedUrl string) {
 	fmt.Printf("Deleted feed for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
-func deleteFeedByUUID(uuidStr string) {
-	id, err := uuid.Parse(uuidStr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid UUID: %v\n", err)
-		os.Exit(1)
-	}
-
-	feed, err := repo.FindFeedById(id)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
-		os.Exit(1)
-	}
-
-	if feed == nil {
-		fmt.Fprintf(os.Stderr, "Feed does not exist: %s\n", uuidStr)
-		os.Exit(1)
-	}
-
-	if err := repo.DeleteFeedById(feed.ID); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to delete feed: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Printf("Deleted feed for url=%s with id=%s\n", feed.URL, feed.ID)
-}
-
-func enableFeedByUUID(uuidStr string) {
-	id, err := uuid.Parse(uuidStr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid UUID: %v\n", err)
-		os.Exit(1)
-	}
-
-	feed, err := repo.FindFeedById(id)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
-		os.Exit(1)
-	}
-
-	if feed == nil {
-		fmt.Fprintf(os.Stderr, "Feed does not exist: %s\n", uuidStr)
-		os.Exit(1)
-	}
+func enableFeed(input string, isUrl bool) {
+	feed := resolveFeed(input, isUrl, false)
 
 	feed.Enabled = true
 	if err := repo.UpsertFeed(feed); err != nil {
@@ -275,77 +253,8 @@ func enableFeedByUUID(uuidStr string) {
 	fmt.Printf("Enabled feed for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
-func enableFeedByUrl(feedUrl string) {
-	u, err := parseAndNormalizeURL(feedUrl)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid URL: %v\n", err)
-		os.Exit(1)
-	}
-
-	feed, err := repo.FindFeedByUrl(u)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
-		os.Exit(1)
-	}
-
-	if feed == nil {
-		fmt.Fprintf(os.Stderr, "Feed does not exists: %s\n", feedUrl)
-		os.Exit(1)
-	}
-
-	feed.Enabled = true
-	if err := repo.UpsertFeed(feed); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to enable feed: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("Enabled feed for url=%s with id=%s\n", feed.URL, feed.ID)
-}
-
-func disableFeedByUUID(uuidStr string) {
-	id, err := uuid.Parse(uuidStr)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid UUID: %v\n", err)
-		os.Exit(1)
-	}
-
-	feed, err := repo.FindFeedById(id)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
-		os.Exit(1)
-	}
-
-	if feed == nil {
-		fmt.Fprintf(os.Stderr, "Feed does not exist: %s\n", uuidStr)
-		os.Exit(1)
-	}
-
-	feed.Enabled = false
-	if err := repo.UpsertFeed(feed); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to disable feed: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("Disabled feed for url=%s with id=%s\n", feed.URL, feed.ID)
-}
-
-func disableFeedByUrl(feedUrl string) {
-	u, err := parseAndNormalizeURL(feedUrl)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid URL: %v\n", err)
-		os.Exit(1)
-	}
-
-	feed, err := repo.FindFeedByUrlAndAvailability(u, false)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to find feed: %v\n", err)
-		os.Exit(1)
-	}
-
-	if feed == nil {
-		fmt.Fprintf(os.Stderr, "Feed does not exists: %s\n", feedUrl)
-		os.Exit(1)
-	}
+func disableFeed(input string, isUrl bool) {
+	feed := resolveFeed(input, isUrl, true)
 
 	feed.Enabled = false
 	if err := repo.UpsertFeed(feed); err != nil {
