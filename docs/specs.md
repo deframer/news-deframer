@@ -112,9 +112,9 @@ To handle the heavy lifting: Polling, Scraping, AI Processing, and XML Reconstru
   - **Deduplication**: If triggered by Queue but lock is held, the task is discarded (prevents duplicate processing).
 - **Logic**:
   - Fetches upstream XML.
-  - **Validate Domain**: Checks if the Item URL matches the Feed's domain (if `enforce_feed_domain` is true).
+  - **Validate Domain**: Checks if the Item URL matches the Feed's domain (if `EnforceFeedDomain` is true).
   - Diffs content against DB.
-  - Saves new raw items to Postgres (`items` table).
+  - Saves new raw items to Postgres (`items` table) with `AnalyzerResult` initialized to empty JSON.
   - Sets Valkey `Pending Counter` = `Count(New Items)`.
   - Pushes Item SHA256s to the specific `FeedQueue`.
 
@@ -124,16 +124,16 @@ To handle the heavy lifting: Polling, Scraping, AI Processing, and XML Reconstru
   - Acquires **Item Lock** (SHA256) with strict **5-minute TTL**.
 - **Logic**:
   - Executes the **Deframing Algorithm** (via Interface).
-  - **Success**: Updates Postgres with `AI_Result`, decrements `Pending Counter`.
+  - **Success**: Updates Postgres `AnalyzerResult`, decrements `Pending Counter`.
   - **Failure/Timeout**: Logs error, decrements `Pending Counter` (effectively drops item to prevent blocking).
   - **Retry**: Optional/TBD (Must avoid infinite loops).
 
 #### 3. The Feed Builder (Aggregator)
 - **Trigger**: Runs when `Pending Counter` for a feed reaches `0`.
 - **Logic**:
-  - Loads `cached_feeds` structure (Header) from Postgres.
-  - Fetches all valid items (with `AI_Result`) from Postgres.
-  - Updates `pubDate` and `lastUpdate`.
+  - Loads `cached_feeds` structure (XML Header) from Postgres.
+  - Fetches all valid items (with populated `AnalyzerResult`) from Postgres.
+  - Updates `pubDate` and `UpdatedAt`.
   - Builds the Final XML.
   - **Write 1**: Updates Valkey `Final Feed Cache`.
   - **Write 2**: Updates Postgres `cached_feeds` (Cold Store).
@@ -167,7 +167,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 
 ### Interface
 - **Input**: `feeds.RssItem` (from `gorilla.feed` package).
-- **Output**: `JsonDocument` (Structured extraction/`AI_Result`).
+- **Output**: `JsonDocument` (Structured extraction/`AnalyzerResult`).
 
 ### Implementation Details
 - **Mock Mode**: For development, a Mock Implementation simulates latency (`sleep(5)`) and returns dummy data to save costs.
@@ -178,32 +178,39 @@ This component is an abstraction layer over Large Language Models (LLMs).
 
 ## 7. Data Schema
 
+Based on the provided Go GORM models.
+
 ### Database (PostgreSQL)
 
 **Table: `feeds`**
-- `id`: UUID (PK)
-- `url`: String (Upstream RSS URL)
-- `enabled`: Boolean
-- `config`: JSON (Interval, specific parsing rules)
-- `enforce_feed_domain`: Boolean (Flag: Only allow items from the Feed Base URL).
+*Embeds `Base` (ID, CreatedAt, UpdatedAt, DeletedAt)*
+- `id`: UUID (PK, default `uuid_generate_v4()`)
+- `url`: String (**Indexed**)
+- `enforce_feed_domain`: Boolean (Default: `true`. Items must come from the feed domain).
+- `enabled`: Boolean (Default: `false`, **Indexed**).
+- `deleted_at`: Timestamp (Soft Delete support via GORM).
 
 **Table: `items`**
-- `hash`: String (SHA256 of Title + Description - PK)
-- `feed_id`: FK
-- `url`: String (**Indexed**, Non-Unique)
-- `ai_result`: JSONB (The processed content)
-- `debug_content`: Text (Optional: Original XML or full HTML source)
-- `min_hash`: Text (Optional: Content change detection)
-- `created_at`: Timestamp
+*Does NOT embed `Base`*
+- `id`: UUID (PK)
+- `created_at`: Timestamp (Default: `now()`)
+- `updated_at`: Timestamp (Default: `now()`)
+- `hash`: String (64 chars, **Unique Indexes**: `idx_hash_feed_url`, `idx_hash_feed`).
+- `feed_id`: UUID (**Indexed**, FK to Feeds, **Unique Indexes**: `idx_feed_url`, `idx_hash_feed_url`, `idx_hash_feed`).
+- `url`: String (**Indexed**, **Unique Indexes**: `idx_feed_url`, `idx_hash_feed_url`).
+- `analyzer_result`: JSONB (The processed AI content, **NOT NULL**).
+- `content`: Text (The raw item content, **NOT NULL**).
+- `min_hash`: String (Optional, Default: `null`).
 - **Constraints**:
   - `FeedID` + `URL` is **UNIQUE**.
   - `URL` alone is **NOT UNIQUE** (One URL can appear in multiple Feeds).
 
 **Table: `cached_feeds` (Cold Store)**
-- `id`: UUID (PK & FK to feeds.id)
-- `xml_header`: Text
-- `item_refs`: Array of String (SHA256 references)
-- `last_update`: Timestamp (Managed by GORM)
+- `id`: UUID (PK & FK to Feed.ID).
+- `created_at`: Timestamp (Default: `now()`)
+- `updated_at`: Timestamp (Default: `now()`).
+- `xml_header`: Text (**NOT NULL**).
+- `item_refs`: Text Array (`text[]`, Default: `'{}'`, Stores item SHA256 refs).
 
 ### Cache (Valkey)
 
@@ -251,7 +258,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - **URL Ambiguity & Security**:
   - A single URL (e.g., `example.com/foo`) can legitimately appear in multiple feeds (Syndication).
   - **Risk**: A malicious RSS feed could theoretically "claim" popular URLs to inject bad data into the system.
-  - **Mitigation**: The `enforce_feed_domain` boolean on the Feed config enforces strict domain matching.
+  - **Mitigation**: The `EnforceFeedDomain` boolean (default `true`) ensures items are rejected if they do not match the Feed's domain base.
   - **TODO**: We might need a more granular allow-list (Regex/Glob) for items if we encounter feeds that legitimately host items on 3rd party domains.
   - **Lookup**: When querying by URL, the application must handle multiple results (e.g., sort by latest).
 - **Trigger Mechanism**: The Webserver pushes the `Feed UUID` to a Redis List. The Worker uses a `SETNX` lock to ensure it doesn't process the same feed twice if the queue accumulates duplicates.
