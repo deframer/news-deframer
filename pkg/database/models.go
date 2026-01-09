@@ -30,8 +30,8 @@ type Feed struct {
 	// gorm.Model
 	Base
 	URL               string `gorm:"index"`
-	EnforceFeedDomain bool   `gorm:"not null;default:true"`        // item url must be from our URL
-	Enabled           bool   `gorm:"not null;default:false;index"` // not null default false
+	EnforceFeedDomain bool   `gorm:"not null;default:true"` // item url must be from our URL
+	Enabled           bool   `gorm:"not null;default:false;index"`
 }
 
 // StringArray aliases []string to implement sql.Scanner and driver.Valuer for PostgreSQL text[]
