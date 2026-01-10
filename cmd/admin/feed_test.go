@@ -132,7 +132,18 @@ func TestFeedCommands(t *testing.T) {
 	feed, _ = mock.FindFeedById(feedID)
 	assert.True(t, feed.Enabled)
 
-	// 6. Delete Feed
+	// 6. Set AutoPolling
+	out = captureOutput(func() {
+		setAutoPolling(testURL, "true")
+	})
+	assert.Contains(t, out, "Set polling to true")
+
+	feed, _ = mock.FindFeedById(feedID)
+	assert.True(t, feed.AutoPolling)
+	assert.Len(t, mockValkey.drained, 2)
+	assert.Equal(t, feedID, mockValkey.drained[1])
+
+	// 7. Delete Feed
 	out = captureOutput(func() {
 		deleteFeed(testURL)
 	})
@@ -142,10 +153,10 @@ func TestFeedCommands(t *testing.T) {
 	feed, _ = mock.FindFeedById(feedID)
 	assert.True(t, feed.DeletedAt.Valid)
 	// Verify DrainFeed was called again
-	assert.Len(t, mockValkey.drained, 2)
-	assert.Equal(t, feedID, mockValkey.drained[1])
+	assert.Len(t, mockValkey.drained, 3)
+	assert.Equal(t, feedID, mockValkey.drained[2])
 
-	// 7. List Feeds (JSON) check deleted
+	// 8. List Feeds (JSON) check deleted
 	out = captureOutput(func() {
 		listFeeds(true, true)
 	})

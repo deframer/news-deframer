@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"text/tabwriter"
 
@@ -29,9 +30,10 @@ func init() {
 	feedCmd.AddCommand(enableCmd)
 	feedCmd.AddCommand(disableCmd)
 	feedCmd.AddCommand(listCmd)
+	feedCmd.AddCommand(autoPollingCmd)
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
-	addCmd.Flags().BoolVar(&autoPolling, "auto-polling", false, "Enable auto polling")
+	addCmd.Flags().BoolVar(&autoPolling, "polling", false, "Enable polling")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 	listCmd.Flags().BoolVar(&showDeleted, "deleted", false, "Show deleted feeds")
 
@@ -95,6 +97,15 @@ var disableCmd = &cobra.Command{
 	},
 }
 
+var autoPollingCmd = &cobra.Command{
+	Use:   "polling <uuid|url> <true|false>",
+	Short: "Set polling for a feed",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		setAutoPolling(args[0], args[1])
+	},
+}
+
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all feeds",
@@ -121,7 +132,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tAutoPolling\tID\tURL\tEnforceDomain\tUpdated"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tID\tURL\tEnforceDomain\tUpdated"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -174,7 +185,7 @@ func addFeed(feedUrl string, enabled bool, autoPolling bool) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Added feed for url=%s with id=%s enabled=%v autoPolling=%v\n", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.AutoPolling)
+	fmt.Printf("Added feed for url=%s with id=%s enabled=%v polling=%v\n", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.AutoPolling)
 }
 
 func resolveFeed(input string, onlyEnabled bool) *database.Feed {
@@ -250,6 +261,25 @@ func disableFeed(input string) {
 
 	drainFeed(feed.ID)
 	fmt.Printf("Disabled feed for url=%s with id=%s\n", feed.URL, feed.ID)
+}
+
+func setAutoPolling(input string, stateStr string) {
+	state, err := strconv.ParseBool(stateStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid boolean value: %s\n", stateStr)
+		os.Exit(1)
+	}
+
+	feed := resolveFeed(input, false)
+
+	feed.AutoPolling = state
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set auto-polling: %v\n", err)
+		os.Exit(1)
+	}
+
+	drainFeed(feed.ID)
+	fmt.Printf("Set polling to %v for url=%s with id=%s\n", feed.AutoPolling, feed.URL, feed.ID)
 }
 
 func parseAndNormalizeURL(rawURL string) (*url.URL, error) {
