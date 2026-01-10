@@ -148,7 +148,7 @@ func (f *facade) fetchAndCache(u *url.URL) (bool, error) {
 			UUID:  feed.ID,
 		}
 		info.BaseDomain = baseDomains
-		info.AutoPolling = feed.AutoPolling
+		info.Polling = feed.Polling
 	}
 
 	if err := f.valkey.UpdateFeed(state, info, maxTimeout); err != nil {

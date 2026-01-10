@@ -42,7 +42,7 @@ func TestFeedUrlKeys(t *testing.T) {
 	err = c.UpdateFeed(FeedUrlToUUID{
 		Cache: Ok,
 		UUID:  value,
-	}, FeedInfo{BaseDomain: []string{"example.com", "sub.example.com"}, URL: u.String(), AutoPolling: false}, time.Minute)
+	}, FeedInfo{BaseDomain: []string{"example.com", "sub.example.com"}, URL: u.String(), Polling: false}, time.Minute)
 	assert.NoError(t, err)
 
 	foundVal, err = c.GetFeedByUrl(u)

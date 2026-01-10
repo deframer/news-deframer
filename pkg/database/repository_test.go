@@ -28,9 +28,9 @@ func TestFindFeedByUrlAndAvailability(t *testing.T) {
 		// Create isolated test data
 		rawURL := "http://test-find-feed-" + uuid.New().String() + ".test"
 		feed := Feed{
-			URL:         rawURL,
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     rawURL,
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed).Error)
 
@@ -57,9 +57,9 @@ func TestFindFeedByUrlAndAvailability(t *testing.T) {
 
 		rawURL := "http://test-find-feed-disabled-" + uuid.New().String() + ".test"
 		feed := Feed{
-			URL:         rawURL,
-			Enabled:     false,
-			AutoPolling: false,
+			URL:     rawURL,
+			Enabled: false,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed).Error)
 
@@ -99,9 +99,9 @@ func TestFindFeedByUrlAndAvailability(t *testing.T) {
 
 		rawURL := "http://test-find-feed-" + uuid.New().String() + ".test"
 		feed := Feed{
-			URL:         rawURL,
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     rawURL,
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed).Error)
 
@@ -131,10 +131,10 @@ func TestFindFeedById(t *testing.T) {
 
 		id := uuid.New()
 		feed := Feed{
-			Base:        Base{ID: id},
-			URL:         "http://test-find-feed-id-" + id.String() + ".test",
-			Enabled:     true,
-			AutoPolling: false,
+			Base:    Base{ID: id},
+			URL:     "http://test-find-feed-id-" + id.String() + ".test",
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed).Error)
 
@@ -153,10 +153,10 @@ func TestFindFeedById(t *testing.T) {
 
 		id := uuid.New()
 		feed := Feed{
-			Base:        Base{ID: id},
-			URL:         "http://test-find-feed-id-disabled-" + id.String() + ".test",
-			Enabled:     false,
-			AutoPolling: false,
+			Base:    Base{ID: id},
+			URL:     "http://test-find-feed-id-disabled-" + id.String() + ".test",
+			Enabled: false,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed).Error)
 
@@ -180,10 +180,10 @@ func TestFindFeedById(t *testing.T) {
 
 		id := uuid.New()
 		feed := Feed{
-			Base:        Base{ID: id},
-			URL:         "http://test-find-feed-id-deleted-" + id.String() + ".test",
-			Enabled:     true,
-			AutoPolling: false,
+			Base:    Base{ID: id},
+			URL:     "http://test-find-feed-id-deleted-" + id.String() + ".test",
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed).Error)
 		assert.NoError(t, repo.DeleteFeedById(id))
@@ -209,9 +209,9 @@ func TestUpsertFeed(t *testing.T) {
 		repo := NewFromDB(tx)
 
 		feed := &Feed{
-			URL:         "http://upsert-create.test/" + uuid.New().String(),
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     "http://upsert-create.test/" + uuid.New().String(),
+			Enabled: true,
+			Polling: false,
 		}
 		err := repo.UpsertFeed(feed)
 		assert.NoError(t, err)
@@ -230,9 +230,9 @@ func TestUpsertFeed(t *testing.T) {
 
 		// Create first
 		feed := &Feed{
-			URL:         "http://upsert-update.test/" + uuid.New().String(),
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     "http://upsert-update.test/" + uuid.New().String(),
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, repo.UpsertFeed(feed))
 
@@ -252,9 +252,9 @@ func TestUpsertFeed(t *testing.T) {
 		repo := NewFromDB(tx)
 
 		feed := &Feed{
-			URL:         "http://upsert-disabled.test/" + uuid.New().String(),
-			Enabled:     false,
-			AutoPolling: false,
+			URL:     "http://upsert-disabled.test/" + uuid.New().String(),
+			Enabled: false,
+			Polling: false,
 		}
 		assert.NoError(t, repo.UpsertFeed(feed))
 
@@ -278,9 +278,9 @@ func TestUpsertFeed(t *testing.T) {
 		repo := NewFromDB(tx)
 
 		feed := &Feed{
-			URL:         "http://upsert-delete.test/" + uuid.New().String(),
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     "http://upsert-delete.test/" + uuid.New().String(),
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, repo.UpsertFeed(feed))
 
@@ -318,9 +318,9 @@ func TestFindCachedFeedById(t *testing.T) {
 			name: "Found (Enabled)",
 			setup: func(tx *gorm.DB) uuid.UUID {
 				feed := Feed{
-					URL:         "http://test-cached-feed-enabled-" + uuid.New().String(),
-					Enabled:     true,
-					AutoPolling: false,
+					URL:     "http://test-cached-feed-enabled-" + uuid.New().String(),
+					Enabled: true,
+					Polling: false,
 				}
 				assert.NoError(t, tx.Create(&feed).Error)
 
@@ -338,9 +338,9 @@ func TestFindCachedFeedById(t *testing.T) {
 			name: "NotFound (Disabled)",
 			setup: func(tx *gorm.DB) uuid.UUID {
 				feed := Feed{
-					URL:         "http://test-cached-feed-disabled-" + uuid.New().String(),
-					Enabled:     false,
-					AutoPolling: false,
+					URL:     "http://test-cached-feed-disabled-" + uuid.New().String(),
+					Enabled: false,
+					Polling: false,
 				}
 				assert.NoError(t, tx.Create(&feed).Error)
 
@@ -358,9 +358,9 @@ func TestFindCachedFeedById(t *testing.T) {
 			name: "NotFound (Deleted)",
 			setup: func(tx *gorm.DB) uuid.UUID {
 				feed := Feed{
-					URL:         "http://test-cached-feed-deleted-" + uuid.New().String(),
-					Enabled:     true,
-					AutoPolling: false,
+					URL:     "http://test-cached-feed-deleted-" + uuid.New().String(),
+					Enabled: true,
+					Polling: false,
 				}
 				assert.NoError(t, tx.Create(&feed).Error)
 
@@ -427,9 +427,9 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 			name: "Found (Enabled)",
 			setup: func(tx *gorm.DB) (uuid.UUID, string) {
 				feed := Feed{
-					URL:         "http://test-items-enabled-" + uuid.New().String(),
-					Enabled:     true,
-					AutoPolling: false,
+					URL:     "http://test-items-enabled-" + uuid.New().String(),
+					Enabled: true,
+					Polling: false,
 				}
 				assert.NoError(t, tx.Create(&feed).Error)
 
@@ -451,9 +451,9 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 			name: "Empty (Disabled)",
 			setup: func(tx *gorm.DB) (uuid.UUID, string) {
 				feed := Feed{
-					URL:         "http://test-items-disabled-" + uuid.New().String(),
-					Enabled:     false,
-					AutoPolling: false,
+					URL:     "http://test-items-disabled-" + uuid.New().String(),
+					Enabled: false,
+					Polling: false,
 				}
 				assert.NoError(t, tx.Create(&feed).Error)
 
@@ -475,9 +475,9 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 			name: "Empty (Deleted)",
 			setup: func(tx *gorm.DB) (uuid.UUID, string) {
 				feed := Feed{
-					URL:         "http://test-items-deleted-" + uuid.New().String(),
-					Enabled:     true,
-					AutoPolling: false,
+					URL:     "http://test-items-deleted-" + uuid.New().String(),
+					Enabled: true,
+					Polling: false,
 				}
 				assert.NoError(t, tx.Create(&feed).Error)
 
@@ -548,7 +548,7 @@ func TestFindItemsByUrl(t *testing.T) {
 		itemURL := "http://nytimes.test/2024/01/01/world/test-article-" + uid + ".html"
 
 		// EnforceFeedDomain not enforced by Database (!)
-		feed := Feed{URL: feedURL, Enabled: true, EnforceFeedDomain: true, AutoPolling: false}
+		feed := Feed{URL: feedURL, Enabled: true, EnforceFeedDomain: true, Polling: false}
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		// Test
@@ -570,7 +570,7 @@ func TestFindItemsByUrl(t *testing.T) {
 		sharedURL := "http://example.com/shared-story-" + uid
 
 		// Create Source Feed & Item
-		sourceFeed := Feed{URL: "http://example.com/rss-" + uid, Enabled: true, EnforceFeedDomain: true, AutoPolling: false}
+		sourceFeed := Feed{URL: "http://example.com/rss-" + uid, Enabled: true, EnforceFeedDomain: true, Polling: false}
 		assert.NoError(t, tx.Create(&sourceFeed).Error)
 
 		// We use the same content hash to simulate exact syndication, though hashes can differ if content varies.
@@ -580,7 +580,7 @@ func TestFindItemsByUrl(t *testing.T) {
 		assert.NoError(t, tx.Create(&sourceItem).Error)
 
 		// Create Aggregator Feed & Item
-		aggFeed := Feed{URL: "http://aggregator.test/rss-" + uid, Enabled: true, EnforceFeedDomain: false, AutoPolling: false}
+		aggFeed := Feed{URL: "http://aggregator.test/rss-" + uid, Enabled: true, EnforceFeedDomain: false, Polling: false}
 		assert.NoError(t, tx.Create(&aggFeed).Error)
 
 		aggItem := Item{Hash: contentHash, FeedID: aggFeed.ID, URL: sharedURL, AnalyzerResult: JSONB{"src": "aggregator"}}
@@ -607,7 +607,7 @@ func TestFindItemsByUrl(t *testing.T) {
 		feedURL := "http://disabled-feed.test/rss-" + uid
 		itemURL := "http://disabled-feed.test/article-" + uid
 
-		feed := Feed{URL: feedURL, Enabled: false, AutoPolling: false}
+		feed := Feed{URL: feedURL, Enabled: false, Polling: false}
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		item := Item{
@@ -634,9 +634,9 @@ func TestFindItemsByUrl(t *testing.T) {
 		itemURL := "http://deleted-feed.test/article-" + uid
 
 		feed := Feed{
-			URL:         feedURL,
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     feedURL,
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed).Error)
 
@@ -672,17 +672,17 @@ func TestGetAllFeeds(t *testing.T) {
 
 		// Create active feed
 		feed1 := Feed{
-			URL:         "http://active-feed.test/" + uuid.New().String(),
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     "http://active-feed.test/" + uuid.New().String(),
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed1).Error)
 
 		// Create deleted feed
 		feed2 := Feed{
-			URL:         "http://deleted-feed.test/" + uuid.New().String(),
-			Enabled:     true,
-			AutoPolling: false,
+			URL:     "http://deleted-feed.test/" + uuid.New().String(),
+			Enabled: true,
+			Polling: false,
 		}
 		assert.NoError(t, tx.Create(&feed2).Error)
 		assert.NoError(t, tx.Delete(&feed2).Error)

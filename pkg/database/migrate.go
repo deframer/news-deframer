@@ -57,11 +57,11 @@ func seed(db *gorm.DB) error {
 	idOpen := uuid.New()
 
 	feeds := []Feed{
-		{URL: "http://rssbridge/?action=display&bridge=TheVerge&format=Atom", Enabled: true, EnforceFeedDomain: true, AutoPolling: false},
-		{Base: Base{ID: idEnforced}, URL: "http://dummy-enforced", Enabled: true, EnforceFeedDomain: true, AutoPolling: false},
-		{Base: Base{ID: idOpen}, URL: "http://dummy-open", Enabled: true, EnforceFeedDomain: false, AutoPolling: false},
-		{URL: "http://wordpress/feed", Enabled: true, EnforceFeedDomain: true, AutoPolling: true},
-		{URL: "http://localhost:8003/feed", Enabled: true, EnforceFeedDomain: true, AutoPolling: true},
+		{URL: "http://rssbridge/?action=display&bridge=TheVerge&format=Atom", Enabled: true, EnforceFeedDomain: true, Polling: false},
+		{Base: Base{ID: idEnforced}, URL: "http://dummy-enforced", Enabled: true, EnforceFeedDomain: true, Polling: false},
+		{Base: Base{ID: idOpen}, URL: "http://dummy-open", Enabled: true, EnforceFeedDomain: false, Polling: false},
+		{URL: "http://wordpress/feed", Enabled: true, EnforceFeedDomain: true, Polling: true},
+		{URL: "http://localhost:8003/feed", Enabled: true, EnforceFeedDomain: true, Polling: true},
 	}
 
 	if err := db.Create(&feeds).Error; err != nil {

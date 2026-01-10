@@ -106,7 +106,7 @@ To handle the heavy lifting: Polling, Scraping, AI Processing, and XML Reconstru
 
 #### 1. The Download Worker (Ingest)
 - **Triggers**:
-  - **Cron**: Every 15 minutes. Iterates feeds where **`enabled=true` AND `auto_polling=true`**.
+  - **Cron**: Every 15 minutes. Iterates feeds where **`enabled=true` AND `polling=true`**.
   - **On-Demand**: Consumes `IngestQueue` (triggered by API Cache Miss).
 - **Concurrency Control**:
   - Uses Valkey `SET key value NX EX 900` on the **Feed UUID**.
@@ -189,7 +189,7 @@ Based on the provided Go GORM models and Valkey implementation.
 - `url`: String (**Indexed**)
 - `enforce_feed_domain`: Boolean (Default: `true`. Items must come from the feed domain).
 - `enabled`: Boolean (Default: `false`, **Indexed**).
-- `auto_polling`: Boolean (Default: `false`. If true, background worker actively refreshes content).
+- `polling`: Boolean (Default: `false`. If true, background worker actively refreshes content).
 - `deleted_at`: Timestamp (Soft Delete support via GORM).
 
 **Table: `items`**
@@ -221,7 +221,7 @@ Based on the provided Go GORM models and Valkey implementation.
   - **Value**: JSON `FeedUrlToUUID` `{ "cache": int, "uuid": uuid }`.
 - **Key**: `feed_uuid:{uuid}`
   - **Purpose**: Reverse lookup and Metadata.
-  - **Value**: JSON `FeedInfo` `{ "cache": int, "base_domain": [], "url": string, "auto_polling": bool }`.
+  - **Value**: JSON `FeedInfo` `{ "cache": int, "base_domain": [], "url": string, "polling": bool }`.
 - **Key**: `feed:{uuid}:final` -> Final XML String (Ready to serve).
 - **Key**: `feed:{uuid}:pending` -> Integer (Counter of active AI tasks).
 - **Key**: `queue:ingest` -> List of Feed UUIDs.

@@ -132,14 +132,14 @@ func TestFeedCommands(t *testing.T) {
 	feed, _ = mock.FindFeedById(feedID)
 	assert.True(t, feed.Enabled)
 
-	// 6. Set AutoPolling
+	// 6. Set Polling
 	out = captureOutput(func() {
-		setAutoPolling(testURL, "true")
+		setPolling(testURL, "true")
 	})
 	assert.Contains(t, out, "Set polling to true")
 
 	feed, _ = mock.FindFeedById(feedID)
-	assert.True(t, feed.AutoPolling)
+	assert.True(t, feed.Polling)
 	assert.Len(t, mockValkey.drained, 2)
 	assert.Equal(t, feedID, mockValkey.drained[1])
 
