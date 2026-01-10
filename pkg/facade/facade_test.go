@@ -27,7 +27,7 @@ func (m *mockDownloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io
 
 type mockValkey struct {
 	getFeedByUrl     func(u *url.URL) (*valkey.FeedUrlToUUID, error)
-	updateFeedByUrl  func(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error
+	updateFeed       func(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error
 	tryLockFeedByUrl func(u *url.URL, state valkey.FeedUrlToUUID, ttl time.Duration) (bool, error)
 	drainFeed        func(feedID uuid.UUID) error
 	close            func() error
@@ -40,9 +40,9 @@ func (m *mockValkey) GetFeedByUrl(u *url.URL) (*valkey.FeedUrlToUUID, error) {
 	return nil, nil
 }
 
-func (m *mockValkey) UpdateFeedByUrl(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error {
-	if m.updateFeedByUrl != nil {
-		return m.updateFeedByUrl(state, info, ttl)
+func (m *mockValkey) UpdateFeed(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error {
+	if m.updateFeed != nil {
+		return m.updateFeed(state, info, ttl)
 	}
 	return nil
 }

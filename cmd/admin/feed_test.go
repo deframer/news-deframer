@@ -263,7 +263,7 @@ func (m *MockValkey) GetFeedByUrl(u *url.URL) (*valkey.FeedUrlToUUID, error) {
 	return nil, nil
 }
 
-func (m *MockValkey) UpdateFeedByUrl(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error {
+func (m *MockValkey) UpdateFeed(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error {
 	return nil
 }
 

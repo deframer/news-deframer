@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/analyzer"
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/google/uuid"
 	driver "github.com/valkey-io/valkey-go"
@@ -33,23 +32,23 @@ type FeedUrlToUUID struct {
 	UUID  uuid.UUID `json:"uuid,omitempty"`
 }
 
-type ItemHashCache struct {
-	Cache          Cache                   `json:"cache"`
-	Hash           string                  `json:"hash,omitempty"`
-	Content        string                  `json:"content,omitempty"`
-	AnalyzerResult analyzer.AnalyzerResult `json:"analyzer_result,omitempty"`
-}
-
 type FeedInfo struct {
 	Cache      Cache    `json:"cache"`
 	BaseDomain []string `json:"base_domain"`
 	URL        string   `json:"url"`
 }
 
+// type ItemHashCache struct {
+// 	Cache          Cache                   `json:"cache"`
+// 	Hash           string                  `json:"hash,omitempty"`
+// 	Content        string                  `json:"content,omitempty"`
+// 	AnalyzerResult analyzer.AnalyzerResult `json:"analyzer_result,omitempty"`
+// }
+
 type Valkey interface {
 	DrainFeed(feedID uuid.UUID) error
 	GetFeedByUrl(u *url.URL) (*FeedUrlToUUID, error)
-	UpdateFeedByUrl(state FeedUrlToUUID, info FeedInfo, ttl time.Duration) error
+	UpdateFeed(state FeedUrlToUUID, info FeedInfo, ttl time.Duration) error
 	TryLockFeedByUrl(u *url.URL, state FeedUrlToUUID, ttl time.Duration) (bool, error)
 	Close() error
 }
@@ -113,7 +112,7 @@ func (v *valkey) GetFeedByUrl(u *url.URL) (*FeedUrlToUUID, error) {
 	return &state, nil
 }
 
-func (v *valkey) UpdateFeedByUrl(state FeedUrlToUUID, info FeedInfo, ttl time.Duration) error {
+func (v *valkey) UpdateFeed(state FeedUrlToUUID, info FeedInfo, ttl time.Duration) error {
 	data, err := json.Marshal(state)
 	if err != nil {
 		return fmt.Errorf("failed to marshal state: %w", err)

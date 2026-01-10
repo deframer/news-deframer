@@ -150,7 +150,7 @@ func (f *facade) fetchAndCache(u *url.URL) (bool, error) {
 		info.BaseDomain = baseDomains
 	}
 
-	if err := f.valkey.UpdateFeedByUrl(state, info, maxTimeout); err != nil {
+	if err := f.valkey.UpdateFeed(state, info, maxTimeout); err != nil {
 		return false, err
 	}
 	return state.Cache != valkey.ValueUnknown, nil
