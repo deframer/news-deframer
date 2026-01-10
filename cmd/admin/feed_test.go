@@ -254,20 +254,20 @@ type MockValkey struct {
 	drained []uuid.UUID
 }
 
-func (m *MockValkey) DrainFeed(id uuid.UUID) error {
-	m.drained = append(m.drained, id)
+func (m *MockValkey) DrainFeed(feedID uuid.UUID) error {
+	m.drained = append(m.drained, feedID)
 	return nil
 }
 
-func (m *MockValkey) GetFeedUUID(u *url.URL) (*valkey.FeedUUIDCache, error) {
+func (m *MockValkey) GetFeedByUrl(u *url.URL) (*valkey.FeedUrlToUUID, error) {
 	return nil, nil
 }
 
-func (m *MockValkey) UpdateFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) error {
+func (m *MockValkey) UpdateFeedByUrl(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error {
 	return nil
 }
 
-func (m *MockValkey) TryLockFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) (bool, error) {
+func (m *MockValkey) TryLockFeedByUrl(u *url.URL, state valkey.FeedUrlToUUID, ttl time.Duration) (bool, error) {
 	return true, nil
 }
 

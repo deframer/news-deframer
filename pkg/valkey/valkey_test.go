@@ -28,25 +28,24 @@ func TestFeedUrlKeys(t *testing.T) {
 	value := uuid.New()
 
 	// Ensure cleanup before and after
-	if existing, _ := c.GetFeedUUID(u); existing != nil && existing.UUID != uuid.Nil {
+	if existing, _ := c.GetFeedByUrl(u); existing != nil && existing.UUID != uuid.Nil {
 		_ = c.DrainFeed(existing.UUID)
 	}
 	defer func() {
 		_ = c.DrainFeed(value)
 	}()
 
-	foundVal, err := c.GetFeedUUID(u)
+	foundVal, err := c.GetFeedByUrl(u)
 	assert.NoError(t, err)
 	assert.Nil(t, foundVal)
 
-	err = c.UpdateFeedUUID(u, FeedUUIDCache{
-		Cache:      Ok,
-		UUID:       value,
-		BaseDomain: []string{"example.com", "sub.example.com"},
-	}, time.Minute)
+	err = c.UpdateFeedByUrl(FeedUrlToUUID{
+		Cache: Ok,
+		UUID:  value,
+	}, FeedInfo{BaseDomain: []string{"example.com", "sub.example.com"}, URL: u.String()}, time.Minute)
 	assert.NoError(t, err)
 
-	foundVal, err = c.GetFeedUUID(u)
+	foundVal, err = c.GetFeedByUrl(u)
 	assert.NoError(t, err)
 	assert.NotNil(t, foundVal)
 	assert.Equal(t, Ok, foundVal.Cache)
@@ -55,7 +54,7 @@ func TestFeedUrlKeys(t *testing.T) {
 	err = c.DrainFeed(value)
 	assert.NoError(t, err)
 
-	foundVal, err = c.GetFeedUUID(u)
+	foundVal, err = c.GetFeedByUrl(u)
 	assert.NoError(t, err)
 	assert.Nil(t, foundVal)
 }

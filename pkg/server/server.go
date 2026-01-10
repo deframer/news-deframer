@@ -19,7 +19,7 @@ import (
 type Server struct {
 	httpServer *http.Server
 	logger     *slog.Logger
-	facade     *facade.Facade
+	facade     facade.Facade
 }
 
 type RSSRequest struct {
@@ -29,7 +29,7 @@ type RSSRequest struct {
 	Embedded bool
 }
 
-func New(ctx context.Context, cfg *config.Config, f *facade.Facade) *Server {
+func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	s := &Server{
 		logger: slog.With("component", "server"),
 		facade: f,

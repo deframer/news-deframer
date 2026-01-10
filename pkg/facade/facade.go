@@ -15,7 +15,19 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-type Facade struct {
+var (
+	maxPendingTimeout = 30 * time.Second
+	checkInterval     = 5 * time.Second
+	maxTimeout        = 5 * time.Minute
+)
+
+type Facade interface {
+	HasFeed(ctx context.Context, u *url.URL) (bool, error)
+	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
+	GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error)
+}
+
+type facade struct {
 	ctx    context.Context
 	cfg    *config.Config
 	logger *slog.Logger
@@ -25,7 +37,7 @@ type Facade struct {
 	feeds  feeds.Feeds
 }
 
-func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database.Repository, dl ...downloader.Downloader) *Facade {
+func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database.Repository, dl ...downloader.Downloader) Facade {
 	var d downloader.Downloader
 	if len(dl) > 0 {
 		d = dl[0]
@@ -33,7 +45,7 @@ func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database
 		d = downloader.NewDownloader(ctx, cfg)
 	}
 
-	return &Facade{
+	return &facade{
 		ctx:    ctx,
 		cfg:    cfg,
 		logger: slog.With("component", "facade"),
@@ -44,14 +56,8 @@ func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database
 	}
 }
 
-var (
-	maxPendingTimeout = 30 * time.Second
-	checkInterval     = 5 * time.Second
-	maxTimeout        = 5 * time.Minute
-)
-
-func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
-	val, err := f.valkey.GetFeedUUID(u)
+func (f *facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
+	val, err := f.valkey.GetFeedByUrl(u)
 	if err != nil {
 		return false, err
 	}
@@ -68,7 +74,7 @@ func (f *Facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
 
 	// If it was missing (nil), try to acquire the lock to be the one fetching it.
 	if val == nil {
-		acquired, err := f.valkey.TryLockFeedUUID(u, valkey.FeedUUIDCache{Cache: valkey.Updating}, maxPendingTimeout)
+		acquired, err := f.valkey.TryLockFeedByUrl(u, valkey.FeedUrlToUUID{Cache: valkey.Updating}, maxPendingTimeout)
 		if err != nil {
 			return false, err
 		}
@@ -95,7 +101,7 @@ WAIT_LOOP:
 		case <-timeout:
 			return false, fmt.Errorf("timeout waiting for pending feed")
 		case <-ticker.C:
-			val, err := f.valkey.GetFeedUUID(u)
+			val, err := f.valkey.GetFeedByUrl(u)
 			if err != nil {
 				return false, err
 			}
@@ -113,7 +119,7 @@ WAIT_LOOP:
 	}
 }
 
-func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
+func (f *facade) fetchAndCache(u *url.URL) (bool, error) {
 	feed, err := f.repo.FindFeedByUrl(u)
 	if err != nil {
 		return false, err
@@ -123,7 +129,9 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 		return false, nil
 	}
 
-	state := valkey.FeedUUIDCache{Cache: valkey.ValueUnknown}
+	state := valkey.FeedUrlToUUID{Cache: valkey.ValueUnknown}
+	var info valkey.FeedInfo
+	info.URL = u.String()
 	if feed != nil {
 		var baseDomains []string
 		if feed.EnforceFeedDomain {
@@ -135,14 +143,14 @@ func (f *Facade) fetchAndCache(u *url.URL) (bool, error) {
 			}
 			// TODO we might have an allow list table later for each feed
 		}
-		state = valkey.FeedUUIDCache{
-			Cache:      valkey.Ok,
-			UUID:       feed.ID,
-			BaseDomain: baseDomains,
+		state = valkey.FeedUrlToUUID{
+			Cache: valkey.Ok,
+			UUID:  feed.ID,
 		}
+		info.BaseDomain = baseDomains
 	}
 
-	if err := f.valkey.UpdateFeedUUID(u, state, maxTimeout); err != nil {
+	if err := f.valkey.UpdateFeedByUrl(state, info, maxTimeout); err != nil {
 		return false, err
 	}
 	return state.Cache != valkey.ValueUnknown, nil
@@ -155,7 +163,7 @@ type RSSProxyFilter struct {
 	Embedded bool
 }
 
-func (f *Facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error) {
+func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error) {
 	if filter == nil {
 		filter = &RSSProxyFilter{}
 	}
@@ -204,7 +212,7 @@ type ItemResult struct {
 	AIResult string `json:"ai_result"`
 }
 
-func (f *Facade) GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error) {
+func (f *facade) GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error) {
 	var results []ItemResult
 	return results, nil
 }

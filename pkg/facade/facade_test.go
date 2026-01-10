@@ -26,37 +26,37 @@ func (m *mockDownloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io
 }
 
 type mockValkey struct {
-	getFeedUUID     func(u *url.URL) (*valkey.FeedUUIDCache, error)
-	updateFeedUUID  func(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) error
-	tryLockFeedUUID func(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) (bool, error)
-	drainFeed       func(id uuid.UUID) error
-	close           func() error
+	getFeedByUrl     func(u *url.URL) (*valkey.FeedUrlToUUID, error)
+	updateFeedByUrl  func(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error
+	tryLockFeedByUrl func(u *url.URL, state valkey.FeedUrlToUUID, ttl time.Duration) (bool, error)
+	drainFeed        func(feedID uuid.UUID) error
+	close            func() error
 }
 
-func (m *mockValkey) GetFeedUUID(u *url.URL) (*valkey.FeedUUIDCache, error) {
-	if m.getFeedUUID != nil {
-		return m.getFeedUUID(u)
+func (m *mockValkey) GetFeedByUrl(u *url.URL) (*valkey.FeedUrlToUUID, error) {
+	if m.getFeedByUrl != nil {
+		return m.getFeedByUrl(u)
 	}
 	return nil, nil
 }
 
-func (m *mockValkey) UpdateFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) error {
-	if m.updateFeedUUID != nil {
-		return m.updateFeedUUID(u, state, ttl)
+func (m *mockValkey) UpdateFeedByUrl(state valkey.FeedUrlToUUID, info valkey.FeedInfo, ttl time.Duration) error {
+	if m.updateFeedByUrl != nil {
+		return m.updateFeedByUrl(state, info, ttl)
 	}
 	return nil
 }
 
-func (m *mockValkey) TryLockFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) (bool, error) {
-	if m.tryLockFeedUUID != nil {
-		return m.tryLockFeedUUID(u, state, ttl)
+func (m *mockValkey) TryLockFeedByUrl(u *url.URL, state valkey.FeedUrlToUUID, ttl time.Duration) (bool, error) {
+	if m.tryLockFeedByUrl != nil {
+		return m.tryLockFeedByUrl(u, state, ttl)
 	}
 	return true, nil
 }
 
-func (m *mockValkey) DrainFeed(id uuid.UUID) error {
+func (m *mockValkey) DrainFeed(feedID uuid.UUID) error {
 	if m.drainFeed != nil {
-		return m.drainFeed(id)
+		return m.drainFeed(feedID)
 	}
 	return nil
 }
@@ -168,8 +168,8 @@ func TestHasFeed(t *testing.T) {
 			name: "Cached Valid",
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
-					getFeedUUID: func(u *url.URL) (*valkey.FeedUUIDCache, error) {
-						return &valkey.FeedUUIDCache{
+					getFeedByUrl: func(u *url.URL) (*valkey.FeedUrlToUUID, error) {
+						return &valkey.FeedUrlToUUID{
 							Cache: valkey.Ok,
 							UUID:  uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 						}, nil
@@ -183,8 +183,8 @@ func TestHasFeed(t *testing.T) {
 			name: "Cached Invalid",
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
-					getFeedUUID: func(u *url.URL) (*valkey.FeedUUIDCache, error) {
-						return &valkey.FeedUUIDCache{
+					getFeedByUrl: func(u *url.URL) (*valkey.FeedUrlToUUID, error) {
+						return &valkey.FeedUrlToUUID{
 							Cache: valkey.ValueUnknown,
 						}, nil
 					},
@@ -197,7 +197,7 @@ func TestHasFeed(t *testing.T) {
 			name: "Not Cached, DB Found",
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
-					getFeedUUID: func(u *url.URL) (*valkey.FeedUUIDCache, error) { return nil, nil },
+					getFeedByUrl: func(u *url.URL) (*valkey.FeedUrlToUUID, error) { return nil, nil },
 				}
 			},
 			setupRepo: func() *mockRepo {
@@ -213,7 +213,7 @@ func TestHasFeed(t *testing.T) {
 			name: "Not Cached, DB Not Found",
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
-					getFeedUUID: func(u *url.URL) (*valkey.FeedUUIDCache, error) { return nil, nil },
+					getFeedByUrl: func(u *url.URL) (*valkey.FeedUrlToUUID, error) { return nil, nil },
 				}
 			},
 			setupRepo: func() *mockRepo {
@@ -228,14 +228,14 @@ func TestHasFeed(t *testing.T) {
 			setupValkey: func() *mockValkey {
 				calls := 0
 				return &mockValkey{
-					getFeedUUID: func(u *url.URL) (*valkey.FeedUUIDCache, error) {
+					getFeedByUrl: func(u *url.URL) (*valkey.FeedUrlToUUID, error) {
 						calls++
 						if calls == 1 {
-							return &valkey.FeedUUIDCache{
+							return &valkey.FeedUrlToUUID{
 								Cache: valkey.Updating,
 							}, nil
 						}
-						return &valkey.FeedUUIDCache{
+						return &valkey.FeedUrlToUUID{
 							Cache: valkey.Ok,
 							UUID:  uuid.MustParse("00000000-0000-0000-0000-000000000001"),
 						}, nil
@@ -249,8 +249,8 @@ func TestHasFeed(t *testing.T) {
 			name: "Pending Timeout",
 			setupValkey: func() *mockValkey {
 				return &mockValkey{
-					getFeedUUID: func(u *url.URL) (*valkey.FeedUUIDCache, error) {
-						return &valkey.FeedUUIDCache{
+					getFeedByUrl: func(u *url.URL) (*valkey.FeedUrlToUUID, error) {
+						return &valkey.FeedUrlToUUID{
 							Cache: valkey.Updating,
 						}, nil
 					},
