@@ -18,6 +18,7 @@ var (
 	jsonOutput  bool
 	showDeleted bool
 	feedEnabled bool
+	autoPolling bool
 	repo        database.Repository
 	vk          valkey.Valkey
 )
@@ -30,6 +31,7 @@ func init() {
 	feedCmd.AddCommand(listCmd)
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
+	addCmd.Flags().BoolVar(&autoPolling, "auto-polling", false, "Enable auto polling")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 	listCmd.Flags().BoolVar(&showDeleted, "deleted", false, "Show deleted feeds")
 
@@ -62,7 +64,7 @@ var addCmd = &cobra.Command{
 	Short: "Add a new feed URL",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		addFeed(args[0], feedEnabled)
+		addFeed(args[0], feedEnabled, autoPolling)
 	},
 }
 
@@ -119,7 +121,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tID\tURL\tEnforceDomain\tUpdated"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tAutoPolling\tID\tURL\tEnforceDomain\tUpdated"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -130,7 +132,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 		} else if f.Enabled {
 			status = "enabled"
 		}
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%v\t%s\n", status, f.ID, f.URL, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02")); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%s\t%s\t%v\t%s\n", status, f.AutoPolling, f.ID, f.URL, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02")); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
@@ -141,7 +143,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 }
 
-func addFeed(feedUrl string, enabled bool) {
+func addFeed(feedUrl string, enabled bool, autoPolling bool) {
 	u, err := parseAndNormalizeURL(feedUrl)
 
 	if err != nil {
@@ -164,6 +166,7 @@ func addFeed(feedUrl string, enabled bool) {
 		URL:               u.String(),
 		Enabled:           enabled,
 		EnforceFeedDomain: true,
+		AutoPolling:       autoPolling,
 	}
 
 	if err := repo.UpsertFeed(newFeed); err != nil {
@@ -171,7 +174,7 @@ func addFeed(feedUrl string, enabled bool) {
 		os.Exit(1)
 	}
 
-	fmt.Printf("Added feed for url=%s with id=%s enabled=%v\n", feedUrl, newFeed.ID, newFeed.Enabled)
+	fmt.Printf("Added feed for url=%s with id=%s enabled=%v autoPolling=%v\n", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.AutoPolling)
 }
 
 func resolveFeed(input string, onlyEnabled bool) *database.Feed {

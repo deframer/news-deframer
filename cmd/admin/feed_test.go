@@ -76,7 +76,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 1. Create Feed
 	out := captureOutput(func() {
-		addFeed(testURL, true)
+		addFeed(testURL, true, false)
 	})
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)

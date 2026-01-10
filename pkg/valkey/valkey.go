@@ -33,9 +33,10 @@ type FeedUrlToUUID struct {
 }
 
 type FeedInfo struct {
-	Cache      Cache    `json:"cache"`
-	BaseDomain []string `json:"base_domain"`
-	URL        string   `json:"url"`
+	Cache       Cache    `json:"cache"`
+	BaseDomain  []string `json:"base_domain"`
+	URL         string   `json:"url"`
+	AutoPolling bool     `json:"auto_polling"`
 }
 
 // type ItemHashCache struct {
