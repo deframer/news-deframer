@@ -76,9 +76,10 @@ To serve valid RSS 2.0 documents instantly. It acts as the "Read Model" of the s
 GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
 ```
 **Behavior (The Fallback Chain)**:
-1.  **Hot Cache Hit**: If Valkey contains `feed:{uuid}:final`, return XML immediately (< 50ms).
-2.  **Cold Cache Hit**: If Valkey is empty, query PostgreSQL `cached_feeds` table. If found, return XML and populate Valkey.
-3.  **Miss (New/Empty Feed)**:
+1.  **Resolution**: Map `url` to `uuid` using Valkey `feed_url:{encoded_url}`.
+2.  **Hot Cache Hit**: If Valkey contains `feed:{uuid}:final`, return XML immediately (< 50ms).
+3.  **Cold Cache Hit**: If Valkey is empty, query PostgreSQL `cached_feeds` table. If found, return XML and populate Valkey.
+4.  **Miss (New/Empty Feed)**:
     - Register feed in DB if new.
     - **Push Feed UUID** to `IngestQueue`.
     - **Immediate Response**: Serve an "Empty" RSS Feed (Valid Header, No Items) to prevent blocking.
@@ -178,7 +179,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 
 ## 7. Data Schema
 
-Based on the provided Go GORM models.
+Based on the provided Go GORM models and Valkey implementation.
 
 ### Database (PostgreSQL)
 
@@ -214,9 +215,14 @@ Based on the provided Go GORM models.
 
 ### Cache (Valkey)
 
-- **Key**: `feed_uuid:{url_coded_url}` -> UUID of the feed, or invalid/pending (cache to avoid query the DB with the URL).
-- **Key**: `feed:{uuid}:final` -> Final XML String.
-- **Key**: `feed:{uuid}:pending` -> Integer (Counter).
+- **Key**: `feed_url:{url_coded_url}`
+  - **Purpose**: Resolution of URL to UUID.
+  - **Value**: JSON `FeedUrlToUUID` `{ "cache": int, "uuid": uuid }`.
+- **Key**: `feed_uuid:{uuid}`
+  - **Purpose**: Reverse lookup and Metadata (BaseDomains).
+  - **Value**: JSON `FeedInfo` `{ "cache": int, "base_domain": [], "url": string }`.
+- **Key**: `feed:{uuid}:final` -> Final XML String (Ready to serve).
+- **Key**: `feed:{uuid}:pending` -> Integer (Counter of active AI tasks).
 - **Key**: `queue:ingest` -> List of Feed UUIDs.
 - **Key**: `queue:feed:{uuid}` -> List of Item SHA256s.
 
