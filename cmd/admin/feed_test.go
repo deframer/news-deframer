@@ -271,10 +271,6 @@ func (m *MockValkey) TryLockFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl
 	return true, nil
 }
 
-func (m *MockValkey) DeleteFeedUUID(u *url.URL) error {
-	return nil
-}
-
 func (m *MockValkey) Close() error {
 	return nil
 }

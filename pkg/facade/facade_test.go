@@ -29,7 +29,6 @@ type mockValkey struct {
 	getFeedUUID     func(u *url.URL) (*valkey.FeedUUIDCache, error)
 	updateFeedUUID  func(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) error
 	tryLockFeedUUID func(u *url.URL, state valkey.FeedUUIDCache, ttl time.Duration) (bool, error)
-	deleteFeedUUID  func(u *url.URL) error
 	drainFeed       func(id uuid.UUID) error
 	close           func() error
 }
@@ -53,13 +52,6 @@ func (m *mockValkey) TryLockFeedUUID(u *url.URL, state valkey.FeedUUIDCache, ttl
 		return m.tryLockFeedUUID(u, state, ttl)
 	}
 	return true, nil
-}
-
-func (m *mockValkey) DeleteFeedUUID(u *url.URL) error {
-	if m.deleteFeedUUID != nil {
-		return m.deleteFeedUUID(u)
-	}
-	return nil
 }
 
 func (m *mockValkey) DrainFeed(id uuid.UUID) error {

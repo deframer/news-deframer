@@ -28,9 +28,11 @@ func TestFeedUrlKeys(t *testing.T) {
 	value := uuid.New()
 
 	// Ensure cleanup before and after
-	_ = c.DeleteFeedUUID(u)
+	if existing, _ := c.GetFeedUUID(u); existing != nil && existing.UUID != uuid.Nil {
+		_ = c.DrainFeed(existing.UUID)
+	}
 	defer func() {
-		_ = c.DeleteFeedUUID(u)
+		_ = c.DrainFeed(value)
 	}()
 
 	foundVal, err := c.GetFeedUUID(u)
@@ -49,7 +51,7 @@ func TestFeedUrlKeys(t *testing.T) {
 	assert.Equal(t, Ok, foundVal.Cache)
 	assert.Equal(t, value, foundVal.UUID)
 
-	err = c.DeleteFeedUUID(u)
+	err = c.DrainFeed(value)
 	assert.NoError(t, err)
 
 	foundVal, err = c.GetFeedUUID(u)
