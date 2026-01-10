@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	key_prefix_feed_uuid    = "feed_uuid:"
-	key_prefix_feed_reverse = "feed_reverse:"
+	key_prefix_feed_url  = "feed_url:"
+	key_prefix_feed_uuid = "feed_uuid:"
 )
 
 type Cache int
@@ -88,16 +88,16 @@ func New(ctx context.Context, cfg *config.Config) (Valkey, error) {
 	return &valkey{client: client, ctx: ctx}, nil
 }
 
-func feedUUIDKey(u *url.URL) string {
-	return key_prefix_feed_uuid + url.QueryEscape(u.String())
+func feedUrlKey(u *url.URL) string {
+	return key_prefix_feed_url + url.QueryEscape(u.String())
 }
 
-func feedReverseKey(id uuid.UUID) string {
-	return key_prefix_feed_reverse + id.String()
+func feedUUIDKey(id uuid.UUID) string {
+	return key_prefix_feed_uuid + id.String()
 }
 
 func (v *valkey) GetFeedByUrl(u *url.URL) (*FeedUrlToUUID, error) {
-	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(feedUUIDKey(u)).Build()).AsBytes()
+	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(feedUrlKey(u)).Build()).AsBytes()
 	if driver.IsValkeyNil(err) {
 		return nil, nil
 	}
@@ -119,7 +119,7 @@ func (v *valkey) UpdateFeedByUrl(state FeedUrlToUUID, info FeedInfo, ttl time.Du
 		return fmt.Errorf("failed to marshal state: %w", err)
 	}
 
-	key := key_prefix_feed_uuid + url.QueryEscape(info.URL)
+	key := key_prefix_feed_url + url.QueryEscape(info.URL)
 
 	// Pipeline: Set the cache key AND update reverse index if it's a valid feed
 	cmds := make([]driver.Completed, 0, 2)
@@ -132,7 +132,7 @@ func (v *valkey) UpdateFeedByUrl(state FeedUrlToUUID, info FeedInfo, ttl time.Du
 		if err != nil {
 			return fmt.Errorf("failed to marshal reverse entry: %w", err)
 		}
-		cmds = append(cmds, v.client.B().Set().Key(feedReverseKey(state.UUID)).Value(driver.BinaryString(data)).Ex(ttl).Build())
+		cmds = append(cmds, v.client.B().Set().Key(feedUUIDKey(state.UUID)).Value(driver.BinaryString(data)).Ex(ttl).Build())
 	}
 
 	// Execute
@@ -151,7 +151,7 @@ func (v *valkey) TryLockFeedByUrl(u *url.URL, state FeedUrlToUUID, ttl time.Dura
 		return false, fmt.Errorf("failed to marshal state: %w", err)
 	}
 
-	err = v.client.Do(v.ctx, v.client.B().Set().Key(feedUUIDKey(u)).Value(driver.BinaryString(data)).Nx().Ex(ttl).Build()).Error()
+	err = v.client.Do(v.ctx, v.client.B().Set().Key(feedUrlKey(u)).Value(driver.BinaryString(data)).Nx().Ex(ttl).Build()).Error()
 	if driver.IsValkeyNil(err) {
 		return false, nil
 	}
@@ -163,7 +163,7 @@ func (v *valkey) TryLockFeedByUrl(u *url.URL, state FeedUrlToUUID, ttl time.Dura
 }
 
 func (v *valkey) DrainFeed(feedID uuid.UUID) error {
-	revKey := feedReverseKey(feedID)
+	revKey := feedUUIDKey(feedID)
 
 	// 1. Get the member associated with this Feed ID
 	val, err := v.client.Do(v.ctx, v.client.B().Get().Key(revKey).Build()).AsBytes()
@@ -182,8 +182,8 @@ func (v *valkey) DrainFeed(feedID uuid.UUID) error {
 	// 2. Build pipeline to delete the individual URL key
 	cmds := make([]driver.Completed, 0, 2)
 
-	// Reconstruct the full key: "feed_uuid:" + escaped_url
-	fullKey := key_prefix_feed_uuid + url.QueryEscape(entry.URL)
+	// Reconstruct the full key: "feed_url:" + escaped_url
+	fullKey := key_prefix_feed_url + url.QueryEscape(entry.URL)
 	cmds = append(cmds, v.client.B().Del().Key(fullKey).Build())
 
 	// 3. Delete the reverse index itself

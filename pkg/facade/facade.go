@@ -22,7 +22,7 @@ var (
 )
 
 type Facade interface {
-	HasFeed(ctx context.Context, u *url.URL) (bool, error)
+	HasFeedByUrl(ctx context.Context, u *url.URL) (bool, error)
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
 	GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error)
 }
@@ -56,7 +56,7 @@ func New(ctx context.Context, cfg *config.Config, v valkey.Valkey, repo database
 	}
 }
 
-func (f *facade) HasFeed(ctx context.Context, u *url.URL) (bool, error) {
+func (f *facade) HasFeedByUrl(ctx context.Context, u *url.URL) (bool, error) {
 	val, err := f.valkey.GetFeedByUrl(u)
 	if err != nil {
 		return false, err

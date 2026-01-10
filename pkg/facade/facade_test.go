@@ -143,7 +143,7 @@ func (m *mockRepo) DeleteFeedById(id uuid.UUID) error {
 	return nil
 }
 
-func TestHasFeed(t *testing.T) {
+func TestHasFeedByUrl(t *testing.T) {
 	// Override timeouts for testing to ensure fast execution
 	origMaxPendingTimeout := maxPendingTimeout
 	origCheckInterval := checkInterval
@@ -265,7 +265,7 @@ func TestHasFeed(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			f := New(ctx, nil, tt.setupValkey(), tt.setupRepo(), &mockDownloader{})
-			got, err := f.HasFeed(ctx, testURL)
+			got, err := f.HasFeedByUrl(ctx, testURL)
 			if tt.expectedError {
 				assert.Error(t, err)
 			} else {

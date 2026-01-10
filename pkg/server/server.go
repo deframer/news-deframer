@@ -107,7 +107,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasFeed, err := s.facade.HasFeed(r.Context(), u)
+	hasFeed, err := s.facade.HasFeedByUrl(r.Context(), u)
 	if err != nil || !hasFeed {
 		if err != nil {
 			s.logger.Error("HasFeed failed", "error", err)
@@ -162,7 +162,7 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasFeed, err := s.facade.HasFeed(r.Context(), u)
+	hasFeed, err := s.facade.HasFeedByUrl(r.Context(), u)
 	if err != nil || !hasFeed {
 		if err != nil {
 			s.logger.Error("HasFeed failed", "error", err)
