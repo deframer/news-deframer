@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/google/uuid"
@@ -434,7 +435,7 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 				assert.NoError(t, tx.Create(&feed).Error)
 
 				hash := makeHash("item-enabled-" + feed.ID.String())
-				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: JSONB{"a": 1}}
+				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: &JSONB{"a": 1}, PubDate: time.Now()}
 				assert.NoError(t, tx.Create(&item).Error)
 
 				cachedFeed := CachedFeed{
@@ -458,7 +459,7 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 				assert.NoError(t, tx.Create(&feed).Error)
 
 				hash := makeHash("item-disabled-" + feed.ID.String())
-				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: JSONB{"a": 1}}
+				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: &JSONB{"a": 1}, PubDate: time.Now()}
 				assert.NoError(t, tx.Create(&item).Error)
 
 				cachedFeed := CachedFeed{
@@ -482,7 +483,7 @@ func TestFindItemsByCachedFeedFeedId(t *testing.T) {
 				assert.NoError(t, tx.Create(&feed).Error)
 
 				hash := makeHash("item-deleted-" + feed.ID.String())
-				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: JSONB{"a": 1}}
+				item := Item{Hash: hash, FeedID: feed.ID, URL: "http://item", AnalyzerResult: &JSONB{"a": 1}, PubDate: time.Now()}
 				assert.NoError(t, tx.Create(&item).Error)
 
 				cachedFeed := CachedFeed{
@@ -576,14 +577,14 @@ func TestFindItemsByUrl(t *testing.T) {
 		// We use the same content hash to simulate exact syndication, though hashes can differ if content varies.
 		contentHash := makeHash("shared-content-body")
 
-		sourceItem := Item{Hash: contentHash, FeedID: sourceFeed.ID, URL: sharedURL, AnalyzerResult: JSONB{"src": "original"}}
+		sourceItem := Item{Hash: contentHash, FeedID: sourceFeed.ID, URL: sharedURL, AnalyzerResult: &JSONB{"src": "original"}, PubDate: time.Now()}
 		assert.NoError(t, tx.Create(&sourceItem).Error)
 
 		// Create Aggregator Feed & Item
 		aggFeed := Feed{URL: "http://aggregator.test/rss-" + uid, Enabled: true, EnforceFeedDomain: false, Polling: false}
 		assert.NoError(t, tx.Create(&aggFeed).Error)
 
-		aggItem := Item{Hash: contentHash, FeedID: aggFeed.ID, URL: sharedURL, AnalyzerResult: JSONB{"src": "aggregator"}}
+		aggItem := Item{Hash: contentHash, FeedID: aggFeed.ID, URL: sharedURL, AnalyzerResult: &JSONB{"src": "aggregator"}, PubDate: time.Now()}
 		assert.NoError(t, tx.Create(&aggItem).Error)
 
 		// Test: Should find BOTH items
@@ -614,7 +615,8 @@ func TestFindItemsByUrl(t *testing.T) {
 			Hash:           makeHash("disabled-content"),
 			FeedID:         feed.ID,
 			URL:            itemURL,
-			AnalyzerResult: JSONB{"title": "Disabled"},
+			AnalyzerResult: &JSONB{"title": "Disabled"},
+			PubDate:        time.Now(),
 		}
 		assert.NoError(t, tx.Create(&item).Error)
 
@@ -644,7 +646,8 @@ func TestFindItemsByUrl(t *testing.T) {
 			Hash:           makeHash("deleted-content"),
 			FeedID:         feed.ID,
 			URL:            itemURL,
-			AnalyzerResult: JSONB{"title": "Deleted"},
+			AnalyzerResult: &JSONB{"title": "Deleted"},
+			PubDate:        time.Now(),
 		}
 		assert.NoError(t, tx.Create(&item).Error)
 

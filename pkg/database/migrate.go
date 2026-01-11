@@ -3,6 +3,7 @@ package database
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/google/uuid"
@@ -71,12 +72,12 @@ func seed(db *gorm.DB) error {
 	slog.Info("Seeding dummy items...")
 	items := []Item{
 		// Enforced Feed: Item pointing to itself
-		{Hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", FeedID: idEnforced, URL: "http://dummy-enforced/item-1", AnalyzerResult: JSONB{"title": "Enforced Item 1"}},
+		{Hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", FeedID: idEnforced, URL: "http://dummy-enforced/item-1", AnalyzerResult: &JSONB{"title": "Enforced Item 1"}, PubDate: time.Now()},
 		// Open Feed: Item pointing to itself
-		{Hash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", FeedID: idOpen, URL: "http://dummy-open/item-2", AnalyzerResult: JSONB{"title": "Open Item 2"}},
+		{Hash: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", FeedID: idOpen, URL: "http://dummy-open/item-2", AnalyzerResult: &JSONB{"title": "Open Item 2"}, PubDate: time.Now()},
 		// Open Feed: Item pointing to Enforced Domain (Syndication)
 		// Same content hash as item 1, same URL as item 1, but different FeedID
-		{Hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", FeedID: idOpen, URL: "http://dummy-enforced/item-1", AnalyzerResult: JSONB{"title": "Syndicated Item 1"}},
+		{Hash: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", FeedID: idOpen, URL: "http://dummy-enforced/item-1", AnalyzerResult: &JSONB{"title": "Syndicated Item 1"}, PubDate: time.Now()},
 	}
 
 	if err := db.Create(&items).Error; err != nil {

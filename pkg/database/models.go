@@ -80,7 +80,8 @@ type Item struct {
 	FeedID         uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
 	Feed           Feed      `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	URL            string    `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
-	AnalyzerResult JSONB     `gorm:"type:jsonb;not null"`
+	AnalyzerResult *JSONB    `gorm:"type:jsonb"`
+	PubDate        time.Time `gorm:"not null;default:now()"`
 	Content        string    `gorm:"type:text;not null"`
 	MinHash        string    `gorm:"default:null"`
 }
