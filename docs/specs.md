@@ -61,6 +61,9 @@ The system is designed as a **Producer-Consumer** architecture. It decouples the
 4.  **PostgreSQL (Infrastructure)**:
     - **Persistent Storage**: Stores configuration (`Feeds`), processed data (`Items`), and cold cache (`cached_feeds`).
     - Ensures data survival across container restarts.
+5.  **Admin CLI (Tool)**:
+    - Written in **Golang**.
+    - Interface for operators to manage feeds and system configuration.
 
 ---
 
@@ -274,3 +277,18 @@ Based on the provided Go GORM models and Valkey implementation.
 - **GORM**: The ORM should handle Item versioning and audit trails efficiently.
 - **MinHash**: Calculation method (HTML vs Text DOM) is TBD.
 - **Mock Implementation**: Use a mock for AI Worker development to simulate latency and avoid costs.
+
+---
+
+## 10. Admin CLI Tool
+
+A command-line interface for operators to manage the system state and feed configurations without direct database manipulation.
+
+**Usage**: `admin feed [command]`
+
+-   **`add`**: Registers a new Feed URL. Detects settings, validates reachability, and sets defaults (`enabled=false`).
+-   **`delete`**: Soft-deletes a feed from Postgres and purges associated keys from Valkey (`feed_url:...`, `feed_uuid:...`).
+-   **`disable`**: Sets `enabled=false`. Removes the feed from potential ingestion cycles.
+-   **`enable`**: Sets `enabled=true`. Allows the feed to be ingested (if polling is on or requested manually).
+-   **`list`**: Displays a table of all feeds (UUID, URL, Enabled, Polling Status).
+-   **`polling`**: Toggles the `polling` boolean (determines if the background Cron worker automatically refreshes this feed).
