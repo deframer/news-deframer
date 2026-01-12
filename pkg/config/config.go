@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/egandro/news-deframer/pkg/think"
 	"github.com/joho/godotenv"
 )
 
@@ -20,8 +19,6 @@ type Config struct {
 	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
 
 	LocalFeedFilesDir string `env:"LOCAL_FEED_FILES_DIR" envDefault:""`
-
-	LLMType think.LLMType
 }
 
 func Load() (*Config, error) {

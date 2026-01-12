@@ -42,7 +42,7 @@ type Syncer struct {
 }
 
 func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Syncer, error) {
-	th, err := think.New(think.LLMType(cfg.LLMType))
+	th, err := think.New(cfg)
 	if err != nil {
 		return nil, err
 	}

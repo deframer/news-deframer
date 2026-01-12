@@ -3,6 +3,8 @@ package think
 import (
 	"embed"
 	"fmt"
+
+	"github.com/egandro/news-deframer/pkg/config"
 )
 
 //go:embed prompts/*.md
@@ -36,7 +38,8 @@ type Think interface {
 	Run(prompt string, language string, data map[string]interface{}) (map[string]interface{}, error)
 }
 
-func New(t LLMType) (Think, error) {
+func New(cfg *config.Config) (Think, error) {
+	t := Dummy
 	switch t {
 	case Dummy:
 		return &dummy{}, nil
