@@ -16,6 +16,7 @@ import (
 	"github.com/egandro/news-deframer/pkg/think"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
+	ext "github.com/mmcdole/gofeed/extensions"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -195,19 +196,6 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 	count = 0
 	for _, item := range items {
 		if pendingHashes[item.Hash] {
-			// // A11Y - foo <span role="img" aria-label="Rating: 2 out of 4">◑</span>
-
-			// 	Filled: ❶ ❷ ❸ ❹ ❺ (U+2776 to U+277A)
-			// 	Outline: ① ② ③ ④ ⑤ (U+2460 to U+2464)
-			// 	Negative Squares: 1️⃣ 2️⃣ 3️⃣ (Emoji style)
-
-			// 	0/4: ○ (U+25CB)
-			// 	1/4: ◔ (U+25D4)
-			// 	2/4: ◑ (U+25D1)
-			// 	3/4: ◕ (U+25D5)
-			// 	4/4: ● (U+25CF)[2]
-			// item.Item.Title = "★★★☆☆" + item.Item.Title
-			// item.Item.Description = "★☆☆☆☆" + item.Item.Description
 			s.processItem(feed, item.Hash, item.Item, language)
 			count++
 		}
@@ -223,15 +211,17 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 	res, err := s.think.Run(promptScope, language, req)
 
-	var resultMap map[string]interface{}
 	if err != nil {
 		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
-		resultMap = map[string]interface{}{
-			"error": err.Error(),
+		res = &database.ThinkResult{
+			Error: err.Error(),
 		}
-	} else {
-		b, _ := json.Marshal(res)
-		_ = json.Unmarshal(b, &resultMap)
+	}
+
+	err = s.updateContent(item, res)
+	if err != nil {
+		s.logger.Error("update content failed", "error", err)
+		return
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -245,14 +235,13 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		pubDate = *item.PublishedParsed
 	}
 
-	analyzerResult := database.JSONB(resultMap)
 	dbItem := &database.Item{
-		Hash:           hash,
-		FeedID:         feed.ID,
-		URL:            item.Link,
-		AnalyzerResult: &analyzerResult,
-		Content:        content,
-		PubDate:        pubDate,
+		Hash:        hash,
+		FeedID:      feed.ID,
+		URL:         item.Link,
+		ThinkResult: res,
+		Content:     content,
+		PubDate:     pubDate,
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)
@@ -260,6 +249,74 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	if err := s.repo.UpsertItem(dbItem); err != nil {
 		s.logger.Error("failed to create item", "error", err, "hash", hash)
 	}
+}
+
+func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) error {
+	if item == nil || res == nil {
+		return nil
+	}
+
+	if res.Error != "" {
+		return nil
+	}
+
+	// save the original title
+	res.TitleOriginal = item.Title
+	res.DescriptionOriginal = item.Description
+
+	// correct the title
+	item.Title = res.TitleCorrected
+	item.Description = res.DescriptionCorrected
+
+	stars := createStarRating(res)
+
+	// Prepend the overall rating to the title
+	item.Title = fmt.Sprintf("%s %s", stars.Overall, item.Title)
+
+	// Add the reason
+	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
+
+	if item.Content != "" {
+		// tagesschau uses "content:encoded"
+		// let's try to grab any image and keep the title/description
+		mediaData, err := transformContent(item.Content)
+		if err == nil && mediaData.URL != "" {
+			s.logger.Debug("removed content:encoded", "url", item.Link)
+			item.Content = ""
+
+			if item.Extensions == nil {
+				item.Extensions = make(map[string]map[string][]ext.Extension)
+			}
+			if item.Extensions["media"] == nil {
+				item.Extensions["media"] = make(map[string][]ext.Extension)
+			}
+
+			// <media:credit> always delete this
+			delete(item.Extensions["media"], "credit")
+
+			attrs := map[string]string{
+				"url":    mediaData.URL,
+				"medium": mediaData.Medium,
+			}
+			if mediaData.Width > 0 {
+				attrs["width"] = fmt.Sprintf("%d", mediaData.Width)
+			}
+			if mediaData.Height > 0 {
+				attrs["height"] = fmt.Sprintf("%d", mediaData.Height)
+			}
+
+			item.Extensions["media"]["content"] = []ext.Extension{{
+				Name:  "content",
+				Attrs: attrs,
+			}}
+			// item.Extensions["media"]["description"] = []ext.Extension{{
+			// 	Name:  "description",
+			// 	Value: item.Description,
+			// }}
+		}
+	}
+
+	return nil
 }
 
 func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {
@@ -275,6 +332,8 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	parsedFeed.Items = []*gofeed.Item{}
 	// custom namespace
 	feeds.AddNamespace(parsedFeed, "xmlns:"+customPrefix, customNamespace)
+	// media namespace
+	feeds.AddNamespace(parsedFeed, "xmlns:media", "http://search.yahoo.com/mrss/")
 
 	fp := gofeed.NewParser()
 	for _, item := range items {
@@ -291,15 +350,13 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 
 		current := pf.Items[0]
 
-		if item.AnalyzerResult != nil {
-			res := *item.AnalyzerResult
-			isErrorOnly := false
-			if len(res) == 1 {
-				_, isErrorOnly = res["error"]
-			}
-
-			if len(res) > 0 && !isErrorOnly {
-				for k, v := range res {
+		if item.ThinkResult != nil {
+			res := *item.ThinkResult
+			if res.Error == "" {
+				var m map[string]interface{}
+				b, _ := json.Marshal(res)
+				_ = json.Unmarshal(b, &m)
+				for k, v := range m {
 					feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
 				}
 			}

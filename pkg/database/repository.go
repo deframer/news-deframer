@@ -297,7 +297,7 @@ func (r *repository) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[st
 			if err := tx.Model(&Item{}).
 				Where("feed_id = ?", feedID).
 				Where("hash IN ?", batch).
-				Where("analyzer_result IS NOT NULL").
+				Where("think_result IS NOT NULL").
 				Pluck("hash", &foundHashes).Error; err != nil {
 				return err
 			}

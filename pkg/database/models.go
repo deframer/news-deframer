@@ -64,28 +64,33 @@ type FeedSchedule struct {
 	LastError   *string `gorm:"type:text"`
 }
 
-type Item struct {
-	ID             uuid.UUID `gorm:"primaryKey;type:uuid"`
-	CreatedAt      time.Time `gorm:"not null;default:now()"`
-	UpdatedAt      time.Time `gorm:"not null;default:now()"`
-	Hash           string    `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	FeedID         uuid.UUID `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	Feed           Feed      `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	URL            string    `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
-	AnalyzerResult *JSONB    `gorm:"type:jsonb"`
-	Content        string    `gorm:"type:text;not null"`
-	PubDate        time.Time `gorm:"not null;index;default:now()"`
+type ThinkResult struct {
+	TitleOriginal               string  `json:"title_original,omitempty"`
+	DescriptionOriginal         string  `json:"description_original,omitempty"`
+	TitleCorrected              string  `json:"title_corrected,omitempty"`
+	TitleCorrectionReason       string  `json:"title_correction_reason,omitempty"`
+	DescriptionCorrected        string  `json:"description_corrected,omitempty"`
+	DescriptionCorrectionReason string  `json:"description_correction_reason,omitempty"`
+	ClickbaitScore              float64 `json:"clickbait,omitempty"`
+	ClickbaitReason             string  `json:"clickbait_reason,omitempty"`
+	FramingScore                float64 `json:"framing,omitempty"`
+	FramingReason               string  `json:"framing_reason,omitempty"`
+	PersuasiveIntentScore       float64 `json:"persuasive_intent,omitempty"`
+	PersuasiveReason            string  `json:"persuasive_reason,omitempty"`
+	HyperStimulusScore          float64 `json:"hyper_stimulus,omitempty"`
+	HyperStimulusReason         string  `json:"hyper_stimulus_reason,omitempty"`
+	SpeculativeContentScore     float64 `json:"speculative_content,omitempty"`
+	SpeculativeReason           string  `json:"speculative_reason,omitempty"`
+	OverallReason               string  `json:"overall_reason,omitempty"`
+	Error                       string  `json:"error,omitempty"`
 }
 
-type JSONB map[string]interface{}
-
-func (j JSONB) Value() (driver.Value, error) {
+func (j ThinkResult) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
-func (j *JSONB) Scan(value interface{}) error {
+func (j *ThinkResult) Scan(value interface{}) error {
 	if value == nil {
-		*j = nil
 		return nil
 	}
 	bytes, ok := value.([]byte)
@@ -93,6 +98,19 @@ func (j *JSONB) Scan(value interface{}) error {
 		return errors.New("type assertion to []byte failed")
 	}
 	return json.Unmarshal(bytes, j)
+}
+
+type Item struct {
+	ID          uuid.UUID    `gorm:"primaryKey;type:uuid"`
+	CreatedAt   time.Time    `gorm:"not null;default:now()"`
+	UpdatedAt   time.Time    `gorm:"not null;default:now()"`
+	Hash        string       `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	FeedID      uuid.UUID    `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	Feed        Feed         `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	URL         string       `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	ThinkResult *ThinkResult `gorm:"type:jsonb"`
+	Content     string       `gorm:"type:text;not null"`
+	PubDate     time.Time    `gorm:"not null;index;default:now()"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.
