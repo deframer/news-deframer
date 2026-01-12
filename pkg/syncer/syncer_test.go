@@ -172,19 +172,57 @@ func TestSyncFeedInternal(t *testing.T) {
 
 func TestUpdateContent(t *testing.T) {
 	s := &Syncer{}
-	item := &gofeed.Item{
-		Title:       "Original Title",
-		Description: "Original Description",
-	}
-	res := &database.ThinkResult{
-		TitleCorrected:       "Corrected Title",
-		DescriptionCorrected: "Corrected Description",
+
+	tests := []struct {
+		name                string
+		item                *gofeed.Item
+		res                 *database.ThinkResult
+		expectedTitle       string
+		expectedDescription string
+	}{
+		{
+			name: "Basic Update",
+			item: &gofeed.Item{
+				Title:       "Original Title",
+				Description: "Original Description",
+			},
+			res: &database.ThinkResult{
+				TitleCorrected:       "Corrected Title",
+				DescriptionCorrected: "Corrected Description",
+			},
+			expectedTitle:       "★★★★★ Corrected Title",
+			expectedDescription: "Corrected Description<br/><br/>",
+		},
+		{
+			name: "With Content Encoded",
+			item: &gofeed.Item{
+				Title:       "Foobar",
+				Description: "Short desc",
+				Content:     `<![CDATA[ <p> <a href="https://wwwwhatever...."> <img src="https://foobar" alt="ALT TEXT" /></a><br /><br /></p> ]]>`,
+			},
+			res: &database.ThinkResult{
+				TitleCorrected:          "Corrected Foobar",
+				DescriptionCorrected:    "Corrected Short desc",
+				OverallReason:           "Analysis",
+				ClickbaitScore:          1.0,
+				FramingScore:            1.0,
+				PersuasiveIntentScore:   1.0,
+				HyperStimulusScore:      1.0,
+				SpeculativeContentScore: 1.0,
+			},
+			expectedTitle:       "☆☆☆☆☆ Corrected Foobar",
+			expectedDescription: "Corrected Short desc<br/><br/>Analysis",
+		},
 	}
 
-	err := s.updateContent(item, res)
-	assert.NoError(t, err)
-	assert.Contains(t, item.Title, "★")
-	assert.Equal(t, "Corrected Description<br/><br/>", item.Description)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.updateContent(tt.item, tt.res)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedTitle, tt.item.Title)
+			assert.Equal(t, tt.expectedDescription, tt.item.Description)
+		})
+	}
 }
 
 func TestWantedDomains(t *testing.T) {
@@ -269,8 +307,6 @@ func TestWantedDomains(t *testing.T) {
 }
 
 func TestScoreToStars(t *testing.T) {
-	s := &Syncer{}
-
 	tests := []struct {
 		score    float64
 		expected string
@@ -288,7 +324,7 @@ func TestScoreToStars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
-			assert.Equal(t, tt.expected, s.scoreToStars(tt.score), "Score: %f", tt.score)
+			assert.Equal(t, tt.expected, scoreToStars(tt.score), "Score: %f", tt.score)
 		})
 	}
 }

@@ -42,15 +42,6 @@ type Syncer struct {
 	think  think.Think
 }
 
-type StarRating struct {
-	Overall            string
-	Clickbait          string
-	Framing            string
-	PersuasiveIntent   string
-	HyperStimulus      string
-	SpeculativeContent string
-}
-
 func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Syncer, error) {
 	th, err := think.New(ctx, cfg)
 	if err != nil {
@@ -276,7 +267,7 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 	item.Title = res.TitleCorrected
 	item.Description = res.DescriptionCorrected
 
-	stars := s.createStarRating(res)
+	stars := createStarRating(res)
 
 	// Prepend the overall rating to the title
 	item.Title = fmt.Sprintf("%s %s", stars.Overall, item.Title)
@@ -285,35 +276,6 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
 
 	return nil
-}
-
-func (s *Syncer) createStarRating(res *database.ThinkResult) StarRating {
-	// Average
-	sum := res.ClickbaitScore + res.FramingScore + res.PersuasiveIntentScore + res.HyperStimulusScore + res.SpeculativeContentScore
-	avg := sum / 5.0
-
-	return StarRating{
-		Clickbait:          s.scoreToStars(res.ClickbaitScore),
-		Framing:            s.scoreToStars(res.FramingScore),
-		PersuasiveIntent:   s.scoreToStars(res.PersuasiveIntentScore),
-		HyperStimulus:      s.scoreToStars(res.HyperStimulusScore),
-		SpeculativeContent: s.scoreToStars(res.SpeculativeContentScore),
-		Overall:            s.scoreToStars(avg),
-	}
-}
-
-func (s *Syncer) scoreToStars(score float64) string {
-	// 0.0 = 5 stars (Good/Neutral)
-	// 1.0 = 0 stars (Bad/Biased)
-	if score < 0 {
-		score = 0
-	}
-	if score > 1 {
-		score = 1
-	}
-
-	stars := int((1.0-score)*5.0 + 0.5)
-	return strings.Repeat("★", stars) + strings.Repeat("☆", 5-stars)
 }
 
 func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {
