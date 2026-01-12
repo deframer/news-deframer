@@ -18,7 +18,7 @@ func TestGetPrompt(t *testing.T) {
 }
 
 func TestDummy_Run(t *testing.T) {
-	d := &dummy{}
+	d := newDummy()
 
 	_, err := d.Run("deframer", "en", Request{})
 	assert.NoError(t, err)

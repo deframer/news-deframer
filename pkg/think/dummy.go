@@ -2,6 +2,10 @@ package think
 
 type dummy struct{}
 
+func newDummy() *dummy {
+	return &dummy{}
+}
+
 func (d *dummy) Run(prompt string, language string, request Request) (*Result, error) {
 	if _, err := getPrompt(prompt, language); err != nil {
 		return nil, err
