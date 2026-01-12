@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+    <head>
+        <title>Import</title>
+    </head>
+    <body>
+        <outline text="Internal">
+            <outline text="Global News Agency (Internal)" xmlUrl="http://wordpress/feed/" />
+        </outline>
+        <!--
+        <outline text="Tech News">
+            <outline text="Hacker News" xmlUrl="https://news.ycombinator.com/rss" />
+        </outline>
+        -->
+    </body>
+</opml>

@@ -1,0 +1,44 @@
+---
+services:
+  service:
+    build:
+      context: .
+      dockerfile: build/package/service/Dockerfile
+    environment:
+      - PORT=${PORT:-8080}
+      - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+      - LOG_DATABASE=${LOG_DATABASE:-false}
+      - VALKEY_HOST=${VALKEY_HOST:-valkey:6379}
+      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-deframer}
+      - VALKEY_DB=${VALKEY_DB:-0}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+    networks:
+      - infra-net
+      - test-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: build/package/worker/Dockerfile
+    environment:
+      - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+      - LOG_DATABASE=${LOG_DATABASE:-false}
+      - VALKEY_HOST=${VALKEY_HOST:-valkey:6379}
+      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-deframer}
+      - VALKEY_DB=${VALKEY_DB:-0}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+    networks:
+      - infra-net
+      - test-net
+
+networks:
+  infra-net:
+    name: deframer-infra-env-net
+    external: true
+  test-net:
+    name: deframer-test-env-net
+    external: true

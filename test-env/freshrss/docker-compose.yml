@@ -1,0 +1,94 @@
+---
+
+services:
+  # https://github.com/FreshRSS/FreshRSS/blob/edge/Docker/README.md
+  freshrss:
+    image:  freshrss/freshrss
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Berlin
+      # FRESHRSS_ENV: development
+      # CRON_MIN=1,31
+      FRESHRSS_INSTALL: |-
+        --api-enabled
+        --base-url ${BASE_URL:-http://freshrss:8001}
+        --db-type sqlite
+        --default-user admin
+        --language en
+      FRESHRSS_USER: |-
+        --api-password ${ADMIN_API_PASSWORD:-freshrss}
+        --email ${ADMIN_EMAIL:-admin@example.com}
+        --language en
+        --password ${ADMIN_PASSWORD:-password}
+        --user admin
+    volumes:
+      - data:/var/www/FreshRSS/data
+      - extensions:/var/www/FreshRSS/extensions
+      - ./import.opml:/opt/import.opml
+      # Optional file providing custom global settings (used before a FreshRSS install)
+      #- ./config.custom.php:/var/www/FreshRSS/data/config.custom.php
+      # Optional file providing custom user settings (used before a new user is created)
+      #- ./config-user.custom.php:/var/www/FreshRSS/data/config-user.custom.php
+    ports:
+      - "8001:80"
+    restart: unless-stopped
+    networks:
+      - test-env-net
+    healthcheck:
+      test: ["CMD", "cli/health.php"]
+      timeout: 10s
+      start_period: 60s
+      start_interval: 11s
+      interval: 75s
+      retries: 3
+
+  freshrss-importer:
+    image: freshrss/freshrss
+    restart: "no"
+    depends_on:
+      freshrss:
+        condition: service_healthy
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Berlin
+    volumes:
+      - data:/var/www/FreshRSS/data
+      - ./imports:/opt/imports
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo "Waiting for main container to settle..."
+        sleep 5
+
+        echo "Checking for OPML files in /opt/imports/..."
+
+        # Note the double $$ signs below. This tells Docker Compose to ignore them
+        # so they get passed to the container's shell as a single $
+        for f in /opt/imports/*.opml; do
+            if [ -f "$$f" ]; then
+                echo "Found file: $$f - Importing..."
+
+                # Double $$ here as well
+                su -s /bin/sh www-data -c "php ./cli/import-for-user.php --user admin --filename \"$$f\""
+            else
+                echo "No .opml files found in /opt/imports/."
+            fi
+        done
+
+        echo "Import Batch Done."
+
+networks:
+  test-env-net:
+    external: true
+    name: deframer-test-env-net
+
+volumes:
+  data:
+  extensions:
+
+# docker compose exec --user www-data freshrss cli/do-install.php --default-user freshrss
+# docker compose exec --user www-data freshrss cli/create-user.php --user freshrss --password freshrss
+# docker compose exec --user www-data freshrss cli/import-for-user.php --user admin --filename /opt/import.opml

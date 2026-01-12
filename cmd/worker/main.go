@@ -2,20 +2,16 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/egandro/news-deframer/pkg/database"
-	"github.com/egandro/news-deframer/pkg/facade"
-	"github.com/egandro/news-deframer/pkg/server"
+	"github.com/egandro/news-deframer/pkg/syncer"
 )
 
 func main() {
@@ -54,10 +50,7 @@ func main() {
 	}
 
 	hostname, _ := os.Hostname()
-	slog.Info("Service", "level", lvl, "hostname", hostname)
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	slog.Info("Worker", "level", lvl, "hostname", hostname)
 
 	repo, err := database.NewRepository(cfg)
 	if err != nil {
@@ -65,42 +58,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	// valkeyClient, err := valkey.New(ctx, cfg)
-	// if err != nil {
-	// 	slog.Error("Failed to connect to valkey", "error", err)
-	// 	os.Exit(1)
-	// }
-	// defer func() {
-	// 	if err := valkeyClient.Close(); err != nil {
-	// 		slog.Error("Failed to close valkey client", "error", err)
-	// 	}
-	// }()
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
 
-	f := facade.New(ctx, cfg, repo)
-
-	srv := server.New(ctx, cfg, f)
-
-	go func() {
-		slog.Info("Starting server", "port", cfg.Port)
-		if err := srv.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("Server failed", "error", err)
-			os.Exit(1)
-		}
-	}()
-
-	// Wait for interrupt signal
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
-
-	slog.Info("Shutting down...")
-
-	// Shutdown with timeout
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer shutdownCancel()
-
-	if err := srv.Stop(shutdownCtx); err != nil {
-		slog.Error("Server shutdown failed", "error", err)
+	s, err := syncer.New(ctx, cfg, repo)
+	if err != nil {
+		slog.Error("Failed to create syncer", "error", err)
+		os.Exit(1)
 	}
-	slog.Info("Server stopped")
+
+	// start syncer poll
+	s.Poll()
+	slog.Info("Shutting down...")
 }

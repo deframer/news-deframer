@@ -1,0 +1,65 @@
+---
+services:
+  service:
+    build:
+      context: .
+      dockerfile: build/package/service/Dockerfile
+    environment:
+      - PORT=${PORT:-8080}
+      - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+      - LOG_DATABASE=${LOG_DATABASE:-false}
+      - VALKEY_HOST=${VALKEY_HOST:-valkey:6379}
+      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-deframer}
+      - VALKEY_DB=${VALKEY_DB:-0}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+    deploy:
+      replicas: ${DOCKER_SERVICE_REPLICAS:-3}
+    labels:
+      - "traefik.http.routers.webapp.rule=PathPrefix(`/`)"
+      - "traefik.http.services.webapp.loadbalancer.server.port=${PORT:-8080}"
+    networks:
+      - infra-net
+      - test-net
+
+  traefik-lb:
+    image: traefik:latest
+    command: --api.insecure=true --providers.docker --entrypoints.web.address=:80
+    ports:
+      - "8080:80"
+      - "8090:8080"
+    labels:
+      - "traefik.http.routers.api.rule=Host(`admin.localhost`)"
+      - "traefik.http.routers.api.insecure=true"
+      - "traefik.http.routers.api.service=api@internal"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - infra-net
+      - test-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: build/package/worker/Dockerfile
+    environment:
+      - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+      - LOG_DATABASE=${LOG_DATABASE:-false}
+      - VALKEY_HOST=${VALKEY_HOST:-valkey:6379}
+      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-deframer}
+      - VALKEY_DB=${VALKEY_DB:-0}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+    deploy:
+      replicas: ${DOCKER_WORKER_REPLICAS:-2}
+    networks:
+      - infra-net
+      - test-net
+
+networks:
+  infra-net:
+    name: deframer-infra-env-net
+    external: true
+  test-net:
+    name: deframer-test-env-net
+    external: true

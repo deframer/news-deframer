@@ -1,110 +1,82 @@
 package downloader
 
-//go:generate mockgen -destination=./mock_downloader/mocks.go github.com/egandro/news-deframer/pkg/downloader Downloader
-
 import (
-	_ "embed"
+	"context"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewDownloader(t *testing.T) {
-	d := NewDownloader()
-	assert.NotNil(t, d, "Downloader should be initialized")
+func TestDownloadRSSFeed_HTTP(t *testing.T) {
+	// Setup mock server
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("mock content"))
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{})
+
+	u, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+	rc, err := d.DownloadRSSFeed(ctx, u)
+	assert.NoError(t, err)
+	defer func() { _ = rc.Close() }()
+	content, err := io.ReadAll(rc)
+	assert.NoError(t, err)
+	assert.Equal(t, "mock content", string(content))
 }
 
-func TestNewUpdateFeeds(t *testing.T) {
-	d := NewDownloader()
-	assert.NotNil(t, d, "Downloader should be initialized")
+func TestDownloadRSSFeed_File(t *testing.T) {
+	// Create temp file
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "test.xml")
+	err := os.WriteFile(tmpFile, []byte("file content"), 0644)
+	assert.NoError(t, err)
 
-	tests := []struct {
-		name        string
-		feed        string
-		expected    string
-		expectError bool
-	}{
-		// HTTP feed
-		func() struct {
-			name        string
-			feed        string
-			expected    string
-			expectError bool
-		} {
-			expectedHTTP := "<rss>http feed</rss>"
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Write([]byte(expectedHTTP))
-			}))
-			t.Cleanup(ts.Close)
-			return struct {
-				name        string
-				feed        string
-				expected    string
-				expectError bool
-			}{
-				name:     "HTTP feed",
-				feed:     ts.URL,
-				expected: expectedHTTP,
-			}
-		}(),
-		// file:// feed
-		func() struct {
-			name        string
-			feed        string
-			expected    string
-			expectError bool
-		} {
-			expectedFile := "<rss>file feed</rss>"
-			tmpFile := filepath.Join(t.TempDir(), "file1.xml")
-			assert.NoError(t, os.WriteFile(tmpFile, []byte(expectedFile), 0644))
-			return struct {
-				name        string
-				feed        string
-				expected    string
-				expectError bool
-			}{
-				name:     "file:// feed",
-				feed:     "file://" + tmpFile,
-				expected: expectedFile,
-			}
-		}(),
-		// plain file path feed
-		func() struct {
-			name        string
-			feed        string
-			expected    string
-			expectError bool
-		} {
-			expectedPlain := "<rss>plain file</rss>"
-			tmpFile := filepath.Join(t.TempDir(), "file2.xml")
-			assert.NoError(t, os.WriteFile(tmpFile, []byte(expectedPlain), 0644))
-			return struct {
-				name        string
-				feed        string
-				expected    string
-				expectError bool
-			}{
-				name:     "plain file path feed",
-				feed:     tmpFile,
-				expected: expectedPlain,
-			}
-		}(),
-	}
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{
+		LocalFeedFilesDir: tmpDir,
+	})
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := d.DownloadRSSFeed(tc.feed)
+	// Test with file path (relative to root)
+	u1, err := url.Parse("test.xml")
+	assert.NoError(t, err)
+	rc1, err := d.DownloadRSSFeed(ctx, u1)
+	assert.NoError(t, err)
+	defer func() { _ = rc1.Close() }()
+	content1, err := io.ReadAll(rc1)
+	assert.NoError(t, err)
+	assert.Equal(t, "file content", string(content1))
 
-			if tc.expectError {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tc.expected, got)
-			}
-		})
-	}
+	// Test with file:// prefix (path /test.xml relative to root)
+	u2, err := url.Parse("file:///test.xml")
+	assert.NoError(t, err)
+	rc2, err := d.DownloadRSSFeed(ctx, u2)
+	assert.NoError(t, err)
+	defer func() { _ = rc2.Close() }()
+	content2, err := io.ReadAll(rc2)
+	assert.NoError(t, err)
+	assert.Equal(t, "file content", string(content2))
+}
+
+func TestDownloadRSSFeed_File_Disabled(t *testing.T) {
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{
+		LocalFeedFilesDir: "",
+	})
+
+	// Even if the file existed, it should fail due to config
+	u, err := url.Parse("file:///tmp/test.xml")
+	assert.NoError(t, err)
+	_, err = d.DownloadRSSFeed(ctx, u)
+	assert.Error(t, err)
 }

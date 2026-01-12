@@ -104,12 +104,14 @@ Output
             <![CDATA[ This is the title ]]>
         </title>
         <description>
-            <![CDATA[ This is the rescrption ]]>
+            <![CDATA[ This is the description ]]>
         </description>
         <language>en-US</language>
         <link>https://www.example.com/the-link</link>
         <guid isPermaLink="true">https://www.example.com/the-link</guid>
         <pubDate>Wed, 05 Apr 2023 13:30:09 GMT</pubDate>
+        <deframer:titelOriginal>This is the title</deframer:titelOriginal>
+        <deframer:descriptionOriginal>This is the description</deframer:descriptionOriginal>
         <deframer:group>
             <deframer:meta updated="Wed, 10 Apr 2024 13:30:09 GMT"/>
             <deframer:content type="clickbait" score="0.3">Reason from AI in the specified or detected language</deframer:content>

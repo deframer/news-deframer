@@ -1,0 +1,11 @@
+# Ignore everything by default
+*
+
+# Keep Go module files
+!go.mod
+!go.sum
+
+# Keep source code directories
+!cmd/
+!pkg/
+!internal/

@@ -1,32 +1,61 @@
-// Package config global configuration of the program
 package config
 
 import (
-	"github.com/kelseyhightower/envconfig"
+	"os"
+	"path/filepath"
+
+	"github.com/caarlos0/env/v11"
+	"github.com/egandro/news-deframer/pkg/think"
+	"github.com/joho/godotenv"
 )
 
-type Configuration struct {
-	HttpPort     string `required:"false" envconfig:"HTTP_PORT"`
-	DebugLog     bool   `required:"false" envconfig:"DEBUG_LOG" default:"false"`
-	DatabaseFile string `required:"true" envconfig:"DATABASE_FILE" default:"/data/sqlite.db"`
-	Source       string `required:"true" envconfig:"SOURCE_FILE" default:"/data/source.json"`
-	AI_URL       string `required:"true" envconfig:"AI_URL"`
-	AI_Model     string `required:"true" envconfig:"AI_MODEL"`
+type Config struct {
+	// HTT Port
+	Port string `env:"PORT" envDefault:"8080"`
+
+	// Gorm DNS
+	DSN         string `env:"DSN" envDefault:"host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"`
+	LogDatabase bool   `env:"LOG_DATABASE" envDefault:"false"`
+
+	// Valkey
+	ValkeyHost     string `env:"VALKEY_HOST" envDefault:"valkey:6379"`
+	ValkeyPassword string `env:"VALKEY_PASSWORD" envDefault:"deframer"`
+	ValkeyDB       string `env:"VALKEY_DB" envDefault:"0"`
+
+	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
+
+	LocalFeedFilesDir string `env:"LOCAL_FEED_FILES_DIR" envDefault:""`
+
+	LLMType think.LLMType
 }
 
-var config *Configuration = nil
-
-func GetConfig() (*Configuration, error) {
-	if config != nil {
-		return config, nil
+func Load() (*Config, error) {
+	// Load .env file (if exists)
+	// We ignore the error because in production we rely solely on real Env Vars
+	if _, err := os.Stat("/.dockerenv"); os.IsNotExist(err) {
+		if root := os.Getenv("PROJECT_ROOT"); root != "" {
+			// running in visual studio code test
+			_ = godotenv.Load(filepath.Join(root, ".env"))
+		} else {
+			// running non docker / cli
+			_ = godotenv.Load()
+		}
 	}
 
-	var s Configuration
-	err := envconfig.Process("", &s)
-	if err != nil {
+	cfg := &Config{}
+	if err := env.Parse(cfg); err != nil {
 		return nil, err
 	}
 
-	config = &s
-	return config, nil
+	// If LocalFileRoot is set, verify it exists. If not, disable it.
+	if cfg.LocalFeedFilesDir != "" {
+		if _, err := os.Stat(cfg.LocalFeedFilesDir); os.IsNotExist(err) {
+			cfg.LocalFeedFilesDir = ""
+		} else if abs, err := filepath.Abs(cfg.LocalFeedFilesDir); err == nil {
+			// Store absolute path to ensure safe scoping later
+			cfg.LocalFeedFilesDir = abs
+		}
+	}
+
+	return cfg, nil
 }

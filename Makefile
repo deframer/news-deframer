@@ -1,74 +1,92 @@
+APP_NAME := news-deframer
+DOCKER_REPO := egandro
+BUILD_DIR := bin
+CMD_DIR := cmd
+DOCKER_COMPOSE_FILE ?= docker-compose.yml
+
+# we want to avoid to share the developer .env file with docker compose (the DSN hosts etc. are different)
+COMPOSE_ENV_FILE ?= .env-compose
+DOCKER_ENV_FLAG := $(if $(wildcard $(COMPOSE_ENV_FILE)),--env-file $(COMPOSE_ENV_FILE),--env-file /dev/null)
+
 ifneq ("$(wildcard .env)","")
   #$(info using .env file)
   include .env
   export $(shell sed 's/=.*//' .env)
 endif
 
-all:
-	@echo all
+.PHONY: all build clean test help
 
-.PHONY: deps
-deps:
-	go install goa.design/goa/v3/cmd/goa@latest
-	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-	go install github.com/securego/gosec/v2/cmd/gosec@latest
-	go install go.uber.org/mock/mockgen@latest
+.PHONY: all test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build
 
-.PHONY: build
+all: build
+
+test-env-start:
+	$(MAKE) -C test-env start
+
+test-env-stop:
+	$(MAKE) -C test-env stop
+
+test-env-down:
+	$(MAKE) -C test-env down
+
+test-env-zap:
+	$(MAKE) -C test-env zap
+
+infra-env-start:
+	$(MAKE) -C infra-env start
+
+infra-env-stop:
+	$(MAKE) -C infra-env stop
+
+infra-env-down:
+	$(MAKE) -C infra-env down
+
+infra-env-zap:
+	$(MAKE) -C infra-env zap
+
+zap: down start
+
+# DOCKER_COMPOSE_FILE=docker-compose-lb.yml make start/stop/down/logs
+
+start:
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) up -d --build --force-recreate --no-deps
+
+stop:
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) stop
+
+down:
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --remove-orphans --volumes
+
+logs:
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) logs -f
+
 build:
-	$(MAKE) gen
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o infra/deploy/service ./cmd/service
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o infra/deploy/service-cli ./cmd/service-cli
-	cp ./gen/http/openapi3.json infra/deploy
+	mkdir -p $(BUILD_DIR)
+	go build -o $(BUILD_DIR)/ ./$(CMD_DIR)/...
 
-.PHONY: run
-run: build
-	infra/deploy/service
+clean:
+	rm -rf $(BUILD_DIR)
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --rmi local
 
-.PHONY: test-ci
-test-ci: run-migration test
-
-.PHONY: test
 test:
-	$(MAKE) gen
 	go clean -testcache
-	go test -v ./...
+	go test ./...
 
-.PHONY: lint
+coverage:
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
 lint:
-	$(MAKE) gen
 	golangci-lint run ./...
-	gosec -exclude-dir=gen -exclude-dir=.gomodcache ./...
+	gosec ./...
+	govulncheck ./...
+	gofmt -l .
 
-.PHONY: tidy
 tidy:
 	go mod tidy
 
-.PHONY: gen
-gen:
-	goa gen github.com/egandro/news-deframer/pkg/design
-	go mod tidy
-	go generate ./...
+docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
 
-.PHONY: example
-example: gen
-	goa example github.com/egandro/news-deframer/pkg/design
-
-.PHONY: package
-package:
-	docker pull $(CI_REGISTRY_IMAGE):latest || true
-	docker pull $(IMAGE)
-	cd infra/deploy && \
-	DOCKER_BUILDKIT=1 docker build --build-arg "IMAGE=$(IMAGE)"  --cache-from $(CONTAINER_IMAGE):latest \
-		--tag $(CI_REGISTRY_IMAGE):$(TAG) \
-		--tag $(CI_REGISTRY_IMAGE):latest .
-	@echo created $(CI_REGISTRY_IMAGE):$(TAG)
-
-.PHONY: push
-push:
-	docker push $(CI_REGISTRY_IMAGE):$(TAG)
-	docker push $(CI_REGISTRY_IMAGE):latest
-
-.PHONY: run-container
-run-container: package
-	docker run -p 8080:8080 --rm -it --name $(CI_PROJECT_NAME) $(CI_REGISTRY_IMAGE):latest
+docker-%:
+	@echo "Building Docker image for $*..."
+	docker build -t $(DOCKER_REPO)/$*:latest -f build/package/$*/Dockerfile .
