@@ -319,11 +319,11 @@ func TestUpsertItem(t *testing.T) {
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		item := &Item{
-			FeedID:         feed.ID,
-			Hash:           "hash-new",
-			URL:            "http://item-new",
-			Content:        "content",
-			AnalyzerResult: &JSONB{"foo": "bar"},
+			FeedID:      feed.ID,
+			Hash:        "hash-new",
+			URL:         "http://item-new",
+			Content:     "content",
+			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
 		}
 
 		err := repo.UpsertItem(item)
@@ -345,11 +345,11 @@ func TestUpsertItem(t *testing.T) {
 
 		// Create initial item
 		existing := Item{
-			FeedID:         feed.ID,
-			Hash:           "hash-update",
-			URL:            "http://item-update",
-			Content:        "content-old",
-			AnalyzerResult: &JSONB{"v": 1},
+			FeedID:      feed.ID,
+			Hash:        "hash-update",
+			URL:         "http://item-update",
+			Content:     "content-old",
+			ThinkResult: &ThinkResult{FramingScore: 0.1},
 		}
 		assert.NoError(t, tx.Create(&existing).Error)
 
@@ -358,11 +358,11 @@ func TestUpsertItem(t *testing.T) {
 
 		// Update with same hash/feedID but different content, and NO ID provided
 		update := &Item{
-			FeedID:         feed.ID,
-			Hash:           "hash-update",
-			URL:            "http://item-update",
-			Content:        "content-new",
-			AnalyzerResult: &JSONB{"v": 2},
+			FeedID:      feed.ID,
+			Hash:        "hash-update",
+			URL:         "http://item-update",
+			Content:     "content-new",
+			ThinkResult: &ThinkResult{FramingScore: 0.2},
 		}
 
 		err := repo.UpsertItem(update)
@@ -373,8 +373,7 @@ func TestUpsertItem(t *testing.T) {
 		tx.First(&stored, existing.ID)
 		assert.Equal(t, "content-new", stored.Content)
 		// Verify JSONB update
-		res := *stored.AnalyzerResult
-		assert.Equal(t, float64(2), res["v"])
+		assert.Equal(t, 0.2, stored.ThinkResult.FramingScore)
 
 		// Verify timestamps
 		assert.Equal(t, existing.CreatedAt.UTC(), stored.CreatedAt.UTC(), "CreatedAt should be preserved")
@@ -435,14 +434,14 @@ func TestFindItemsByUrl(t *testing.T) {
 		// We use the same content hash to simulate exact syndication, though hashes can differ if content varies.
 		contentHash := makeHash("shared-content-body")
 
-		sourceItem := Item{Hash: contentHash, FeedID: sourceFeed.ID, URL: sharedURL, AnalyzerResult: &JSONB{"src": "original"}, PubDate: time.Now()}
+		sourceItem := Item{Hash: contentHash, FeedID: sourceFeed.ID, URL: sharedURL, ThinkResult: &ThinkResult{TitleCorrected: "original"}, PubDate: time.Now()}
 		assert.NoError(t, tx.Create(&sourceItem).Error)
 
 		// Create Aggregator Feed & Item
 		aggFeed := Feed{URL: "http://aggregator.test/rss-" + uid, Enabled: true, EnforceFeedDomain: false, Polling: false}
 		assert.NoError(t, tx.Create(&aggFeed).Error)
 
-		aggItem := Item{Hash: contentHash, FeedID: aggFeed.ID, URL: sharedURL, AnalyzerResult: &JSONB{"src": "aggregator"}, PubDate: time.Now()}
+		aggItem := Item{Hash: contentHash, FeedID: aggFeed.ID, URL: sharedURL, ThinkResult: &ThinkResult{TitleCorrected: "aggregator"}, PubDate: time.Now()}
 		assert.NoError(t, tx.Create(&aggItem).Error)
 
 		// Test: Should find BOTH items
@@ -470,11 +469,11 @@ func TestFindItemsByUrl(t *testing.T) {
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		item := Item{
-			Hash:           makeHash("disabled-content"),
-			FeedID:         feed.ID,
-			URL:            itemURL,
-			AnalyzerResult: &JSONB{"title": "Disabled"},
-			PubDate:        time.Now(),
+			Hash:        makeHash("disabled-content"),
+			FeedID:      feed.ID,
+			URL:         itemURL,
+			ThinkResult: &ThinkResult{TitleCorrected: "Disabled"},
+			PubDate:     time.Now(),
 		}
 		assert.NoError(t, tx.Create(&item).Error)
 
@@ -501,11 +500,11 @@ func TestFindItemsByUrl(t *testing.T) {
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		item := Item{
-			Hash:           makeHash("deleted-content"),
-			FeedID:         feed.ID,
-			URL:            itemURL,
-			AnalyzerResult: &JSONB{"title": "Deleted"},
-			PubDate:        time.Now(),
+			Hash:        makeHash("deleted-content"),
+			FeedID:      feed.ID,
+			URL:         itemURL,
+			ThinkResult: &ThinkResult{TitleCorrected: "Deleted"},
+			PubDate:     time.Now(),
 		}
 		assert.NoError(t, tx.Create(&item).Error)
 
@@ -938,22 +937,22 @@ func TestGetPendingHashes(t *testing.T) {
 		// 1. Processed Item
 		h1 := makeHash("item1")
 		item1 := Item{
-			FeedID:         feed.ID,
-			Hash:           h1,
-			URL:            "http://item1",
-			Content:        "c1",
-			AnalyzerResult: &JSONB{"foo": "bar"},
+			FeedID:      feed.ID,
+			Hash:        h1,
+			URL:         "http://item1",
+			Content:     "c1",
+			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
 		}
 		assert.NoError(t, tx.Create(&item1).Error)
 
 		// 2. Unprocessed Item (AnalyzerResult is nil)
 		h2 := makeHash("item2")
 		item2 := Item{
-			FeedID:         feed.ID,
-			Hash:           h2,
-			URL:            "http://item2",
-			Content:        "c2",
-			AnalyzerResult: nil,
+			FeedID:      feed.ID,
+			Hash:        h2,
+			URL:         "http://item2",
+			Content:     "c2",
+			ThinkResult: nil,
 		}
 		assert.NoError(t, tx.Create(&item2).Error)
 
@@ -995,21 +994,21 @@ func TestGetItemsByHashes(t *testing.T) {
 
 		h1 := makeHash("item1")
 		item1 := Item{
-			FeedID:         feed.ID,
-			Hash:           h1,
-			URL:            "http://item1/" + uuid.New().String(),
-			Content:        "c1",
-			AnalyzerResult: &JSONB{"foo": "bar"},
+			FeedID:      feed.ID,
+			Hash:        h1,
+			URL:         "http://item1/" + uuid.New().String(),
+			Content:     "c1",
+			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
 		}
 		assert.NoError(t, tx.Create(&item1).Error)
 
 		h2 := makeHash("item2")
 		item2 := Item{
-			FeedID:         feed.ID,
-			Hash:           h2,
-			URL:            "http://item2/" + uuid.New().String(),
-			Content:        "c2",
-			AnalyzerResult: nil,
+			FeedID:      feed.ID,
+			Hash:        h2,
+			URL:         "http://item2/" + uuid.New().String(),
+			Content:     "c2",
+			ThinkResult: nil,
 		}
 		assert.NoError(t, tx.Create(&item2).Error)
 

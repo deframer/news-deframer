@@ -195,19 +195,6 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 	count = 0
 	for _, item := range items {
 		if pendingHashes[item.Hash] {
-			// // A11Y - foo <span role="img" aria-label="Rating: 2 out of 4">◑</span>
-
-			// 	Filled: ❶ ❷ ❸ ❹ ❺ (U+2776 to U+277A)
-			// 	Outline: ① ② ③ ④ ⑤ (U+2460 to U+2464)
-			// 	Negative Squares: 1️⃣ 2️⃣ 3️⃣ (Emoji style)
-
-			// 	0/4: ○ (U+25CB)
-			// 	1/4: ◔ (U+25D4)
-			// 	2/4: ◑ (U+25D1)
-			// 	3/4: ◕ (U+25D5)
-			// 	4/4: ● (U+25CF)[2]
-			// item.Item.Title = "★★★☆☆" + item.Item.Title
-			// item.Item.Description = "★☆☆☆☆" + item.Item.Description
 			s.processItem(feed, item.Hash, item.Item, language)
 			count++
 		}
@@ -223,15 +210,11 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 	res, err := s.think.Run(promptScope, language, req)
 
-	var resultMap map[string]interface{}
 	if err != nil {
 		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
-		resultMap = map[string]interface{}{
-			"error": err.Error(),
+		res = &database.ThinkResult{
+			Error: err.Error(),
 		}
-	} else {
-		b, _ := json.Marshal(res)
-		_ = json.Unmarshal(b, &resultMap)
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -245,14 +228,13 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		pubDate = *item.PublishedParsed
 	}
 
-	analyzerResult := database.JSONB(resultMap)
 	dbItem := &database.Item{
-		Hash:           hash,
-		FeedID:         feed.ID,
-		URL:            item.Link,
-		AnalyzerResult: &analyzerResult,
-		Content:        content,
-		PubDate:        pubDate,
+		Hash:        hash,
+		FeedID:      feed.ID,
+		URL:         item.Link,
+		ThinkResult: res,
+		Content:     content,
+		PubDate:     pubDate,
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)
@@ -291,15 +273,13 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 
 		current := pf.Items[0]
 
-		if item.AnalyzerResult != nil {
-			res := *item.AnalyzerResult
-			isErrorOnly := false
-			if len(res) == 1 {
-				_, isErrorOnly = res["error"]
-			}
-
-			if len(res) > 0 && !isErrorOnly {
-				for k, v := range res {
+		if item.ThinkResult != nil {
+			res := *item.ThinkResult
+			if res.Error == "" {
+				var m map[string]interface{}
+				b, _ := json.Marshal(res)
+				_ = json.Unmarshal(b, &m)
+				for k, v := range m {
 					feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
 				}
 			}

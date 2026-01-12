@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"sync"
 
+	"github.com/egandro/news-deframer/pkg/database"
 	"google.golang.org/genai"
 )
 
@@ -67,7 +68,7 @@ func newGemini(ctx context.Context, model, apiKey string) (*gemini, error) {
 	}, nil
 }
 
-func (g *gemini) Run(prompt string, language string, request Request) (*Result, error) {
+func (g *gemini) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
 	key := prompt + ":" + language
 
 	g.mu.RLock()
@@ -131,7 +132,7 @@ func (g *gemini) Run(prompt string, language string, request Request) (*Result, 
 		)
 	}
 
-	var result Result
+	var result database.ThinkResult
 	if err := json.Unmarshal([]byte(resp.Candidates[0].Content.Parts[0].Text), &result); err != nil {
 		return nil, err
 	}

@@ -1,17 +1,21 @@
 package think
 
+import (
+	"github.com/egandro/news-deframer/pkg/database"
+)
+
 type dummy struct{}
 
 func newDummy() *dummy {
 	return &dummy{}
 }
 
-func (d *dummy) Run(prompt string, language string, request Request) (*Result, error) {
+func (d *dummy) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
 	if _, err := getPrompt(prompt, language); err != nil {
 		return nil, err
 	}
 
-	return &Result{
+	return &database.ThinkResult{
 		TitleCorrected:              "from ai: " + request.Title,
 		TitleCorrectionReason:       "Removed 'shocking' and 'disaster'; standard business reporting tone used.",
 		DescriptionCorrected:        "from ai: " + request.Description,
