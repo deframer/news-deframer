@@ -1,12 +1,30 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 )
+
+type LLMType int
+
+const (
+	Dummy LLMType = iota
+)
+
+func (t *LLMType) UnmarshalText(text []byte) error {
+	switch strings.ToLower(string(text)) {
+	case "dummy":
+		*t = Dummy
+	default:
+		return fmt.Errorf("unknown LLM type: %s", string(text))
+	}
+	return nil
+}
 
 type Config struct {
 	// HTT Port
@@ -19,6 +37,11 @@ type Config struct {
 	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
 
 	LocalFeedFilesDir string `env:"LOCAL_FEED_FILES_DIR" envDefault:""`
+
+	LLM_Type    LLMType `env:"LLM_TYPE" envDefault:"dummy"`
+	LLM_Model   string  `env:"LLM_MODEL" envDefault:""`
+	LLM_APIKey  string  `env:"LLM_API_KEY" envDefault:""`
+	LLM_BaseURL string  `env:"LLM_BASE_URL" envDefault:""`
 }
 
 func Load() (*Config, error) {
