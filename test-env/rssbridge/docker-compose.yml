@@ -1,0 +1,21 @@
+---
+
+services:
+  rssbridge:
+    image: rssbridge/rss-bridge
+    ports:
+      - "8002:80"
+    restart: unless-stopped
+    volumes:
+      - ./config:/config
+      - ./bridges/SpiegelBridge.php:/app/bridges/SpiegelBridge.php
+      - ./bridges/TagesschauBridge.php:/app/bridges/TagesschauBridge.php
+    networks:
+      - test-env-net
+
+# TODO: we might want a selenium/webdriver here
+
+networks:
+  test-env-net:
+    external: true
+    name: deframer-test-env-net

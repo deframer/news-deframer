@@ -1,4 +1,5 @@
 /.bin
+/bin
 /dist
 .env*
 !/.env.example
@@ -13,3 +14,5 @@ __debug_bin*
 developer-sqlite.db
 developer-source.json
 .python-venv
+*.swp
+coverage.*
