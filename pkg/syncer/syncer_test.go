@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"log/slog"
 	"net/url"
 	"os"
 	"testing"
@@ -171,7 +172,9 @@ func TestSyncFeedInternal(t *testing.T) {
 }
 
 func TestUpdateContent(t *testing.T) {
-	s := &Syncer{}
+	s := &Syncer{
+		logger: slog.Default(),
+	}
 
 	tests := []struct {
 		name                string
@@ -179,6 +182,8 @@ func TestUpdateContent(t *testing.T) {
 		res                 *database.ThinkResult
 		expectedTitle       string
 		expectedDescription string
+		expectedContent     string
+		checkExtensions     bool
 	}{
 		{
 			name: "Basic Update",
@@ -192,6 +197,8 @@ func TestUpdateContent(t *testing.T) {
 			},
 			expectedTitle:       "★★★★★ Corrected Title",
 			expectedDescription: "Corrected Description<br/><br/>",
+			expectedContent:     "",
+			checkExtensions:     false,
 		},
 		{
 			name: "With Content Encoded",
@@ -212,6 +219,8 @@ func TestUpdateContent(t *testing.T) {
 			},
 			expectedTitle:       "☆☆☆☆☆ Corrected Foobar",
 			expectedDescription: "Corrected Short desc<br/><br/>Analysis",
+			expectedContent:     "",
+			checkExtensions:     true,
 		},
 	}
 
@@ -221,6 +230,30 @@ func TestUpdateContent(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedTitle, tt.item.Title)
 			assert.Equal(t, tt.expectedDescription, tt.item.Description)
+			assert.Equal(t, tt.expectedContent, tt.item.Content)
+
+			if tt.checkExtensions {
+				if assert.NotNil(t, tt.item.Extensions) {
+					media, ok := tt.item.Extensions["media"]
+					if assert.True(t, ok) {
+						contentExt, ok := media["content"]
+						if assert.True(t, ok) && assert.NotEmpty(t, contentExt) {
+							assert.Equal(t, "https://foobar", contentExt[0].Attrs["url"])
+							assert.Equal(t, "image", contentExt[0].Attrs["medium"])
+							assert.Equal(t, "1920", contentExt[0].Attrs["width"])
+							assert.Equal(t, "1080", contentExt[0].Attrs["height"])
+						}
+
+						descExt, ok := media["description"]
+						if assert.True(t, ok) && assert.NotEmpty(t, descExt) {
+							assert.Equal(t, tt.expectedDescription, descExt[0].Value)
+						}
+
+						_, creditExists := media["credit"]
+						assert.False(t, creditExists, "media:credit should be removed")
+					}
+				}
+			}
 		})
 	}
 }

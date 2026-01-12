@@ -16,6 +16,7 @@ import (
 	"github.com/egandro/news-deframer/pkg/think"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
+	ext "github.com/mmcdole/gofeed/extensions"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -275,6 +276,46 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 	// Add the reason
 	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
 
+	if item.Content != "" {
+		// tagesschau uses "content:encoded"
+		// let's try to grab any image and keep the title/description
+		mediaData, err := transformContent(item.Content)
+		if err == nil && mediaData.URL != "" {
+			s.logger.Debug("removed content:encoded", "url", item.Link)
+			item.Content = ""
+
+			if item.Extensions == nil {
+				item.Extensions = make(map[string]map[string][]ext.Extension)
+			}
+			if item.Extensions["media"] == nil {
+				item.Extensions["media"] = make(map[string][]ext.Extension)
+			}
+
+			// <media:credit> always delete this
+			delete(item.Extensions["media"], "credit")
+
+			attrs := map[string]string{
+				"url":    mediaData.URL,
+				"medium": mediaData.Medium,
+			}
+			if mediaData.Width > 0 {
+				attrs["width"] = fmt.Sprintf("%d", mediaData.Width)
+			}
+			if mediaData.Height > 0 {
+				attrs["height"] = fmt.Sprintf("%d", mediaData.Height)
+			}
+
+			item.Extensions["media"]["content"] = []ext.Extension{{
+				Name:  "content",
+				Attrs: attrs,
+			}}
+			// item.Extensions["media"]["description"] = []ext.Extension{{
+			// 	Name:  "description",
+			// 	Value: item.Description,
+			// }}
+		}
+	}
+
 	return nil
 }
 
@@ -291,6 +332,8 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	parsedFeed.Items = []*gofeed.Item{}
 	// custom namespace
 	feeds.AddNamespace(parsedFeed, "xmlns:"+customPrefix, customNamespace)
+	// media namespace
+	feeds.AddNamespace(parsedFeed, "xmlns:media", "http://search.yahoo.com/mrss/")
 
 	fp := gofeed.NewParser()
 	for _, item := range items {
