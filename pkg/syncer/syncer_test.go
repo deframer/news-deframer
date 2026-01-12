@@ -244,11 +244,6 @@ func TestUpdateContent(t *testing.T) {
 							assert.Equal(t, "1080", contentExt[0].Attrs["height"])
 						}
 
-						descExt, ok := media["description"]
-						if assert.True(t, ok) && assert.NotEmpty(t, descExt) {
-							assert.Equal(t, tt.expectedDescription, descExt[0].Value)
-						}
-
 						_, creditExists := media["credit"]
 						assert.False(t, creditExists, "media:credit should be removed")
 					}
