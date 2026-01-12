@@ -65,17 +65,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// valkeyClient, err := valkey.New(ctx, cfg)
-	// if err != nil {
-	// 	slog.Error("Failed to connect to valkey", "error", err)
-	// 	os.Exit(1)
-	// }
-	// defer func() {
-	// 	if err := valkeyClient.Close(); err != nil {
-	// 		slog.Error("Failed to close valkey client", "error", err)
-	// 	}
-	// }()
-
 	f := facade.New(ctx, cfg, repo)
 
 	srv := server.New(ctx, cfg, f)

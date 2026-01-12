@@ -26,13 +26,6 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      valkey:
-        image: valkey/valkey:latest
-        options: >-
-          --health-cmd "valkey-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Install System Dependencies
         run: |
@@ -83,9 +76,6 @@ jobs:
           CGO_ENABLED: 1
           GOFLAGS: "-buildvcs=false"
           DSN: "host=postgres user=deframer password=${{ env.PGPASSWORD }} dbname=deframer port=5432 sslmode=disable"
-          VALKEY_HOST: "valkey:6379"
-          VALKEY_PASSWORD: ""
-          VALKEY_DB: "0"
 
   docker:
     needs: test

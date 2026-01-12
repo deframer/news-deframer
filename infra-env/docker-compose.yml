@@ -21,28 +21,10 @@ services:
       timeout: 5s
       retries: 5
 
-  valkey:
-    image: valkey/valkey:latest
-    restart: unless-stopped
-    command: valkey-server --requirepass ${VALKEY_PASSWORD:-deframer}
-    ports:
-      - "6379:6379"
-    volumes:
-      - valkey_data:/data
-    networks:
-      - infra-env-net
-    healthcheck:
-      test: ["CMD", "valkey-cli", "-a", "${VALKEY_PASSWORD:-deframer}", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   ready-check:
     image: alpine:latest
     depends_on:
       postgres:
-        condition: service_healthy
-      valkey:
         condition: service_healthy
     command: |
       sh -c "'echo SUCCESS: infra-env initialized'"
@@ -53,4 +35,3 @@ networks:
 
 volumes:
   postgres_data:
-  valkey_data:
