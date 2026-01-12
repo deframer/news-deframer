@@ -10,6 +10,7 @@ import (
 	"github.com/egandro/news-deframer/pkg/config"
 	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/google/uuid"
+	"github.com/mmcdole/gofeed"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -169,6 +170,23 @@ func TestSyncFeedInternal(t *testing.T) {
 	}
 }
 
+func TestUpdateContent(t *testing.T) {
+	s := &Syncer{}
+	item := &gofeed.Item{
+		Title:       "Original Title",
+		Description: "Original Description",
+	}
+	res := &database.ThinkResult{
+		TitleCorrected:       "Corrected Title",
+		DescriptionCorrected: "Corrected Description",
+	}
+
+	err := s.updateContent(item, res)
+	assert.NoError(t, err)
+	assert.Contains(t, item.Title, "★")
+	assert.Equal(t, "Corrected Description<br/><br/>", item.Description)
+}
+
 func TestWantedDomains(t *testing.T) {
 	repo := &mockRepo{}
 	cfg := &config.Config{}
@@ -246,6 +264,31 @@ func TestWantedDomains(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, domains)
 			}
+		})
+	}
+}
+
+func TestScoreToStars(t *testing.T) {
+	s := &Syncer{}
+
+	tests := []struct {
+		score    float64
+		expected string
+	}{
+		{0.0, "★★★★★"}, // Best
+		{0.1, "★★★★★"}, // 4.5 -> 5 (rounded up? logic: (1-0.1)*5 = 4.5 -> 5)
+		{0.2, "★★★★☆"}, // 4.0
+		{0.3, "★★★★☆"}, // 3.5 -> 4
+		{0.4, "★★★☆☆"}, // 3.0
+		{0.5, "★★★☆☆"}, // 2.5 -> 3
+		{0.6, "★★☆☆☆"}, // 2.0
+		{0.8, "★☆☆☆☆"}, // 1.0
+		{1.0, "☆☆☆☆☆"}, // Worst
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.expected, func(t *testing.T) {
+			assert.Equal(t, tt.expected, s.scoreToStars(tt.score), "Score: %f", tt.score)
 		})
 	}
 }

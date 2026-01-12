@@ -65,6 +65,8 @@ type FeedSchedule struct {
 }
 
 type ThinkResult struct {
+	TitleOriginal               string  `json:"title_original,omitempty"`
+	DescriptionOriginal         string  `json:"description_original,omitempty"`
 	TitleCorrected              string  `json:"title_corrected,omitempty"`
 	TitleCorrectionReason       string  `json:"title_correction_reason,omitempty"`
 	DescriptionCorrected        string  `json:"description_corrected,omitempty"`
