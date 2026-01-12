@@ -1,13 +1,33 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/egandro/news-deframer/pkg/think"
 	"github.com/joho/godotenv"
 )
+
+type LLMType int
+
+const (
+	Dummy LLMType = iota
+	Gemini
+)
+
+func (t *LLMType) UnmarshalText(text []byte) error {
+	switch strings.ToLower(string(text)) {
+	case "dummy":
+		*t = Dummy
+	case "gemini":
+		*t = Gemini
+	default:
+		return fmt.Errorf("unknown LLM type: %s", string(text))
+	}
+	return nil
+}
 
 type Config struct {
 	// HTT Port
@@ -21,7 +41,10 @@ type Config struct {
 
 	LocalFeedFilesDir string `env:"LOCAL_FEED_FILES_DIR" envDefault:""`
 
-	LLMType think.LLMType
+	LLM_Type    LLMType `env:"LLM_TYPE" envDefault:"dummy"`
+	LLM_Model   string  `env:"LLM_MODEL" envDefault:""`
+	LLM_APIKey  string  `env:"LLM_API_KEY" envDefault:""`
+	LLM_BaseURL string  `env:"LLM_BASE_URL" envDefault:""`
 }
 
 func Load() (*Config, error) {

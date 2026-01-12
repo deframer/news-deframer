@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -42,7 +43,7 @@ type Syncer struct {
 }
 
 func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Syncer, error) {
-	th, err := think.New(think.LLMType(cfg.LLMType))
+	th, err := think.New(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -216,16 +217,21 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 }
 
 func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item, language string) {
-	data := map[string]interface{}{
-		"title":       item.Title,
-		"description": item.Description,
+	req := think.Request{
+		Title:       item.Title,
+		Description: item.Description,
 	}
-	res, err := s.think.Run(promptScope, language, data)
+	res, err := s.think.Run(promptScope, language, req)
+
+	var resultMap map[string]interface{}
 	if err != nil {
 		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
-		res = map[string]interface{}{
+		resultMap = map[string]interface{}{
 			"error": err.Error(),
 		}
+	} else {
+		b, _ := json.Marshal(res)
+		_ = json.Unmarshal(b, &resultMap)
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -239,7 +245,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		pubDate = *item.PublishedParsed
 	}
 
-	analyzerResult := database.JSONB(res)
+	analyzerResult := database.JSONB(resultMap)
 	dbItem := &database.Item{
 		Hash:           hash,
 		FeedID:         feed.ID,
