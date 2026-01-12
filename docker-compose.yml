@@ -8,9 +8,6 @@ services:
       - PORT=${PORT:-8080}
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
-      - VALKEY_HOST=${VALKEY_HOST:-valkey:6379}
-      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-deframer}
-      - VALKEY_DB=${VALKEY_DB:-0}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
     ports:
@@ -26,9 +23,6 @@ services:
     environment:
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
-      - VALKEY_HOST=${VALKEY_HOST:-valkey:6379}
-      - VALKEY_PASSWORD=${VALKEY_PASSWORD:-deframer}
-      - VALKEY_DB=${VALKEY_DB:-0}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
     networks:

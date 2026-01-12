@@ -17,11 +17,6 @@ type Config struct {
 	DSN         string `env:"DSN" envDefault:"host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"`
 	LogDatabase bool   `env:"LOG_DATABASE" envDefault:"false"`
 
-	// Valkey
-	ValkeyHost     string `env:"VALKEY_HOST" envDefault:"valkey:6379"`
-	ValkeyPassword string `env:"VALKEY_PASSWORD" envDefault:"deframer"`
-	ValkeyDB       string `env:"VALKEY_DB" envDefault:"0"`
-
 	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
 
 	LocalFeedFilesDir string `env:"LOCAL_FEED_FILES_DIR" envDefault:""`
