@@ -14,12 +14,15 @@ type LLMType int
 
 const (
 	Dummy LLMType = iota
+	Gemini
 )
 
 func (t *LLMType) UnmarshalText(text []byte) error {
 	switch strings.ToLower(string(text)) {
 	case "dummy":
 		*t = Dummy
+	case "gemini":
+		*t = Gemini
 	default:
 		return fmt.Errorf("unknown LLM type: %s", string(text))
 	}

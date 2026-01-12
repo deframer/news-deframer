@@ -1,6 +1,7 @@
 package think
 
 import (
+	"context"
 	"embed"
 	"fmt"
 
@@ -14,11 +15,17 @@ type Think interface {
 	Run(prompt string, language string, request Request) (*Result, error)
 }
 
-func New(cfg *config.Config) (Think, error) {
+func New(ctx context.Context, cfg *config.Config) (Think, error) {
 	t := cfg.LLM_Type
 	switch t {
 	case config.Dummy:
 		return &dummy{}, nil
+	case config.Gemini:
+		return &gemini{
+			ctx:    ctx,
+			model:  cfg.LLM_Model,
+			apiKey: cfg.LLM_APIKey,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unknown think type: %v", t)
 	}
