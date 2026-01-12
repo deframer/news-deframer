@@ -16,6 +16,12 @@ Why is language analysis effective?
 - Misinformation and speculation often rely on dark patterns, clickbait, and emotional triggers.
 - Authors of misinformation often use disguise and vague language to avoid legal repercussions.
 
+Why RSS?
+
+- **Standardized Input**: The algorithm utilizes RSS feeds as a universal data source.
+- **Flexible Sources**: You can consume existing feeds directly from publishers or employ `rssbridge` to generate feeds from any HTML website.
+- **Optimized Content**: We provide `rssbridge` configuration examples. Generating custom feeds via scraping is often superior to official feeds, as it enables the exclusion of paywalled or irrelevant content.
+
 **WARNING**: We can have false positives / negatives.
 
 ## Overview
@@ -23,6 +29,18 @@ Why is language analysis effective?
 - [Algorithm](docs/ALGORITHM.md)
 - [Specification of our Testing Systems](docs/specs-testing.md)
 - [Implementation Details](docs/specs.md)
+
+## Status
+
+- [x] Basic RSS Proxy
+- [x] Polling and auto updating of feeds
+- [x] Dummy LLM support (zero wait time, zero cost, developer friendly)
+- [ ] Local LLM support
+- [ ] Gemini LLM support
+- [ ] Grok LLM support
+- [ ] ChatGPT LLM support
+- [ ] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
+
 
 ## License
 
