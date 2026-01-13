@@ -2,7 +2,17 @@
 
 This example is derived from the `https://rss.nytimes.com/services/xml/rss/nyt/World.xml` feed.
 
-The AI analyzes the content, provides reasoning for its assessment, and performs necessary replacements to neutralize the tone.
+## Screenshots
+
+The item is rendered by `freshrss`. Deframer neutralizes the tone of every article, ensuring it reads like objective news.
+
+| Updated | Original |
+| :---: | :---: |
+| <img src="updated.jpg" alt="Updated" width="600"/> | <img src="original.jpg" alt="Original" width="600"/> |
+
+## Deframed XML Feed as foundation
+
+The AI analyzes the upstream content, provides reasoning for its assessment, and performs necessary replacements to neutralize the tone.
 
 ```xml
 <item>
@@ -36,11 +46,3 @@ The AI analyzes the content, provides reasoning for its assessment, and performs
     <media:credit>Haiyun Jiang/The New York Times</media:credit>
 </item>
 ```
-
-## Screenshots
-
-The item is rendered by `freshrss`. Deframer neutralizes the tone of every article, ensuring it reads like objective news.
-
-| Updated | Original |
-| :---: | :---: |
-| <img src="updated.jpg" alt="Updated" width="600"/> | <img src="original.jpg" alt="Original" width="600"/> |
