@@ -39,7 +39,7 @@ Why RSS?
 - [x] Basic RSS Proxy
 - [x] Polling and auto updating of feeds
 - [x] Dummy LLM support (zero wait time, zero cost, developer friendly)
-- [x] Local / ChatGPT / Generic OpenAI LLM support
+- [x] ChatGPT / Generic OpenAI LLM support / [Local](docs/local/lmstudio-rtx3060.png) e.g. LM-Studio
 - [x] Gemini LLM support
 - [ ] Grok LLM support
 - [ ] Support filtering the RSS Proxy result with a min rating
