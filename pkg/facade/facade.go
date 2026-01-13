@@ -15,20 +15,23 @@ import (
 type RSSProxyFilter struct {
 	URL      string
 	Lang     string
-	MaxScore float64
+	Max      float64
 	Embedded bool
 }
 
-type ItemResult struct {
-	FeedURL  string `json:"feed_url"`
-	URL      string `json:"url"`
-	Hash     string `json:"hash"`
-	AIResult string `json:"ai_result"`
+const MaxItemsForRootDomain = 30
+
+type ItemForRootDomain struct {
+	Hash string `json:"hash"`
+	URL  string `json:"url"`
+	database.ThinkResult
+	MediaContent *database.MediaContent `json:"media,omitempty"`
+	ThinkRating  float64                `json:"rating"`
 }
 
 type Facade interface {
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
-	GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error)
+	GetItemsForRootDomain(ctx context.Context, rootDomain string) ([]ItemForRootDomain, error)
 }
 
 type facade struct {
@@ -85,7 +88,24 @@ func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 	return *cachedFeed.XMLContent, nil
 }
 
-func (f *facade) GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error) {
-	var results []ItemResult
-	return results, nil
+func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string) ([]ItemForRootDomain, error) {
+	dbItems, err := f.repo.FindItemsByRootDomain(rootDomain, MaxItemsForRootDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]ItemForRootDomain, 0, len(dbItems))
+	for _, dbItem := range dbItems {
+		item := ItemForRootDomain{
+			Hash:         dbItem.Hash,
+			URL:          dbItem.URL,
+			MediaContent: dbItem.MediaContent,
+			ThinkRating:  dbItem.ThinkRating,
+		}
+		if dbItem.ThinkResult != nil {
+			item.ThinkResult = *dbItem.ThinkResult
+		}
+		items = append(items, item)
+	}
+	return items, nil
 }

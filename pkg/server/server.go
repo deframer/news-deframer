@@ -25,7 +25,7 @@ type Server struct {
 type RSSRequest struct {
 	URL      string
 	Lang     string
-	MaxScore float64
+	Max      float64
 	Embedded bool
 }
 
@@ -37,12 +37,13 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /ping", s.handlePing)
-	mux.HandleFunc("GET /hostname", s.handleHostname)
+	mux.HandleFunc("/ping", s.handlePing)
+	mux.HandleFunc("/hostname", s.handleHostname)
+
 	mux.HandleFunc("/rss", s.handleRSSProxy)
 
-	mux.HandleFunc("/site", s.handleSite)
-	mux.HandleFunc("/item", s.handleItem)
+	mux.HandleFunc("/api/item", s.handleItem)
+	mux.HandleFunc("/api/site", s.handleSite)
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -85,10 +86,6 @@ func (s *Server) handleHostname(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
-	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fdummy&lang=en&max_score=0.5&embedded=true"
-	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fwordpress%2Ffeed"
-	// curl "http://localhost:8080/rss?url=http%3A%2F%2Flocalhost%3A8003%2Ffeed"
-	// inside freshrss http://service:8080/rss?url=http%3A%2F%2Fwordpress%2Ffeed
 	q := r.URL.Query()
 	req := RSSRequest{
 		URL:  strings.TrimSuffix(q.Get("url"), "/"),
@@ -101,7 +98,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if v, err := strconv.ParseFloat(q.Get("max_score"), 64); err == nil {
-		req.MaxScore = v
+		req.Max = v
 	}
 	if v, err := strconv.ParseBool(q.Get("embedded")); err == nil {
 		req.Embedded = v
@@ -110,7 +107,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	filter := facade.RSSProxyFilter{
 		URL:      req.URL,
 		Lang:     req.Lang,
-		MaxScore: req.MaxScore,
+		Max:      req.Max,
 		Embedded: req.Embedded,
 	}
 
@@ -127,8 +124,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
-	// curl "http://localhost:8080/site?url=http%3A%2F%2Fexample.com"
+func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
@@ -153,35 +149,21 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
-	// 0 entries
-	// curl "http://localhost:8080/item?url=http%3A%2F%2Fexample.com%2Farticle"
-	// 2 entries
-	// curl "http://localhost:8080/item?url=http%3A%2F%2Fdummy-enforced%2Fitem-1"
-	// 1 entry
-	// curl "http://localhost:8080/item?url=http%3A%2F%2Fdummy-open%2Fitem-2"
-
+func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	reqURL := strings.TrimSuffix(q.Get("url"), "/")
+	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
 
-	if reqURL == "" {
-		http.Error(w, "missing url", http.StatusBadRequest)
+	if rootDomain == "" {
+		http.Error(w, "missing root", http.StatusBadRequest)
 		return
 	}
 
-	u, err := url.ParseRequestURI(reqURL)
-	if err != nil {
-		s.logger.Debug("invalid url", "error", err)
-		http.Error(w, "invalid url", http.StatusBadRequest)
-		return
-	}
-
-	items, err := s.facade.GetItems(r.Context(), u)
+	items, err := s.facade.GetItemsForRootDomain(r.Context(), rootDomain)
 	if err != nil || len(items) == 0 {
 		if err != nil {
-			s.logger.Error("GetItems failed", "error", err)
+			s.logger.Error("GetItemsForRootDomain failed", "error", err)
 		} else {
-			s.logger.Debug("no items found", "url", reqURL)
+			s.logger.Debug("no items found", "url", rootDomain)
 		}
 		http.Error(w, "not found", http.StatusNotFound)
 		return

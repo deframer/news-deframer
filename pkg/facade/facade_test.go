@@ -42,6 +42,7 @@ type mockRepo struct {
 	upsertCachedFeed             func(cachedFeed *database.CachedFeed) error
 	findCachedFeedById           func(feedID uuid.UUID) (*database.CachedFeed, error)
 	findFeedScheduleById         func(feedID uuid.UUID) (*database.FeedSchedule, error)
+	findItemsByRootDomain        func(rootDomain string, limit int) ([]database.Item, error)
 }
 
 func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
@@ -167,6 +168,13 @@ func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedul
 	return nil, nil
 }
 
+func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
+	if m.findItemsByRootDomain != nil {
+		return m.findItemsByRootDomain(rootDomain, limit)
+	}
+	return nil, nil
+}
+
 func TestGetRssProxyFeed(t *testing.T) {
 	ctx := context.Background()
 	rssContent := `
@@ -194,11 +202,77 @@ func TestGetRssProxyFeed(t *testing.T) {
 	filter := RSSProxyFilter{
 		URL:      "http://example.com",
 		Lang:     "en",
-		MaxScore: 0.75,
+		Max:      0.75,
 		Embedded: true,
 	}
 
 	xmlData, err := f.GetRssProxyFeed(ctx, &filter)
 	assert.NoError(t, err)
 	assert.Contains(t, xmlData, "<title>Dummy Feed</title>")
+}
+
+func TestGetItemsForRootDomain(t *testing.T) {
+	ctx := context.Background()
+	rootDomain := "example.com"
+
+	t.Run("Success", func(t *testing.T) {
+		expectedItems := []database.Item{
+			{
+				Hash: "hash1",
+				URL:  "http://example.com/1",
+				ThinkResult: &database.ThinkResult{
+					TitleCorrected: "Corrected Title 1",
+				},
+				MediaContent: &database.MediaContent{
+					URL: "http://example.com/img1.jpg",
+				},
+				ThinkRating: 0.5,
+			},
+			{
+				Hash: "hash2",
+				URL:  "http://example.com/2",
+				// Nil ThinkResult and MediaContent to test handling
+			},
+		}
+
+		mockR := &mockRepo{
+			findItemsByRootDomain: func(domain string, limit int) ([]database.Item, error) {
+				assert.Equal(t, rootDomain, domain)
+				assert.Equal(t, MaxItemsForRootDomain, limit)
+				return expectedItems, nil
+			},
+		}
+
+		f := New(ctx, nil, mockR)
+
+		items, err := f.GetItemsForRootDomain(ctx, rootDomain)
+		assert.NoError(t, err)
+		assert.Len(t, items, 2)
+
+		// Verify Item 1
+		assert.Equal(t, "hash1", items[0].Hash)
+		assert.Equal(t, "http://example.com/1", items[0].URL)
+		assert.Equal(t, "Corrected Title 1", items[0].TitleCorrected)
+		assert.Equal(t, "http://example.com/img1.jpg", items[0].MediaContent.URL)
+		assert.Equal(t, 0.5, items[0].ThinkRating)
+
+		// Verify Item 2
+		assert.Equal(t, "hash2", items[1].Hash)
+		assert.Equal(t, "http://example.com/2", items[1].URL)
+		assert.Empty(t, items[1].TitleCorrected)
+		assert.Nil(t, items[1].MediaContent)
+		assert.Equal(t, 0.0, items[1].ThinkRating)
+	})
+
+	t.Run("RepoError", func(t *testing.T) {
+		mockR := &mockRepo{
+			findItemsByRootDomain: func(domain string, limit int) ([]database.Item, error) {
+				return nil, assert.AnError
+			},
+		}
+		f := New(ctx, nil, mockR)
+		items, err := f.GetItemsForRootDomain(ctx, rootDomain)
+		assert.Error(t, err)
+		assert.Nil(t, items)
+	})
 }

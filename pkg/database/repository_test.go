@@ -300,6 +300,55 @@ func TestUpsertFeed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, foundUrl)
 	})
+
+	t.Run("Constraint_UniqueUrl", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		urlStr := "http://unique-constraint.test/" + uuid.New().String()
+
+		// 1. Create first feed
+		feed1 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed1))
+
+		// 2. Create second feed with same URL (Should Fail)
+		feed2 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		err := repo.UpsertFeed(feed2)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+
+		// 3. Soft Delete feed1
+		assert.NoError(t, repo.DeleteFeedById(feed1.ID))
+
+		// 4. Create second feed again (Should Succeed now)
+		err = repo.UpsertFeed(feed2)
+		assert.NoError(t, err)
+
+		// 5. Update feed2 to a new URL
+		newUrl := "http://unique-constraint-new.test/" + uuid.New().String()
+		feed2.URL = newUrl
+		assert.NoError(t, repo.UpsertFeed(feed2))
+
+		// 6. Create feed3 with the OLD url of feed2 (Should Succeed)
+		feed3 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed3))
+
+		// 7. Try to update feed3 to feed2's current URL (Should Fail)
+		feed3.URL = newUrl
+		err = repo.UpsertFeed(feed3)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+	})
 }
 
 func TestUpsertItem(t *testing.T) {
@@ -324,6 +373,7 @@ func TestUpsertItem(t *testing.T) {
 			URL:         "http://item-new",
 			Content:     "content",
 			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
+			ThinkRating: 0.5,
 		}
 
 		err := repo.UpsertItem(item)
@@ -333,6 +383,10 @@ func TestUpsertItem(t *testing.T) {
 		var count int64
 		tx.Model(&Item{}).Where("id = ?", item.ID).Count(&count)
 		assert.Equal(t, int64(1), count)
+
+		var stored Item
+		tx.First(&stored, item.ID)
+		assert.Equal(t, 0.5, stored.ThinkRating)
 	})
 
 	t.Run("UpdateExisting_ByHash", func(t *testing.T) {
@@ -349,7 +403,8 @@ func TestUpsertItem(t *testing.T) {
 			Hash:        "hash-update",
 			URL:         "http://item-update",
 			Content:     "content-old",
-			ThinkResult: &ThinkResult{FramingScore: 0.1},
+			ThinkResult: &ThinkResult{Framing: 0.1},
+			ThinkRating: 0.1,
 		}
 		assert.NoError(t, tx.Create(&existing).Error)
 
@@ -362,7 +417,8 @@ func TestUpsertItem(t *testing.T) {
 			Hash:        "hash-update",
 			URL:         "http://item-update",
 			Content:     "content-new",
-			ThinkResult: &ThinkResult{FramingScore: 0.2},
+			ThinkResult: &ThinkResult{Framing: 0.2},
+			ThinkRating: 0.2,
 		}
 
 		err := repo.UpsertItem(update)
@@ -373,7 +429,8 @@ func TestUpsertItem(t *testing.T) {
 		tx.First(&stored, existing.ID)
 		assert.Equal(t, "content-new", stored.Content)
 		// Verify JSONB update
-		assert.Equal(t, 0.2, stored.ThinkResult.FramingScore)
+		assert.Equal(t, 0.2, stored.ThinkResult.Framing)
+		assert.Equal(t, 0.2, stored.ThinkRating)
 
 		// Verify timestamps
 		assert.Equal(t, existing.CreatedAt.UTC(), stored.CreatedAt.UTC(), "CreatedAt should be preserved")
@@ -514,6 +571,58 @@ func TestFindItemsByUrl(t *testing.T) {
 		items, err := repo.FindItemsByUrl(u)
 		assert.NoError(t, err)
 		assert.Empty(t, items)
+	})
+}
+
+func TestFindItemsByRootDomain(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	// Helper to create valid SHA256 hash string
+	makeHash := func(s string) string {
+		h := sha256.Sum256([]byte(s))
+		return hex.EncodeToString(h[:])
+	}
+
+	t.Run("FilterByRootDomain", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		root := "example.com"
+		feed := Feed{URL: "http://example.com/rss", Enabled: true, RootDomain: &root}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		h1 := makeHash("hash1")
+		// Item 1
+		item1 := Item{
+			FeedID:      feed.ID,
+			Hash:        h1,
+			URL:         "http://example.com/1",
+			Content:     "c1",
+			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
+			PubDate:     time.Now(),
+			ThinkRating: 0.8,
+		}
+		assert.NoError(t, tx.Create(&item1).Error)
+
+		// Item 2 (Different root domain feed)
+		otherRoot := "other.com"
+		feed2 := Feed{URL: "http://other.com/rss", Enabled: true, RootDomain: &otherRoot}
+		assert.NoError(t, tx.Create(&feed2).Error)
+		h2 := makeHash("hash2")
+		item2 := Item{FeedID: feed2.ID, Hash: h2, URL: "http://other.com/1", Content: "c2", PubDate: time.Now()}
+		assert.NoError(t, tx.Create(&item2).Error)
+
+		items, err := repo.FindItemsByRootDomain("example.com", 10)
+		assert.NoError(t, err)
+		assert.Len(t, items, 1)
+		assert.Equal(t, h1, items[0].Hash)
+		assert.Equal(t, 0.8, items[0].ThinkRating)
 	})
 }
 
@@ -1143,6 +1252,55 @@ func TestFindCachedFeedById(t *testing.T) {
 		found, err := repo.FindCachedFeedById(uuid.New())
 		assert.NoError(t, err)
 		assert.Nil(t, found)
+	})
+
+	t.Run("Constraint_UniqueUrl", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		urlStr := "http://unique-constraint.test/" + uuid.New().String()
+
+		// 1. Create first feed
+		feed1 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed1))
+
+		// 2. Create second feed with same URL (Should Fail)
+		feed2 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		err := repo.UpsertFeed(feed2)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+
+		// 3. Soft Delete feed1
+		assert.NoError(t, repo.DeleteFeedById(feed1.ID))
+
+		// 4. Create second feed again (Should Succeed now)
+		err = repo.UpsertFeed(feed2)
+		assert.NoError(t, err)
+
+		// 5. Update feed2 to a new URL
+		newUrl := "http://unique-constraint-new.test/" + uuid.New().String()
+		feed2.URL = newUrl
+		assert.NoError(t, repo.UpsertFeed(feed2))
+
+		// 6. Create feed3 with the OLD url of feed2 (Should Succeed)
+		feed3 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed3))
+
+		// 7. Try to update feed3 to feed2's current URL (Should Fail)
+		feed3.URL = newUrl
+		err = repo.UpsertFeed(feed3)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
 	})
 }
 

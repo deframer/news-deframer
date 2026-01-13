@@ -18,11 +18,11 @@ Das JSON muss die folgenden Felder enthalten:
 6.  **`framing_reason`** (String): Spezifische Identifikation des Bias oder der narrativen Drehung in max. 10 Wörtern.
 7.  **`clickbait`** (Float, 0.0 - 1.0): Wie stark wird versucht, Klicks durch Neugierlücken (Curiosity Gaps), Übertreibung oder emotionale Trigger zu generieren?
 8.  **`clickbait_reason`** (String): Identifikation der Köder-Taktik (z. B. "Vorenthaltung von Infos", "Cliffhanger") in max. 10 Wörtern.
-9.  **`persuasive_intent`** (Float, 0.0 - 1.0): Wie stark ist die Absicht, den Leser zu einer Handlung, einem Kauf oder einer Einstellungsänderung zu bewegen (Werbecharakter)?
+9.  **`persuasive`** (Float, 0.0 - 1.0): Wie stark ist die Absicht, den Leser zu einer Handlung, einem Kauf oder einer Einstellungsänderung zu bewegen (Werbecharakter)?
 10. **`persuasive_reason`** (String): Identifikation von Handlungsaufforderungen (Call-to-Action) oder Verkaufssprache in max. 10 Wörtern.
 11. **`hyper_stimulus`** (Float, 0.0 - 1.0): Nutzung von Reizen wie Großschreibung (CAPS), Ausrufezeichen, aggressiven Wörtern oder extremer Emotionalisierung.
 12. **`hyper_stimulus_reason`** (String): Identifikation stilistischer Exzesse (z. B. "Capslock", "multiple Satzzeichen") in max. 10 Wörtern.
-13. **`speculative_content`** (Float, 0.0 - 1.0): Wie hoch ist der Anteil an unbestätigten Behauptungen, Gerüchten, "angeblichen" Beweisen oder Spekulation ohne faktische Basis?
+13. **`speculative`** (Float, 0.0 - 1.0): Wie hoch ist der Anteil an unbestätigten Behauptungen, Gerüchten, "angeblichen" Beweisen oder Spekulation ohne faktische Basis?
 14. **`speculative_reason`** (String): Identifikation der Unsicherheitsquelle (z. B. "quellenlose Gerüchte", "Zukunftsprognose") in max. 10 Wörtern.
 15. **`overall_reason`** (String): Eine holistische Zusammenfassung, warum der Text diese spezifischen Bewertungen erhalten hat, in maximal 20 Wörtern.
 
@@ -42,11 +42,11 @@ Das JSON muss die folgenden Felder enthalten:
   "framing_reason": "Negative Rahmung normaler Marktschwankungen.",
   "clickbait": 0.8,
   "clickbait_reason": "Nutzung einer 'Du wirst es nicht glauben'-Neugierlücke.",
-  "persuasive_intent": 0.0,
+  "persuasive": 0.0,
   "persuasive_reason": "Keine Handlungsaufforderung erkannt.",
   "hyper_stimulus": 0.6,
   "hyper_stimulus_reason": "Verwendung von Großbuchstaben bei emotionalen Schlüsselwörtern.",
-  "speculative_content": 0.2,
+  "speculative": 0.2,
   "speculative_reason": "Impliziert Insolvenz ohne offizielle Quelle.",
   "overall_reason": "Der Text ist sensationalistischer Clickbait, der routinemäßige Finanznachrichten übertreibt, um Panik zu erzeugen."
 }

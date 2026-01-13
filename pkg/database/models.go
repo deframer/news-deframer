@@ -29,7 +29,8 @@ func (base *Base) BeforeCreate(tx *gorm.DB) error {
 
 type Feed struct {
 	Base
-	URL               string        `gorm:"index"`
+	URL               string        `gorm:"index"`                 // we can't enforce uniqueness here (because of the soft deletes)
+	RootDomain        *string       `gorm:"index"`                 // example.com
 	EnforceFeedDomain bool          `gorm:"not null;default:true"` // item url must be from our URL
 	Enabled           bool          `gorm:"not null;default:false;index"`
 	Polling           bool          `gorm:"not null;default:false"`
@@ -64,6 +65,7 @@ type FeedSchedule struct {
 	LastError   *string `gorm:"type:text"`
 }
 
+// ThinkResult we make omitempty to not serialize default e.g. 0.0 or ""
 type ThinkResult struct {
 	TitleOriginal               string  `json:"title_original,omitempty"`
 	DescriptionOriginal         string  `json:"description_original,omitempty"`
@@ -71,18 +73,17 @@ type ThinkResult struct {
 	TitleCorrectionReason       string  `json:"title_correction_reason,omitempty"`
 	DescriptionCorrected        string  `json:"description_corrected,omitempty"`
 	DescriptionCorrectionReason string  `json:"description_correction_reason,omitempty"`
-	ClickbaitScore              float64 `json:"clickbait,omitempty"`
-	ClickbaitReason             string  `json:"clickbait_reason,omitempty"`
-	FramingScore                float64 `json:"framing,omitempty"`
+	Framing                     float64 `json:"framing,omitempty"`
 	FramingReason               string  `json:"framing_reason,omitempty"`
-	PersuasiveIntentScore       float64 `json:"persuasive_intent,omitempty"`
+	Clickbait                   float64 `json:"clickbait,omitempty"`
+	ClickbaitReason             string  `json:"clickbait_reason,omitempty"`
+	Persuasive                  float64 `json:"persuasive,omitempty"`
 	PersuasiveReason            string  `json:"persuasive_reason,omitempty"`
-	HyperStimulusScore          float64 `json:"hyper_stimulus,omitempty"`
+	HyperStimulus               float64 `json:"hyper_stimulus,omitempty"`
 	HyperStimulusReason         string  `json:"hyper_stimulus_reason,omitempty"`
-	SpeculativeContentScore     float64 `json:"speculative_content,omitempty"`
+	Speculative                 float64 `json:"speculative,omitempty"`
 	SpeculativeReason           string  `json:"speculative_reason,omitempty"`
 	OverallReason               string  `json:"overall_reason,omitempty"`
-	Error                       string  `json:"error,omitempty"`
 }
 
 func (j ThinkResult) Value() (driver.Value, error) {
@@ -100,17 +101,63 @@ func (j *ThinkResult) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, j)
 }
 
+type MediaThumbnail struct {
+	URL    string `xml:"url,attr" json:"url,omitempty"`
+	Height int    `xml:"height,attr" json:"height,omitempty"`
+	Width  int    `xml:"width,attr" json:"width,omitempty"`
+}
+
+type MediaContent struct {
+	// Technical attributes required for <img src> or <video src>
+	URL    string `xml:"url,attr" json:"url,omitempty"`
+	Type   string `xml:"type,attr" json:"type,omitempty"`     // e.g., "image/jpeg"
+	Medium string `xml:"medium,attr" json:"medium,omitempty"` // e.g., "image" or "video"
+
+	// Dimensions are essential for preventing HTML Layout Shift (CLS)
+	Height int `xml:"height,attr" json:"height,omitempty"`
+	Width  int `xml:"width,attr" json:"width,omitempty"`
+
+	// Descriptive text used for HTML 'alt' attributes and captions
+	Title       string `xml:"title" json:"title,omitempty"`
+	Description string `xml:"description" json:"description,omitempty"`
+
+	// Essential for Video: Used for the <video poster="..."> attribute
+	// We use a pointer so it is nil if no thumbnail exists
+	Thumbnail *MediaThumbnail `xml:"thumbnail" json:"thumbnail,omitempty"`
+
+	// Optional Copyright for the content
+	Credit string `xml:"credit" json:"credit,omitempty"`
+}
+
+func (j MediaContent) Value() (driver.Value, error) {
+	return json.Marshal(j)
+}
+
+func (j *MediaContent) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, j)
+}
+
 type Item struct {
-	ID          uuid.UUID    `gorm:"primaryKey;type:uuid"`
-	CreatedAt   time.Time    `gorm:"not null;default:now()"`
-	UpdatedAt   time.Time    `gorm:"not null;default:now()"`
-	Hash        string       `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	FeedID      uuid.UUID    `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	Feed        Feed         `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	URL         string       `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
-	ThinkResult *ThinkResult `gorm:"type:jsonb"`
-	Content     string       `gorm:"type:text;not null"`
-	PubDate     time.Time    `gorm:"not null;index;default:now()"`
+	ID           uuid.UUID     `gorm:"primaryKey;type:uuid"`
+	CreatedAt    time.Time     `gorm:"not null;default:now()"`
+	UpdatedAt    time.Time     `gorm:"not null;default:now()"`
+	Hash         string        `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	FeedID       uuid.UUID     `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	Feed         Feed          `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	URL          string        `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	Content      string        `gorm:"type:text;not null"`
+	PubDate      time.Time     `gorm:"not null;index;default:now()"`
+	MediaContent *MediaContent `gorm:"type:jsonb"`
+	ThinkResult  *ThinkResult  `gorm:"type:jsonb"`
+	ThinkError   *string       `gorm:"type:text;null"`
+	ThinkRating  float64       `gorm:"not null;default:0.0"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.

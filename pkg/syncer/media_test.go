@@ -21,6 +21,7 @@ func TestTransformContent(t *testing.T) {
 				Width:  800,
 				Height: 450, // 800 * 9 / 16
 				Medium: "image",
+				Alt:    "Description | Credit Name",
 			},
 		},
 		{
@@ -41,6 +42,7 @@ func TestTransformContent(t *testing.T) {
 				Width:  1920, // Default
 				Height: 1080, // Default
 				Medium: "image",
+				Alt:    "Just Description",
 			},
 		},
 		{

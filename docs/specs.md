@@ -35,7 +35,7 @@ To serve valid RSS 2.0 documents instantly. It acts as the "Read Model" of the s
 
 #### A. The Feed Proxy
 ```bash
-GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
+GET /rss?url=${ENCODED_URL}&embedded=true&max_score=0.5
 ```
 **Behavior**:
 1.  **Resolution**: Map `url` to `uuid` using PostgreSQL `feeds` table.
@@ -48,13 +48,26 @@ GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
 
 #### B. The JSON Lookup
 ```bash
-GET /api/lookup?link=${ARTICLE_URL}
+GET /api/item?url=${ARTICLE_URL}
 ```
 **Behavior**:
 - Used to check if a specific article URL has already been deframed.
 - **Status Codes**:
-    - `200 OK`: Item found and deframed. Returns JSON object.
+    - `200 OK`: Single Item. Returns JSON object.
     - `404 Not Found`: Domain or Link unknown.
+
+```bash
+GET /api/site?root=${ROOT_DOMAIN}
+```
+**Behavior**:
+- Used to return a list of the most recent items we deframed for the site logic. This will be used by the Web Browser plugin to replace the portal page.
+- **Resolution**:
+    1.  Find all `feeds` where `feeds.root_domain == root`.
+    2.  Select items from these feeds.
+- **Logic**: Returns distinct items (by URL) using a "Fair Distribution" algorithm (interleaving items from different feeds) to prevent high-volume feeds from dominating.
+- **Status Codes**:
+    - `200 OK`: Returns JSON object.
+    - `404 Not Found`: Domain unknown.
 
 ---
 
@@ -153,6 +166,8 @@ This component is an abstraction layer over Large Language Models (LLMs).
 *Embeds `Base` (ID, CreatedAt, UpdatedAt, DeletedAt)*
 - `id`: UUID (PK, default `uuid_generate_v4()`)
 - `url`: String (**Indexed**)
+- `root_domain`: String (**Indexed**).
+  - *Logic*: Grouping identifier (e.g., `example.com`). Automatically populated from `url` on creation, or manually set via Admin.
 - `enforce_feed_domain`: Boolean (Default: `true`). Software enforcement flag).
 - `polling`: Boolean (Default: `false`).
   - *Logic*: Controls re-arming. If `true`, the worker schedules the next run after success. If `false`, the worker runs once and sets `next_run_at = NULL`.
@@ -230,6 +245,8 @@ A command-line interface for operators to manage the system state and feed confi
 **Usage**: `admin feed [command]`
 
 -   **`add`**: Registers a new Feed URL. Creates the `feed` and `feed_schedule` entries.
+    -   *Logic*: Automatically extracts the domain to populate `root_domain`.
+    -   *Flag*: `--no-root-domain` prevents this automatic extraction, leaving the field empty.
 -   **`delete`**: Soft-deletes a feed from Postgres.
 -   **`enable`**: Sets `feeds.enabled=true`.
     -   *Logic*: Allows the API to serve content and the Worker to pick up the feed (if scheduled). Does *not* automatically schedule a run.
@@ -237,9 +254,15 @@ A command-line interface for operators to manage the system state and feed confi
     -   *Logic*: Immediately stops the API from serving content. Prevents the Worker from picking up the feed (even if `next_run_at` is pending). Does not clear the schedule, but renders it inert.
 -   **`polling`**: Toggles `feeds.polling`.
     -   *Logic*: Controls re-arming. Enabling this ensures that *future* successful runs will schedule a follow-up run.
--   **`list`**: Displays a table of all feeds, including `enabled` status, `polling` status, `next_run_at`, and `last_error`.
+-   **`list`**: Displays a table of all feeds, including `enabled` status, `polling` status, `root_domain`, `next_run_at`, and `last_error`.
 -   **`sync` (Resurrection)**:
     -   Forces a feed to run immediately.
     -   **Pre-requisite**: **Fails** if `feeds.enabled` is `false` or `feeds.deleted_at` is set.
     -   **Action**: Sets `next_run_at = NOW()`, clears `last_error`, and clears `locked_until`.
     -   *Note*: If `polling` is false, this acts as a one-time fetch. If `polling` is true, this kickstarts the continuous cycle.
+
+**Usage**: `admin root-domain [command]`
+
+-   **`list`**: Displays a list of all unique `root_domain` values currently registered in the system.
+-   **`set`**: Manually sets the `root_domain` for a specific feed (by ID or URL).
+-   **`clear`**: Clears the `root_domain` for a specific feed (by ID or URL).    -   **`set`**: Manually sets the `root_domain` for a specific feed (by ID or URL).

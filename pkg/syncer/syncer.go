@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -218,6 +219,10 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 	res, err := s.think.Run(promptScope, language, req)
 
+	var thinkError *string
+	var mediaContent *database.MediaContent
+	var thinkRating float64
+
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			// worker is shutting down don't store this as an error
@@ -225,15 +230,20 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 			return
 		}
 		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
-		res = &database.ThinkResult{
-			Error: err.Error(),
+		errStr := err.Error()
+		thinkError = &errStr
+	} else {
+		err = s.updateContent(item, res)
+		if err != nil {
+			s.logger.Error("update content failed", "error", err)
+			return
 		}
-	}
-
-	err = s.updateContent(item, res)
-	if err != nil {
-		s.logger.Error("update content failed", "error", err)
-		return
+		mediaContent, err = s.extractMediaContent(item)
+		if err != nil {
+			s.logger.Error("extract media content failed", "error", err)
+		}
+		thinkRating = calculateHybrid(res, 0.7)
+		applyFancyRatingText(item, res, thinkRating, language)
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -248,12 +258,15 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 
 	dbItem := &database.Item{
-		Hash:        hash,
-		FeedID:      feed.ID,
-		URL:         item.Link,
-		ThinkResult: res,
-		Content:     content,
-		PubDate:     pubDate,
+		Hash:         hash,
+		FeedID:       feed.ID,
+		URL:          item.Link,
+		Content:      content,
+		PubDate:      pubDate,
+		ThinkResult:  res,
+		MediaContent: mediaContent,
+		ThinkError:   thinkError,
+		ThinkRating:  thinkRating,
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)
@@ -268,10 +281,6 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 		return nil
 	}
 
-	if res.Error != "" {
-		return nil
-	}
-
 	// save the original title
 	res.TitleOriginal = item.Title
 	res.DescriptionOriginal = item.Description
@@ -279,11 +288,6 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 	// correct the title
 	item.Title = res.TitleCorrected
 	item.Description = res.DescriptionCorrected
-
-	stars := createStarRating(res)
-
-	// Prepend the overall rating to the title
-	item.Title = fmt.Sprintf("%s %s", stars.Overall, item.Title)
 
 	// Add the reason
 	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
@@ -321,14 +325,119 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 				Name:  "content",
 				Attrs: attrs,
 			}}
-			// item.Extensions["media"]["description"] = []ext.Extension{{
-			// 	Name:  "description",
-			// 	Value: item.Description,
-			// }}
+
+			if len(mediaData.Alt) > 0 {
+				item.Extensions["media"]["description"] = []ext.Extension{{
+					Name:  "description",
+					Value: mediaData.Alt,
+				}}
+			}
+		}
+	}
+
+	if item.Extensions != nil {
+		if mediaExt, ok := item.Extensions["media"]; ok {
+			if _, hasGroup := mediaExt["group"]; hasGroup {
+				delete(mediaExt, "group")
+				s.logger.Info("removed media:group tag", "url", item.Link)
+			}
 		}
 	}
 
 	return nil
+}
+
+func (s *Syncer) extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
+	if item == nil || item.Extensions == nil {
+		return nil, nil
+	}
+
+	mediaExt, ok := item.Extensions["media"]
+	if !ok {
+		return nil, nil
+	}
+
+	// Find media:content
+	var contentExt *ext.Extension
+	if contents, ok := mediaExt["content"]; ok {
+		for _, c := range contents {
+			if c.Attrs["url"] != "" {
+				val := c
+				contentExt = &val
+				break
+			}
+		}
+	}
+
+	if contentExt == nil {
+		return nil, nil
+	}
+
+	mc := &database.MediaContent{
+		URL:    contentExt.Attrs["url"],
+		Type:   contentExt.Attrs["type"],
+		Medium: contentExt.Attrs["medium"],
+	}
+
+	// Dimensions
+	w, _ := strconv.Atoi(contentExt.Attrs["width"])
+	h, _ := strconv.Atoi(contentExt.Attrs["height"])
+
+	if w == 0 || h == 0 {
+		w, h = parseDimensions(mc.URL)
+	}
+	mc.Width = w
+	mc.Height = h
+
+	// Metadata (Title/Description)
+	// Check children first
+	if titles, ok := contentExt.Children["title"]; ok && len(titles) > 0 {
+		mc.Title = titles[0].Value
+	}
+	if descs, ok := contentExt.Children["description"]; ok && len(descs) > 0 {
+		mc.Description = descs[0].Value
+	}
+	if credits, ok := contentExt.Children["credit"]; ok && len(credits) > 0 {
+		mc.Credit = credits[0].Value
+	}
+
+	// Fallback to group/item level tags
+	if mc.Title == "" {
+		if titles, ok := mediaExt["title"]; ok && len(titles) > 0 {
+			mc.Title = titles[0].Value
+		}
+	}
+	if mc.Description == "" {
+		if descs, ok := mediaExt["description"]; ok && len(descs) > 0 {
+			mc.Description = descs[0].Value
+		}
+	}
+	if mc.Credit == "" {
+		if credits, ok := mediaExt["credit"]; ok && len(credits) > 0 {
+			mc.Credit = credits[0].Value
+		}
+	}
+
+	// Thumbnail
+	if thumbs, ok := mediaExt["thumbnail"]; ok && len(thumbs) > 0 {
+		tExt := thumbs[0]
+		if tURL := tExt.Attrs["url"]; tURL != "" {
+			mt := &database.MediaThumbnail{
+				URL: tURL,
+			}
+			tw, _ := strconv.Atoi(tExt.Attrs["width"])
+			th, _ := strconv.Atoi(tExt.Attrs["height"])
+
+			if tw == 0 || th == 0 {
+				tw, th = parseDimensions(tURL)
+			}
+			mt.Width = tw
+			mt.Height = th
+			mc.Thumbnail = mt
+		}
+	}
+
+	return mc, nil
 }
 
 func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {
@@ -362,15 +471,13 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 
 		current := pf.Items[0]
 
-		if item.ThinkResult != nil {
+		if item.ThinkResult != nil && item.ThinkError == nil {
 			res := *item.ThinkResult
-			if res.Error == "" {
-				var m map[string]interface{}
-				b, _ := json.Marshal(res)
-				_ = json.Unmarshal(b, &m)
-				for k, v := range m {
-					feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
-				}
+			var m map[string]interface{}
+			b, _ := json.Marshal(res)
+			_ = json.Unmarshal(b, &m)
+			for k, v := range m {
+				feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
 			}
 		}
 
