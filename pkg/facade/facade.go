@@ -26,6 +26,7 @@ type ItemForRootDomain struct {
 	URL  string `json:"url"`
 	database.ThinkResult
 	MediaContent *database.MediaContent `json:"media,omitempty"`
+	ThinkRating  float64                `json:"rating"`
 }
 
 type Facade interface {
@@ -99,6 +100,7 @@ func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string) (
 			Hash:         dbItem.Hash,
 			URL:          dbItem.URL,
 			MediaContent: dbItem.MediaContent,
+			ThinkRating:  dbItem.ThinkRating,
 		}
 		if dbItem.ThinkResult != nil {
 			item.ThinkResult = *dbItem.ThinkResult

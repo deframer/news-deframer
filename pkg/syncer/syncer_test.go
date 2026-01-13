@@ -370,7 +370,7 @@ func TestUpdateContent(t *testing.T) {
 				TitleCorrected:       "Corrected Title",
 				DescriptionCorrected: "Corrected Description",
 			},
-			expectedTitle:       "★★★★★ Corrected Title",
+			expectedTitle:       "Corrected Title",
 			expectedDescription: "Corrected Description<br/><br/>",
 			expectedContent:     "",
 			checkExtensions:     false,
@@ -392,7 +392,7 @@ func TestUpdateContent(t *testing.T) {
 				HyperStimulus:        1.0,
 				Speculative:          1.0,
 			},
-			expectedTitle:       "☆☆☆☆☆ Corrected Foobar",
+			expectedTitle:       "Corrected Foobar",
 			expectedDescription: "Corrected Short desc<br/><br/>Analysis",
 			expectedContent:     "",
 			checkExtensions:     true,
@@ -505,29 +505,6 @@ func TestWantedDomains(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, tt.expected, domains)
 			}
-		})
-	}
-}
-
-func TestToStars(t *testing.T) {
-	tests := []struct {
-		score    float64
-		expected string
-	}{
-		{0.0, "★★★★★"}, // Best
-		{0.1, "★★★★★"}, // 4.5 -> 5 (rounded up? logic: (1-0.1)*5 = 4.5 -> 5)
-		{0.2, "★★★★☆"}, // 4.0
-		{0.3, "★★★★☆"}, // 3.5 -> 4
-		{0.4, "★★★☆☆"}, // 3.0
-		{0.5, "★★★☆☆"}, // 2.5 -> 3
-		{0.6, "★★☆☆☆"}, // 2.0
-		{0.8, "★☆☆☆☆"}, // 1.0
-		{1.0, "☆☆☆☆☆"}, // Worst
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.expected, func(t *testing.T) {
-			assert.Equal(t, tt.expected, scoreToStars(tt.score), ": %f", tt.score)
 		})
 	}
 }

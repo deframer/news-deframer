@@ -221,6 +221,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 
 	var thinkError *string
 	var mediaContent *database.MediaContent
+	var thinkRating float64
 
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -241,6 +242,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		if err != nil {
 			s.logger.Error("extract media content failed", "error", err)
 		}
+		thinkRating = CalculateHybrid(res, 0.7)
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -263,6 +265,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		ThinkResult:  res,
 		MediaContent: mediaContent,
 		ThinkError:   thinkError,
+		ThinkRating:  thinkRating,
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)
@@ -284,11 +287,6 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 	// correct the title
 	item.Title = res.TitleCorrected
 	item.Description = res.DescriptionCorrected
-
-	stars := createStarRating(res)
-
-	// Prepend the overall rating to the title
-	item.Title = fmt.Sprintf("%s %s", stars.Overall, item.Title)
 
 	// Add the reason
 	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)

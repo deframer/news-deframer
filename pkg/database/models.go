@@ -154,9 +154,10 @@ type Item struct {
 	URL          string        `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
 	Content      string        `gorm:"type:text;not null"`
 	PubDate      time.Time     `gorm:"not null;index;default:now()"`
-	ThinkResult  *ThinkResult  `gorm:"type:jsonb"`
 	MediaContent *MediaContent `gorm:"type:jsonb"`
+	ThinkResult  *ThinkResult  `gorm:"type:jsonb"`
 	ThinkError   *string       `gorm:"type:text;null"`
+	ThinkRating  float64       `gorm:"not null;default:0.0"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.

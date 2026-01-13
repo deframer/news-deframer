@@ -373,6 +373,7 @@ func TestUpsertItem(t *testing.T) {
 			URL:         "http://item-new",
 			Content:     "content",
 			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
+			ThinkRating: 0.5,
 		}
 
 		err := repo.UpsertItem(item)
@@ -382,6 +383,10 @@ func TestUpsertItem(t *testing.T) {
 		var count int64
 		tx.Model(&Item{}).Where("id = ?", item.ID).Count(&count)
 		assert.Equal(t, int64(1), count)
+
+		var stored Item
+		tx.First(&stored, item.ID)
+		assert.Equal(t, 0.5, stored.ThinkRating)
 	})
 
 	t.Run("UpdateExisting_ByHash", func(t *testing.T) {
@@ -399,6 +404,7 @@ func TestUpsertItem(t *testing.T) {
 			URL:         "http://item-update",
 			Content:     "content-old",
 			ThinkResult: &ThinkResult{Framing: 0.1},
+			ThinkRating: 0.1,
 		}
 		assert.NoError(t, tx.Create(&existing).Error)
 
@@ -412,6 +418,7 @@ func TestUpsertItem(t *testing.T) {
 			URL:         "http://item-update",
 			Content:     "content-new",
 			ThinkResult: &ThinkResult{Framing: 0.2},
+			ThinkRating: 0.2,
 		}
 
 		err := repo.UpsertItem(update)
@@ -423,6 +430,7 @@ func TestUpsertItem(t *testing.T) {
 		assert.Equal(t, "content-new", stored.Content)
 		// Verify JSONB update
 		assert.Equal(t, 0.2, stored.ThinkResult.Framing)
+		assert.Equal(t, 0.2, stored.ThinkRating)
 
 		// Verify timestamps
 		assert.Equal(t, existing.CreatedAt.UTC(), stored.CreatedAt.UTC(), "CreatedAt should be preserved")
@@ -598,6 +606,7 @@ func TestFindItemsByRootDomain(t *testing.T) {
 			Content:     "c1",
 			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
 			PubDate:     time.Now(),
+			ThinkRating: 0.8,
 		}
 		assert.NoError(t, tx.Create(&item1).Error)
 
@@ -613,6 +622,7 @@ func TestFindItemsByRootDomain(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Len(t, items, 1)
 		assert.Equal(t, h1, items[0].Hash)
+		assert.Equal(t, 0.8, items[0].ThinkRating)
 	})
 }
 

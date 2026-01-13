@@ -226,6 +226,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 				MediaContent: &database.MediaContent{
 					URL: "http://example.com/img1.jpg",
 				},
+				ThinkRating: 0.5,
 			},
 			{
 				Hash: "hash2",
@@ -253,12 +254,14 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		assert.Equal(t, "http://example.com/1", items[0].URL)
 		assert.Equal(t, "Corrected Title 1", items[0].TitleCorrected)
 		assert.Equal(t, "http://example.com/img1.jpg", items[0].MediaContent.URL)
+		assert.Equal(t, 0.5, items[0].ThinkRating)
 
 		// Verify Item 2
 		assert.Equal(t, "hash2", items[1].Hash)
 		assert.Equal(t, "http://example.com/2", items[1].URL)
 		assert.Empty(t, items[1].TitleCorrected)
 		assert.Nil(t, items[1].MediaContent)
+		assert.Equal(t, 0.0, items[1].ThinkRating)
 	})
 
 	t.Run("RepoError", func(t *testing.T) {
