@@ -1,4 +1,8 @@
 ---
+
+#
+# this is currently (semi) broken - the AI runs are not load balanced - single server / single worker works
+#
 services:
   service:
     build:

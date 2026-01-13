@@ -15,6 +15,7 @@ type LLMType int
 const (
 	Dummy LLMType = iota
 	Gemini
+	OpenAI
 )
 
 func (t *LLMType) UnmarshalText(text []byte) error {
@@ -23,6 +24,8 @@ func (t *LLMType) UnmarshalText(text []byte) error {
 		*t = Dummy
 	case "gemini":
 		*t = Gemini
+	case "openai":
+		*t = OpenAI
 	default:
 		return fmt.Errorf("unknown LLM type: %s", string(text))
 	}

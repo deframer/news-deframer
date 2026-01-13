@@ -25,7 +25,6 @@ services:
     volumes:
       - data:/var/www/FreshRSS/data
       - extensions:/var/www/FreshRSS/extensions
-      - ./import.opml:/opt/import.opml
       # Optional file providing custom global settings (used before a FreshRSS install)
       #- ./config.custom.php:/var/www/FreshRSS/data/config.custom.php
       # Optional file providing custom user settings (used before a new user is created)
