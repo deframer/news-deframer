@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -219,6 +220,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	res, err := s.think.Run(promptScope, language, req)
 
 	var thinkError *string
+	var mediaContent *database.MediaContent
 
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -235,6 +237,10 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 			s.logger.Error("update content failed", "error", err)
 			return
 		}
+		mediaContent, err = s.extractMediaContent(item)
+		if err != nil {
+			s.logger.Error("extract media content failed", "error", err)
+		}
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -249,13 +255,14 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 
 	dbItem := &database.Item{
-		Hash:        hash,
-		FeedID:      feed.ID,
-		URL:         item.Link,
-		ThinkResult: res,
-		Content:     content,
-		PubDate:     pubDate,
-		ThinkError:  thinkError,
+		Hash:         hash,
+		FeedID:       feed.ID,
+		URL:          item.Link,
+		Content:      content,
+		PubDate:      pubDate,
+		ThinkResult:  res,
+		MediaContent: mediaContent,
+		ThinkError:   thinkError,
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)
@@ -319,14 +326,119 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 				Name:  "content",
 				Attrs: attrs,
 			}}
-			// item.Extensions["media"]["description"] = []ext.Extension{{
-			// 	Name:  "description",
-			// 	Value: item.Description,
-			// }}
+
+			if len(mediaData.Alt) > 0 {
+				item.Extensions["media"]["description"] = []ext.Extension{{
+					Name:  "description",
+					Value: mediaData.Alt,
+				}}
+			}
+		}
+	}
+
+	if item.Extensions != nil {
+		if mediaExt, ok := item.Extensions["media"]; ok {
+			if _, hasGroup := mediaExt["group"]; hasGroup {
+				delete(mediaExt, "group")
+				s.logger.Info("removed media:group tag", "url", item.Link)
+			}
 		}
 	}
 
 	return nil
+}
+
+func (s *Syncer) extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
+	if item == nil || item.Extensions == nil {
+		return nil, nil
+	}
+
+	mediaExt, ok := item.Extensions["media"]
+	if !ok {
+		return nil, nil
+	}
+
+	// Find media:content
+	var contentExt *ext.Extension
+	if contents, ok := mediaExt["content"]; ok {
+		for _, c := range contents {
+			if c.Attrs["url"] != "" {
+				val := c
+				contentExt = &val
+				break
+			}
+		}
+	}
+
+	if contentExt == nil {
+		return nil, nil
+	}
+
+	mc := &database.MediaContent{
+		URL:    contentExt.Attrs["url"],
+		Type:   contentExt.Attrs["type"],
+		Medium: contentExt.Attrs["medium"],
+	}
+
+	// Dimensions
+	w, _ := strconv.Atoi(contentExt.Attrs["width"])
+	h, _ := strconv.Atoi(contentExt.Attrs["height"])
+
+	if w == 0 || h == 0 {
+		w, h = parseDimensions(mc.URL)
+	}
+	mc.Width = w
+	mc.Height = h
+
+	// Metadata (Title/Description)
+	// Check children first
+	if titles, ok := contentExt.Children["title"]; ok && len(titles) > 0 {
+		mc.Title = titles[0].Value
+	}
+	if descs, ok := contentExt.Children["description"]; ok && len(descs) > 0 {
+		mc.Description = descs[0].Value
+	}
+	if credits, ok := contentExt.Children["credit"]; ok && len(credits) > 0 {
+		mc.Credit = credits[0].Value
+	}
+
+	// Fallback to group/item level tags
+	if mc.Title == "" {
+		if titles, ok := mediaExt["title"]; ok && len(titles) > 0 {
+			mc.Title = titles[0].Value
+		}
+	}
+	if mc.Description == "" {
+		if descs, ok := mediaExt["description"]; ok && len(descs) > 0 {
+			mc.Description = descs[0].Value
+		}
+	}
+	if mc.Credit == "" {
+		if credits, ok := mediaExt["credit"]; ok && len(credits) > 0 {
+			mc.Credit = credits[0].Value
+		}
+	}
+
+	// Thumbnail
+	if thumbs, ok := mediaExt["thumbnail"]; ok && len(thumbs) > 0 {
+		tExt := thumbs[0]
+		if tURL := tExt.Attrs["url"]; tURL != "" {
+			mt := &database.MediaThumbnail{
+				URL: tURL,
+			}
+			tw, _ := strconv.Atoi(tExt.Attrs["width"])
+			th, _ := strconv.Atoi(tExt.Attrs["height"])
+
+			if tw == 0 || th == 0 {
+				tw, th = parseDimensions(tURL)
+			}
+			mt.Width = tw
+			mt.Height = th
+			mc.Thumbnail = mt
+		}
+	}
+
+	return mc, nil
 }
 
 func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {

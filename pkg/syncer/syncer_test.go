@@ -12,6 +12,7 @@ import (
 	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
+	ext "github.com/mmcdole/gofeed/extensions"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -170,6 +171,177 @@ func TestSyncFeedInternal(t *testing.T) {
 					assert.NoError(t, err)
 				}
 			}
+		})
+	}
+}
+
+func TestExtractMediaContent(t *testing.T) {
+	s := &Syncer{logger: slog.Default()}
+
+	tests := []struct {
+		name     string
+		item     *gofeed.Item
+		expected *database.MediaContent
+	}{
+		{
+			name:     "No Extensions",
+			item:     &gofeed.Item{},
+			expected: nil,
+		},
+		{
+			name: "Full Media Content",
+			item: &gofeed.Item{
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"content": {{
+							Name: "content",
+							Attrs: map[string]string{
+								"url":    "http://example.com/video.mp4",
+								"type":   "video/mp4",
+								"medium": "video",
+								"width":  "1920",
+								"height": "1080",
+							},
+							Children: map[string][]ext.Extension{
+								"title":  {{Name: "title", Value: "Video Title"}},
+								"credit": {{Name: "credit", Value: "Getty Images"}},
+							},
+						}},
+						"thumbnail": {{
+							Name: "thumbnail",
+							Attrs: map[string]string{
+								"url":    "http://example.com/thumb.jpg",
+								"width":  "300",
+								"height": "200",
+							},
+						}},
+					},
+				},
+			},
+			expected: &database.MediaContent{
+				URL:    "http://example.com/video.mp4",
+				Type:   "video/mp4",
+				Medium: "video",
+				Width:  1920,
+				Height: 1080,
+				Title:  "Video Title",
+				Credit: "Getty Images",
+				Thumbnail: &database.MediaThumbnail{
+					URL:    "http://example.com/thumb.jpg",
+					Width:  300,
+					Height: 200,
+				},
+			},
+		},
+		{
+			name: "Item Level Credit",
+			item: &gofeed.Item{
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"content": {{
+							Name: "content",
+							Attrs: map[string]string{
+								"url":    "http://example.com/image.jpg",
+								"type":   "image/jpeg",
+								"medium": "image",
+							},
+						}},
+						"credit": {{Name: "credit", Value: "AP Photo"}},
+					},
+				},
+			},
+			expected: &database.MediaContent{
+				URL:    "http://example.com/image.jpg",
+				Type:   "image/jpeg",
+				Medium: "image",
+				Width:  1920,
+				Height: 1080,
+				Credit: "AP Photo",
+			},
+		},
+		{
+			name: "Image No Thumbnail",
+			item: &gofeed.Item{
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"content": {{
+							Name: "content",
+							Attrs: map[string]string{
+								"url":    "http://example.com/image.jpg",
+								"type":   "image/jpeg",
+								"medium": "image",
+								"width":  "1920",
+								"height": "1080",
+							},
+						}},
+					},
+				},
+			},
+			expected: &database.MediaContent{
+				URL:    "http://example.com/image.jpg",
+				Type:   "image/jpeg",
+				Medium: "image",
+				Width:  1920,
+				Height: 1080,
+			},
+		},
+		{
+			name: "Missing Dimensions (Defaults)",
+			item: &gofeed.Item{
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"content": {{
+							Name: "content",
+							Attrs: map[string]string{
+								"url":    "http://example.com/image.jpg",
+								"type":   "image/jpeg",
+								"medium": "image",
+							},
+						}},
+					},
+				},
+			},
+			expected: &database.MediaContent{
+				URL:    "http://example.com/image.jpg",
+				Type:   "image/jpeg",
+				Medium: "image",
+				Width:  1920,
+				Height: 1080,
+			},
+		},
+		{
+			name: "Partial Dimensions (Recalculate from URL)",
+			item: &gofeed.Item{
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"content": {{
+							Name: "content",
+							Attrs: map[string]string{
+								"url":    "http://example.com/image.jpg?width=800",
+								"type":   "image/jpeg",
+								"medium": "image",
+								"width":  "800",
+								// height missing
+							},
+						}},
+					},
+				},
+			},
+			expected: &database.MediaContent{
+				URL:    "http://example.com/image.jpg?width=800",
+				Type:   "image/jpeg",
+				Medium: "image",
+				Width:  800,
+				Height: 450, // 800 * 9 / 16
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := s.extractMediaContent(tt.item)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, got)
 		})
 	}
 }

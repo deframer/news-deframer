@@ -25,6 +25,7 @@ type ItemForRootDomain struct {
 	Hash string `json:"hash"`
 	URL  string `json:"url"`
 	database.ThinkResult
+	MediaContent *database.MediaContent `json:"media,omitempty"`
 }
 
 type Facade interface {
@@ -95,8 +96,9 @@ func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string) (
 	items := make([]ItemForRootDomain, 0, len(dbItems))
 	for _, dbItem := range dbItems {
 		item := ItemForRootDomain{
-			Hash: dbItem.Hash,
-			URL:  dbItem.URL,
+			Hash:         dbItem.Hash,
+			URL:          dbItem.URL,
+			MediaContent: dbItem.MediaContent,
 		}
 		if dbItem.ThinkResult != nil {
 			item.ThinkResult = *dbItem.ThinkResult

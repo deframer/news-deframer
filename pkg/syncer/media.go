@@ -14,6 +14,7 @@ type MediaData struct {
 	Width  int
 	Height int
 	Medium string
+	Alt    string
 }
 
 func transformContent(content string) (MediaData, error) {
@@ -35,10 +36,13 @@ func transformContent(content string) (MediaData, error) {
 		// 1. Extract Info from Image Tag
 		if n.Type == html.ElementNode && n.Data == "img" {
 			for _, a := range n.Attr {
-				if a.Key == "src" {
+				switch a.Key {
+				case "src":
 					data.URL = a.Val
 					// Extract width from URL query params
 					data.Width, data.Height = parseDimensions(a.Val)
+				case "alt":
+					data.Alt = a.Val
 				}
 			}
 		}

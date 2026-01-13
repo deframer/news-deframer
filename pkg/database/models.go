@@ -101,18 +101,62 @@ func (j *ThinkResult) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, j)
 }
 
+type MediaThumbnail struct {
+	URL    string `xml:"url,attr" json:"url,omitempty"`
+	Height int    `xml:"height,attr" json:"height,omitempty"`
+	Width  int    `xml:"width,attr" json:"width,omitempty"`
+}
+
+type MediaContent struct {
+	// Technical attributes required for <img src> or <video src>
+	URL    string `xml:"url,attr" json:"url,omitempty"`
+	Type   string `xml:"type,attr" json:"type,omitempty"`     // e.g., "image/jpeg"
+	Medium string `xml:"medium,attr" json:"medium,omitempty"` // e.g., "image" or "video"
+
+	// Dimensions are essential for preventing HTML Layout Shift (CLS)
+	Height int `xml:"height,attr" json:"height,omitempty"`
+	Width  int `xml:"width,attr" json:"width,omitempty"`
+
+	// Descriptive text used for HTML 'alt' attributes and captions
+	Title       string `xml:"title" json:"title,omitempty"`
+	Description string `xml:"description" json:"description,omitempty"`
+
+	// Essential for Video: Used for the <video poster="..."> attribute
+	// We use a pointer so it is nil if no thumbnail exists
+	Thumbnail *MediaThumbnail `xml:"thumbnail" json:"thumbnail,omitempty"`
+
+	// Optional Copyright for the content
+	Credit string `xml:"credit" json:"credit,omitempty"`
+}
+
+func (j MediaContent) Value() (driver.Value, error) {
+	return json.Marshal(j)
+}
+
+func (j *MediaContent) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, j)
+}
+
 type Item struct {
-	ID          uuid.UUID    `gorm:"primaryKey;type:uuid"`
-	CreatedAt   time.Time    `gorm:"not null;default:now()"`
-	UpdatedAt   time.Time    `gorm:"not null;default:now()"`
-	Hash        string       `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	FeedID      uuid.UUID    `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	Feed        Feed         `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	URL         string       `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
-	ThinkResult *ThinkResult `gorm:"type:jsonb"`
-	Content     string       `gorm:"type:text;not null"`
-	PubDate     time.Time    `gorm:"not null;index;default:now()"`
-	ThinkError  *string      `gorm:"type:text;null"`
+	ID           uuid.UUID     `gorm:"primaryKey;type:uuid"`
+	CreatedAt    time.Time     `gorm:"not null;default:now()"`
+	UpdatedAt    time.Time     `gorm:"not null;default:now()"`
+	Hash         string        `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	FeedID       uuid.UUID     `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	Feed         Feed          `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	URL          string        `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	Content      string        `gorm:"type:text;not null"`
+	PubDate      time.Time     `gorm:"not null;index;default:now()"`
+	ThinkResult  *ThinkResult  `gorm:"type:jsonb"`
+	MediaContent *MediaContent `gorm:"type:jsonb"`
+	ThinkError   *string       `gorm:"type:text;null"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.
