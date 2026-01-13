@@ -242,7 +242,8 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		if err != nil {
 			s.logger.Error("extract media content failed", "error", err)
 		}
-		thinkRating = CalculateHybrid(res, 0.7)
+		thinkRating = calculateHybrid(res, 0.7)
+		applyFancyRatingText(item, res, thinkRating, language)
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)

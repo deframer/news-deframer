@@ -1,0 +1,9 @@
+
+<br/>
+<table style="border-spacing: 5px;">
+    <tr><td>Clickbait</td><td>{{.Stars.Clickbait}}</td><td>{{.Result.ClickbaitReason}}</td></tr>
+    <tr><td>Framing</td><td>{{.Stars.Framing}}</td><td>{{.Result.FramingReason}}</td></tr>
+    <tr><td>Persuasive</td><td>{{.Stars.PersuasiveIntent}}</td><td>{{.Result.PersuasiveReason}}</td></tr>
+    <tr><td>Hyperstimulus</td><td>{{.Stars.HyperStimulus}}</td><td>{{.Result.HyperStimulusReason}}</td></tr>
+    <tr><td>Speculative</td><td>{{.Stars.SpeculativeContent}}</td><td>{{.Result.SpeculativeReason}}</td></tr>
+</table>
