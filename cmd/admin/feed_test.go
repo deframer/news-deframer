@@ -77,7 +77,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 1. Create Feed
 	out := captureOutput(func() {
-		addFeed(testURL, true, false)
+		addFeed(testURL, true, false, false)
 	})
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)
@@ -99,6 +99,8 @@ func TestFeedCommands(t *testing.T) {
 	assert.Equal(t, testURL, feeds[0].URL)
 	assert.True(t, feeds[0].Enabled)
 	assert.NotNil(t, feeds[0].FeedSchedule)
+	assert.NotNil(t, feeds[0].RootDomain)
+	assert.Equal(t, "example.com", *feeds[0].RootDomain)
 
 	// 4. Disable Feed (Should Remove Schedule)
 	out = captureOutput(func() {
@@ -179,7 +181,7 @@ func TestFeedCommands(t *testing.T) {
 	// 14. Test Enable with Polling triggers Sync
 	testURL2 := "http://example.com/rss2"
 	captureOutput(func() {
-		addFeed(testURL2, false, true) // Add disabled feed with polling=true
+		addFeed(testURL2, false, true, false) // Add disabled feed with polling=true
 	})
 
 	out = captureOutput(func() {
@@ -196,6 +198,49 @@ func TestFeedCommands(t *testing.T) {
 	assert.Len(t, feeds, 1)
 	assert.Equal(t, testURL2, feeds[0].URL)
 	assert.NotNil(t, feeds[0].FeedSchedule)
+
+	// 15. Test --no-root-domain
+	testURL3 := "http://no-root.com/rss"
+	captureOutput(func() {
+		addFeed(testURL3, true, false, true)
+	})
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundNoRoot *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL3 {
+			foundNoRoot = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundNoRoot)
+	assert.Nil(t, foundNoRoot.RootDomain)
+
+	// 16. Test Root Domain Extraction (Subdomain)
+	testURL4 := "http://blog.example.co.uk/rss"
+	captureOutput(func() {
+		addFeed(testURL4, true, false, false)
+	})
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundSub *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL4 {
+			foundSub = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundSub)
+	assert.NotNil(t, foundSub.RootDomain)
+	assert.Equal(t, "example.co.uk", *foundSub.RootDomain)
 }
 
 // --- Mock Repository ---

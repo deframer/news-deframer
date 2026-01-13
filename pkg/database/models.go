@@ -29,7 +29,8 @@ func (base *Base) BeforeCreate(tx *gorm.DB) error {
 
 type Feed struct {
 	Base
-	URL               string        `gorm:"index"`
+	URL               string        `gorm:"index"`                 // we can't enforce uniqueness here (because of the soft deletes)
+	RootDomain        *string       `gorm:"index"`                 // example.com
 	EnforceFeedDomain bool          `gorm:"not null;default:true"` // item url must be from our URL
 	Enabled           bool          `gorm:"not null;default:false;index"`
 	Polling           bool          `gorm:"not null;default:false"`

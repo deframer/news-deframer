@@ -43,7 +43,7 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.HandleFunc("/rss", s.handleRSSProxy)
 
 	mux.HandleFunc("/api/item", s.handleItem)
-	mux.HandleFunc("/api/lookup", s.handleSite)
+	mux.HandleFunc("/api/site", s.handleSite)
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -151,30 +151,25 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	reqURL := strings.TrimSuffix(q.Get("url"), "/")
+	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
 
-	if reqURL == "" {
-		http.Error(w, "missing url", http.StatusBadRequest)
+	if rootDomain == "" {
+		http.Error(w, "missing root", http.StatusBadRequest)
 		return
 	}
 
-	u, err := url.ParseRequestURI(reqURL)
-	if err != nil {
-		s.logger.Debug("invalid url", "error", err)
-		http.Error(w, "invalid url", http.StatusBadRequest)
-		return
-	}
+	items := "xx"
 
-	items, err := s.facade.GetItems(r.Context(), u)
-	if err != nil || len(items) == 0 {
-		if err != nil {
-			s.logger.Error("GetItems failed", "error", err)
-		} else {
-			s.logger.Debug("no items found", "url", reqURL)
-		}
-		http.Error(w, "not found", http.StatusNotFound)
-		return
-	}
+	// items, err := s.facade.GetItems(r.Context(), u)
+	// if err != nil || len(items) == 0 {
+	// 	if err != nil {
+	// 		s.logger.Error("GetItems failed", "error", err)
+	// 	} else {
+	// 		s.logger.Debug("no items found", "url", rootDomain)
+	// 	}
+	// 	http.Error(w, "not found", http.StatusNotFound)
+	// 	return
+	// }
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {

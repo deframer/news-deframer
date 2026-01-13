@@ -12,17 +12,19 @@ import (
 
 	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/egandro/news-deframer/pkg/syncer"
+	"github.com/egandro/news-deframer/pkg/util/netutil"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
 var (
-	jsonOutput  bool
-	showDeleted bool
-	feedEnabled bool
-	polling     bool
-	repo        database.Repository
-	feedSyncer  *syncer.Syncer
+	jsonOutput   bool
+	showDeleted  bool
+	feedEnabled  bool
+	polling      bool
+	noRootDomain bool
+	repo         database.Repository
+	feedSyncer   *syncer.Syncer
 )
 
 func init() {
@@ -36,6 +38,7 @@ func init() {
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
 	addCmd.Flags().BoolVar(&polling, "polling", false, "Enable polling")
+	addCmd.Flags().BoolVar(&noRootDomain, "no-root-domain", false, "Do not automatically populate root_domain")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 	listCmd.Flags().BoolVar(&showDeleted, "deleted", false, "Show deleted feeds")
 
@@ -68,7 +71,7 @@ var addCmd = &cobra.Command{
 	Short: "Add a new feed URL",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		addFeed(args[0], feedEnabled, polling)
+		addFeed(args[0], feedEnabled, polling, noRootDomain)
 	},
 }
 
@@ -143,7 +146,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tID\tURL\tEnforceDomain\tUpdated\tSync Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -165,7 +168,13 @@ func listFeeds(asJson bool, showDeleted bool) {
 				state = "Next: " + f.FeedSchedule.NextRunAt.Format("2006-01-02 15:04")
 			}
 		}
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.ID, f.URL, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
+
+		rootDomain := "-"
+		if f.RootDomain != nil {
+			rootDomain = *f.RootDomain
+		}
+
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
@@ -176,7 +185,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 }
 
-func addFeed(feedUrl string, enabled bool, polling bool) {
+func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool) {
 	u, err := parseAndNormalizeURL(feedUrl)
 
 	if err != nil {
@@ -195,8 +204,15 @@ func addFeed(feedUrl string, enabled bool, polling bool) {
 		os.Exit(1)
 	}
 
+	var rootDomain *string
+	if !noRootDomain {
+		d := netutil.GetRootDomain(u)
+		rootDomain = &d
+	}
+
 	newFeed := &database.Feed{
 		URL:               u.String(),
+		RootDomain:        rootDomain,
 		Enabled:           enabled,
 		EnforceFeedDomain: true,
 		Polling:           polling,
@@ -213,7 +229,12 @@ func addFeed(feedUrl string, enabled bool, polling bool) {
 		}
 	}
 
-	fmt.Printf("Added feed for url=%s with id=%s enabled=%v polling=%v\n", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling)
+	rootDomainStr := "<nil>"
+	if newFeed.RootDomain != nil {
+		rootDomainStr = *newFeed.RootDomain
+	}
+
+	fmt.Printf("Added feed for url=%s with id=%s enabled=%v polling=%v root_domain=%s\n", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling, rootDomainStr)
 }
 
 func resolveFeed(input string, onlyEnabled bool) *database.Feed {
@@ -258,13 +279,13 @@ func resolveFeed(input string, onlyEnabled bool) *database.Feed {
 func deleteFeed(input string) {
 	feed := resolveFeed(input, true)
 
+	if err := feedSyncer.StopPolling(feed.ID); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: Failed to stop polling: %v\n", err)
+	}
+
 	if err := repo.DeleteFeedById(feed.ID); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to delete feed: %v\n", err)
 		os.Exit(1)
-	}
-
-	if err := feedSyncer.StopPolling(feed.ID); err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: Failed to stop polling: %v\n", err)
 	}
 
 	fmt.Printf("Deleted feed for url=%s with id=%s\n", feed.URL, feed.ID)

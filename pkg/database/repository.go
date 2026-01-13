@@ -102,7 +102,26 @@ func (r *repository) FindFeedById(feedID uuid.UUID) (*Feed, error) {
 }
 
 func (r *repository) UpsertFeed(feed *Feed) error {
-	return r.db.Save(feed).Error
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var count int64
+		// Check for existing active feed with same URL
+		// GORM automatically adds `deleted_at IS NULL` for models with DeletedAt
+		query := tx.Model(&Feed{}).Where("url = ?", feed.URL)
+
+		if feed.ID != uuid.Nil {
+			query = query.Where("id != ?", feed.ID)
+		}
+
+		if err := query.Count(&count).Error; err != nil {
+			return err
+		}
+
+		if count > 0 {
+			return fmt.Errorf("feed with url %q already exists", feed.URL)
+		}
+
+		return tx.Save(feed).Error
+	})
 }
 
 func (r *repository) UpsertItem(item *Item) error {

@@ -300,6 +300,55 @@ func TestUpsertFeed(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, foundUrl)
 	})
+
+	t.Run("Constraint_UniqueUrl", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		urlStr := "http://unique-constraint.test/" + uuid.New().String()
+
+		// 1. Create first feed
+		feed1 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed1))
+
+		// 2. Create second feed with same URL (Should Fail)
+		feed2 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		err := repo.UpsertFeed(feed2)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+
+		// 3. Soft Delete feed1
+		assert.NoError(t, repo.DeleteFeedById(feed1.ID))
+
+		// 4. Create second feed again (Should Succeed now)
+		err = repo.UpsertFeed(feed2)
+		assert.NoError(t, err)
+
+		// 5. Update feed2 to a new URL
+		newUrl := "http://unique-constraint-new.test/" + uuid.New().String()
+		feed2.URL = newUrl
+		assert.NoError(t, repo.UpsertFeed(feed2))
+
+		// 6. Create feed3 with the OLD url of feed2 (Should Succeed)
+		feed3 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed3))
+
+		// 7. Try to update feed3 to feed2's current URL (Should Fail)
+		feed3.URL = newUrl
+		err = repo.UpsertFeed(feed3)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+	})
 }
 
 func TestUpsertItem(t *testing.T) {
@@ -1143,6 +1192,55 @@ func TestFindCachedFeedById(t *testing.T) {
 		found, err := repo.FindCachedFeedById(uuid.New())
 		assert.NoError(t, err)
 		assert.Nil(t, found)
+	})
+
+	t.Run("Constraint_UniqueUrl", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		urlStr := "http://unique-constraint.test/" + uuid.New().String()
+
+		// 1. Create first feed
+		feed1 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed1))
+
+		// 2. Create second feed with same URL (Should Fail)
+		feed2 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		err := repo.UpsertFeed(feed2)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
+
+		// 3. Soft Delete feed1
+		assert.NoError(t, repo.DeleteFeedById(feed1.ID))
+
+		// 4. Create second feed again (Should Succeed now)
+		err = repo.UpsertFeed(feed2)
+		assert.NoError(t, err)
+
+		// 5. Update feed2 to a new URL
+		newUrl := "http://unique-constraint-new.test/" + uuid.New().String()
+		feed2.URL = newUrl
+		assert.NoError(t, repo.UpsertFeed(feed2))
+
+		// 6. Create feed3 with the OLD url of feed2 (Should Succeed)
+		feed3 := &Feed{
+			URL:     urlStr,
+			Enabled: true,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed3))
+
+		// 7. Try to update feed3 to feed2's current URL (Should Fail)
+		feed3.URL = newUrl
+		err = repo.UpsertFeed(feed3)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "already exists")
 	})
 }
 

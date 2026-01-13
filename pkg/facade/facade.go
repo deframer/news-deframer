@@ -19,16 +19,8 @@ type RSSProxyFilter struct {
 	Embedded bool
 }
 
-type ItemResult struct {
-	FeedURL  string `json:"feed_url"`
-	URL      string `json:"url"`
-	Hash     string `json:"hash"`
-	AIResult string `json:"ai_result"`
-}
-
 type Facade interface {
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
-	GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error)
 }
 
 type facade struct {
@@ -83,9 +75,4 @@ func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 	}
 
 	return *cachedFeed.XMLContent, nil
-}
-
-func (f *facade) GetItems(ctx context.Context, u *url.URL) ([]ItemResult, error) {
-	var results []ItemResult
-	return results, nil
 }
