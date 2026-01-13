@@ -44,7 +44,7 @@ Why RSS?
 - [ ] Grok LLM support
 - [ ] Support filtering the RSS Proxy result with a min rating
 - [ ] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
-- [ ] Fix support multiple workers
+- [ ] Fix support for multiple concurrent workers
 - [ ] Valkey Cache (read through)
 
 ## License
