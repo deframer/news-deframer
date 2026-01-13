@@ -293,7 +293,7 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 		// let's try to grab any image and keep the title/description
 		mediaData, err := transformContent(item.Content)
 		if err == nil && mediaData.URL != "" {
-			s.logger.Debug("removed content:encoded", "url", item.Link)
+			// s.logger.Debug("removed content:encoded", "url", item.Link)
 			item.Content = ""
 
 			if item.Extensions == nil {
