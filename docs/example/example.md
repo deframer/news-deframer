@@ -1,8 +1,8 @@
 # Example
 
-This is a sample taken from `https://rss.nytimes.com/services/xml/rss/nyt/World.xml`
+This example is derived from the `https://rss.nytimes.com/services/xml/rss/nyt/World.xml` feed.
 
-AI does reasoning and replacement.
+The AI analyzes the content, provides reasoning for its assessment, and performs necessary replacements to neutralize the tone.
 
 ```xml
 <item>
@@ -39,7 +39,7 @@ AI does reasoning and replacement.
 
 ## Screenshots
 
-The deframer makes every article to be more neutral and always sounds like "the news".
+The item is rendered by `freshrss`. Deframer neutralizes the tone of every article, ensuring it reads like objective news.
 
 | Updated | Original |
 | :---: | :---: |
