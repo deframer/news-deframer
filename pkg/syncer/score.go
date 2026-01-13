@@ -6,15 +6,6 @@ import (
 	"github.com/egandro/news-deframer/pkg/database"
 )
 
-type StarRating struct {
-	Overall            string
-	Clickbait          string
-	Framing            string
-	PersuasiveIntent   string
-	HyperStimulus      string
-	SpeculativeContent string
-}
-
 // -----------------------------------------------------------------------------
 // Hybrid Score (Max + Mean) - RECOMMENDED
 // -----------------------------------------------------------------------------
@@ -61,36 +52,6 @@ func calculateHybrid(res *database.ThinkResult, maxWeight float64) float64 {
 	return (maxWeight * maxVal) + ((1.0 - maxWeight) * mean)
 }
 
-// GetRatingIcon converts a score (0.0 = Optimal, 1.0 = Worst)
-// into a fancy unicode character.
-func getRatingIcon(value float64) string {
-	switch {
-	case value <= 0.1:
-		return "❂" // Circled Solar Star (Optimal)
-	case value <= 0.3:
-		return "◈" // White Diamond (Good)
-	case value <= 0.6:
-		return "◬" // Dotted Triangle (Okay)
-	case value <= 0.8:
-		return "⦸" // Circled Backslash (Bad)
-	default:
-		return "☒" // Ballot Box with X (Worst)
-	}
-}
-
-func createStarRating(res *database.ThinkResult) StarRating {
-	avg := calculateHybrid(res, 0.7)
-
-	return StarRating{
-		Clickbait:          scoreToStars(res.Clickbait),
-		Framing:            scoreToStars(res.Framing),
-		PersuasiveIntent:   scoreToStars(res.Persuasive),
-		HyperStimulus:      scoreToStars(res.HyperStimulus),
-		SpeculativeContent: scoreToStars(res.Speculative),
-		Overall:            scoreToStars(avg),
-	}
-}
-
 func scoreToStars(score float64) string {
 	// 0.0 = 5 stars (Good/Neutral)
 	// 1.0 = 0 stars (Bad/Biased)
@@ -106,6 +67,28 @@ func scoreToStars(score float64) string {
 }
 
 /*
+
+type StarRating struct {
+	Overall            string
+	Clickbait          string
+	Framing            string
+	PersuasiveIntent   string
+	HyperStimulus      string
+	SpeculativeContent string
+}
+
+func createStarRating(res *database.ThinkResult) StarRating {
+	avg := calculateHybrid(res, 0.7)
+
+	return StarRating{
+		Clickbait:          scoreToStars(res.Clickbait),
+		Framing:            scoreToStars(res.Framing),
+		PersuasiveIntent:   scoreToStars(res.Persuasive),
+		HyperStimulus:      scoreToStars(res.HyperStimulus),
+		SpeculativeContent: scoreToStars(res.Speculative),
+		Overall:            scoreToStars(avg),
+	}
+}
 // -----------------------------------------------------------------------------
 // Arithmetic Mean
 // -----------------------------------------------------------------------------

@@ -38,10 +38,9 @@ func TestApplyFancyRatingText(t *testing.T) {
 			},
 			thinkRating:   0.0,
 			language:      "en",
-			expectedTitle: "❂ Corrected Title",
+			expectedTitle: "★★★★★ Corrected Title",
 			expectedDescContains: []string{
 				"Original Description",
-				"Clickbait", "★★★★★", "None",
 			},
 		},
 		{
