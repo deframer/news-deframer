@@ -27,6 +27,7 @@ type Repository interface {
 	// This means the same content (probably different Hashes) can exist multiple times if it is syndicated across different feeds.
 	// Feed.EnforceFeedDomain = will enforce only items with the same base domain as the Feed URL
 	FindItemsByUrl(u *url.URL) ([]Item, error)
+	FindItemsByRootDomain(rootDomain string, limit int) ([]Item, error)
 	GetAllFeeds(deleted bool) ([]Feed, error)
 	DeleteFeedById(id uuid.UUID) error
 	EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error
@@ -430,6 +431,27 @@ func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {
 	// We query by URL. Since URL is not unique (unique only per Feed), this returns a list.
 	if err := r.db.Joins("JOIN feeds ON feeds.id = items.feed_id").
 		Where("items.url = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", u.String(), true).
+		Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+// FindItemsByRootDomain retrieves the most recent items from all feeds belonging to the given root domain.
+// It enforces the domain boundary via a JOIN on the feeds table and filters by the root_domain column.
+// It ensures that items with the same URL are deduplicated, keeping the most recent one.
+// Note: This aggregates items from all matching feeds and sorts them globally by publication date.
+func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item, error) {
+	var items []Item
+	subQuery := r.db.Select("DISTINCT ON (items.url) items.*").
+		Table("items").
+		Joins("JOIN feeds ON feeds.id = items.feed_id").
+		Where("feeds.root_domain = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", rootDomain, true).
+		Order("items.url, items.pub_date DESC")
+
+	if err := r.db.Table("(?) as unique_items", subQuery).
+		Order("unique_items.pub_date DESC").
+		Limit(limit).
 		Find(&items).Error; err != nil {
 		return nil, err
 	}

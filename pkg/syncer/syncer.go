@@ -218,6 +218,8 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 	res, err := s.think.Run(promptScope, language, req)
 
+	var thinkError *string
+
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			// worker is shutting down don't store this as an error
@@ -225,15 +227,14 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 			return
 		}
 		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
-		res = &database.ThinkResult{
-			Error: err.Error(),
+		errStr := err.Error()
+		thinkError = &errStr
+	} else {
+		err = s.updateContent(item, res)
+		if err != nil {
+			s.logger.Error("update content failed", "error", err)
+			return
 		}
-	}
-
-	err = s.updateContent(item, res)
-	if err != nil {
-		s.logger.Error("update content failed", "error", err)
-		return
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -254,6 +255,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		ThinkResult: res,
 		Content:     content,
 		PubDate:     pubDate,
+		ThinkError:  thinkError,
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)
@@ -265,10 +267,6 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 
 func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) error {
 	if item == nil || res == nil {
-		return nil
-	}
-
-	if res.Error != "" {
 		return nil
 	}
 
@@ -362,15 +360,13 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 
 		current := pf.Items[0]
 
-		if item.ThinkResult != nil {
+		if item.ThinkResult != nil && item.ThinkError == nil {
 			res := *item.ThinkResult
-			if res.Error == "" {
-				var m map[string]interface{}
-				b, _ := json.Marshal(res)
-				_ = json.Unmarshal(b, &m)
-				for k, v := range m {
-					feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
-				}
+			var m map[string]interface{}
+			b, _ := json.Marshal(res)
+			_ = json.Unmarshal(b, &m)
+			for k, v := range m {
+				feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
 			}
 		}
 

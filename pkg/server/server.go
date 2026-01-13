@@ -158,18 +158,16 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items := "xx"
-
-	// items, err := s.facade.GetItems(r.Context(), u)
-	// if err != nil || len(items) == 0 {
-	// 	if err != nil {
-	// 		s.logger.Error("GetItems failed", "error", err)
-	// 	} else {
-	// 		s.logger.Debug("no items found", "url", rootDomain)
-	// 	}
-	// 	http.Error(w, "not found", http.StatusNotFound)
-	// 	return
-	// }
+	items, err := s.facade.GetItemsForRootDomain(r.Context(), rootDomain)
+	if err != nil || len(items) == 0 {
+		if err != nil {
+			s.logger.Error("GetItemsForRootDomain failed", "error", err)
+		} else {
+			s.logger.Debug("no items found", "url", rootDomain)
+		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {

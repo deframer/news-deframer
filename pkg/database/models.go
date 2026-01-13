@@ -65,6 +65,7 @@ type FeedSchedule struct {
 	LastError   *string `gorm:"type:text"`
 }
 
+// ThinkResult we make omitempty to not serialize default e.g. 0.0 or ""
 type ThinkResult struct {
 	TitleOriginal               string  `json:"title_original,omitempty"`
 	DescriptionOriginal         string  `json:"description_original,omitempty"`
@@ -72,18 +73,17 @@ type ThinkResult struct {
 	TitleCorrectionReason       string  `json:"title_correction_reason,omitempty"`
 	DescriptionCorrected        string  `json:"description_corrected,omitempty"`
 	DescriptionCorrectionReason string  `json:"description_correction_reason,omitempty"`
-	ClickbaitScore              float64 `json:"clickbait,omitempty"`
-	ClickbaitReason             string  `json:"clickbait_reason,omitempty"`
-	FramingScore                float64 `json:"framing,omitempty"`
+	FramingScore                float64 `json:"framing_score,omitempty"`
 	FramingReason               string  `json:"framing_reason,omitempty"`
-	PersuasiveIntentScore       float64 `json:"persuasive_intent,omitempty"`
+	ClickbaitScore              float64 `json:"clickbait_score,omitempty"`
+	ClickbaitReason             string  `json:"clickbait_reason,omitempty"`
+	PersuasiveScore             float64 `json:"persuasive_score,omitempty"`
 	PersuasiveReason            string  `json:"persuasive_reason,omitempty"`
-	HyperStimulusScore          float64 `json:"hyper_stimulus,omitempty"`
+	HyperStimulusScore          float64 `json:"hyper_stimulus_score,omitempty"`
 	HyperStimulusReason         string  `json:"hyper_stimulus_reason,omitempty"`
-	SpeculativeContentScore     float64 `json:"speculative_content,omitempty"`
+	SpeculativeScore            float64 `json:"speculative_score,omitempty"`
 	SpeculativeReason           string  `json:"speculative_reason,omitempty"`
 	OverallReason               string  `json:"overall_reason,omitempty"`
-	Error                       string  `json:"error,omitempty"`
 }
 
 func (j ThinkResult) Value() (driver.Value, error) {
@@ -112,6 +112,7 @@ type Item struct {
 	ThinkResult *ThinkResult `gorm:"type:jsonb"`
 	Content     string       `gorm:"type:text;not null"`
 	PubDate     time.Time    `gorm:"not null;index;default:now()"`
+	ThinkError  *string      `gorm:"type:text;null"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.

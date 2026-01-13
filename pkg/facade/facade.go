@@ -19,8 +19,17 @@ type RSSProxyFilter struct {
 	Embedded bool
 }
 
+const MaxItemsForRootDomain = 30
+
+type ItemForRootDomain struct {
+	Hash string `json:"hash"`
+	URL  string `json:"url"`
+	database.ThinkResult
+}
+
 type Facade interface {
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
+	GetItemsForRootDomain(ctx context.Context, rootDomain string) ([]ItemForRootDomain, error)
 }
 
 type facade struct {
@@ -75,4 +84,24 @@ func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 	}
 
 	return *cachedFeed.XMLContent, nil
+}
+
+func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string) ([]ItemForRootDomain, error) {
+	dbItems, err := f.repo.FindItemsByRootDomain(rootDomain, MaxItemsForRootDomain)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]ItemForRootDomain, 0, len(dbItems))
+	for _, dbItem := range dbItems {
+		item := ItemForRootDomain{
+			Hash: dbItem.Hash,
+			URL:  dbItem.URL,
+		}
+		if dbItem.ThinkResult != nil {
+			item.ThinkResult = *dbItem.ThinkResult
+		}
+		items = append(items, item)
+	}
+	return items, nil
 }

@@ -60,6 +60,9 @@ func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, e
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	return nil, nil
 }
+func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
+	return nil, nil
+}
 
 // Implement EnqueueSync
 func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
@@ -208,14 +211,14 @@ func TestUpdateContent(t *testing.T) {
 				Content:     `<![CDATA[ <p> <a href="https://wwwwhatever...."> <img src="https://foobar" alt="ALT TEXT" /></a><br /><br /></p> ]]>`,
 			},
 			res: &database.ThinkResult{
-				TitleCorrected:          "Corrected Foobar",
-				DescriptionCorrected:    "Corrected Short desc",
-				OverallReason:           "Analysis",
-				ClickbaitScore:          1.0,
-				FramingScore:            1.0,
-				PersuasiveIntentScore:   1.0,
-				HyperStimulusScore:      1.0,
-				SpeculativeContentScore: 1.0,
+				TitleCorrected:       "Corrected Foobar",
+				DescriptionCorrected: "Corrected Short desc",
+				OverallReason:        "Analysis",
+				ClickbaitScore:       1.0,
+				FramingScore:         1.0,
+				PersuasiveScore:      1.0,
+				HyperStimulusScore:   1.0,
+				SpeculativeScore:     1.0,
 			},
 			expectedTitle:       "☆☆☆☆☆ Corrected Foobar",
 			expectedDescription: "Corrected Short desc<br/><br/>Analysis",

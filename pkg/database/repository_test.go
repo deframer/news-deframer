@@ -566,6 +566,56 @@ func TestFindItemsByUrl(t *testing.T) {
 	})
 }
 
+func TestFindItemsByRootDomain(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	// Helper to create valid SHA256 hash string
+	makeHash := func(s string) string {
+		h := sha256.Sum256([]byte(s))
+		return hex.EncodeToString(h[:])
+	}
+
+	t.Run("FilterByRootDomain", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		root := "example.com"
+		feed := Feed{URL: "http://example.com/rss", Enabled: true, RootDomain: &root}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		h1 := makeHash("hash1")
+		// Item 1
+		item1 := Item{
+			FeedID:      feed.ID,
+			Hash:        h1,
+			URL:         "http://example.com/1",
+			Content:     "c1",
+			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
+			PubDate:     time.Now(),
+		}
+		assert.NoError(t, tx.Create(&item1).Error)
+
+		// Item 2 (Different root domain feed)
+		otherRoot := "other.com"
+		feed2 := Feed{URL: "http://other.com/rss", Enabled: true, RootDomain: &otherRoot}
+		assert.NoError(t, tx.Create(&feed2).Error)
+		h2 := makeHash("hash2")
+		item2 := Item{FeedID: feed2.ID, Hash: h2, URL: "http://other.com/1", Content: "c2", PubDate: time.Now()}
+		assert.NoError(t, tx.Create(&item2).Error)
+
+		items, err := repo.FindItemsByRootDomain("example.com", 10)
+		assert.NoError(t, err)
+		assert.Len(t, items, 1)
+		assert.Equal(t, h1, items[0].Hash)
+	})
+}
+
 func TestGetAllFeeds(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)

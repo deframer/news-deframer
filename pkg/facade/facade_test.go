@@ -42,6 +42,7 @@ type mockRepo struct {
 	upsertCachedFeed             func(cachedFeed *database.CachedFeed) error
 	findCachedFeedById           func(feedID uuid.UUID) (*database.CachedFeed, error)
 	findFeedScheduleById         func(feedID uuid.UUID) (*database.FeedSchedule, error)
+	findItemsByRootDomain        func(rootDomain string, limit int) ([]database.Item, error)
 }
 
 func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
@@ -163,6 +164,13 @@ func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, e
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	if m.findFeedScheduleById != nil {
 		return m.findFeedScheduleById(feedID)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
+	if m.findItemsByRootDomain != nil {
+		return m.findItemsByRootDomain(rootDomain, limit)
 	}
 	return nil, nil
 }

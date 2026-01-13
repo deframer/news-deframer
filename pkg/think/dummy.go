@@ -24,11 +24,11 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 		FramingReason:               "Negative framing of standard market fluctuation.",
 		ClickbaitScore:              0.8,
 		ClickbaitReason:             "Used 'You won't believe' curiosity gap.",
-		PersuasiveIntentScore:       0.0,
+		PersuasiveScore:             0.0,
 		PersuasiveReason:            "No call to action detected.",
 		HyperStimulusScore:          0.6,
 		HyperStimulusReason:         "Use of all-caps on key emotional words.",
-		SpeculativeContentScore:     0.2,
+		SpeculativeScore:            0.2,
 		SpeculativeReason:           "Implies bankruptcy without official filing source.",
 		OverallReason:               "The text is sensationalized clickbait exaggerating routine financial news to induce panic.",
 	}, nil

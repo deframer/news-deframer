@@ -373,6 +373,10 @@ func (m *MockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedul
 	return nil, nil
 }
 
+func (m *MockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
+	return nil, nil
+}
+
 func captureOutput(f func()) string {
 	old := os.Stdout
 	r, w, _ := os.Pipe()

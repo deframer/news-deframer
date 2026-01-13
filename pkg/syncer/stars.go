@@ -17,15 +17,15 @@ type StarRating struct {
 
 func createStarRating(res *database.ThinkResult) StarRating {
 	// Average
-	sum := res.ClickbaitScore + res.FramingScore + res.PersuasiveIntentScore + res.HyperStimulusScore + res.SpeculativeContentScore
+	sum := res.ClickbaitScore + res.FramingScore + res.PersuasiveScore + res.HyperStimulusScore + res.SpeculativeScore
 	avg := sum / 5.0
 
 	return StarRating{
 		Clickbait:          scoreToStars(res.ClickbaitScore),
 		Framing:            scoreToStars(res.FramingScore),
-		PersuasiveIntent:   scoreToStars(res.PersuasiveIntentScore),
+		PersuasiveIntent:   scoreToStars(res.PersuasiveScore),
 		HyperStimulus:      scoreToStars(res.HyperStimulusScore),
-		SpeculativeContent: scoreToStars(res.SpeculativeContentScore),
+		SpeculativeContent: scoreToStars(res.SpeculativeScore),
 		Overall:            scoreToStars(avg),
 	}
 }
