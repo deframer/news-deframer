@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/egandro/news-deframer/pkg/database"
 	"google.golang.org/genai"
@@ -105,6 +106,7 @@ func (g *gemini) Run(prompt string, language string, request Request) (*database
 	// smaller than this threshold, so using Context Caching is not applicable or cost-effective for this specific use case.
 	// Sending the text every time is the correct approach here.
 
+	start := time.Now()
 	resp, err := g.client.Models.GenerateContent(g.ctx, g.model,
 		userPrompt,
 		&genai.GenerateContentConfig{
@@ -114,6 +116,7 @@ func (g *gemini) Run(prompt string, language string, request Request) (*database
 			Temperature:       &temperature,
 		},
 	)
+	slog.Debug("gemini request duration", "duration", time.Since(start))
 	if err != nil {
 		return nil, err
 	}

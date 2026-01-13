@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/egandro/news-deframer/pkg/database"
 	"github.com/sashabaranov/go-openai"
@@ -109,6 +110,7 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 		return nil, fmt.Errorf("failed to marshal schema: %w", err)
 	}
 
+	start := time.Now()
 	resp, err := o.client.CreateChatCompletion(
 		o.ctx,
 		openai.ChatCompletionRequest{
@@ -135,6 +137,7 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 			},
 		},
 	)
+	slog.Debug("openai request duration", "duration", time.Since(start))
 	if err != nil {
 		return nil, err
 	}
