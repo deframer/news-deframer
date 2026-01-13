@@ -35,7 +35,7 @@ To serve valid RSS 2.0 documents instantly. It acts as the "Read Model" of the s
 
 #### A. The Feed Proxy
 ```bash
-GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
+GET /rss?url=${ENCODED_URL}&embedded=true&max_score=0.5
 ```
 **Behavior**:
 1.  **Resolution**: Map `url` to `uuid` using PostgreSQL `feeds` table.
@@ -48,12 +48,21 @@ GET /?url=${ENCODED_URL}&embedded=true&max_score=0.5
 
 #### B. The JSON Lookup
 ```bash
-GET /api/lookup?link=${ARTICLE_URL}
+GET /api/item?url=${ARTICLE_URL}
 ```
 **Behavior**:
 - Used to check if a specific article URL has already been deframed.
 - **Status Codes**:
-    - `200 OK`: Item found and deframed. Returns JSON object.
+    - `200 OK`: Single Item. Returns JSON object.
+    - `404 Not Found`: Domain or Link unknown.
+
+```bash
+GET /api/site?url=${SITE_URL}
+```
+**Behavior**:
+- Used to return a list of the last 30 (?) items we deframed for the site. This will be used by the Web Browser plugin to replace the portal page.
+- **Status Codes**:
+    - `200 OK`: Returns JSON object.
     - `404 Not Found`: Domain or Link unknown.
 
 ---

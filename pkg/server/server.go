@@ -37,12 +37,13 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /ping", s.handlePing)
-	mux.HandleFunc("GET /hostname", s.handleHostname)
+	mux.HandleFunc("/ping", s.handlePing)
+	mux.HandleFunc("/hostname", s.handleHostname)
+
 	mux.HandleFunc("/rss", s.handleRSSProxy)
 
-	mux.HandleFunc("/site", s.handleSite)
-	mux.HandleFunc("/item", s.handleItem)
+	mux.HandleFunc("/api/item", s.handleItem)
+	mux.HandleFunc("/api/lookup", s.handleSite)
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -85,10 +86,6 @@ func (s *Server) handleHostname(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
-	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fdummy&lang=en&max_score=0.5&embedded=true"
-	// curl "http://localhost:8080/rss?url=http%3A%2F%2Fwordpress%2Ffeed"
-	// curl "http://localhost:8080/rss?url=http%3A%2F%2Flocalhost%3A8003%2Ffeed"
-	// inside freshrss http://service:8080/rss?url=http%3A%2F%2Fwordpress%2Ffeed
 	q := r.URL.Query()
 	req := RSSRequest{
 		URL:  strings.TrimSuffix(q.Get("url"), "/"),
@@ -127,8 +124,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
-	// curl "http://localhost:8080/site?url=http%3A%2F%2Fexample.com"
+func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
@@ -153,14 +149,7 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
-	// 0 entries
-	// curl "http://localhost:8080/item?url=http%3A%2F%2Fexample.com%2Farticle"
-	// 2 entries
-	// curl "http://localhost:8080/item?url=http%3A%2F%2Fdummy-enforced%2Fitem-1"
-	// 1 entry
-	// curl "http://localhost:8080/item?url=http%3A%2F%2Fdummy-open%2Fitem-2"
-
+func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
