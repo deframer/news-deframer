@@ -43,4 +43,4 @@ The deframer makes every article to be more neutral and always sounds like "the 
 
 | Updated | Original |
 | :---: | :---: |
-| <img src="updated.jpg" alt="Updated" width="300"/> | <img src="original.jpg" alt="Original" width="300"/> |
+| <img src="updated.jpg" alt="Updated" width="600"/> | <img src="original.jpg" alt="Original" width="600"/> |
