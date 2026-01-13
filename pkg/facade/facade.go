@@ -15,7 +15,7 @@ import (
 type RSSProxyFilter struct {
 	URL      string
 	Lang     string
-	MaxScore float64
+	Max      float64
 	Embedded bool
 }
 

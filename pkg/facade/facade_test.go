@@ -202,7 +202,7 @@ func TestGetRssProxyFeed(t *testing.T) {
 	filter := RSSProxyFilter{
 		URL:      "http://example.com",
 		Lang:     "en",
-		MaxScore: 0.75,
+		Max:      0.75,
 		Embedded: true,
 	}
 

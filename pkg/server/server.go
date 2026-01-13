@@ -25,7 +25,7 @@ type Server struct {
 type RSSRequest struct {
 	URL      string
 	Lang     string
-	MaxScore float64
+	Max      float64
 	Embedded bool
 }
 
@@ -98,7 +98,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if v, err := strconv.ParseFloat(q.Get("max_score"), 64); err == nil {
-		req.MaxScore = v
+		req.Max = v
 	}
 	if v, err := strconv.ParseBool(q.Get("embedded")); err == nil {
 		req.Embedded = v
@@ -107,7 +107,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	filter := facade.RSSProxyFilter{
 		URL:      req.URL,
 		Lang:     req.Lang,
-		MaxScore: req.MaxScore,
+		Max:      req.Max,
 		Embedded: req.Embedded,
 	}
 

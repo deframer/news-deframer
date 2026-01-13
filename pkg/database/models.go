@@ -73,15 +73,15 @@ type ThinkResult struct {
 	TitleCorrectionReason       string  `json:"title_correction_reason,omitempty"`
 	DescriptionCorrected        string  `json:"description_corrected,omitempty"`
 	DescriptionCorrectionReason string  `json:"description_correction_reason,omitempty"`
-	FramingScore                float64 `json:"framing_score,omitempty"`
+	Framing                     float64 `json:"framing,omitempty"`
 	FramingReason               string  `json:"framing_reason,omitempty"`
-	ClickbaitScore              float64 `json:"clickbait_score,omitempty"`
+	Clickbait                   float64 `json:"clickbait,omitempty"`
 	ClickbaitReason             string  `json:"clickbait_reason,omitempty"`
-	PersuasiveScore             float64 `json:"persuasive_score,omitempty"`
+	Persuasive                  float64 `json:"persuasive,omitempty"`
 	PersuasiveReason            string  `json:"persuasive_reason,omitempty"`
-	HyperStimulusScore          float64 `json:"hyper_stimulus_score,omitempty"`
+	HyperStimulus               float64 `json:"hyper_stimulus,omitempty"`
 	HyperStimulusReason         string  `json:"hyper_stimulus_reason,omitempty"`
-	SpeculativeScore            float64 `json:"speculative_score,omitempty"`
+	Speculative                 float64 `json:"speculative,omitempty"`
 	SpeculativeReason           string  `json:"speculative_reason,omitempty"`
 	OverallReason               string  `json:"overall_reason,omitempty"`
 }

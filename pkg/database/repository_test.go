@@ -398,7 +398,7 @@ func TestUpsertItem(t *testing.T) {
 			Hash:        "hash-update",
 			URL:         "http://item-update",
 			Content:     "content-old",
-			ThinkResult: &ThinkResult{FramingScore: 0.1},
+			ThinkResult: &ThinkResult{Framing: 0.1},
 		}
 		assert.NoError(t, tx.Create(&existing).Error)
 
@@ -411,7 +411,7 @@ func TestUpsertItem(t *testing.T) {
 			Hash:        "hash-update",
 			URL:         "http://item-update",
 			Content:     "content-new",
-			ThinkResult: &ThinkResult{FramingScore: 0.2},
+			ThinkResult: &ThinkResult{Framing: 0.2},
 		}
 
 		err := repo.UpsertItem(update)
@@ -422,7 +422,7 @@ func TestUpsertItem(t *testing.T) {
 		tx.First(&stored, existing.ID)
 		assert.Equal(t, "content-new", stored.Content)
 		// Verify JSONB update
-		assert.Equal(t, 0.2, stored.ThinkResult.FramingScore)
+		assert.Equal(t, 0.2, stored.ThinkResult.Framing)
 
 		// Verify timestamps
 		assert.Equal(t, existing.CreatedAt.UTC(), stored.CreatedAt.UTC(), "CreatedAt should be preserved")

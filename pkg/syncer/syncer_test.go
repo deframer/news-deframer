@@ -214,11 +214,11 @@ func TestUpdateContent(t *testing.T) {
 				TitleCorrected:       "Corrected Foobar",
 				DescriptionCorrected: "Corrected Short desc",
 				OverallReason:        "Analysis",
-				ClickbaitScore:       1.0,
-				FramingScore:         1.0,
-				PersuasiveScore:      1.0,
-				HyperStimulusScore:   1.0,
-				SpeculativeScore:     1.0,
+				Clickbait:            1.0,
+				Framing:              1.0,
+				Persuasive:           1.0,
+				HyperStimulus:        1.0,
+				Speculative:          1.0,
 			},
 			expectedTitle:       "☆☆☆☆☆ Corrected Foobar",
 			expectedDescription: "Corrected Short desc<br/><br/>Analysis",
@@ -337,7 +337,7 @@ func TestWantedDomains(t *testing.T) {
 	}
 }
 
-func TestScoreToStars(t *testing.T) {
+func TestToStars(t *testing.T) {
 	tests := []struct {
 		score    float64
 		expected string
@@ -355,7 +355,7 @@ func TestScoreToStars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.expected, func(t *testing.T) {
-			assert.Equal(t, tt.expected, scoreToStars(tt.score), "Score: %f", tt.score)
+			assert.Equal(t, tt.expected, scoreToStars(tt.score), ": %f", tt.score)
 		})
 	}
 }
