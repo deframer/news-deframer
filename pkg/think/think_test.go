@@ -54,3 +54,32 @@ func TestNew_Gemini(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 }
+
+func TestNew_OpenAI(t *testing.T) {
+	t.Skip("skipping test")
+
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	if cfg.LLM_Type != config.OpenAI {
+		t.Skip("skipping openai test")
+	}
+
+	th, err := New(context.Background(), cfg)
+	assert.NoError(t, err)
+
+	o, ok := th.(*openaiProvider)
+	assert.True(t, ok)
+	assert.Equal(t, cfg.LLM_Model, o.model)
+	assert.Equal(t, cfg.LLM_APIKey, o.apiKey)
+	//assert.Equal(t, cfg.LLM_BaseURL, o.baseURL)
+
+	req := Request{
+		Title:       "THE END IS HERE?! SECRET LEAK Exposes The ELITES' Plan To WIPE OUT Your Savings By TUESDAY!!",
+		Description: "THEY are coming for you! A terrifying whistleblower tape PROVES the \"Mars Attack\" is starting! YOU will own NOTHING! Don't be a sheep—CLICK HERE to secure the ONLY asset that survives the crash before it’s ILLEGAL! ACT NOW OR PERISH!",
+	}
+
+	resp, err := o.Run("deframer", "en", req)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
+}

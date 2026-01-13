@@ -23,6 +23,8 @@ func New(ctx context.Context, cfg *config.Config) (Think, error) {
 		return newDummy(), nil
 	case config.Gemini:
 		return newGemini(ctx, cfg.LLM_Model, cfg.LLM_APIKey)
+	case config.OpenAI:
+		return newOpenAI(ctx, cfg.LLM_Model, cfg.LLM_APIKey, cfg.LLM_BaseURL)
 	default:
 		return nil, fmt.Errorf("unknown think type: %v", t)
 	}

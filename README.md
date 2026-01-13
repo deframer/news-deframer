@@ -39,10 +39,9 @@ Why RSS?
 - [x] Basic RSS Proxy
 - [x] Polling and auto updating of feeds
 - [x] Dummy LLM support (zero wait time, zero cost, developer friendly)
-- [ ] Local LLM support
+- [x] Local / ChatGPT / Generic OpenAI LLM support
 - [x] Gemini LLM support
 - [ ] Grok LLM support
-- [ ] ChatGPT LLM support
 - [ ] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
 
 
