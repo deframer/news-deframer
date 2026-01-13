@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/url"
@@ -195,6 +196,12 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 
 	count = 0
 	for _, item := range items {
+		if s.ctx.Err() != nil {
+			// context might be canceled
+			// we have processed x items - so report a 0,nil that
+			// don't create a result in postgres - the next tick will pick it up
+			return 0, nil
+		}
 		if pendingHashes[item.Hash] {
 			s.processItem(feed, item.Hash, item.Item, language)
 			count++
@@ -212,6 +219,11 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	res, err := s.think.Run(promptScope, language, req)
 
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			// worker is shutting down don't store this as an error
+			s.logger.Debug("context canceled", "hash", hash)
+			return
+		}
 		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
 		res = &database.ThinkResult{
 			Error: err.Error(),
