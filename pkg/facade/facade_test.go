@@ -245,7 +245,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 
 		f := New(ctx, nil, mockR)
 
-		items, err := f.GetItemsForRootDomain(ctx, rootDomain)
+		items, err := f.GetItemsForRootDomain(ctx, rootDomain, 0.0)
 		assert.NoError(t, err)
 		assert.Len(t, items, 2)
 
@@ -264,6 +264,30 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		assert.Equal(t, 0.0, items[1].ThinkRating)
 	})
 
+	t.Run("WithFilter", func(t *testing.T) {
+		expectedItems := []database.Item{
+			{
+				Hash:        "hash1",
+				ThinkRating: 0.8,
+			},
+			{
+				Hash:        "hash2",
+				ThinkRating: 0.2,
+			},
+		}
+
+		mockR := &mockRepo{
+			findItemsByRootDomain: func(domain string, limit int) ([]database.Item, error) {
+				return expectedItems, nil
+			},
+		}
+		f := New(ctx, nil, mockR)
+		items, err := f.GetItemsForRootDomain(ctx, rootDomain, 0.5)
+		assert.NoError(t, err)
+		assert.Len(t, items, 1)
+		assert.Equal(t, "hash2", items[0].Hash)
+	})
+
 	t.Run("RepoError", func(t *testing.T) {
 		mockR := &mockRepo{
 			findItemsByRootDomain: func(domain string, limit int) ([]database.Item, error) {
@@ -271,8 +295,52 @@ func TestGetItemsForRootDomain(t *testing.T) {
 			},
 		}
 		f := New(ctx, nil, mockR)
-		items, err := f.GetItemsForRootDomain(ctx, rootDomain)
+		items, err := f.GetItemsForRootDomain(ctx, rootDomain, 0.0)
 		assert.Error(t, err)
 		assert.Nil(t, items)
+	})
+}
+
+func TestGetFirstItemForUrl(t *testing.T) {
+	ctx := context.Background()
+	targetURL := "http://example.com/article"
+	u, _ := url.Parse(targetURL)
+
+	t.Run("Found", func(t *testing.T) {
+		expectedItem := database.Item{
+			Hash: "hash1",
+			URL:  targetURL,
+			ThinkResult: &database.ThinkResult{
+				TitleCorrected: "Corrected Title",
+			},
+			ThinkRating: 0.8,
+		}
+
+		mockR := &mockRepo{
+			findItemsByUrl: func(u *url.URL) ([]database.Item, error) {
+				assert.Equal(t, targetURL, u.String())
+				return []database.Item{expectedItem}, nil
+			},
+		}
+
+		f := New(ctx, nil, mockR)
+
+		item, err := f.GetFirstItemForUrl(ctx, u)
+		assert.NoError(t, err)
+		assert.NotNil(t, item)
+		assert.Equal(t, "hash1", item.Hash)
+		assert.Equal(t, "Corrected Title", item.TitleCorrected)
+	})
+
+	t.Run("NotFound", func(t *testing.T) {
+		mockR := &mockRepo{
+			findItemsByUrl: func(u *url.URL) ([]database.Item, error) {
+				return []database.Item{}, nil
+			},
+		}
+		f := New(ctx, nil, mockR)
+		item, err := f.GetFirstItemForUrl(ctx, u)
+		assert.NoError(t, err)
+		assert.Nil(t, item)
 	})
 }

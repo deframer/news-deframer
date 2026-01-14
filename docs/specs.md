@@ -35,7 +35,7 @@ To serve valid RSS 2.0 documents instantly. It acts as the "Read Model" of the s
 
 #### A. The Feed Proxy
 ```bash
-GET /rss?url=${ENCODED_URL}&embedded=true&max_score=0.5
+GET /rss?url=${ENCODED_URL}
 ```
 **Behavior**:
 1.  **Resolution**: Map `url` to `uuid` using PostgreSQL `feeds` table.
@@ -48,7 +48,7 @@ GET /rss?url=${ENCODED_URL}&embedded=true&max_score=0.5
 
 #### B. The JSON Lookup
 ```bash
-GET /api/item?url=${ARTICLE_URL}
+GET /api/item?url=${ARTICLE_URL}&max_score=0.5
 ```
 **Behavior**:
 - Used to check if a specific article URL has already been deframed.
@@ -235,6 +235,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - **Optimization**: Ensure `cached_feeds` is TOASTed properly by Postgres as `xml_content` can be large.
 - **Syndication**: Since `items` are scoped to `feed_id`, if two feeds syndicate the same article, the AI will process it twice (once for each feed). This is intentional to allow per-feed prompts or domain enforcement contexts.
 - **Admin Sync**: Use the CLI to force updates during development.
+- **Endpoints**: Probably also support `max_score` for the RSS endpoint. This is much harder as we need dynamic XML generating.
 
 ---
 

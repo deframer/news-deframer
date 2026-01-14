@@ -21,7 +21,7 @@ type RSSProxyFilter struct {
 
 const MaxItemsForRootDomain = 30
 
-type ItemForRootDomain struct {
+type AnalyzedItem struct {
 	Hash string `json:"hash"`
 	URL  string `json:"url"`
 	database.ThinkResult
@@ -31,7 +31,8 @@ type ItemForRootDomain struct {
 
 type Facade interface {
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
-	GetItemsForRootDomain(ctx context.Context, rootDomain string) ([]ItemForRootDomain, error)
+	GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error)
+	GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error)
 }
 
 type facade struct {
@@ -88,15 +89,19 @@ func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 	return *cachedFeed.XMLContent, nil
 }
 
-func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string) ([]ItemForRootDomain, error) {
+func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error) {
 	dbItems, err := f.repo.FindItemsByRootDomain(rootDomain, MaxItemsForRootDomain)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]ItemForRootDomain, 0, len(dbItems))
+	items := make([]AnalyzedItem, 0, len(dbItems))
 	for _, dbItem := range dbItems {
-		item := ItemForRootDomain{
+		if maxScore > 0 && dbItem.ThinkRating > maxScore {
+			continue
+		}
+
+		item := AnalyzedItem{
 			Hash:         dbItem.Hash,
 			URL:          dbItem.URL,
 			MediaContent: dbItem.MediaContent,
@@ -108,4 +113,28 @@ func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string) (
 		items = append(items, item)
 	}
 	return items, nil
+}
+
+func (f *facade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error) {
+	items, err := f.repo.FindItemsByUrl(u)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	dbItem := items[0]
+	item := AnalyzedItem{
+		Hash:         dbItem.Hash,
+		URL:          dbItem.URL,
+		MediaContent: dbItem.MediaContent,
+		ThinkRating:  dbItem.ThinkRating,
+	}
+	if dbItem.ThinkResult != nil {
+		item.ThinkResult = *dbItem.ThinkResult
+	}
+
+	return &item, nil
 }

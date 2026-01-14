@@ -1,4 +1,4 @@
-n#!/bin/bash
+#!/bin/bash
 
 WORDPRESS_TITLE=${WORDPRESS_TITLE:?WORDPRESS_TITLE is not set}
 WORDPRESS_ADMIN_USER=${WORDPRESS_ADMIN_USER:?WORDPRESS_ADMIN_USER is not set}
@@ -39,11 +39,73 @@ if ! wp core is-installed; then
 
     # Create a mu-plugin to forcefully disable comments (our theme has comments still enabled)
     mkdir -p wp-content/mu-plugins
-    cat <<EOF > wp-content/mu-plugins/force-disable-comments.php
+    cat <<'EOF' > wp-content/mu-plugins/force-disable-comments.php
 <?php
 add_filter('comments_open', '__return_false', 20, 2);
 add_filter('pings_open', '__return_false', 20, 2);
 add_filter('comments_array', '__return_empty_array', 10, 2);
+EOF
+
+    # create "media" for the main image in the RSS feed
+    cat <<'EOF' > wp-content/mu-plugins/rss-media-images.php
+<?php
+/*
+Plugin Name: RSS Featured Images (Media RSS)
+Description: Adds media:content tags to the default WordPress RSS feed.
+Version: 1.0
+*/
+
+/**
+ * 1. Add the Media RSS namespace to the RSS header
+ * This allows XML readers to understand the <media:content> tags.
+ */
+function my_custom_add_media_namespace() {
+    echo 'xmlns:media="http://search.yahoo.com/mrss/"' . "\n";
+}
+add_action('rss2_ns', 'my_custom_add_media_namespace');
+
+/**
+ * 2. Add the media:content tags to the RSS feed items
+ * This injects the featured image, caption, and alt text.
+ */
+function my_custom_add_media_content_to_feed() {
+    global $post;
+
+    // Check if the post has a featured image
+    if ( has_post_thumbnail( $post->ID ) ) {
+
+        // Get the image ID
+        $thumbnail_id = get_post_thumbnail_id( $post->ID );
+
+        // Get the image URL, width, and height (full size)
+        $image_attributes = wp_get_attachment_image_src( $thumbnail_id, 'full' );
+
+        if ( $image_attributes ) {
+            $url = $image_attributes[0];
+            $width = $image_attributes[1];
+            $height = $image_attributes[2];
+            $mime_type = get_post_mime_type($thumbnail_id);
+
+            // Get metadata
+            $attachment_post = get_post($thumbnail_id);
+            $caption = $attachment_post->post_excerpt;
+            $alt_text = get_post_meta($thumbnail_id, '_wp_attachment_image_alt', true);
+
+            // OUTPUT THE XML TAGS
+            ?>
+<media:content url="<?php echo esc_url($url); ?>" type="<?php echo esc_attr($mime_type); ?>" medium="image" width="<?php echo esc_attr($width); ?>" height="<?php echo esc_attr($height); ?>">
+    <?php if ( !empty($caption) ) : ?>
+    <media:description type="plain"><![CDATA[<?php echo $caption; ?>]]></media:description>
+    <?php endif; ?>
+    <?php if ( !empty($alt_text) ) : ?>
+    <media:credit role="author" scheme="urn:ebu"><![CDATA[<?php echo $alt_text; ?>]]></media:credit>
+    <?php endif; ?>
+</media:content>
+            <?php
+        }
+    }
+}
+add_action('rss2_item', 'my_custom_add_media_content_to_feed');
 EOF
 else
     if [ "$FORCE" = true ]; then
@@ -103,6 +165,8 @@ echo "Setup RSS..."
 # By default, WordPress shows the last 10 posts. To change this to 20:
 wp option update posts_per_rss 20
 # Set to 1 for Summary (Excerpt) / 0 for Full Text
+# Whatever we do with the theme there are no images
+# so keep the text short to eat less tokens during development
 wp option update rss_use_excerpt 1
 
 # After the theme importer, the data of some streams is still

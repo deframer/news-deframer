@@ -133,18 +133,27 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := url.ParseRequestURI(reqURL)
+	u, err := url.ParseRequestURI(reqURL)
 	if err != nil {
 		s.logger.Debug("invalid url", "error", err)
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
 
+	item, err := s.facade.GetFirstItemForUrl(r.Context(), u)
+	if err != nil {
+		s.logger.Error("failed to get item", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if item == nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]interface{}{
-		"url":  reqURL,
-		"info": "not implemented",
-	}); err != nil {
+	if err := json.NewEncoder(w).Encode(item); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }
@@ -158,7 +167,12 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	items, err := s.facade.GetItemsForRootDomain(r.Context(), rootDomain)
+	var maxScore float64
+	if v, err := strconv.ParseFloat(q.Get("max_score"), 64); err == nil {
+		maxScore = v
+	}
+
+	items, err := s.facade.GetItemsForRootDomain(r.Context(), rootDomain, maxScore)
 	if err != nil || len(items) == 0 {
 		if err != nil {
 			s.logger.Error("GetItemsForRootDomain failed", "error", err)
