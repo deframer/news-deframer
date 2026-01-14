@@ -40,13 +40,12 @@ Why RSS?
 - [x] Polling and auto updating of feeds
 - [x] Dummy LLM support (zero wait time, zero cost, developer friendly)
 - [x] ChatGPT / Generic OpenAI LLM support / [Local](docs/local/lmstudio-rtx3060.png) e.g. LM-Studio
+- [x] Grok LLM support (simply use OpenAI)
 - [x] Gemini LLM support
 - [x] Support filtering the RSS Proxy result with a min rating
 - [ ] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
 - [ ] Fix support for multiple concurrent workers
-- [ ] Grok LLM support (probably simple - but I have no key?)
 - [ ] Valkey Cache (read through)
-
 
 ## License
 
