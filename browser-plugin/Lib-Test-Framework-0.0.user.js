@@ -2,7 +2,7 @@
 // @name        Lib-Test-Framework
 // @match       *://*/*
 // @run-at      document-start
-// @require     https://raw.githubusercontent.com/egandro/news-deframer/refs/heads/main/browser-plugin/playground/news-deframer-lib.js
+// @require     https://raw.githubusercontent.com/egandro/news-deframer/refs/heads/main/browser-plugin/news-deframer-lib.js
 // ==/UserScript==
 
 (function () {
@@ -12,7 +12,7 @@
         const lib = window._lib_test();
 
         if (lib && typeof lib.helloWorld === "function") {
-            lib.helloWorld();
+            console.log(lib.helloWorld());
         }
     } else {
         console.warn("_lib_test is NOT installed yet");
