@@ -16,3 +16,6 @@ down:
 
 clean: down
 	docker compose down --rmi local
+
+wpcli:
+	docker compose run -it wpcli /bin/bash
