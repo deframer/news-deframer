@@ -42,3 +42,10 @@ File: Save or Ctrl-S
 - open any page
 - you see "Tampermonkey Hello World" in the console
 
+## Why?
+
+- Yes sure! It feels a bit like console hacking 🙃
+- During the development cycle we want to edit a JS file on a server that serves the file via https.
+- We can use npm + other tools to create a slim and nice library.
+- Messing with the Tampermonkey editor doesn't have proper tooling support.
+- Again this is a developer hack.
