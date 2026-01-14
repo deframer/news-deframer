@@ -1,7 +1,7 @@
-import { helloWorld } from './helloworld';
+import { HelloWorld } from './helloworld';
 
 export default function () {
   return {
-    helloWorld,
+    HelloWorld,
   };
 }

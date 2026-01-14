@@ -11,8 +11,9 @@
     if (typeof window._lib_test === "function") {
         const lib = window._lib_test();
 
-        if (lib && typeof lib.helloWorld === "function") {
-            console.log(lib.helloWorld());
+        if (lib && lib.HelloWorld) {
+            const hello = new lib.HelloWorld();
+            console.log(hello.message());
         }
     } else {
         console.warn("_lib_test is NOT installed yet");
