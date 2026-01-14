@@ -13,7 +13,7 @@
 
         if (lib && lib.HelloWorld) {
             const hello = new lib.HelloWorld();
-            console.log(hello.message());
+            console.log(hello.message("Lib-Test-Framework"));
         }
     } else {
         console.warn("_lib_test is NOT installed yet");
