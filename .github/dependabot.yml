@@ -28,7 +28,16 @@ updates:
 
   # Keep Dockerfiles up to date
   - package-ecosystem: "docker"
-    directory: "/build/package/*"
+    directory: "/build/package/service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/build/package/worker"
     schedule:
       interval: "weekly"
       day: "monday"
