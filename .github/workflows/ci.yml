@@ -91,6 +91,7 @@ jobs:
           npm ci
           npm run test
           npm run build
+          npm run dist
 
   docker:
     needs: test
