@@ -2,7 +2,7 @@
 // @name        Lib-Test-Framework
 // @match       *://*/*
 // @run-at      document-start
-// @require     https://raw.githubusercontent.com/egandro/news-deframer/refs/heads/main/browser-plugin/news-deframer-lib.js
+// @require     https://cdn.jsdelivr.net/gh/egandro/news-deframer@main/browser-plugin/news-deframer-lib.js
 // ==/UserScript==
 
 (function () {
