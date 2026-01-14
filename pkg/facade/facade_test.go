@@ -329,7 +329,7 @@ func TestGetFirstItemForUrl(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, item)
 		assert.Equal(t, "hash1", item.Hash)
-		assert.Equal(t, "Corrected Title", item.ThinkResult.TitleCorrected)
+		assert.Equal(t, "Corrected Title", item.TitleCorrected)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
