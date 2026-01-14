@@ -77,6 +77,22 @@ jobs:
           GOFLAGS: "-buildvcs=false"
           DSN: "host=postgres user=deframer password=${{ env.PGPASSWORD }} dbname=deframer port=5432 sslmode=disable"
 
+  browser-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Test and Build Browser Plugin
+        run: |
+          cd browser-plugin/library
+          npm ci
+          npm run test
+          npm run build
+          npm run dist
+
   docker:
     needs: test
     runs-on: ubuntu-latest
