@@ -35,3 +35,19 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "docker"
+
+  # Keep Browser Plugin dependencies up to date
+  - package-ecosystem: "npm"
+    directory: "/browser-plugin/library"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      # Group minor and patch updates together to reduce PR noise
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "npm"

@@ -8,6 +8,19 @@ on:
     branches: [ "main" ]
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      browser_plugin: ${{ steps.filter.outputs.browser_plugin }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            browser_plugin:
+              - 'browser-plugin/**'
+
   # JOB 1: Test & Security
   test:
     runs-on: ubuntu-latest
@@ -76,6 +89,23 @@ jobs:
           CGO_ENABLED: 1
           GOFLAGS: "-buildvcs=false"
           DSN: "host=postgres user=deframer password=${{ env.PGPASSWORD }} dbname=deframer port=5432 sslmode=disable"
+
+  browser-plugin:
+    needs: changes
+    if: ${{ needs.changes.outputs.browser_plugin == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Build Browser Plugin
+        run: |
+          cd browser-plugin/library
+          npm ci
+          npm run test
+          npm run build
 
   docker:
     needs: test
