@@ -8,14 +8,18 @@
 (function () {
     'use strict';
 
-    if (typeof window._lib_test === "function") {
-        const lib = window._lib_test();
-
-        if (lib && lib.HelloWorld) {
-            const hello = new lib.HelloWorld();
-            console.log(hello.message("Lib-Test-Framework"));
-        }
-    } else {
-        console.warn("_lib_test is NOT installed yet");
+    if (typeof window.__lib_ndf !== "function") {
+        console.warn("__lib_ndf is NOT installed yet");
+        return;
     }
+
+    const lib = window.__lib_ndf();
+
+    if (!lib || !lib.HelloWorld) {
+        console.warn("__lib_ndf does not have a class lib.HelloWorld");
+        return;
+    }
+
+    const hello = new lib.HelloWorld();
+    console.log(hello.message("Lib-Test-Framework"));
 })();

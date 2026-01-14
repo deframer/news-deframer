@@ -21,7 +21,7 @@ module.exports = {
         filename: 'news-deframer-lib.js',
         path: path.resolve(__dirname, 'dist'),
         library: {
-            name: '_lib_test',
+            name: '__lib_ndf',
             type: 'window',
             export: 'default',
         },
