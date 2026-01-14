@@ -1,4 +1,6 @@
-// server sided
+// this library is hosted on a server
+// we dynamicly download them from the
+// broowser plugin
 
 window._lib_test = function () {
     function helloWorld() {
