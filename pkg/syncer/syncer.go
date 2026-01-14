@@ -286,8 +286,12 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 	res.DescriptionOriginal = item.Description
 
 	// correct the title
-	item.Title = res.TitleCorrected
-	item.Description = res.DescriptionCorrected
+	if strings.TrimSpace(res.TitleCorrected) != "" {
+		item.Title = res.TitleCorrected
+	}
+	if strings.TrimSpace(res.DescriptionCorrected) != "" {
+		item.Description = res.DescriptionCorrected
+	}
 
 	// Add the reason
 	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
