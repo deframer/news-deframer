@@ -9,11 +9,11 @@
 // @grant       GM.listValues
 // @grant       GM.addValueChangeListener
 // @grant       unsafeWindow
-// @require     https://raw.githubusercontent.com/egandro/news-deframer/refs/heads/browser-plugin-universal-storage/browser-plugin/news-deframer-lib.js?v=1
+// @require     https://raw.githubusercontent.com/egandro/news-deframer/refs/heads/main/browser-plugin/news-deframer-lib.js?v=1
 // ==/UserScript==
 
 (function () {
-    // https://cdn.jsdelivr.net/gh/egandro/news-deframer@browser-plugin-universal-storage/browser-plugin/news-deframer-lib.js
+    // https://cdn.jsdelivr.net/gh/egandro/news-deframer@main/browser-plugin/news-deframer-lib.js
     'use strict';
     const LOG_PREFIX = "🟦 HOST:";
 
