@@ -10,12 +10,14 @@ It makes you browser insecure!
 - Install the Tampermonkey <https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en>
 - Tampermonkey documentation: <https://www.tampermonkey.net/>
 - Open the extensions setting in your webbrowser
-- Click "details" on Tampermonkey
+- Click "settings" in Tampermonkey
 - Enable user scripts. **WARNING** understand what this means.
 
 ## Tampermonkey Scripts
 
-- Click on the Tampermonkey Extension Button
+- Click the Tampermonkey Dashboard Button
+- Click "Settings", "General" - enable Advanced Mode (to have access to the storage)
+- Click "+" to add a User Script
 - Add new User Script
 
 You are good to go.
