@@ -20,10 +20,14 @@ module.exports = {
     output: {
         filename: 'news-deframer-lib.js',
         path: path.resolve(__dirname, 'dist'),
+        // This section tells Webpack to attach the 'export default'
+        // from index.ts to 'window.__lib_ndf'
         library: {
             name: '__lib_ndf',
             type: 'window',
             export: 'default',
         },
+        // Important: Cleans the output folder before build to prevent ghost files
+        clean: true,
     },
 };

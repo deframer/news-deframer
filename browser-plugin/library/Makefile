@@ -6,7 +6,7 @@ install:
 build:
 	npm run build
 
-dist:
+dist: clean build
 	npm run dist
 
 clean:
