@@ -1,0 +1,25 @@
+{
+    "manifest_version": 3,
+    "name": "News Deframer Extension",
+    "version": "1.0",
+    "description": "Browser Extension wrapper for News Deframer Library",
+    "permissions": [
+        "storage",
+        "downloads"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
+                "news-deframer-lib.js",
+                "main.js"
+            ],
+            "run_at": "document_start"
+        }
+    ]
+}
