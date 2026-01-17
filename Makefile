@@ -16,7 +16,7 @@ endif
 
 .PHONY: all build clean test help
 
-.PHONY: all test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build
+.PHONY: all service worker test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build
 
 all: build
 
@@ -98,3 +98,10 @@ add-feeds: build
 		echo "Adding feed: $$url"; \
 		./bin/admin feed add --enabled --polling "$$url"; \
 	done
+
+service: build
+	./bin/service
+
+worker: build
+	./bin/admin feed sync-all
+	./bin/worker
