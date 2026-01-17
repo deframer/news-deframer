@@ -8,6 +8,7 @@ It makes you browser insecure!
 
 - Create a new Profile in Chrome/Brave/etc
 - Install the Tampermonkey <https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en>
+- Install the Extensions Reloader <https://chromewebstore.google.com/detail/extensions-reloader/fimgfedafeadlieiabdeeaodndnlbhid>
 - Tampermonkey documentation: <https://www.tampermonkey.net/>
 - Open the extensions setting in your webbrowser
 - Click "settings" in Tampermonkey
