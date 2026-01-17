@@ -12,7 +12,7 @@
     "clean": "rm -rf dist extension.zip"
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.260",
+    "@types/chrome": "^0.1.33",
     "@types/jest": "^29.5.12",
     "@types/node": "^25.0.9",
     "@types/react": "^18.2.58",
