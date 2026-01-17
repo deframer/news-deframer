@@ -86,7 +86,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Test and Build Browser Plugin
+      - name: Test, Lint and Build Browser Plugin
         run: |
           cd browser-plugin
           npm ci
