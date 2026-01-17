@@ -7,7 +7,8 @@ jobs:
   trigger-updates:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
     steps:
       - name: Trigger Dependabot Update Check
         run: |
