@@ -90,7 +90,7 @@ jobs:
         run: |
           cd browser-plugin
           npm ci
-          npm run lint
+          npx eslint src
           npm run test
           npm run dist
 
