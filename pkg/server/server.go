@@ -111,6 +111,7 @@ func (s *Server) handleHostname(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleRSSProxy", "url", r.URL.String())
 	q := r.URL.Query()
 	req := RSSRequest{
 		URL:  strings.TrimSuffix(q.Get("url"), "/"),
@@ -150,6 +151,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleItem", "url", r.URL.String())
 	q := r.URL.Query()
 	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
@@ -184,6 +186,7 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleSite", "url", r.URL.String())
 	q := r.URL.Query()
 	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
 
@@ -215,6 +218,7 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleDomains")
 	domains, err := s.facade.GetRootDomains(r.Context())
 	if err != nil {
 		s.logger.Error("failed to get root domains", "error", err)
