@@ -5,13 +5,9 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint src --ext .ts,.tsx",
-    "build": "npm run build:lib && npm run build:host",
-    "build:lib": "webpack --config webpack.lib.js",
-    "build:host": "webpack --config webpack.host.js",
-    "dist": "npm run clean && npm run build && npm run pack",
-    "dev": "concurrently \"npm run dev:lib\" \"npm run dev:host\"",
-    "dev:lib": "webpack serve --config webpack.lib.js",
-    "dev:host": "webpack --config webpack.host.js --watch",
+    "build": "webpack",
+    "dist": "npm run clean && npm run build && cd dist/host && zip -r ../../extension.zip .",
+    "dev": "webpack --watch",
     "pack": "cd dist/host && zip -r ../../extension.zip .",
     "clean": "rm -rf dist extension.zip"
   },
@@ -23,7 +19,6 @@
     "@types/react-dom": "^18.2.19",
     "@typescript-eslint/eslint-plugin": "^7.0.2",
     "@typescript-eslint/parser": "^7.0.2",
-    "concurrently": "^8.2.2",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^6.10.0",
     "eslint": "^8.56.0",
@@ -34,8 +29,7 @@
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3",
     "webpack": "^5.90.3",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.2"
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "react": "^18.2.0",

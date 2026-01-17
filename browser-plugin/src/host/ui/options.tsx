@@ -2,20 +2,15 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 interface Settings {
-  debugMode: boolean;
-  debugUrl: string;
   backendUrl: string;
   username?: string;
   password?: string;
 }
 
-const DEFAULT_DEBUG_URL = 'http://localhost:8090/library.bundle.js';
 const DEFAULT_BACKEND_URL = 'http://localhost:8080';
 
 const Options = () => {
   const [settings, setSettings] = useState<Settings>({
-    debugMode: false,
-    debugUrl: DEFAULT_DEBUG_URL,
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
     password: '',
@@ -25,10 +20,8 @@ const Options = () => {
 
   // Load settings on mount
   useEffect(() => {
-    chrome.storage.local.get(['debugMode', 'debugUrl', 'backendUrl', 'username', 'password'], (items) => {
+    chrome.storage.local.get(['backendUrl', 'username', 'password'], (items) => {
       const newSettings = {
-        debugMode: items.debugMode ?? false,
-        debugUrl: items.debugUrl ?? DEFAULT_DEBUG_URL,
         backendUrl: items.backendUrl ?? DEFAULT_BACKEND_URL,
         username: items.username ?? '',
         password: items.password ?? '',
@@ -148,33 +141,6 @@ const Options = () => {
           )}
         </div>
       </div>
-
-      <div style={{ marginBottom: '15px', borderTop: '1px solid #eee', paddingTop: '15px' }}>
-        <label style={{ display: 'flex', alignItems: 'center', marginBottom: '5px', cursor: 'pointer' }}>
-          <input
-            type="checkbox"
-            checked={settings.debugMode}
-            onChange={(e) => setSettings({ ...settings, debugMode: e.target.checked })}
-            style={{ marginRight: '8px' }}
-          />
-          Enable Debug Mode
-        </label>
-        <small style={{ color: '#666', display: 'block', marginLeft: '24px' }}>
-          Loads library from remote URL instead of internal bundle.
-        </small>
-      </div>
-
-      {settings.debugMode && (
-        <div style={{ marginBottom: '15px', marginLeft: '24px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>Debug URL:</label>
-          <input
-            type="text"
-            value={settings.debugUrl}
-            onChange={(e) => setSettings({ ...settings, debugUrl: e.target.value })}
-            style={{ width: '100%', padding: '5px' }}
-          />
-        </div>
-      )}
 
       <div style={{ marginTop: '20px', fontSize: '12px', color: '#999', textAlign: 'center' }}>
         Settings are saved automatically
