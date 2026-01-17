@@ -89,6 +89,7 @@ jobs:
         run: |
           cd browser-plugin
           npm ci
+          npm run lint
           npm run test
           npm run dist
 

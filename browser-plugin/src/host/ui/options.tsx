@@ -10,7 +10,7 @@ interface Settings {
 }
 
 const DEFAULT_DEBUG_URL = 'http://localhost:8090/library.bundle.js';
-const DEFAULT_BACKEND_URL = 'http://localhost:8090';
+const DEFAULT_BACKEND_URL = 'http://localhost:8080';
 
 const Options = () => {
   const [settings, setSettings] = useState<Settings>({
@@ -95,7 +95,7 @@ const Options = () => {
             value={settings.backendUrl}
             onChange={(e) => setSettings({ ...settings, backendUrl: e.target.value })}
             style={{ width: '100%', padding: '5px' }}
-            placeholder="http://localhost:8090"
+            placeholder="http://localhost:8080"
           />
         </div>
 
