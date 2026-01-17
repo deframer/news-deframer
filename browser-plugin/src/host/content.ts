@@ -1,20 +1,11 @@
-import Library from '../library/index';
-import { Config } from '../library/api';
+import ndf from '../ndf/index';
+import log from '../shared/logger';
+import { getSettings } from '../shared/settings';
 
-const DEFAULT_BACKEND_URL = 'http://localhost:8080';
-
-function loadLibrary() {
-  chrome.storage.local.get(['backendUrl', 'username', 'password'], (items) => {
-    const { backendUrl, username, password } = items as Record<string, string | undefined>;
-    const config: Config = {
-        backendUrl: backendUrl ?? DEFAULT_BACKEND_URL,
-        username,
-        password
-    };
-
-    console.log("[NDF Host] Starting library...");
-    Library.start(config);
-  });
+async function startNdf() {
+  const settings = await getSettings();
+  log.info('Starting NDF...');
+  ndf.start(settings);
 }
 
-loadLibrary();
+startNdf();
