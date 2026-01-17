@@ -1,0 +1,16 @@
+name: Manual Dependabot
+
+on:
+  workflow_dispatch:
+
+jobs:
+  trigger-updates:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Trigger Dependabot Update Check
+        run: |
+          gh api -X POST /repos/${{ github.repository }}/dependabot/updates
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
