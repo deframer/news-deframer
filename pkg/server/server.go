@@ -56,6 +56,7 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.Handle("/rss", protect(s.handleRSSProxy))
 	mux.Handle("/api/item", protect(s.handleItem))
 	mux.Handle("/api/site", protect(s.handleSite))
+	mux.Handle("/api/domains", protect(s.handleDomains))
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -209,6 +210,20 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
+	domains, err := s.facade.GetRootDomains(r.Context())
+	if err != nil {
+		s.logger.Error("failed to get root domains", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(domains); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }
