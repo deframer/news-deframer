@@ -47,7 +47,7 @@ updates:
 
   # Keep Browser Plugin dependencies up to date
   - package-ecosystem: "npm"
-    directory: "/browser-plugin/library"
+    directory: "/browser-plugin/"
     schedule:
       interval: "weekly"
       day: "monday"
