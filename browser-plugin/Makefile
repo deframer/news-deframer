@@ -1,13 +1,13 @@
-.PHONY: install build clean dev test
+.PHONY: install build clean dev test dist
 
 install:
 	npm install
 
+dist:
+	npm run dist
+
 build:
 	npm run build
-
-dist: clean build
-	npm run pack
 
 clean:
 	npm run clean
