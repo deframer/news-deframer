@@ -87,11 +87,11 @@ jobs:
           node-version: '24'
       - name: Test and Build Browser Plugin
         run: |
-          cd browser-plugin/library
+          cd browser-plugin
           npm ci
           npm run test
-          npm run build
           npm run dist
+
 
   docker:
     needs: test

@@ -1,53 +1,50 @@
-# WARNING
+# News Deframer
 
-This is developer code. Do not use in your regular browser.
+Browser extension to deframe news sites.
 
-It makes you browser insecure!
+## Developer Setup
 
-## Setup
+### 1. Installation
+1.  Clone repository.
+2.  `npm install`
+3.  `make dist` (Builds everything and creates `extension.zip`)
 
-- Create a new Profile in Chrome/Brave/etc
-- Install the Tampermonkey <https://chromewebstore.google.com/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en>
-- Tampermonkey documentation: <https://www.tampermonkey.net/>
-- Open the extensions setting in your webbrowser
-- Click "settings" in Tampermonkey
-- Enable user scripts. **WARNING** understand what this means.
+### 2. Load in Browser
+1.  Open Chrome/Brave -> Extensions (`chrome://extensions`).
+2.  Enable **Developer Mode**.
+3.  Click **Load unpacked**.
+4.  Select the `dist/host` directory (created by the build).
+    *   Alternatively, you can drag and drop `extension.zip` if supported, or use it for distribution.
 
-## Tampermonkey Scripts
+### 3. Recommended Tools
+*   **Extensions Reloader:** [Chrome Web Store](https://chromewebstore.google.com/detail/extensions-reloader/fimgfedafeadlieiabdeeaodndnlbhid)
+    *   Useful for quickly reloading the extension without going to the extensions page.
 
-- Click the Tampermonkey Dashboard Button
-- Click "Settings", "General" - enable Advanced Mode (to have access to the storage)
-- Click "+" to add a User Script
-- Add new User Script
+### 4. Development Workflow
 
-You are good to go.
+#### Debug Mode (Recommended for Library Dev)
+This allows you to edit the library code and see changes on reload without rebuilding the extension.
 
-## Hello world
+1.  Start the development servers:
+    ```bash
+    npm run dev
+    ```
+    (This starts `webpack serve` for the library at `localhost:8080` and watches the host)
 
-File: Save or Ctrl-S
+2.  Open the Extension Settings (click extension icon -> Options, or right-click -> Options).
+3.  Check **Enable Debug Mode**.
+4.  Ensure URL is `http://localhost:8080/library.bundle.js`.
+5.  Save.
+6.  Reload any target page. The extension will fetch the latest library code from localhost.
 
-```js
-// ==UserScript==
-// @name        Hello-World-On-Every-Page
-// @match       *://*/*
-// @run-at      document-start
-// ==/UserScript==
+#### Release Mode
+1.  Uncheck **Debug Mode** in settings.
+2.  The extension will load the bundled version of the library.
+3.  To update the bundled version, run `npm run build` and reload the extension in `chrome://extensions`.
 
-(function () {
-    'use strict';
+## Project Structure
 
-    console.log("Tampermonkey Hello World");
-})();
-```
-
-- open the console
-- open any page
-- you see "Tampermonkey Hello World" in the console
-
-## Why?
-
-- Yes sure! It feels a bit like console hacking 🙃
-- During the development cycle we want to edit a JS file on a server that serves the file via https.
-- We can use npm + other tools to create a slim and nice library.
-- Messing with the Tampermonkey editor doesn't have proper tooling support.
-- Again this is a developer hack.
+*   `src/host`: The Extension shell (Manifest, Loader, React Settings).
+*   `src/library`: The "Guest" library containing the actual logic.
+*   `webpack.host.js`: Builds the extension.
+*   `webpack.lib.js`: Builds the library.

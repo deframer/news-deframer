@@ -1,17 +1,19 @@
-.PHONY: build dist clean test install
+.PHONY: install build clean dev test dist
 
 install:
-	$(MAKE) -C library install
-
-build:
-	$(MAKE) -C library build
+	npm install
 
 dist:
-	$(MAKE) -C library dist
-	cp library/dist/news-deframer-lib.js .
+	npm run dist
+
+build:
+	npm run build
 
 clean:
-	$(MAKE) -C library clean
+	npm run clean
+
+dev:
+	npm run dev
 
 test:
-	$(MAKE) -C library test
+	npm run test
