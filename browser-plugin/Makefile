@@ -1,4 +1,4 @@
-.PHONY: install build clean dev test dist
+.PHONY: install build clean dev test dist lint
 
 install:
 	npm install
@@ -17,3 +17,6 @@ dev:
 
 test:
 	npm run test
+
+lint:
+	npm run lint

@@ -35,6 +35,7 @@ func init() {
 	feedCmd.AddCommand(listCmd)
 	feedCmd.AddCommand(pollingCmd)
 	feedCmd.AddCommand(syncCmd)
+	feedCmd.AddCommand(syncAllCmd)
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
 	addCmd.Flags().BoolVar(&polling, "polling", false, "Enable polling")
@@ -117,6 +118,14 @@ var syncCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		syncFeed(args[0])
+	},
+}
+
+var syncAllCmd = &cobra.Command{
+	Use:   "sync-all",
+	Short: "Sync all active enabled feeds immediately",
+	Run: func(cmd *cobra.Command, args []string) {
+		syncAllFeeds()
 	},
 }
 
@@ -361,6 +370,28 @@ func syncFeed(input string) {
 		os.Exit(1)
 	}
 	fmt.Printf("Triggered sync for url=%s with id=%s\n", feed.URL, feed.ID)
+}
+
+func syncAllFeeds() {
+	feeds, err := repo.GetAllFeeds(false)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to list feeds: %v\n", err)
+		os.Exit(1)
+	}
+
+	count := 0
+	for _, f := range feeds {
+		if !f.Enabled {
+			continue
+		}
+		if err := feedSyncer.SyncFeed(f.ID); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to sync feed %s (%s): %v\n", f.URL, f.ID, err)
+		} else {
+			fmt.Printf("Triggered sync for url=%s with id=%s\n", f.URL, f.ID)
+			count++
+		}
+	}
+	fmt.Printf("Triggered sync for %d feeds\n", count)
 }
 
 func parseAndNormalizeURL(rawURL string) (*url.URL, error) {

@@ -29,6 +29,7 @@ const feedTitlePrefix = "Deframer: "
 const promptScope = "deframer"
 const customPrefix = "deframer"
 const customNamespace = "https://github.com/egandro/news-deframer/"
+const maxThinkRetries = 3
 
 type FeedSyncer interface {
 	SyncFeed(id uuid.UUID) error
@@ -177,12 +178,12 @@ func (s *Syncer) wantedDomains(feed *database.Feed) ([]string, error) {
 }
 
 func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, items []feeds.ItemHashPair, hashes []string) (int, error) {
-	pendingHashes, err := s.repo.GetPendingHashes(feed.ID, hashes)
+	pendingItems, err := s.repo.GetPendingItems(feed.ID, hashes, maxThinkRetries)
 	if err != nil {
 		return 0, err
 	}
-	count := len(pendingHashes)
-	s.logger.Debug("pending hashes", "len", count)
+	count := len(pendingItems)
+	s.logger.Debug("pending items", "len", count)
 
 	if count == 0 {
 		s.logger.Debug("All items are already processed")
@@ -203,8 +204,8 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 			// don't create a result in postgres - the next tick will pick it up
 			return 0, nil
 		}
-		if pendingHashes[item.Hash] {
-			s.processItem(feed, item.Hash, item.Item, language)
+		if errorCount, ok := pendingItems[item.Hash]; ok {
+			s.processItem(feed, item.Hash, item.Item, language, errorCount)
 			count++
 		}
 	}
@@ -212,7 +213,7 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 	return count, nil
 }
 
-func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item, language string) {
+func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item, language string, currentErrorCount int) {
 	req := think.Request{
 		Title:       item.Title,
 		Description: item.Description,
@@ -222,6 +223,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	var thinkError *string
 	var mediaContent *database.MediaContent
 	var thinkRating float64
+	nextErrorCount := currentErrorCount
 
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
@@ -232,6 +234,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
 		errStr := err.Error()
 		thinkError = &errStr
+		nextErrorCount++
 	} else {
 		err = s.updateContent(item, res)
 		if err != nil {
@@ -244,6 +247,8 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		}
 		thinkRating = calculateHybrid(res, 0.7)
 		applyFancyRatingText(item, res, thinkRating, language)
+		// Success reset error count (optional, but good practice if we allow re-processing of succeeded items later)
+		nextErrorCount = 0
 	}
 
 	content, err := s.feeds.RenderItem(s.ctx, item)
@@ -258,15 +263,16 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 
 	dbItem := &database.Item{
-		Hash:         hash,
-		FeedID:       feed.ID,
-		URL:          item.Link,
-		Content:      content,
-		PubDate:      pubDate,
-		ThinkResult:  res,
-		MediaContent: mediaContent,
-		ThinkError:   thinkError,
-		ThinkRating:  thinkRating,
+		Hash:            hash,
+		FeedID:          feed.ID,
+		URL:             item.Link,
+		Content:         content,
+		PubDate:         pubDate,
+		ThinkResult:     res,
+		MediaContent:    mediaContent,
+		ThinkError:      thinkError,
+		ThinkErrorCount: nextErrorCount,
+		ThinkRating:     thinkRating,
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)

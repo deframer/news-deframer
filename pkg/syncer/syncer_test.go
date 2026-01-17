@@ -20,6 +20,7 @@ type mockRepo struct {
 	enqueueSyncCalled bool
 	lastId            uuid.UUID
 	removeSyncCalled  bool
+	upsertItemFunc    func(item *database.Item) error
 }
 
 // Implement database.Repository interface stubs
@@ -43,14 +44,19 @@ func (m *mockRepo) BeginFeedUpdate(lockDuration time.Duration) (*database.Feed, 
 func (m *mockRepo) EndFeedUpdate(id uuid.UUID, err error, successDelay time.Duration) error {
 	return nil
 }
-func (m *mockRepo) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[string]bool, error) {
-	res := make(map[string]bool, len(hashes))
+func (m *mockRepo) GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error) {
+	res := make(map[string]int, len(hashes))
 	for _, h := range hashes {
-		res[h] = true
+		res[h] = 0
 	}
 	return res, nil
 }
-func (m *mockRepo) UpsertItem(item *database.Item) error { return nil }
+func (m *mockRepo) UpsertItem(item *database.Item) error {
+	if m.upsertItemFunc != nil {
+		return m.upsertItemFunc(item)
+	}
+	return nil
+}
 func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]database.Item, error) {
 	return nil, nil
 }

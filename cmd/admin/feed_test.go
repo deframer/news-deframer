@@ -241,6 +241,20 @@ func TestFeedCommands(t *testing.T) {
 	assert.NotNil(t, foundSub)
 	assert.NotNil(t, foundSub.RootDomain)
 	assert.Equal(t, "example.co.uk", *foundSub.RootDomain)
+
+	// 17. Sync All (should trigger sync for all enabled feeds)
+	// Reset schedule for testURL2
+	if f, err := mock.FindFeedByUrlAndAvailability(&url.URL{Scheme: "http", Host: "example.com", Path: "/rss2"}, true); err == nil && f != nil {
+		f.FeedSchedule.NextRunAt = nil
+	}
+
+	out = captureOutput(func() {
+		syncAllFeeds()
+	})
+	assert.Contains(t, out, "Triggered sync for url=http://example.com/rss2")
+	// Deleted/Disabled feeds should not be synced. testURL is deleted.
+	// We add " with" to ensure we don't match partial URLs (like rss vs rss2)
+	assert.NotContains(t, out, "Triggered sync for url="+testURL+" with")
 }
 
 // --- Mock Repository ---
@@ -346,10 +360,10 @@ func (m *MockRepo) EndFeedUpdate(id uuid.UUID, err error, successDelay time.Dura
 	return nil
 }
 
-func (m *MockRepo) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[string]bool, error) {
-	res := make(map[string]bool)
+func (m *MockRepo) GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error) {
+	res := make(map[string]int)
 	for _, h := range hashes {
-		res[h] = true
+		res[h] = 0
 	}
 	return res, nil
 }

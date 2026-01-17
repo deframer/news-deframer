@@ -14,6 +14,8 @@ services:
       - LOG_DATABASE=${LOG_DATABASE:-false}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
       - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER:-}
+      - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD:-}
     deploy:
       replicas: ${DOCKER_SERVICE_REPLICAS:-3}
     labels:

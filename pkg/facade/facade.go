@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"sort"
 	"time"
 
 	"github.com/egandro/news-deframer/pkg/config"
@@ -33,6 +34,7 @@ type Facade interface {
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
 	GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error)
 	GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error)
+	GetRootDomains(ctx context.Context) ([]string, error)
 }
 
 type facade struct {
@@ -137,4 +139,29 @@ func (f *facade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedI
 	}
 
 	return &item, nil
+}
+
+func (f *facade) GetRootDomains(ctx context.Context) ([]string, error) {
+	feeds, err := f.repo.GetAllFeeds(false)
+	if err != nil {
+		return nil, err
+	}
+
+	domainMap := make(map[string]bool)
+	for _, feed := range feeds {
+		if !feed.Enabled {
+			continue
+		}
+		if feed.RootDomain != nil && *feed.RootDomain != "" {
+			domainMap[*feed.RootDomain] = true
+		}
+	}
+
+	domains := make([]string, 0, len(domainMap))
+	for d := range domainMap {
+		domains = append(domains, d)
+	}
+	sort.Strings(domains)
+
+	return domains, nil
 }

@@ -1021,7 +1021,7 @@ func TestEndFeedUpdate(t *testing.T) {
 	})
 }
 
-func TestGetPendingHashes(t *testing.T) {
+func TestGetPendingItems(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
@@ -1043,7 +1043,7 @@ func TestGetPendingHashes(t *testing.T) {
 		feed := Feed{URL: "http://pending.test", Enabled: true}
 		assert.NoError(t, tx.Create(&feed).Error)
 
-		// 1. Processed Item
+		// 1. Processed Item (Should not be pending)
 		h1 := makeHash("item1")
 		item1 := Item{
 			FeedID:      feed.ID,
@@ -1054,7 +1054,7 @@ func TestGetPendingHashes(t *testing.T) {
 		}
 		assert.NoError(t, tx.Create(&item1).Error)
 
-		// 2. Unprocessed Item (AnalyzerResult is nil)
+		// 2. Unprocessed Item (ThinkResult nil) -> Pending with count 0
 		h2 := makeHash("item2")
 		item2 := Item{
 			FeedID:      feed.ID,
@@ -1065,17 +1065,49 @@ func TestGetPendingHashes(t *testing.T) {
 		}
 		assert.NoError(t, tx.Create(&item2).Error)
 
-		// 3. New Item (Not in DB)
+		// 3. New Item (Not in DB) -> Pending with count 0
 		h3 := makeHash("item3")
 
-		input := []string{h1, h2, h3}
-		pendingMap, err := repo.GetPendingHashes(feed.ID, input)
+		// 4. Failed Item (Count <= 3) -> Pending with count
+		h4 := makeHash("item4")
+		item4 := Item{
+			FeedID:          feed.ID,
+			Hash:            h4,
+			URL:             "http://item4",
+			Content:         "c4",
+			ThinkResult:     nil,
+			ThinkErrorCount: 2,
+		}
+		assert.NoError(t, tx.Create(&item4).Error)
+
+		// 5. Failed Item (Count > 3) -> Not Pending
+		h5 := makeHash("item5")
+		item5 := Item{
+			FeedID:          feed.ID,
+			Hash:            h5,
+			URL:             "http://item5",
+			Content:         "c5",
+			ThinkResult:     nil,
+			ThinkErrorCount: 4,
+		}
+		assert.NoError(t, tx.Create(&item5).Error)
+
+		input := []string{h1, h2, h3, h4, h5}
+		pendingMap, err := repo.GetPendingItems(feed.ID, input, 3)
 		assert.NoError(t, err)
 
-		assert.Len(t, pendingMap, 2)
-		assert.True(t, pendingMap[h2])
-		assert.True(t, pendingMap[h3])
-		assert.False(t, pendingMap[h1])
+		assert.Len(t, pendingMap, 3)
+		assert.Contains(t, pendingMap, h2)
+		assert.Equal(t, 0, pendingMap[h2])
+
+		assert.Contains(t, pendingMap, h3)
+		assert.Equal(t, 0, pendingMap[h3])
+
+		assert.Contains(t, pendingMap, h4)
+		assert.Equal(t, 2, pendingMap[h4])
+
+		assert.NotContains(t, pendingMap, h1)
+		assert.NotContains(t, pendingMap, h5)
 	})
 }
 

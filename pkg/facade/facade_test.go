@@ -36,7 +36,7 @@ type mockRepo struct {
 	removeSync                   func(id uuid.UUID) error
 	beginFeedUpdate              func(lockDuration time.Duration) (*database.Feed, error)
 	endFeedUpdate                func(id uuid.UUID, err error, successDelay time.Duration) error
-	getPendingHashes             func(feedID uuid.UUID, hashes []string) (map[string]bool, error)
+	getPendingItems              func(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
 	upsertItem                   func(item *database.Item) error
 	getItemsByHashes             func(feedID uuid.UUID, hashes []string) ([]database.Item, error)
 	upsertCachedFeed             func(cachedFeed *database.CachedFeed) error
@@ -122,13 +122,13 @@ func (m *mockRepo) EndFeedUpdate(id uuid.UUID, err error, successDelay time.Dura
 	return nil
 }
 
-func (m *mockRepo) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[string]bool, error) {
-	if m.getPendingHashes != nil {
-		return m.getPendingHashes(feedID, hashes)
+func (m *mockRepo) GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error) {
+	if m.getPendingItems != nil {
+		return m.getPendingItems(feedID, hashes, maxRetries)
 	}
-	res := make(map[string]bool)
+	res := make(map[string]int)
 	for _, h := range hashes {
-		res[h] = true
+		res[h] = 0
 	}
 	return res, nil
 }
@@ -342,5 +342,68 @@ func TestGetFirstItemForUrl(t *testing.T) {
 		item, err := f.GetFirstItemForUrl(ctx, u)
 		assert.NoError(t, err)
 		assert.Nil(t, item)
+	})
+}
+
+func TestGetRootDomains(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Success", func(t *testing.T) {
+		domainA := "a.com"
+		domainB := "b.com"
+		domainC := "c.com"
+
+		feeds := []database.Feed{
+			{
+				Base:       database.Base{},
+				Enabled:    true,
+				RootDomain: &domainB, // b.com
+			},
+			{
+				Base:       database.Base{},
+				Enabled:    true,
+				RootDomain: &domainA, // a.com
+			},
+			{
+				Base:       database.Base{},
+				Enabled:    true,
+				RootDomain: &domainB, // Duplicate b.com
+			},
+			{
+				Base:       database.Base{},
+				Enabled:    false,
+				RootDomain: &domainC, // Disabled, should be ignored
+			},
+			{
+				Base:       database.Base{},
+				Enabled:    true,
+				RootDomain: nil, // Nil, should be ignored
+			},
+		}
+
+		mockR := &mockRepo{
+			getAllFeeds: func(deleted bool) ([]database.Feed, error) {
+				assert.False(t, deleted)
+				return feeds, nil
+			},
+		}
+
+		f := New(ctx, nil, mockR)
+		domains, err := f.GetRootDomains(ctx)
+		assert.NoError(t, err)
+		assert.Equal(t, []string{"a.com", "b.com"}, domains)
+	})
+
+	t.Run("RepoError", func(t *testing.T) {
+		mockR := &mockRepo{
+			getAllFeeds: func(deleted bool) ([]database.Feed, error) {
+				return nil, assert.AnError
+			},
+		}
+
+		f := New(ctx, nil, mockR)
+		domains, err := f.GetRootDomains(ctx)
+		assert.Error(t, err)
+		assert.Nil(t, domains)
 	})
 }

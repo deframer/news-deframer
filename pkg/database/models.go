@@ -145,19 +145,20 @@ func (j *MediaContent) Scan(value interface{}) error {
 }
 
 type Item struct {
-	ID           uuid.UUID     `gorm:"primaryKey;type:uuid"`
-	CreatedAt    time.Time     `gorm:"not null;default:now()"`
-	UpdatedAt    time.Time     `gorm:"not null;default:now()"`
-	Hash         string        `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	FeedID       uuid.UUID     `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
-	Feed         Feed          `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	URL          string        `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
-	Content      string        `gorm:"type:text;not null"`
-	PubDate      time.Time     `gorm:"not null;index;default:now()"`
-	MediaContent *MediaContent `gorm:"type:jsonb"`
-	ThinkResult  *ThinkResult  `gorm:"type:jsonb"`
-	ThinkError   *string       `gorm:"type:text;null"`
-	ThinkRating  float64       `gorm:"not null;default:0.0"`
+	ID              uuid.UUID     `gorm:"primaryKey;type:uuid"`
+	CreatedAt       time.Time     `gorm:"not null;default:now()"`
+	UpdatedAt       time.Time     `gorm:"not null;default:now()"`
+	Hash            string        `gorm:"type:char(64);uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	FeedID          uuid.UUID     `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
+	Feed            Feed          `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	URL             string        `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	Content         string        `gorm:"type:text;not null"`
+	PubDate         time.Time     `gorm:"not null;index;default:now()"`
+	MediaContent    *MediaContent `gorm:"type:jsonb"`
+	ThinkResult     *ThinkResult  `gorm:"type:jsonb"`
+	ThinkError      *string       `gorm:"type:text;null"`
+	ThinkErrorCount int           `gorm:"not null;default:0"`
+	ThinkRating     float64       `gorm:"not null;default:0.0"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.
