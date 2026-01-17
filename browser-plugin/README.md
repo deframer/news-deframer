@@ -29,11 +29,11 @@ This allows you to edit the library code and see changes on reload without rebui
     ```bash
     npm run dev
     ```
-    (This starts `webpack serve` for the library at `localhost:8080` and watches the host)
+    (This starts `webpack serve` for the library at `localhost:8090` and watches the host)
 
 2.  Open the Extension Settings (click extension icon -> Options, or right-click -> Options).
 3.  Check **Enable Debug Mode**.
-4.  Ensure URL is `http://localhost:8080/library.bundle.js`.
+4.  Ensure URL is `http://localhost:8090/library.bundle.js`.
 5.  Save.
 6.  Reload any target page. The extension will fetch the latest library code from localhost.
 
