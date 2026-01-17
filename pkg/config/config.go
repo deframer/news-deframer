@@ -44,6 +44,9 @@ type Config struct {
 
 	LocalFeedFilesDir string `env:"LOCAL_FEED_FILES_DIR" envDefault:""`
 
+	BasicAuthUser     string `env:"BASIC_AUTH_USER" envDefault:""`
+	BasicAuthPassword string `env:"BASIC_AUTH_PASSWORD" envDefault:""`
+
 	LLM_Type    LLMType `env:"LLM_TYPE" envDefault:"dummy"`
 	LLM_Model   string  `env:"LLM_MODEL" envDefault:""`
 	LLM_APIKey  string  `env:"LLM_API_KEY" envDefault:""`

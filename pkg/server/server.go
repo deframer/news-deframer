@@ -37,13 +37,25 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 
 	mux := http.NewServeMux()
 
+	// debug stuff
 	mux.HandleFunc("/ping", s.handlePing)
 	mux.HandleFunc("/hostname", s.handleHostname)
 
-	mux.HandleFunc("/rss", s.handleRSSProxy)
+	// Middleware
+	protect := func(h http.HandlerFunc) http.Handler {
+		if cfg.BasicAuthUser != "" && cfg.BasicAuthPassword != "" {
+			return s.basicAuthMiddleware(cfg.BasicAuthUser, cfg.BasicAuthPassword, h)
+		}
+		return h
+	}
 
-	mux.HandleFunc("/api/item", s.handleItem)
-	mux.HandleFunc("/api/site", s.handleSite)
+	if cfg.BasicAuthUser != "" && cfg.BasicAuthPassword != "" {
+		s.logger.Info("Basic auth enabled")
+	}
+
+	mux.Handle("/rss", protect(s.handleRSSProxy))
+	mux.Handle("/api/item", protect(s.handleItem))
+	mux.Handle("/api/site", protect(s.handleSite))
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -54,6 +66,18 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	return s
+}
+
+func (s *Server) basicAuthMiddleware(user, password string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u, p, ok := r.BasicAuth()
+		if !ok || u != user || p != password {
+			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *Server) Start() error {
