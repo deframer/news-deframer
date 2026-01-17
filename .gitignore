@@ -16,3 +16,6 @@ developer-source.json
 .python-venv
 *.swp
 coverage.*
+service
+worker
+feeds.json

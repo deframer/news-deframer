@@ -90,3 +90,10 @@ docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
 docker-%:
 	@echo "Building Docker image for $*..."
 	docker build -t $(DOCKER_REPO)/$*:latest -f build/package/$*/Dockerfile .
+
+add-feeds: build
+	@if [ ! -f feeds.json ]; then echo "feeds.json not found"; exit 1; fi
+	@jq -r '.[]' feeds.json | while read url; do \
+		echo "Adding feed: $$url"; \
+		./bin/admin feed add --enabled --polling "$$url"; \
+	done

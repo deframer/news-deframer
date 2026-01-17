@@ -36,7 +36,7 @@ type mockRepo struct {
 	removeSync                   func(id uuid.UUID) error
 	beginFeedUpdate              func(lockDuration time.Duration) (*database.Feed, error)
 	endFeedUpdate                func(id uuid.UUID, err error, successDelay time.Duration) error
-	getPendingHashes             func(feedID uuid.UUID, hashes []string) (map[string]bool, error)
+	getPendingItems              func(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
 	upsertItem                   func(item *database.Item) error
 	getItemsByHashes             func(feedID uuid.UUID, hashes []string) ([]database.Item, error)
 	upsertCachedFeed             func(cachedFeed *database.CachedFeed) error
@@ -122,13 +122,13 @@ func (m *mockRepo) EndFeedUpdate(id uuid.UUID, err error, successDelay time.Dura
 	return nil
 }
 
-func (m *mockRepo) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[string]bool, error) {
-	if m.getPendingHashes != nil {
-		return m.getPendingHashes(feedID, hashes)
+func (m *mockRepo) GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error) {
+	if m.getPendingItems != nil {
+		return m.getPendingItems(feedID, hashes, maxRetries)
 	}
-	res := make(map[string]bool)
+	res := make(map[string]int)
 	for _, h := range hashes {
-		res[h] = true
+		res[h] = 0
 	}
 	return res, nil
 }

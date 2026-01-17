@@ -34,7 +34,7 @@ type Repository interface {
 	RemoveSync(id uuid.UUID) error
 	BeginFeedUpdate(lockDuration time.Duration) (*Feed, error)
 	EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval time.Duration) error
-	GetPendingHashes(feedID uuid.UUID, hashes []string) (map[string]bool, error)
+	GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
 	GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item, error)
 	UpsertItem(item *Item) error
 	UpsertCachedFeed(cachedFeed *CachedFeed) error
@@ -299,8 +299,13 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 	})
 }
 
-func (r *repository) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[string]bool, error) {
-	processedHashes := make(map[string]bool)
+func (r *repository) GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error) {
+	// Initialize map with all hashes having count 0 (assuming they are new)
+	pendingItems := make(map[string]int)
+	for _, h := range hashes {
+		pendingItems[h] = 0
+	}
+
 	const batchSize = 1000
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
@@ -311,19 +316,30 @@ func (r *repository) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[st
 			}
 			batch := hashes[i:end]
 
-			var foundHashes []string
-			// We are looking for items that are already processed (AnalyzerResult is NOT NULL)
-			// to exclude them from the pending list.
+			var foundItems []struct {
+				Hash            string
+				ThinkResult     *ThinkResult
+				ThinkErrorCount int
+			}
+
+			// We fetch items that exist to check their status
 			if err := tx.Model(&Item{}).
+				Select("hash, think_result, think_error_count").
 				Where("feed_id = ?", feedID).
 				Where("hash IN ?", batch).
-				Where("think_result IS NOT NULL").
-				Pluck("hash", &foundHashes).Error; err != nil {
+				Scan(&foundItems).Error; err != nil {
 				return err
 			}
 
-			for _, h := range foundHashes {
-				processedHashes[h] = true
+			for _, item := range foundItems {
+				// If processed (ThinkResult not nil) OR failed too many times, remove from pending
+				if item.ThinkResult != nil || item.ThinkErrorCount > maxRetries {
+					delete(pendingItems, item.Hash)
+				} else {
+					// It exists but needs retry (or initial processing if error count is small)
+					// Update the error count so the caller knows the current state
+					pendingItems[item.Hash] = item.ThinkErrorCount
+				}
 			}
 		}
 		return nil
@@ -332,13 +348,7 @@ func (r *repository) GetPendingHashes(feedID uuid.UUID, hashes []string) (map[st
 		return nil, err
 	}
 
-	result := make(map[string]bool)
-	for _, h := range hashes {
-		if !processedHashes[h] {
-			result[h] = true
-		}
-	}
-	return result, nil
+	return pendingItems, nil
 }
 
 func (r *repository) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item, error) {
