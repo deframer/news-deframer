@@ -5,10 +5,11 @@ const DEFAULT_BACKEND_URL = 'http://localhost:8080';
 
 function loadLibrary() {
   chrome.storage.local.get(['backendUrl', 'username', 'password'], (items) => {
+    const { backendUrl, username, password } = items as Record<string, string | undefined>;
     const config: Config = {
-        backendUrl: items.backendUrl ?? DEFAULT_BACKEND_URL,
-        username: items.username,
-        password: items.password
+        backendUrl: backendUrl ?? DEFAULT_BACKEND_URL,
+        username,
+        password
     };
 
     console.log("[NDF Host] Starting library...");

@@ -22,9 +22,9 @@ const Options = () => {
   useEffect(() => {
     chrome.storage.local.get(['backendUrl', 'username', 'password'], (items) => {
       const newSettings = {
-        backendUrl: items.backendUrl ?? DEFAULT_BACKEND_URL,
-        username: items.username ?? '',
-        password: items.password ?? '',
+        backendUrl: (items.backendUrl as string | undefined) ?? DEFAULT_BACKEND_URL,
+        username: (items.username as string | undefined) ?? '',
+        password: (items.password as string | undefined) ?? '',
       };
       setSettings(newSettings);
       setLoaded(true);
@@ -62,7 +62,7 @@ const Options = () => {
       } else {
         setStatus('error');
       }
-    } catch (e) {
+    } catch {
       setStatus('error');
     } finally {
       clearTimeout(timeoutId);
