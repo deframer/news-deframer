@@ -1,4 +1,4 @@
-.PHONY: install build clean dev test dist lint
+.PHONY: install build clean dev test dist lint lint-fix
 
 install:
 	npm install
@@ -20,3 +20,6 @@ test:
 
 lint:
 	npm run lint
+
+lint-fix:
+	npm run lint -- --fix
