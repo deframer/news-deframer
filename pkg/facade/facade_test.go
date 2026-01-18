@@ -94,6 +94,10 @@ func (m *mockRepo) DeleteFeedById(id uuid.UUID) error {
 	return nil
 }
 
+func (m *mockRepo) PurgeFeedById(id uuid.UUID) error {
+	return nil
+}
+
 func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
 	if m.enqueueSync != nil {
 		return m.enqueueSync(id, pollingInterval, lockDuration)

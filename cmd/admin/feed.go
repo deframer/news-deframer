@@ -24,6 +24,7 @@ var (
 	polling      bool
 	language     string
 	noRootDomain bool
+	purgeFeed    bool
 	repo         database.Repository
 	feedSyncer   *syncer.Syncer
 )
@@ -46,6 +47,7 @@ func init() {
 	addCmd.Flags().BoolVar(&polling, "polling", false, "Enable polling")
 	addCmd.Flags().StringVar(&language, "language", "", "Set a two-letter ISO 639-1 language code for the feed")
 	addCmd.Flags().BoolVar(&noRootDomain, "no-root-domain", false, "Do not automatically populate root_domain")
+	deleteCmd.Flags().BoolVar(&purgeFeed, "purge", false, "Purge the feed and all related data")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 	listCmd.Flags().BoolVar(&showDeleted, "deleted", false, "Show deleted feeds")
 
@@ -87,7 +89,7 @@ var deleteCmd = &cobra.Command{
 	Short: "Delete a feed",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		deleteFeed(args[0])
+		deleteFeed(args[0], purgeFeed)
 	},
 }
 
@@ -329,19 +331,26 @@ func resolveFeed(input string, onlyEnabled bool) *database.Feed {
 	return feed
 }
 
-func deleteFeed(input string) {
+func deleteFeed(input string, purge bool) {
 	feed := resolveFeed(input, true)
 
 	if err := feedSyncer.StopPolling(feed.ID); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Failed to stop polling: %v\n", err)
 	}
 
-	if err := repo.DeleteFeedById(feed.ID); err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to delete feed: %v\n", err)
-		os.Exit(1)
+	if purge {
+		if err := repo.PurgeFeedById(feed.ID); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to purge feed: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Purged feed for url=%s with id=%s\n", feed.URL, feed.ID)
+	} else {
+		if err := repo.DeleteFeedById(feed.ID); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to delete feed: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Deleted feed for url=%s with id=%s\n", feed.URL, feed.ID)
 	}
-
-	fmt.Printf("Deleted feed for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
 func enableFeed(input string) {

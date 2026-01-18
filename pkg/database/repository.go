@@ -30,6 +30,7 @@ type Repository interface {
 	FindItemsByRootDomain(rootDomain string, limit int) ([]Item, error)
 	GetAllFeeds(deleted bool) ([]Feed, error)
 	DeleteFeedById(id uuid.UUID) error
+	PurgeFeedById(id uuid.UUID) error
 	EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error
 	RemoveSync(id uuid.UUID) error
 	BeginFeedUpdate(lockDuration time.Duration) (*Feed, error)
@@ -422,6 +423,28 @@ func (r *repository) FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, erro
 
 func (r *repository) DeleteFeedById(id uuid.UUID) error {
 	return r.db.Delete(&Feed{Base: Base{ID: id}}).Error
+}
+
+func (r *repository) PurgeFeedById(id uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		// 1. Delete CachedFeed (1:1 with Feed ID)
+		if err := tx.Where("id = ?", id).Delete(&CachedFeed{}).Error; err != nil {
+			return fmt.Errorf("failed to delete cached feed: %w", err)
+		}
+		// 2. Delete FeedSchedule (1:1 with Feed ID)
+		if err := tx.Where("id = ?", id).Delete(&FeedSchedule{}).Error; err != nil {
+			return fmt.Errorf("failed to delete feed schedule: %w", err)
+		}
+		// 3. Delete Items (N:1 with Feed ID)
+		if err := tx.Where("feed_id = ?", id).Delete(&Item{}).Error; err != nil {
+			return fmt.Errorf("failed to delete items: %w", err)
+		}
+		// 4. Hard Delete Feed
+		if err := tx.Unscoped().Delete(&Feed{}, "id = ?", id).Error; err != nil {
+			return fmt.Errorf("failed to delete feed: %w", err)
+		}
+		return nil
+	})
 }
 
 func (r *repository) GetAllFeeds(deleted bool) ([]Feed, error) {
