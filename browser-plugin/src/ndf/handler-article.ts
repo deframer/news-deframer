@@ -1,6 +1,7 @@
 import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
+import { hasBypassForDomain, hasBypassForUrl } from './bypass';
 import { AnalyzedItem, NewsDeframerClient } from './client';
 import { createFooterHtml, getFooterCss } from './footer';
 import { formatRatingPercent, getRatingColors } from './ratings';
@@ -294,10 +295,14 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
 };
 
 export const handleArticle = async (client: NewsDeframerClient) => {
+  const rootDomain = getDomain(window.location.hostname);
+  if (hasBypassForUrl(window.location.href)) {
+    log.info('Bypass found for this URL. Not deframing.');
+    return;
+  }
+
   log.info('Article page detected. Stopping window immediately.');
   window.stop();
-
-  const rootDomain = getDomain(window.location.hostname);
 
   try {
     const item = await client.getItem(window.location.href);

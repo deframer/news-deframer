@@ -1,6 +1,7 @@
 import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
+import { hasBypassForDomain } from './bypass';
 import { AnalyzedItem,NewsDeframerClient } from './client';
 import { createFooterHtml, getFooterCss } from './footer';
 import { formatRatingPercent, getRatingColors } from './ratings';
@@ -150,8 +151,6 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
 };
 
 export const handlePortal = async (client: NewsDeframerClient) => {
-  log.info('Portal page detected. Stopping window immediately.');
-  window.stop();
   const rootDomain = getDomain(window.location.hostname);
 
   if (!rootDomain) {
@@ -160,6 +159,14 @@ export const handlePortal = async (client: NewsDeframerClient) => {
     window.location.reload();
     return;
   }
+
+  if (hasBypassForDomain(rootDomain)) {
+    log.info(`Bypass found for domain ${rootDomain}. Not deframing.`);
+    return;
+  }
+
+  log.info('Portal page detected. Stopping window immediately.');
+  window.stop();
 
   try {
     const items = await client.getSite(rootDomain);
