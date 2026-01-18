@@ -1,7 +1,7 @@
 import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
-import { hasBypassForDomain, hasBypassForUrl } from './bypass';
+import { hasBypassForUrl } from './bypass';
 import { AnalyzedItem, NewsDeframerClient } from './client';
 import { createFooterHtml, getFooterCss } from './footer';
 import { formatRatingPercent, getRatingColors } from './ratings';
