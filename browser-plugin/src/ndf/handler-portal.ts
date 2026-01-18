@@ -62,35 +62,25 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
 };
 
 export const handlePortal = async (client: NewsDeframerClient) => {
-  window.stop();
-  document.documentElement.innerHTML = `
-    <html>
-      <head><title>Loading...</title></head>
-      <body><h1>Loading analyzed items...</h1></body>
-    </html>`;
-
   log.info('Portal page detected.');
   const rootDomain = getDomain(window.location.hostname);
 
   if (!rootDomain) {
     log.error('Could not determine root domain.');
-    document.body.innerHTML = '<h1>Error: Could not determine root domain.</h1>';
     return;
   }
 
   try {
     const items = await client.getSite(rootDomain);
     if (items.length > 0) {
+      window.stop();
       log.info(`Successfully fetched ${items.length} items for ${rootDomain}:`, items);
       document.documentElement.innerHTML = createTilesHtml(items, rootDomain);
     } else {
       log.info(`No items found for ${rootDomain}.`);
-      document.body.innerHTML = '<h1>No analyzed items found for this site.</h1>';
     }
   } catch (error) {
-    const err = error as Error;
-    log.error(`Failed to fetch items for ${rootDomain}:`, err);
-    document.body.innerHTML = `<h1>Error fetching items: ${err.message}</h1>`;
+    log.error(`Failed to fetch items for ${rootDomain}:`, error);
   }
 };
 
