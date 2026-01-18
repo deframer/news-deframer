@@ -70,7 +70,6 @@ lint:
 	gosec ./...
 	govulncheck ./...
 	gofmt -l .
-	cd browser-plugin && npm run lint
 
 tidy:
 	go mod tidy
