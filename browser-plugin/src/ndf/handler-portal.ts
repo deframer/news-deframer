@@ -1,7 +1,6 @@
 import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
-import { hasBypassForDomain } from './bypass';
 import { AnalyzedItem,NewsDeframerClient } from './client';
 import { createFooterHtml, getFooterCss } from './footer';
 import { formatRatingPercent, getRatingColors } from './ratings';
@@ -185,11 +184,6 @@ export const handlePortal = async (client: NewsDeframerClient) => {
     log.error('Could not determine root domain. Reloading with bypass.');
     sessionStorage.setItem('ndf-bypass', 'true');
     window.location.reload();
-    return;
-  }
-
-  if (hasBypassForDomain(rootDomain)) {
-    log.info(`Bypass found for domain ${rootDomain}. Not deframing.`);
     return;
   }
 
