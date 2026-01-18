@@ -34,62 +34,18 @@ const createArticleHtml = (item: AnalyzedItem): string => {
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
-          
-          /* MOBILE FIRST (Full Bleed) */
-          .container { 
-            max-width: 800px; 
-            margin: 0; 
-            background-color: #fff; 
-            border-radius: 0; 
-            box-shadow: none; 
-            padding-bottom: 20px; 
-          }
-          .image-container img { 
-            width: 100%; 
-            height: auto; 
-            border-radius: 0; 
-            display: block; 
-          }
-          
+          .container { max-width: 800px; margin: 2em auto; background-color: #fff; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); padding-bottom: 20px; }
+          .image-container img { width: 100%; height: auto; border-radius: 12px 12px 0 0; display: block; }
           .main-content { padding: 1.5em; }
           h1 { margin: 0 0 10px; font-size: 2em; }
           .description { font-size: 1.1em; color: #555; margin-bottom: 2em; }
           
           .analysis-section { border-top: 2px solid #eee; padding-top: 1.5em; margin-top: 1.5em; }
 
+          /* MOBILE FIRST (Default) */
           .metric-item {
             display: block;
             margin-bottom: 1.5em;
-          }
-          
-          /* ... other styles ... */
-
-          /* DESKTOP LAYOUT (> 800px) */
-          @media (min-width: 800px) {
-            .container { 
-              margin: 2em auto; 
-              border-radius: 12px; 
-              box-shadow: 0 6px 12px rgba(0,0,0,0.1); 
-            }
-            .image-container img { 
-              border-radius: 12px 12px 0 0; 
-            }
-
-            .metric-item {
-              display: grid;
-              grid-template-columns: 140px 1fr;
-              gap: 0 20px;
-              align-items: start;
-            }
-
-            .metric-label {
-              margin-bottom: 0;
-              padding-top: 4px;
-            }
-            
-            .action-buttons {
-              border-radius: 0 0 12px 12px; 
-            }
           }
           
           .metric-label {
@@ -178,6 +134,15 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 
           /* DESKTOP LAYOUT (> 800px) */
           @media (min-width: 800px) {
+            .container { 
+              margin: 2em auto; 
+              border-radius: 12px; 
+              box-shadow: 0 6px 12px rgba(0,0,0,0.1); 
+            }
+            .image-container img { 
+              border-radius: 12px 12px 0 0; 
+            }
+
             .metric-item {
               display: grid;
               grid-template-columns: 140px 1fr;
@@ -190,14 +155,28 @@ const createArticleHtml = (item: AnalyzedItem): string => {
               padding-top: 4px;
             }
             
-            /* Buttons are just at the bottom of the card on desktop */
             .action-buttons {
-              border-radius: 0 0 12px 12px; /* Match card corners */
+              border-radius: 0 0 12px 12px; 
             }
           }
 
           /* MOBILE STICKY BUTTONS (< 800px) */
           @media (max-width: 799px) {
+            .container { 
+              max-width: 800px; 
+              margin: 0; 
+              background-color: #fff; 
+              border-radius: 0; 
+              box-shadow: none; 
+              padding-bottom: 20px; 
+            }
+            .image-container img { 
+              width: 100%; 
+              height: auto; 
+              border-radius: 0; 
+              display: block; 
+            }
+
             body { padding-bottom: 80px; } /* Prevent content from being hidden behind sticky bar */
             .action-buttons {
               position: fixed;
@@ -234,26 +213,28 @@ const createArticleHtml = (item: AnalyzedItem): string => {
                 </div>
               </div>
 
-              ${metrics.map(m => {
-                const colors = getRatingColors(m.value);
-                return `
-                <div class="metric-item">
-                  <div class="metric-label">${m.label}</div>
-                  <div class="metric-details">
-                    <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.value}" aria-label="${m.label} rating: ${m.value}%" aria-describedby="${m.id}-reason">
-                      <div class="bar" style="width: ${m.value}%; background-color: ${colors.bg};"></div>
-                      ${m.raw !== undefined ? `
-                        <div class="bar-overlay" style="color: ${colors.text};">
-                          <span>${m.value}%</span>
-                        </div>
-                      ` : ''}
+              <div id="metrics-content" style="display: none;">
+                ${metrics.map(m => {
+                  const colors = getRatingColors(m.value);
+                  return `
+                  <div class="metric-item">
+                    <div class="metric-label">${m.label}</div>
+                    <div class="metric-details">
+                      <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.value}" aria-label="${m.label} rating: ${m.value}%" aria-describedby="${m.id}-reason">
+                        <div class="bar" style="width: ${m.value}%; background-color: ${colors.bg};"></div>
+                        ${m.raw !== undefined ? `
+                          <div class="bar-overlay" style="color: ${colors.text};">
+                            <span>${m.value}%</span>
+                          </div>
+                        ` : ''}
+                      </div>
+                      <p id="${m.id}-reason" class="reason">${m.reason}</p>
                     </div>
-                    <p id="${m.id}-reason" class="reason">${m.reason}</p>
                   </div>
-                </div>
-              `}).join('')}
+                `}).join('')}
+              </div>
             </div>
-            <div class="original-content">
+            <div id="original-content" class="original-content" style="display: none;">
               <h3>Original</h3>
               <h4>${item.title_original || ''}</h4>
               <p>${item.description_original || ''}</p>
@@ -261,8 +242,8 @@ const createArticleHtml = (item: AnalyzedItem): string => {
           </div>
           
           <div class="action-buttons">
-            <button class="btn btn-primary">Details</button>
-            <button class="btn">Original Title</button>
+            <button id="btn-details" class="btn btn-primary">Details</button>
+            <button id="btn-original" class="btn">Original Title</button>
             <a href="#" class="btn">View anyway</a>
           </div>
         </div>
@@ -280,6 +261,34 @@ export const handleArticle = async (client: NewsDeframerClient) => {
       window.stop();
       log.info('Successfully fetched item.');
       document.documentElement.innerHTML = createArticleHtml(item);
+
+      // Attach event listeners programmatically after HTML is injected
+      const btnDetails = document.getElementById('btn-details');
+      if (btnDetails) {
+        btnDetails.addEventListener('click', () => {
+          const metrics = document.getElementById('metrics-content');
+          const original = document.getElementById('original-content');
+          if (metrics && original) {
+            metrics.style.display = 'block';
+            original.style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          }
+        });
+      }
+
+      const btnOriginal = document.getElementById('btn-original');
+      if (btnOriginal) {
+        btnOriginal.addEventListener('click', () => {
+          const metrics = document.getElementById('metrics-content');
+          const original = document.getElementById('original-content');
+          if (metrics && original) {
+            metrics.style.display = 'none';
+            original.style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          }
+        });
+      }
+
     } else {
       log.info('No item found for this URL.');
     }
