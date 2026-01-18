@@ -9,7 +9,7 @@ module.exports = {
         content: './src/host/content.ts',
         background: './src/host/background.ts'
     },
-    devtool: 'inline-source-map',
+    devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map',
     module: {
         rules: [
             {
@@ -17,7 +17,8 @@ module.exports = {
                 use: [{
                     loader: 'ts-loader',
                     options: {
-                        configFile: 'tsconfig.build.json'
+                        configFile: 'tsconfig.build.json',
+                        transpileOnly: true
                     }
                 }],
                 exclude: /node_modules/,
@@ -38,7 +39,6 @@ module.exports = {
     },
     watchOptions: {
     aggregateTimeout: 200,
-    poll: 1000,
     ignored: /node_modules/,
   },
   plugins: [
