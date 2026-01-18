@@ -44,6 +44,7 @@ Why RSS?
 - [x] Gemini LLM support
 - [x] Support filtering the RSS Proxy result with a min rating
 - [ ] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
+- [ ] Webbrowser Plugin I18n
 - [ ] Fix support for multiple concurrent workers
 - [ ] Enhance the parsing of items e.g. media / thumbnails etc.
 - [ ] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
