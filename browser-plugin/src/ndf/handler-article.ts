@@ -73,7 +73,7 @@ export const handleArticle = async (client: NewsDeframerClient) => {
     const item = await client.getItem(window.location.href);
     if (item) {
       window.stop();
-      log.info('Successfully fetched item:', item);
+      log.info('Successfully fetched item.');
       document.documentElement.innerHTML = createArticleHtml(item);
     } else {
       log.info('No item found for this URL.');

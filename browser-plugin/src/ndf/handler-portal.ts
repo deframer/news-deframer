@@ -74,7 +74,7 @@ export const handlePortal = async (client: NewsDeframerClient) => {
     const items = await client.getSite(rootDomain);
     if (items.length > 0) {
       window.stop();
-      log.info(`Successfully fetched ${items.length} items for ${rootDomain}:`, items);
+      log.info(`Successfully fetched ${items.length} items for ${rootDomain}.`);
       document.documentElement.innerHTML = createTilesHtml(items, rootDomain);
     } else {
       log.info(`No items found for ${rootDomain}.`);
