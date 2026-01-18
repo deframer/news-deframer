@@ -1,8 +1,9 @@
 import { getDomain } from 'tldts';
+
 import log from '../shared/logger';
 import { AnalyzedItem, NewsDeframerClient } from './client';
-import { formatRatingPercent, getRatingColors } from './ratings';
 import { createFooterHtml, getFooterCss } from './footer';
+import { formatRatingPercent, getRatingColors } from './ratings';
 
 const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
   const title = item.title_corrected || item.title_original || 'No title';

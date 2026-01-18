@@ -2,8 +2,8 @@ import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
 import { AnalyzedItem,NewsDeframerClient } from './client';
-import { formatRatingPercent, getRatingColors } from './ratings';
 import { createFooterHtml, getFooterCss } from './footer';
+import { formatRatingPercent, getRatingColors } from './ratings';
 const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
   const tiles = items
     .map((item) => {
