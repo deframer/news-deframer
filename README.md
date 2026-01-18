@@ -45,6 +45,8 @@ Why RSS?
 - [x] Support filtering the RSS Proxy result with a min rating
 - [ ] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
 - [ ] Fix support for multiple concurrent workers
+- [ ] Enhance the parsing of items e.g. media / thumbnails etc.
+- [ ] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
 - [ ] Valkey Cache (read through)
 
 ## License

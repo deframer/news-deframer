@@ -62,25 +62,30 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
 };
 
 export const handlePortal = async (client: NewsDeframerClient) => {
-  log.info('Portal page detected.');
+  log.info('Portal page detected. Stopping window immediately.');
+  window.stop();
   const rootDomain = getDomain(window.location.hostname);
 
   if (!rootDomain) {
-    log.error('Could not determine root domain.');
+    log.error('Could not determine root domain. Reloading with bypass.');
+    sessionStorage.setItem('ndf-bypass', 'true');
+    window.location.reload();
     return;
   }
 
   try {
     const items = await client.getSite(rootDomain);
     if (items.length > 0) {
-      window.stop();
       log.info(`Successfully fetched ${items.length} items for ${rootDomain}.`);
       document.documentElement.innerHTML = createTilesHtml(items, rootDomain);
     } else {
-      log.info(`No items found for ${rootDomain}.`);
+      log.info(`No items found for ${rootDomain}. Reloading with bypass.`);
+      sessionStorage.setItem('ndf-bypass', 'true');
+      window.location.reload();
     }
   } catch (error) {
     log.error(`Failed to fetch items for ${rootDomain}:`, error);
+    sessionStorage.setItem('ndf-bypass', 'true');
+    window.location.reload();
   }
 };
-

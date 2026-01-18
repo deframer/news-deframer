@@ -18,4 +18,5 @@ developer-source.json
 coverage.*
 service
 worker
+admin
 feeds.json

@@ -162,7 +162,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 12. Delete Feed (Should Remove Schedule)
 	out = captureOutput(func() {
-		deleteFeed(testURL)
+		deleteFeed(testURL, false)
 	})
 	assert.Contains(t, out, "Deleted feed")
 
@@ -177,6 +177,51 @@ func TestFeedCommands(t *testing.T) {
 	if feeds[0].FeedSchedule != nil {
 		assert.Nil(t, feeds[0].FeedSchedule.NextRunAt)
 	}
+
+	// 13a. Purge Feed (Must resolve deleted feeds too)
+	out = captureOutput(func() {
+		// We deleted it in step 12, so resolveFeed needs to find it even if deleted
+		// The current deleteFeed implementation uses resolveFeed(input, true) which means onlyEnabled=true? No wait.
+		// Let's check resolveFeed implementation in feed.go
+		// resolveFeed(input, true) -> FindFeedByUrlAndAvailability(u, true) -> onlyEnabled=true
+		// Wait, deleteFeed calls resolveFeed(input, true).
+		// In step 12 we called deleteFeed(testURL, false). This soft deleted it.
+		// Now we want to purge it.
+		// But deleteFeed calls resolveFeed(input, true). true means onlyEnabled?
+		// Let's check resolveFeed signature: resolveFeed(input string, onlyEnabled bool)
+		// If we pass true, it calls FindFeedByUrlAndAvailability(u, true).
+		// FindFeedByUrlAndAvailability implementation in MockRepo:
+		// if onlyEnabled && !f.Enabled { continue }
+		// A soft deleted feed is not enabled? Or is it?
+		// In MockRepo:
+		// if f.DeletedAt.Valid { continue } -> It skips deleted feeds!
+
+		// So deleteFeed cannot find a soft-deleted feed by URL if the mock implementation skips deleted ones.
+		// Real implementation of FindFeedByUrlAndAvailability:
+		// query := r.db.Where("url = ?", u.String())
+		// if onlyEnabled { query = query.Where("enabled = ?", true) }
+		// And GORM by default filters out soft deleted records unless Unscoped is used.
+		// So resolveFeed cannot find a soft deleted feed by URL.
+
+		// To test purge, we need to purge an existing (non-deleted) feed, OR we need to use UUID if we want to target a specific one that might be deleted (but resolveFeed tries UUID then URL).
+		// But even for UUID, resolveFeed uses repo.FindFeedById.
+		// Real repo.FindFeedById uses Unscoped(). So it finds deleted ones.
+		// MockRepo.FindFeedById: return f, nil (no check for deleted).
+
+		// So if we use UUID, it should work.
+		// Let's get the UUID first.
+		id := feeds[0].ID
+		deleteFeed(id.String(), true)
+	})
+	assert.Contains(t, out, "Purged feed")
+
+	// 13b. List Feeds (Verify Gone)
+	out = captureOutput(func() {
+		listFeeds(true, true)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+	assert.Len(t, feeds, 0)
 
 	// 14. Test Enable with Polling triggers Sync
 	testURL2 := "http://example.com/rss2"
@@ -390,6 +435,11 @@ func (m *MockRepo) DeleteFeedById(id uuid.UUID) error {
 		f.DeletedAt = gorm.DeletedAt{Time: time.Now(), Valid: true}
 		f.UpdatedAt = time.Now()
 	}
+	return nil
+}
+
+func (m *MockRepo) PurgeFeedById(id uuid.UUID) error {
+	delete(m.feeds, id)
 	return nil
 }
 
