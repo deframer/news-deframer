@@ -291,7 +291,12 @@ export const handleArticle = async (client: NewsDeframerClient) => {
           const overallRating = document.getElementById('overall-rating-container');
 
           if (metrics && original) {
-            metrics.style.display = 'none';
+            // If already visible, do nothing
+            if (original.style.display === 'block') {
+              return;
+            }
+
+            // Just show the original content, don't hide metrics
             original.style.display = 'block';
             
             if (overallRating) {
