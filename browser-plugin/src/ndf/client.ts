@@ -90,7 +90,11 @@ export class NewsDeframerClient {
     try {
       const result = await this.proxyRequest<string[]>('/api/domains', {});
       const domains = result ?? [];
-      await setCachedDomains(domains);
+      
+      if (domains.length > 0) {
+        await setCachedDomains(domains);
+      }
+      
       return domains;
     } catch (error) {
       await invalidateDomainCache();

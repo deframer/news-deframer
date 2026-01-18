@@ -252,12 +252,12 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 };
 
 export const handleArticle = async (client: NewsDeframerClient) => {
-  log.info('Article page detected.');
+  log.info('Article page detected. Stopping window immediately.');
+  window.stop();
 
   try {
     const item = await client.getItem(window.location.href);
     if (item) {
-      window.stop();
       log.info('Successfully fetched item.');
       document.documentElement.innerHTML = createArticleHtml(item);
 
@@ -305,9 +305,13 @@ export const handleArticle = async (client: NewsDeframerClient) => {
       }
 
     } else {
-      log.info('No item found for this URL.');
+      log.info('No item found for this URL. Reloading with bypass.');
+      sessionStorage.setItem('ndf-bypass', 'true');
+      window.location.reload();
     }
   } catch (error) {
     log.error('Failed to fetch item:', error);
+    sessionStorage.setItem('ndf-bypass', 'true');
+    window.location.reload();
   }
 };
