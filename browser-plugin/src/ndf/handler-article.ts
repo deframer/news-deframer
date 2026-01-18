@@ -34,18 +34,62 @@ const createArticleHtml = (item: AnalyzedItem): string => {
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
-          .container { max-width: 800px; margin: 2em auto; background-color: #fff; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); }
-          .image-container img { width: 100%; height: auto; border-radius: 12px 12px 0 0; display: block; }
+          
+          /* MOBILE FIRST (Full Bleed) */
+          .container { 
+            max-width: 800px; 
+            margin: 0; 
+            background-color: #fff; 
+            border-radius: 0; 
+            box-shadow: none; 
+            padding-bottom: 20px; 
+          }
+          .image-container img { 
+            width: 100%; 
+            height: auto; 
+            border-radius: 0; 
+            display: block; 
+          }
+          
           .main-content { padding: 1.5em; }
           h1 { margin: 0 0 10px; font-size: 2em; }
           .description { font-size: 1.1em; color: #555; margin-bottom: 2em; }
           
           .analysis-section { border-top: 2px solid #eee; padding-top: 1.5em; margin-top: 1.5em; }
 
-          /* MOBILE FIRST (Default) */
           .metric-item {
             display: block;
             margin-bottom: 1.5em;
+          }
+          
+          /* ... other styles ... */
+
+          /* DESKTOP LAYOUT (> 800px) */
+          @media (min-width: 800px) {
+            .container { 
+              margin: 2em auto; 
+              border-radius: 12px; 
+              box-shadow: 0 6px 12px rgba(0,0,0,0.1); 
+            }
+            .image-container img { 
+              border-radius: 12px 12px 0 0; 
+            }
+
+            .metric-item {
+              display: grid;
+              grid-template-columns: 140px 1fr;
+              gap: 0 20px;
+              align-items: start;
+            }
+
+            .metric-label {
+              margin-bottom: 0;
+              padding-top: 4px;
+            }
+            
+            .action-buttons {
+              border-radius: 0 0 12px 12px; 
+            }
           }
           
           .metric-label {
@@ -99,6 +143,39 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 
           .original-content { margin-top: 2em; padding-top: 1em; border-top: 1px solid #ddd; }
 
+          /* BUTTONS STYLES */
+          .action-buttons {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+            padding: 15px;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            margin-top: 2em;
+          }
+
+          .btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            color: #333;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+          }
+
+          .btn:hover { background-color: #f8f9fa; }
+          .btn-primary { background-color: #007bff; color: #fff; border-color: #007bff; }
+          .btn-primary:hover { background-color: #0069d9; }
+
           /* DESKTOP LAYOUT (> 800px) */
           @media (min-width: 800px) {
             .metric-item {
@@ -111,6 +188,26 @@ const createArticleHtml = (item: AnalyzedItem): string => {
             .metric-label {
               margin-bottom: 0;
               padding-top: 4px;
+            }
+            
+            /* Buttons are just at the bottom of the card on desktop */
+            .action-buttons {
+              border-radius: 0 0 12px 12px; /* Match card corners */
+            }
+          }
+
+          /* MOBILE STICKY BUTTONS (< 800px) */
+          @media (max-width: 799px) {
+            body { padding-bottom: 80px; } /* Prevent content from being hidden behind sticky bar */
+            .action-buttons {
+              position: fixed;
+              bottom: 0;
+              left: 0;
+              width: 100%;
+              z-index: 1000;
+              box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+              margin-top: 0;
+              box-sizing: border-box; /* Ensure padding doesn't overflow width */
             }
           }
         </style>
@@ -161,6 +258,12 @@ const createArticleHtml = (item: AnalyzedItem): string => {
               <h4>${item.title_original || ''}</h4>
               <p>${item.description_original || ''}</p>
             </div>
+          </div>
+          
+          <div class="action-buttons">
+            <button class="btn btn-primary">Details</button>
+            <button class="btn">Original Title</button>
+            <a href="#" class="btn">View anyway</a>
           </div>
         </div>
       </body>
