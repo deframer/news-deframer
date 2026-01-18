@@ -7,7 +7,9 @@
     "lint": "eslint src",
     "build": "webpack",
     "dist": "npm run clean && npm run build && cd dist/host && zip -r ../../extension.zip .",
-    "dev": "webpack --watch",
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "tsc --noEmit --watch",
+    "dev": "echo \"Starting webpack watch. Run 'npm run type-check:watch' in a separate terminal for type checking.\" && webpack --watch",
     "pack": "cd dist/host && zip -r ../../extension.zip .",
     "clean": "rm -rf dist extension.zip"
   },
@@ -40,6 +42,7 @@
   "dependencies": {
     "loglevel": "^1.9.2",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3"
+    "react-dom": "^19.2.3",
+    "tldts": "^7.0.19"
   }
 }

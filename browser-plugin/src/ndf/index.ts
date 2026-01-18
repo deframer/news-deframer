@@ -21,9 +21,9 @@ export default {
       const pathSegments = currentUrl.pathname.split('/').filter((p) => p.length > 0);
 
       if (pathSegments.length <= 1) {
-        handlePortal();
+        handlePortal(client);
       } else {
-        handleArticle();
+        handleArticle(client);
       }
     } catch (e) {
       log.error('NDF Error:', e);

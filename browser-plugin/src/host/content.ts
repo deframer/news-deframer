@@ -8,4 +8,8 @@ async function startNdf() {
   ndf.start(settings);
 }
 
-startNdf();
+// Early exit if the content is not HTML.
+// This is to prevent the script from running on non-HTML content like XML, JSON, etc.
+if (document.contentType === 'text/html') {
+  startNdf();
+}

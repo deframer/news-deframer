@@ -134,6 +134,10 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 		return err
 	}
 
+	for _, item := range parsedFeed.Items {
+		item.Link = normalizeURL(item.Link)
+	}
+
 	domains, err := s.wantedDomains(feed)
 	if err != nil {
 		return err
@@ -509,4 +513,38 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	}
 
 	return s.repo.UpsertCachedFeed(cachedFeed)
+}
+
+// normalizeURL removes fragments and common tracking/marketing parameters from a URL.
+func normalizeURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+
+	// Remove fragment (e.g., #ref=rss)
+	u.Fragment = ""
+	u.RawFragment = ""
+
+	// Remove common tracking/marketing parameters (case-insensitive)
+	q := u.Query()
+	trackingParams := map[string]bool{
+		"utm_source": true, "utm_medium": true, "utm_campaign": true,
+		"utm_term": true, "utm_content": true, "ref": true,
+		"fbclid": true, "gclid": true, "msclkid": true,
+		"mc_cid": true, "mc_eid": true, "_hsenc": true, "_hsmi": true,
+	}
+	for k := range q {
+		if trackingParams[strings.ToLower(k)] {
+			q.Del(k)
+		}
+	}
+
+	if len(q) == 0 {
+		u.RawQuery = ""
+	} else {
+		u.RawQuery = q.Encode()
+	}
+
+	return u.String()
 }

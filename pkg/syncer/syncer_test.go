@@ -181,6 +181,57 @@ func TestSyncFeedInternal(t *testing.T) {
 	}
 }
 
+func TestNormalizeURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Remove Fragment",
+			input:    "https://www.spiegel.de/politik/deutschland/article.html#ref=rss",
+			expected: "https://www.spiegel.de/politik/deutschland/article.html",
+		},
+		{
+			name:     "Remove UTM Parameters",
+			input:    "https://example.com/news?utm_source=twitter&utm_medium=social&utm_campaign=spring_sale",
+			expected: "https://example.com/news",
+		},
+		{
+			name:     "Remove Mixed Marketing Parameters",
+			input:    "https://example.com/path?fbclid=123&gclid=456&msclkid=789&ref=rss",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "Keep Legitimate Parameters",
+			input:    "https://example.com/search?q=golang&utm_source=feed",
+			expected: "https://example.com/search?q=golang",
+		},
+		{
+			name:     "Case Insensitive Removal",
+			input:    "https://example.com/path?UTM_SOURCE=Campaign&REF=RSS",
+			expected: "https://example.com/path",
+		},
+		{
+			name:     "Invalid URL",
+			input:    "://invalid-url",
+			expected: "://invalid-url",
+		},
+		{
+			name:     "No Changes Needed",
+			input:    "https://example.com/article/123",
+			expected: "https://example.com/article/123",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := normalizeURL(tt.input)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
 func TestExtractMediaContent(t *testing.T) {
 	s := &Syncer{logger: slog.Default()}
 

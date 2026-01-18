@@ -8,7 +8,15 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     log.info(`Proxying request to ${url}`);
 
     fetch(url, { headers })
-      .then((response) => response.json().then((data) => ({ ok: response.ok, status: response.status, data })))
+      .then(async (response) => {
+        if (response.ok) {
+          const data = await response.json();
+          return { ok: response.ok, status: response.status, data };
+        } else {
+          const errorText = await response.text();
+          return { ok: response.ok, status: response.status, error: errorText };
+        }
+      })
       .then((result) => sendResponse(result))
       .catch((err) => {
         log.error('Proxy request failed:', err);
