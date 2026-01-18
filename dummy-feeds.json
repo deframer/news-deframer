@@ -1,6 +1,7 @@
 [
   {
     "url": "http://wordpress/feed/",
-    "language": "en"
+    "language": "en",
+    "root_domain": "wordpress"
   }
 ]

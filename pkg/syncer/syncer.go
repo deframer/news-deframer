@@ -178,7 +178,14 @@ func (s *Syncer) wantedDomains(feed *database.Feed) ([]string, error) {
 		baseDomain = u.Hostname()
 	}
 
-	return []string{baseDomain}, nil
+	domains := []string{baseDomain}
+	if feed.RootDomain != nil {
+		if rd := strings.TrimSpace(*feed.RootDomain); rd != "" {
+			domains = append(domains, rd)
+		}
+	}
+
+	return domains, nil
 }
 
 func (s *Syncer) determineLanguage(feed *database.Feed, parsedFeed *gofeed.Feed) string {
