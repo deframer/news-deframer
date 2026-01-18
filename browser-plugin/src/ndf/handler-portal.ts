@@ -3,8 +3,6 @@ import { getDomain } from 'tldts';
 import log from '../shared/logger';
 import { AnalyzedItem,NewsDeframerClient } from './client';
 
-const formatRating = (rating: number | undefined): string => (rating || 0.0).toFixed(2);
-
 const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
   const tiles = items
     .map((item) => {
@@ -18,7 +16,7 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
       return `
         <a href="${item.url}" class="tile-link">
           <div class="tile">
-            <div class="rating">${formatRating(item.rating)}</div>
+            <div class="rating">${item.rating.toFixed(2)}</div>
             ${image}
             <div class="content">
               <h3>${title}</h3>
@@ -91,4 +89,3 @@ export const handlePortal = async (client: NewsDeframerClient) => {
     window.location.reload();
   }
 };
-

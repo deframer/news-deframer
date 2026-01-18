@@ -13,26 +13,43 @@ describe('Portal Handler', () => {
     getSite: jest.fn(),
   } as unknown as NewsDeframerClient;
 
+  const mockReload = jest.fn();
+  const mockStop = jest.fn();
+
   beforeEach(() => {
     // Reset the document body for each test
     document.body.innerHTML = '';
     document.body.style.border = '';
     jest.clearAllMocks();
+
+    // Mock window.stop and window.location
+    window.stop = mockStop;
+    delete (window as Partial<Window & typeof globalThis>).location;
+    Object.defineProperty(window, 'location', {
+      value: {
+        href: 'http://example.com/',
+        hostname: 'example.com',
+        reload: mockReload,
+      },
+      configurable: true,
+    });
   });
 
-  test('should apply a green border to the body and fetch items', async () => {
+  test('should fetch items for the root domain', async () => {
     (getDomain as jest.Mock).mockReturnValue('example.com');
     mockClient.getSite = jest.fn().mockResolvedValue([{ hash: '123', url: 'http://test.com', rating: 5 }]);
     await handlePortal(mockClient);
-    
+
     expect(mockClient.getSite).toHaveBeenCalledWith('example.com');
+    expect(mockStop).toHaveBeenCalled();
   });
 
   test('should log an error if root domain cannot be determined', async () => {
     (getDomain as jest.Mock).mockReturnValue(null);
     const logSpy = jest.spyOn(log, 'error').mockImplementation(() => {});
     await handlePortal(mockClient);
-    expect(logSpy).toHaveBeenCalledWith('Could not determine root domain.');
+    expect(logSpy).toHaveBeenCalledWith('Could not determine root domain. Reloading with bypass.');
+    expect(mockReload).toHaveBeenCalled();
     logSpy.mockRestore();
   });
 
@@ -41,7 +58,8 @@ describe('Portal Handler', () => {
     mockClient.getSite = jest.fn().mockResolvedValue([]);
     const logSpy = jest.spyOn(log, 'info').mockImplementation(() => {});
     await handlePortal(mockClient);
-    expect(logSpy).toHaveBeenCalledWith('No items found for example.com.');
+    expect(logSpy).toHaveBeenCalledWith('No items found for example.com. Reloading with bypass.');
+    expect(mockReload).toHaveBeenCalled();
     logSpy.mockRestore();
   });
 
@@ -51,6 +69,7 @@ describe('Portal Handler', () => {
     const logSpy = jest.spyOn(log, 'error').mockImplementation(() => {});
     await handlePortal(mockClient);
     expect(logSpy).toHaveBeenCalledWith('Failed to fetch items for example.com:', expect.any(Error));
+    expect(mockReload).toHaveBeenCalled();
     logSpy.mockRestore();
   });
 });
