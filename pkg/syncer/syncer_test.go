@@ -125,65 +125,65 @@ func TestStopPolling(t *testing.T) {
 	assert.Equal(t, id, repo.lastId)
 }
 
-func TestSyncFeedInternal(t *testing.T) {
-	// developer trigger
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		t.Skip("Skipping test on GitHub Actions")
-	}
+// func TestSyncFeedInternal(t *testing.T) {
+// 	// developer trigger
+// 	// if os.Getenv("GITHUB_ACTIONS") == "true" {
+// 	// 	t.Skip("Skipping test on GitHub Actions")
+// 	// }
 
-	t.Skip("Skipping test")
+// 	t.Skip("Skipping test")
 
-	cfg, err := config.Load()
-	assert.NoError(t, err)
+// 	cfg, err := config.Load()
+// 	assert.NoError(t, err)
 
-	repo, err := database.NewRepository(cfg)
-	assert.NoError(t, err)
+// 	repo, err := database.NewRepository(cfg)
+// 	assert.NoError(t, err)
 
-	tests := []struct {
-		name    string
-		url     string
-		wantErr bool
-		enabled bool
-	}{
-		{
-			name:    "Localhost Feed",
-			url:     "http://localhost:8003/feed",
-			wantErr: false,
-			enabled: true,
-		},
-		{
-			name:    "WordPress Feed",
-			url:     "http://wordpress/feed",
-			wantErr: true,
-			enabled: false,
-		},
-	}
+// 	tests := []struct {
+// 		name    string
+// 		url     string
+// 		wantErr bool
+// 		enabled bool
+// 	}{
+// 		{
+// 			name:    "Localhost Feed",
+// 			url:     "http://localhost:8003/feed",
+// 			wantErr: false,
+// 			enabled: true,
+// 		},
+// 		{
+// 			name:    "WordPress Feed",
+// 			url:     "http://wordpress/feed",
+// 			wantErr: true,
+// 			enabled: false,
+// 		},
+// 	}
 
-	s, err := New(context.Background(), cfg, repo)
-	assert.NoError(t, err)
+// 	s, err := New(context.Background(), cfg, repo)
+// 	assert.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if !tt.enabled {
-				t.Skip("Test case disabled")
-			}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if !tt.enabled {
+// 				t.Skip("Test case disabled")
+// 			}
 
-			u, err := url.Parse(tt.url)
-			assert.NoError(t, err)
+// 			u, err := url.Parse(tt.url)
+// 			assert.NoError(t, err)
 
-			feed, err := repo.FindFeedByUrl(u)
-			assert.NoError(t, err)
-			if assert.NotNil(t, feed) {
-				err = s.updatingFeed(feed)
-				if tt.wantErr {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
-				}
-			}
-		})
-	}
-}
+// 			feed, err := repo.FindFeedByUrl(u)
+// 			assert.NoError(t, err)
+// 			if assert.NotNil(t, feed) {
+// 				err = s.updatingFeed(feed)
+// 				if tt.wantErr {
+// 					assert.Error(t, err)
+// 				} else {
+// 					assert.NoError(t, err)
+// 				}
+// 			}
+// 		})
+// 	}
+// }
 
 func TestNormalizeURL(t *testing.T) {
 	tests := []struct {
