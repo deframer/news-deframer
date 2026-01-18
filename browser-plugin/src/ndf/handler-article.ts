@@ -34,15 +34,29 @@ const createArticleHtml = (item: AnalyzedItem): string => {
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
-          .container { max-width: 800px; margin: 2em auto; background-color: #fff; border-radius: 12px; box-shadow: 0 6px 12px rgba(0,0,0,0.1); padding-bottom: 20px; }
-          .image-container img { width: 100%; height: auto; border-radius: 12px 12px 0 0; display: block; }
+          
+          /* MOBILE FIRST (Full Bleed) */
+          .container { 
+            max-width: 800px; 
+            margin: 0; 
+            background-color: #fff; 
+            border-radius: 0; 
+            box-shadow: none; 
+            padding-bottom: 20px; 
+          }
+          .image-container img { 
+            width: 100%; 
+            height: auto; 
+            border-radius: 0; 
+            display: block; 
+          }
+          
           .main-content { padding: 1.5em; }
           h1 { margin: 0 0 10px; font-size: 2em; }
           .description { font-size: 1.1em; color: #555; margin-bottom: 2em; }
           
           .analysis-section { border-top: 2px solid #eee; padding-top: 1.5em; margin-top: 1.5em; }
 
-          /* MOBILE FIRST (Default) */
           .metric-item {
             display: block;
             margin-bottom: 1.5em;
@@ -162,21 +176,6 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 
           /* MOBILE STICKY BUTTONS (< 800px) */
           @media (max-width: 799px) {
-            .container { 
-              max-width: 800px; 
-              margin: 0; 
-              background-color: #fff; 
-              border-radius: 0; 
-              box-shadow: none; 
-              padding-bottom: 20px; 
-            }
-            .image-container img { 
-              width: 100%; 
-              height: auto; 
-              border-radius: 0; 
-              display: block; 
-            }
-
             body { padding-bottom: 80px; } /* Prevent content from being hidden behind sticky bar */
             .action-buttons {
               position: fixed;
@@ -198,7 +197,7 @@ const createArticleHtml = (item: AnalyzedItem): string => {
             <h1>${title}</h1>
             <p class="description">${description}</p>
             <div class="analysis-section">
-              <div class="metric-item">
+              <div id="overall-rating-container" class="metric-item">
                 <div class="metric-label">Overall Rating</div>
                 <div class="metric-details">
                   <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${overallValue}" aria-label="Overall rating: ${overallValue}%" aria-describedby="overall-reason">
@@ -268,10 +267,18 @@ export const handleArticle = async (client: NewsDeframerClient) => {
         btnDetails.addEventListener('click', () => {
           const metrics = document.getElementById('metrics-content');
           const original = document.getElementById('original-content');
+          const overallRating = document.getElementById('overall-rating-container');
+          
           if (metrics && original) {
             metrics.style.display = 'block';
             original.style.display = 'block';
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            
+            if (overallRating) {
+              const rect = overallRating.getBoundingClientRect();
+              const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+              const offset = 20; // Graceful offset
+              window.scrollTo({ top: rect.top + scrollTop - offset, behavior: 'smooth' });
+            }
           }
         });
       }
@@ -281,10 +288,18 @@ export const handleArticle = async (client: NewsDeframerClient) => {
         btnOriginal.addEventListener('click', () => {
           const metrics = document.getElementById('metrics-content');
           const original = document.getElementById('original-content');
+          const overallRating = document.getElementById('overall-rating-container');
+
           if (metrics && original) {
             metrics.style.display = 'none';
             original.style.display = 'block';
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            
+            if (overallRating) {
+              const rect = overallRating.getBoundingClientRect();
+              const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+              const offset = 20; // Graceful offset
+              window.scrollTo({ top: rect.top + scrollTop - offset, behavior: 'smooth' });
+            }
           }
         });
       }
