@@ -1,3 +1,4 @@
+import { getCachedDomains, invalidateDomainCache,setCachedDomains } from '../shared/domain-cache';
 import { Settings } from '../shared/settings';
 
 // --- Type Definitions based on Go backend models ---
@@ -81,8 +82,20 @@ export class NewsDeframerClient {
   }
 
   async getDomains(): Promise<string[]> {
-    const result = await this.proxyRequest<string[]>('/api/domains', {});
-    return result ?? [];
+    const cached = await getCachedDomains();
+    if (cached) {
+      return cached;
+    }
+
+    try {
+      const result = await this.proxyRequest<string[]>('/api/domains', {});
+      const domains = result ?? [];
+      await setCachedDomains(domains);
+      return domains;
+    } catch (error) {
+      await invalidateDomainCache();
+      throw error;
+    }
   }
 
   async getItem(url: string): Promise<AnalyzedItem | null> {

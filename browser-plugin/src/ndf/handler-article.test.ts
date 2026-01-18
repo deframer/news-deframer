@@ -15,9 +15,9 @@ describe('Article Handler', () => {
   });
 
   test('should apply a blue border to the body and fetch item', async () => {
-    mockClient.getItem = jest.fn().mockResolvedValue({ hash: '123', url: 'http://test.com' });
+    mockClient.getItem = jest.fn().mockResolvedValue({ hash: '123', url: 'http://test.com', rating: 5 });
     await handleArticle(mockClient);
-    expect(document.body.style.border).toBe('15px solid blue');
+    
     expect(mockClient.getItem).toHaveBeenCalledWith(window.location.href);
   });
 

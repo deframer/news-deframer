@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { invalidateDomainCache } from '../../shared/domain-cache';
 import {
   DEFAULT_BACKEND_URL,
   getSettings,
@@ -57,6 +58,7 @@ const Options = () => {
 
       if (response.ok) {
         setStatus('success');
+        await invalidateDomainCache();
       } else {
         setStatus('error');
       }
