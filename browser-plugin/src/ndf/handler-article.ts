@@ -1,3 +1,4 @@
+import { getDomain } from 'tldts';
 import log from '../shared/logger';
 import { AnalyzedItem, NewsDeframerClient } from './client';
 
@@ -9,7 +10,7 @@ const getRatingColors = (percentage: number): { bg: string; text: string } => {
   return { bg: '#b02a37', text: '#ffffff' }; // Accessible Red
 };
 
-const createArticleHtml = (item: AnalyzedItem): string => {
+const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
   const title = item.title_corrected || item.title_original || 'No title';
   const description = item.description_corrected || item.description_original || 'No description';
   const imageUrl = item.media && item.media.medium === 'image' && item.media.url ? item.media.url : '';
@@ -33,39 +34,67 @@ const createArticleHtml = (item: AnalyzedItem): string => {
         <title>News Deframer: ${title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
+          .page-header {
+            background-color: #fff;
+            padding: 8px 1.5em;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+          }
+
+          .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border: 1px solid #007bff;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+          }
+
+          .btn-back:hover { background-color: #0069d9; }
+
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
-          
+
           /* MOBILE FIRST (Full Bleed) */
-          .container { 
-            max-width: 800px; 
-            margin: 0; 
-            background-color: #fff; 
-            border-radius: 0; 
-            box-shadow: none; 
-            padding-bottom: 20px; 
+          .container {
+            max-width: 800px;
+            margin: 0;
+            background-color: #fff;
+            border-radius: 0;
+            box-shadow: none;
+            padding-bottom: 20px;
           }
-          .image-container img { 
-            width: 100%; 
-            height: auto; 
-            border-radius: 0; 
-            display: block; 
+          .image-container img {
+            width: 100%;
+            height: auto;
+            border-radius: 0;
+            display: block;
           }
-          
+
           .main-content { padding: 1.5em; }
           h1 { margin: 0 0 10px; font-size: 2em; }
           .description { font-size: 1.1em; color: #555; margin-bottom: 2em; }
-          
+
           .analysis-section { border-top: 2px solid #eee; padding-top: 1.5em; margin-top: 1.5em; }
 
           .metric-item {
             display: block;
             margin-bottom: 1.5em;
           }
-          
+
           .metric-label {
             font-weight: bold;
             font-size: 1.1em;
-            margin-bottom: 5px; 
+            margin-bottom: 5px;
             display: block;
           }
 
@@ -77,16 +106,16 @@ const createArticleHtml = (item: AnalyzedItem): string => {
           .bar-container {
             background-color: #e9ecef;
             border-radius: 5px;
-            height: 30px; 
+            height: 30px;
             width: 100%;
             margin-bottom: 5px;
-            position: relative; 
-            overflow: hidden; 
+            position: relative;
+            overflow: hidden;
           }
-          
-          .bar { 
-            height: 100%; 
-            border-radius: 5px; 
+
+          .bar {
+            height: 100%;
+            border-radius: 5px;
             transition: width 0.3s ease;
           }
 
@@ -98,12 +127,12 @@ const createArticleHtml = (item: AnalyzedItem): string => {
             height: 100%;
             display: flex;
             align-items: center;
-            padding-left: 8px; 
+            padding-left: 8px;
             font-weight: bold;
             font-size: 0.95em;
-            pointer-events: none; 
+            pointer-events: none;
           }
-          
+
           .reason {
             margin: 0;
             font-size: 0.95em;
@@ -118,7 +147,7 @@ const createArticleHtml = (item: AnalyzedItem): string => {
             display: flex;
             justify-content: space-around;
             gap: 10px;
-            padding: 15px;
+            padding: 1.5em;
             background-color: #fff;
             border-top: 1px solid #eee;
             margin-top: 2em;
@@ -148,13 +177,16 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 
           /* DESKTOP LAYOUT (> 800px) */
           @media (min-width: 800px) {
-            .container { 
-              margin: 2em auto; 
-              border-radius: 12px; 
-              box-shadow: 0 6px 12px rgba(0,0,0,0.1); 
+            .page-header {
+              border-radius: 12px 12px 0 0;
             }
-            .image-container img { 
-              border-radius: 12px 12px 0 0; 
+            .container {
+              margin: 2em auto;
+              border-radius: 12px;
+              box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+            }
+            .image-container img {
+              border-radius: 0;
             }
 
             .metric-item {
@@ -168,15 +200,26 @@ const createArticleHtml = (item: AnalyzedItem): string => {
               margin-bottom: 0;
               padding-top: 4px;
             }
-            
+
             .action-buttons {
-              border-radius: 0 0 12px 12px; 
+              border-radius: 0 0 12px 12px;
             }
           }
 
           /* MOBILE STICKY BUTTONS (< 800px) */
           @media (max-width: 799px) {
-            body { padding-bottom: 80px; } /* Prevent content from being hidden behind sticky bar */
+            body {
+              padding-top: 48px; /* Space for sticky header */
+              padding-bottom: 80px; /* Prevent content from being hidden by sticky bar */
+            }
+            .page-header {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              box-sizing: border-box;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
             .action-buttons {
               position: fixed;
               bottom: 0;
@@ -192,6 +235,9 @@ const createArticleHtml = (item: AnalyzedItem): string => {
       </head>
       <body>
         <div class="container">
+          <header class="page-header">
+            <a href="/" class="btn-back" title="Go back to ${rootDomain} portal">Back</a>
+          </header>
           ${imageUrl ? `<div class="image-container"><img src="${imageUrl}" alt="${title}"></div>` : ''}
           <div class="main-content">
             <h1>${title}</h1>
@@ -239,7 +285,7 @@ const createArticleHtml = (item: AnalyzedItem): string => {
               <p>${item.description_original || ''}</p>
             </div>
           </div>
-          
+
           <div class="action-buttons">
             <button id="btn-details" class="btn btn-primary">Details</button>
             <button id="btn-original" class="btn">Original Title</button>
@@ -255,11 +301,13 @@ export const handleArticle = async (client: NewsDeframerClient) => {
   log.info('Article page detected. Stopping window immediately.');
   window.stop();
 
+  const rootDomain = getDomain(window.location.hostname);
+
   try {
     const item = await client.getItem(window.location.href);
     if (item) {
       log.info('Successfully fetched item.');
-      document.documentElement.innerHTML = createArticleHtml(item);
+      document.documentElement.innerHTML = createArticleHtml(item, rootDomain || window.location.hostname);
 
       // Attach event listeners programmatically after HTML is injected
       const btnDetails = document.getElementById('btn-details');
@@ -268,11 +316,11 @@ export const handleArticle = async (client: NewsDeframerClient) => {
           const metrics = document.getElementById('metrics-content');
           const original = document.getElementById('original-content');
           const overallRating = document.getElementById('overall-rating-container');
-          
+
           if (metrics && original) {
             metrics.style.display = 'block';
             original.style.display = 'block';
-            
+
             if (overallRating) {
               const rect = overallRating.getBoundingClientRect();
               const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
@@ -298,7 +346,7 @@ export const handleArticle = async (client: NewsDeframerClient) => {
 
             // Just show the original content, don't hide metrics
             original.style.display = 'block';
-            
+
             if (overallRating) {
               const rect = overallRating.getBoundingClientRect();
               const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
