@@ -9,6 +9,11 @@ export default {
     try {
       const client = new NewsDeframerClient(config);
       const domains = await client.getDomains();
+
+      if (domains.length === 0) {
+        log.error('Could not get domains from backend, aborting.');
+        return;
+      }
       const currentUrl = new URL(window.location.href);
 
       const isMonitored = domains.some((d) => currentUrl.hostname === d || currentUrl.hostname.endsWith('.' + d));

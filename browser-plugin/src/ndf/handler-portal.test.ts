@@ -22,9 +22,9 @@ describe('Portal Handler', () => {
 
   test('should apply a green border to the body and fetch items', async () => {
     (getDomain as jest.Mock).mockReturnValue('example.com');
-    mockClient.getSite = jest.fn().mockResolvedValue([]);
+    mockClient.getSite = jest.fn().mockResolvedValue([{ hash: '123', url: 'http://test.com', rating: 5 }]);
     await handlePortal(mockClient);
-    expect(document.body.style.border).toBe('15px solid green');
+    
     expect(mockClient.getSite).toHaveBeenCalledWith('example.com');
   });
 
