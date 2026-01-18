@@ -71,6 +71,10 @@ func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]databa
 	return nil, nil
 }
 
+func (m *mockRepo) PurgeFeedById(id uuid.UUID) error {
+	return nil
+}
+
 // Implement EnqueueSync
 func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
 	m.enqueueSyncCalled = true
@@ -390,6 +394,34 @@ func TestExtractMediaContent(t *testing.T) {
 				Medium: "image",
 				Width:  800,
 				Height: 450, // 800 * 9 / 16
+			},
+		},
+		{
+			name: "Fallback to Thumbnail",
+			item: &gofeed.Item{
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"thumbnail": {{
+							Name: "thumbnail",
+							Attrs: map[string]string{
+								"url":    "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/039e/live/9ebb4470-f496-11f0-a422-4ba8a094a8fa.jpg",
+								"width":  "240",
+								"height": "135",
+							},
+						}},
+					},
+				},
+			},
+			expected: &database.MediaContent{
+				URL:    "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/039e/live/9ebb4470-f496-11f0-a422-4ba8a094a8fa.jpg",
+				Medium: "image", // Default injected
+				Width:  240,
+				Height: 135,
+				Thumbnail: &database.MediaThumbnail{
+					URL:    "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/039e/live/9ebb4470-f496-11f0-a422-4ba8a094a8fa.jpg",
+					Width:  240,
+					Height: 135,
+				},
 			},
 		},
 	}

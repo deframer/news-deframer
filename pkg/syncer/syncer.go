@@ -402,6 +402,29 @@ func (s *Syncer) extractMediaContent(item *gofeed.Item) (*database.MediaContent,
 	}
 
 	if contentExt == nil {
+		// Fallback: check for media:thumbnail
+		if thumbs, ok := mediaExt["thumbnail"]; ok && len(thumbs) > 0 {
+			for _, t := range thumbs {
+				if t.Attrs["url"] != "" {
+					val := t
+					// Deep copy attrs to avoid side effects and allow modification
+					newAttrs := make(map[string]string)
+					for k, v := range val.Attrs {
+						newAttrs[k] = v
+					}
+					val.Attrs = newAttrs
+
+					if _, ok := val.Attrs["medium"]; !ok {
+						val.Attrs["medium"] = "image"
+					}
+					contentExt = &val
+					break
+				}
+			}
+		}
+	}
+
+	if contentExt == nil {
 		return nil, nil
 	}
 
