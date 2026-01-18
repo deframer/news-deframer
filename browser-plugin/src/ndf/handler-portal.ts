@@ -76,7 +76,34 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
           .header h1 {
             margin: 0;
             font-size: 1.5em;
+            /* Ensure title doesn't overlap with the button */
+            padding: 0 80px;
+            display: inline-block;
+            max-width: 100%;
+            box-sizing: border-box;
           }
+          .btn {
+            padding: 10px 16px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            color: #333;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+            flex-shrink: 0;
+          }
+          .btn:hover { background-color: #f8f9fa; }
+
+          #btn-hide {
+            position: absolute;
+            right: 1em;
+            top: 50%;
+            transform: translateY(-50%);
+          }
+
           .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
           .tile-link { text-decoration: none; color: inherit; }
           .tile { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; height: 100%; position: relative; }
@@ -139,6 +166,7 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
         <div class="container">
           <div class="header">
             <h1>News Deframer: ${rootDomain}</h1>
+            <button id="btn-hide" class="btn">Hide</button>
           </div>
           <div class="grid">
             ${tiles}
@@ -173,6 +201,17 @@ export const handlePortal = async (client: NewsDeframerClient) => {
     if (items.length > 0) {
       log.info(`Successfully fetched ${items.length} items for ${rootDomain}.`);
       document.documentElement.innerHTML = createTilesHtml(items, rootDomain);
+
+      const btnHide = document.getElementById('btn-hide');
+      if (btnHide) {
+        btnHide.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.scrollTo(0, 0);
+          log.info('User clicked "Hide". Bypassing for this session and reloading.');
+          sessionStorage.setItem('ndf-bypass', 'true');
+          window.location.reload();
+        });
+      }
     } else {
       log.info(`No items found for ${rootDomain}. Reloading with bypass.`);
       sessionStorage.setItem('ndf-bypass', 'true');

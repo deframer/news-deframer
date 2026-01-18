@@ -286,7 +286,7 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
           <div class="action-buttons">
             <button id="btn-details" class="btn btn-primary">Details</button>
             <button id="btn-original" class="btn">Original Title</button>
-            <a href="#" class="btn">View anyway</a>
+            <a href="#" id="btn-view-anyway" class="btn">View anyway</a>
           </div>
         </div>
       </body>
@@ -355,6 +355,17 @@ export const handleArticle = async (client: NewsDeframerClient) => {
               window.scrollTo({ top: rect.top + scrollTop - offset, behavior: 'smooth' });
             }
           }
+        });
+      }
+
+      const btnViewAnyway = document.getElementById('btn-view-anyway');
+      if (btnViewAnyway) {
+        btnViewAnyway.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.scrollTo(0, 0);
+          log.info('User clicked "View anyway". Bypassing for this session and reloading.');
+          sessionStorage.setItem('ndf-bypass', 'true');
+          window.location.reload();
         });
       }
 
