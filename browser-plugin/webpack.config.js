@@ -36,7 +36,12 @@ module.exports = {
         path: path.resolve(__dirname, 'dist/host'),
         clean: true,
     },
-    plugins: [
+    watchOptions: {
+    aggregateTimeout: 200,
+    poll: 1000,
+    ignored: /node_modules/,
+  },
+  plugins: [
         new CopyPlugin({
             patterns: [
                 { from: 'src/host/manifest.json', to: 'manifest.json' },
