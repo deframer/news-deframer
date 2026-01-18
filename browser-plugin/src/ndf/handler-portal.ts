@@ -1,7 +1,7 @@
 import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
-import { NewsDeframerClient, AnalyzedItem } from './client';
+import { AnalyzedItem,NewsDeframerClient } from './client';
 
 const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
   const tiles = items

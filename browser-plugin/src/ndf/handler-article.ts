@@ -1,5 +1,5 @@
 import log from '../shared/logger';
-import { NewsDeframerClient, AnalyzedItem } from './client';
+import { AnalyzedItem,NewsDeframerClient } from './client';
 
 const createArticleHtml = (item: AnalyzedItem): string => {
   const title = item.title_corrected || item.title_original || 'No title';
