@@ -1,14 +1,7 @@
 import { getDomain } from 'tldts';
 import log from '../shared/logger';
 import { AnalyzedItem, NewsDeframerClient } from './client';
-
-const formatRatingPercent = (rating: number | undefined): number => Math.round((rating || 0.0) * 100);
-
-const getRatingColors = (percentage: number): { bg: string; text: string } => {
-  if (percentage < 34) return { bg: '#198754', text: '#ffffff' }; // Accessible Green
-  if (percentage < 67) return { bg: '#ffc107', text: '#000000' }; // Accessible Yellow
-  return { bg: '#b02a37', text: '#ffffff' }; // Accessible Red
-};
+import { formatRatingPercent, getRatingColors } from './ratings';
 
 const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
   const title = item.title_corrected || item.title_original || 'No title';
@@ -249,7 +242,7 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
                   <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${overallValue}" aria-label="Overall rating: ${overallValue}%" aria-describedby="overall-reason">
                     <div class="bar" style="width: ${overallValue}%; background-color: ${overallColors.bg};"></div>
                     ${overallRaw !== undefined ? `
-                      <div class="bar-overlay" style="color: ${overallColors.text};">
+                      <div class="bar-overlay" style="color: ${overallColors.text}; ${overallColors.text === '#ffffff' ? 'text-shadow: 0 0 3px rgba(0,0,0,0.7);' : ''}">
                         <span>${overallValue}%</span>
                       </div>
                     ` : ''}
@@ -268,7 +261,7 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
                       <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.value}" aria-label="${m.label} rating: ${m.value}%" aria-describedby="${m.id}-reason">
                         <div class="bar" style="width: ${m.value}%; background-color: ${colors.bg};"></div>
                         ${m.raw !== undefined ? `
-                          <div class="bar-overlay" style="color: ${colors.text};">
+                          <div class="bar-overlay" style="color: ${colors.text}; ${colors.text === '#ffffff' ? 'text-shadow: 0 0 3px rgba(0,0,0,0.7);' : ''}">
                             <span>${m.value}%</span>
                           </div>
                         ` : ''}

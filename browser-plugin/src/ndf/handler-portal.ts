@@ -2,22 +2,39 @@ import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
 import { AnalyzedItem,NewsDeframerClient } from './client';
+import { formatRatingPercent, getRatingColors } from './ratings';
 
 const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
   const tiles = items
     .map((item) => {
       const title = item.title_corrected || item.title_original || 'No title';
       const description = item.description_corrected || item.description_original || 'No description';
-      const image =
+      const ratingValue = formatRatingPercent(item.rating);
+      const ratingColors = getRatingColors(ratingValue);
+      const overallReason = item.overall_reason || 'No reason provided.';
+
+      const barHtml = `
+        <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${ratingValue}" aria-label="Overall rating: ${ratingValue}%. Reason: ${overallReason}">
+          <div class="bar" style="width: ${ratingValue}%; background-color: ${ratingColors.bg};"></div>
+          <div class="bar-overlay" style="color: ${ratingColors.text}; ${ratingColors.text === '#ffffff' ? 'text-shadow: 0 0 3px rgba(0,0,0,0.7);' : ''}">
+            <span>${ratingValue}%</span>
+          </div>
+          <div class="tooltip-text">${overallReason}</div>
+        </div>
+      `;
+
+      const imageHtml =
         item.media && item.media.medium === 'image' && item.media.url
-          ? `<div class="image-container"><img src="${item.media.url}" alt="${item.media.description || ''}" style="width: 100%; height: auto;"></div>`
-          : '';
+          ? `<div class="image-container">
+               <img src="${item.media.url}" alt="${item.media.description || ''}" style="width: 100%; height: auto; display: block;">
+               ${barHtml}
+             </div>`
+          : barHtml;
 
       return `
         <a href="${item.url}" class="tile-link">
           <div class="tile">
-            <div class="rating">${item.rating.toFixed(2)}</div>
-            ${image}
+            ${imageHtml}
             <div class="content">
               <h3>${title}</h3>
               <p>${description}</p>
@@ -40,11 +57,58 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
           .tile-link { text-decoration: none; color: inherit; }
           .tile { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; height: 100%; position: relative; }
           .tile:hover { transform: translateY(-5px); box-shadow: 0 8px 12px rgba(0,0,0,0.15); }
-          .rating { position: absolute; top: 10px; right: 10px; background-color: rgba(0,0,0,0.7); color: #fff; padding: 5px 8px; border-radius: 4px; font-size: 0.9em; font-weight: bold; z-index: 1; }
-          .image-container { padding: 15px 15px 0; }
+          .image-container { position: relative; }
           .content { padding: 15px; }
           h3 { margin: 0 0 10px; font-size: 1.1em; }
           p { font-size: 0.9em; color: #666; }
+          .bar-container {
+            background-color: #e9ecef;
+            height: 30px;
+            width: 100%;
+            position: relative; /* For overlay and tooltip */
+          }
+          .image-container .bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+          }
+          .bar { height: 100%; }
+          .bar-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-weight: bold;
+            font-size: 0.9em;
+            pointer-events: none;
+          }
+          .bar-container .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            width: 250px;
+            background-color: rgba(0,0,0,0.85);
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 1;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: opacity 0.2s;
+            font-size: 0.9em;
+            line-height: 1.4;
+            pointer-events: none;
+          }
+          .bar-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+          }
         </style>
       </head>
       <body>
