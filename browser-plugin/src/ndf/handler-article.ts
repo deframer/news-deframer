@@ -1,6 +1,8 @@
 import log from '../shared/logger';
 import { AnalyzedItem,NewsDeframerClient } from './client';
 
+const formatRating = (rating: number | undefined): string => (rating || 0.0).toFixed(2);
+
 const createArticleHtml = (item: AnalyzedItem): string => {
   const title = item.title_corrected || item.title_original || 'No title';
   const description = item.description_corrected || item.description_original || 'No description';
@@ -11,15 +13,15 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 
   const analysisDetails = `
     <div class="analysis-grid">
-      <div><strong>Framing:</strong> ${item.framing?.toFixed(2)}</div>
+      <div><strong>Framing:</strong> ${formatRating(item.framing)}</div>
       <div>${item.framing_reason || ''}</div>
-      <div><strong>Clickbait:</strong> ${item.clickbait?.toFixed(2)}</div>
+      <div><strong>Clickbait:</strong> ${formatRating(item.clickbait)}</div>
       <div>${item.clickbait_reason || ''}</div>
-      <div><strong>Persuasive:</strong> ${item.persuasive?.toFixed(2)}</div>
+      <div><strong>Persuasive:</strong> ${formatRating(item.persuasive)}</div>
       <div>${item.persuasive_reason || ''}</div>
-      <div><strong>Hyper Stimulus:</strong> ${item.hyper_stimulus?.toFixed(2)}</div>
+      <div><strong>Hyper Stimulus:</strong> ${formatRating(item.hyper_stimulus)}</div>
       <div>${item.hyper_stimulus_reason || ''}</div>
-      <div><strong>Speculative:</strong> ${item.speculative?.toFixed(2)}</div>
+      <div><strong>Speculative:</strong> ${formatRating(item.speculative)}</div>
       <div>${item.speculative_reason || ''}</div>
     </div>
     <h4>Overall Reason</h4>
@@ -45,7 +47,7 @@ const createArticleHtml = (item: AnalyzedItem): string => {
       </head>
       <body>
         <div class="container">
-          <div class="rating">${item.rating.toFixed(2)}</div>
+          <div class="rating">${formatRating(item.rating)}</div>
           <div class="card">
             ${image}
             <h1>${title}</h1>
