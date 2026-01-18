@@ -565,3 +565,65 @@ func TestWantedDomains(t *testing.T) {
 		})
 	}
 }
+
+func TestDetermineLanguage(t *testing.T) {
+	strPtr := func(s string) *string { return &s }
+	s := &Syncer{logger: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))}
+
+	testCases := []struct {
+		name         string
+		dbFeed       *database.Feed
+		parsedFeed   *gofeed.Feed
+		expectedLang string
+	}{
+		{
+			name:         "Default to en when no language is specified",
+			dbFeed:       &database.Feed{Base: database.Base{ID: uuid.New()}},
+			parsedFeed:   &gofeed.Feed{},
+			expectedLang: "en",
+		},
+		{
+			name:         "Use language from database feed",
+			dbFeed:       &database.Feed{Language: strPtr("de")},
+			parsedFeed:   &gofeed.Feed{},
+			expectedLang: "de",
+		},
+		{
+			name:         "Use language from parsed feed",
+			dbFeed:       &database.Feed{},
+			parsedFeed:   &gofeed.Feed{Language: "fr"},
+			expectedLang: "fr",
+		},
+		{
+			name:         "Parsed feed language (fr) overrides database language (de)",
+			dbFeed:       &database.Feed{Language: strPtr("de")},
+			parsedFeed:   &gofeed.Feed{Language: "fr"},
+			expectedLang: "fr",
+		},
+		{
+			name:         "Handle complex language codes from parsed feed",
+			dbFeed:       &database.Feed{Language: strPtr("de")},
+			parsedFeed:   &gofeed.Feed{Language: "en-US"},
+			expectedLang: "en",
+		},
+		{
+			name:         "Empty language string in parsed feed uses database language",
+			dbFeed:       &database.Feed{Language: strPtr("es")},
+			parsedFeed:   &gofeed.Feed{Language: " "},
+			expectedLang: "es",
+		},
+		{
+			name:         "Empty language string in database and parsed feed defaults to en",
+			dbFeed:       &database.Feed{Base: database.Base{ID: uuid.New()}, Language: strPtr("")},
+			parsedFeed:   &gofeed.Feed{Language: ""},
+			expectedLang: "en",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			lang := s.determineLanguage(tc.dbFeed, tc.parsedFeed)
+			assert.Equal(t, tc.expectedLang, lang)
+		})
+	}
+}

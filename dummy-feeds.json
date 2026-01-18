@@ -1,3 +1,6 @@
 [
-  "http://wordpress/feed/"
+  {
+    "url": "http://wordpress/feed/",
+    "language": "en"
+  }
 ]
