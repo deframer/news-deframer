@@ -14,9 +14,11 @@ ifneq ("$(wildcard .env)","")
   export $(shell sed 's/=.*//' .env)
 endif
 
-.PHONY: all build clean test help
-
-.PHONY: all service worker test-env-start test-env-stop test-env-down test-env-zap infra-env-start infra-env-stop infra-env-down infra-env-zap zap build clean test help docker-all docker-build
+.PHONY: all build clean test help coverage lint tidy
+.PHONY: start stop down logs zap
+.PHONY: test-env-start test-env-stop test-env-down test-env-zap
+.PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
+.PHONY: docker-all add-feeds service worker
 
 all: build
 
