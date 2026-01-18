@@ -49,10 +49,32 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
     <html>
       <head>
         <title>News Deframer: ${rootDomain}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            background-color: #f0f2f5;
+            padding-top: 60px; /* Space for sticky header */
+          }
           .container { padding: 2em; }
-          .header { text-align: center; margin-bottom: 2em; }
+          .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #fff;
+            padding: 1em;
+            z-index: 1000;
+            text-align: center;
+            margin-bottom: 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-sizing: border-box;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 1.5em;
+          }
           .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
           .tile-link { text-decoration: none; color: inherit; }
           .tile { background-color: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; height: 100%; position: relative; }
