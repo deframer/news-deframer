@@ -181,6 +181,20 @@ func (s *Syncer) wantedDomains(feed *database.Feed) ([]string, error) {
 	return []string{baseDomain}, nil
 }
 
+func (s *Syncer) determineLanguage(feed *database.Feed, parsedFeed *gofeed.Feed) string {
+	if l := strings.TrimSpace(parsedFeed.Language); l != "" {
+		// from feed
+		return strings.ToLower(strings.Split(l, "-")[0])
+	}
+	if feed.Language != nil && *feed.Language != "" {
+		// user override
+		return *feed.Language
+	}
+	// this is a wild guess and will not match!
+	s.logger.Error("No language specified in feed or database, defaulting to 'en'", "feed_url", feed.URL, "feed_id", feed.ID)
+	return "en"
+}
+
 func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, items []feeds.ItemHashPair, hashes []string) (int, error) {
 	pendingItems, err := s.repo.GetPendingItems(feed.ID, hashes, maxThinkRetries)
 	if err != nil {
@@ -194,11 +208,7 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 		return 0, nil
 	}
 
-	language := "en"
-	if l := strings.TrimSpace(parsedFeed.Language); l != "" {
-		// this is an iso code for the language split at the "-" we only want the first place
-		language = strings.ToLower(strings.Split(l, "-")[0])
-	}
+	language := s.determineLanguage(feed, parsedFeed)
 
 	count = 0
 	for _, item := range items {
@@ -270,6 +280,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		Hash:            hash,
 		FeedID:          feed.ID,
 		URL:             item.Link,
+		Language:        &language,
 		Content:         content,
 		PubDate:         pubDate,
 		ThinkResult:     res,

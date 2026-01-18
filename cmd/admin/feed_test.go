@@ -77,7 +77,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 1. Create Feed
 	out := captureOutput(func() {
-		addFeed(testURL, true, false, false)
+		addFeed(testURL, true, false, false, "")
 	})
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)
@@ -181,7 +181,7 @@ func TestFeedCommands(t *testing.T) {
 	// 14. Test Enable with Polling triggers Sync
 	testURL2 := "http://example.com/rss2"
 	captureOutput(func() {
-		addFeed(testURL2, false, true, false) // Add disabled feed with polling=true
+		addFeed(testURL2, false, true, false, "") // Add disabled feed with polling=true
 	})
 
 	out = captureOutput(func() {
@@ -202,7 +202,7 @@ func TestFeedCommands(t *testing.T) {
 	// 15. Test --no-root-domain
 	testURL3 := "http://no-root.com/rss"
 	captureOutput(func() {
-		addFeed(testURL3, true, false, true)
+		addFeed(testURL3, true, false, true, "")
 	})
 
 	out = captureOutput(func() {
@@ -223,7 +223,7 @@ func TestFeedCommands(t *testing.T) {
 	// 16. Test Root Domain Extraction (Subdomain)
 	testURL4 := "http://blog.example.co.uk/rss"
 	captureOutput(func() {
-		addFeed(testURL4, true, false, false)
+		addFeed(testURL4, true, false, false, "")
 	})
 
 	out = captureOutput(func() {
@@ -241,6 +241,67 @@ func TestFeedCommands(t *testing.T) {
 	assert.NotNil(t, foundSub)
 	assert.NotNil(t, foundSub.RootDomain)
 	assert.Equal(t, "example.co.uk", *foundSub.RootDomain)
+
+	// 17. Test Language Commands
+	testURL5 := "http://example.com/rss5"
+	captureOutput(func() {
+		addFeed(testURL5, true, false, false, "en")
+	})
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundLang *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL5 {
+			foundLang = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundLang)
+	assert.NotNil(t, foundLang.Language)
+	assert.Equal(t, "en", *foundLang.Language)
+
+	out = captureOutput(func() {
+		setLanguage(testURL5, "de")
+	})
+	assert.Contains(t, out, "Set language to de")
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	for i := range feeds {
+		if feeds[i].URL == testURL5 {
+			foundLang = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundLang)
+	assert.NotNil(t, foundLang.Language)
+	assert.Equal(t, "de", *foundLang.Language)
+
+	out = captureOutput(func() {
+		deleteLanguage(testURL5)
+	})
+	assert.Contains(t, out, "Deleted language")
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	for i := range feeds {
+		if feeds[i].URL == testURL5 {
+			foundLang = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundLang)
+	assert.Nil(t, foundLang.Language)
 
 	// 17. Sync All (should trigger sync for all enabled feeds)
 	// Reset schedule for testURL2

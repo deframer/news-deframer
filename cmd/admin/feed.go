@@ -22,6 +22,7 @@ var (
 	showDeleted  bool
 	feedEnabled  bool
 	polling      bool
+	language     string
 	noRootDomain bool
 	repo         database.Repository
 	feedSyncer   *syncer.Syncer
@@ -37,8 +38,13 @@ func init() {
 	feedCmd.AddCommand(syncCmd)
 	feedCmd.AddCommand(syncAllCmd)
 
+	languageCmd.AddCommand(setLanguageCmd)
+	languageCmd.AddCommand(deleteLanguageCmd)
+	feedCmd.AddCommand(languageCmd)
+
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
 	addCmd.Flags().BoolVar(&polling, "polling", false, "Enable polling")
+	addCmd.Flags().StringVar(&language, "language", "", "Set a two-letter ISO 639-1 language code for the feed")
 	addCmd.Flags().BoolVar(&noRootDomain, "no-root-domain", false, "Do not automatically populate root_domain")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 	listCmd.Flags().BoolVar(&showDeleted, "deleted", false, "Show deleted feeds")
@@ -72,7 +78,7 @@ var addCmd = &cobra.Command{
 	Short: "Add a new feed URL",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		addFeed(args[0], feedEnabled, polling, noRootDomain)
+		addFeed(args[0], feedEnabled, polling, noRootDomain, language)
 	},
 }
 
@@ -129,6 +135,29 @@ var syncAllCmd = &cobra.Command{
 	},
 }
 
+var languageCmd = &cobra.Command{
+	Use:   "language",
+	Short: "Manage feed language",
+}
+
+var setLanguageCmd = &cobra.Command{
+	Use:   "set <uuid|url> <language-code>",
+	Short: "Set the language for a feed",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		setLanguage(args[0], args[1])
+	},
+}
+
+var deleteLanguageCmd = &cobra.Command{
+	Use:   "delete <uuid|url>",
+	Short: "Delete the language for a feed",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		deleteLanguage(args[0])
+	},
+}
+
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all feeds",
@@ -155,7 +184,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tLanguage\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -183,7 +212,12 @@ func listFeeds(asJson bool, showDeleted bool) {
 			rootDomain = *f.RootDomain
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
+		language := "-"
+		if f.Language != nil {
+			language = *f.Language
+		}
+
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, language, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
@@ -194,7 +228,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 }
 
-func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool) {
+func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, language string) {
 	u, err := parseAndNormalizeURL(feedUrl)
 
 	if err != nil {
@@ -219,12 +253,18 @@ func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool) {
 		rootDomain = &d
 	}
 
+	var languagePtr *string
+	if language != "" {
+		languagePtr = &language
+	}
+
 	newFeed := &database.Feed{
 		URL:               u.String(),
 		RootDomain:        rootDomain,
 		Enabled:           enabled,
 		EnforceFeedDomain: true,
 		Polling:           polling,
+		Language:          languagePtr,
 	}
 
 	if err := repo.UpsertFeed(newFeed); err != nil {
@@ -243,7 +283,11 @@ func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool) {
 		rootDomainStr = *newFeed.RootDomain
 	}
 
-	fmt.Printf("Added feed for url=%s with id=%s enabled=%v polling=%v root_domain=%s\n", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling, rootDomainStr)
+	output := fmt.Sprintf("Added feed for url=%s with id=%s enabled=%v polling=%v root_domain=%s", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling, rootDomainStr)
+	if newFeed.Language != nil {
+		output += fmt.Sprintf(" language=%s", *newFeed.Language)
+	}
+	fmt.Println(output)
 }
 
 func resolveFeed(input string, onlyEnabled bool) *database.Feed {
@@ -392,6 +436,30 @@ func syncAllFeeds() {
 		}
 	}
 	fmt.Printf("Triggered sync for %d feeds\n", count)
+}
+
+func setLanguage(input string, language string) {
+	feed := resolveFeed(input, false)
+
+	feed.Language = &language
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set language: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Set language to %s for url=%s with id=%s\n", language, feed.URL, feed.ID)
+}
+
+func deleteLanguage(input string) {
+	feed := resolveFeed(input, false)
+
+	feed.Language = nil
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to delete language: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Deleted language for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
 func parseAndNormalizeURL(rawURL string) (*url.URL, error) {

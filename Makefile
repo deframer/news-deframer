@@ -16,23 +16,10 @@ endif
 
 .PHONY: all build clean test help coverage lint tidy
 .PHONY: start stop down logs zap
-.PHONY: test-env-start test-env-stop test-env-down test-env-zap
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
 .PHONY: docker-all add-feeds service worker
 
 all: build
-
-test-env-start:
-	$(MAKE) -C test-env start
-
-test-env-stop:
-	$(MAKE) -C test-env stop
-
-test-env-down:
-	$(MAKE) -C test-env down
-
-test-env-zap:
-	$(MAKE) -C test-env zap
 
 infra-env-start:
 	$(MAKE) -C infra-env start
@@ -96,9 +83,15 @@ docker-%:
 
 add-feeds: build
 	@if [ ! -f feeds.json ]; then echo "feeds.json not found"; exit 1; fi
-	@jq -r '.[]' feeds.json | while read url; do \
+	@jq -c '.[]' feeds.json | while read -r feed_json; do \
+		url=$$(echo "$$feed_json" | jq -r '.url'); \
+		language=$$(echo "$$feed_json" | jq -r '.language'); \
 		echo "Adding feed: $$url"; \
-		./bin/admin feed add --enabled --polling "$$url"; \
+		if [ "$$language" != "null" ]; then \
+			./bin/admin feed add --enabled --polling --language "$$language" "$$url"; \
+		else \
+			./bin/admin feed add --enabled --polling "$$url"; \
+		fi \
 	done
 
 service: build

@@ -31,6 +31,7 @@ type Feed struct {
 	Base
 	URL               string        `gorm:"index"`                 // we can't enforce uniqueness here (because of the soft deletes)
 	RootDomain        *string       `gorm:"index"`                 // example.com
+	Language          *string       `gorm:"type:char(2)"`          // ISO 639-1 language code
 	EnforceFeedDomain bool          `gorm:"not null;default:true"` // item url must be from our URL
 	Enabled           bool          `gorm:"not null;default:false;index"`
 	Polling           bool          `gorm:"not null;default:false"`
@@ -152,6 +153,7 @@ type Item struct {
 	FeedID          uuid.UUID     `gorm:"type:uuid;index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;uniqueIndex:idx_hash_feed;not null"`
 	Feed            Feed          `gorm:"foreignKey:FeedID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	URL             string        `gorm:"index;uniqueIndex:idx_feed_url;uniqueIndex:idx_hash_feed_url;not null"`
+	Language        *string       `gorm:"type:char(2)"` // ISO 639-1 language code
 	Content         string        `gorm:"type:text;not null"`
 	PubDate         time.Time     `gorm:"not null;index;default:now()"`
 	MediaContent    *MediaContent `gorm:"type:jsonb"`
