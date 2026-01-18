@@ -182,7 +182,7 @@ export const handlePortal = async (client: NewsDeframerClient) => {
 
   if (!rootDomain) {
     log.error('Could not determine root domain. Reloading with bypass.');
-    sessionStorage.setItem('ndf-bypass', 'true');
+    sessionStorage.setItem('__ndf-bypass', 'true');
     window.location.reload();
     return;
   }
@@ -202,18 +202,18 @@ export const handlePortal = async (client: NewsDeframerClient) => {
           e.preventDefault();
           window.scrollTo(0, 0);
           log.info('User clicked "Hide". Bypassing for this session and reloading.');
-          sessionStorage.setItem('ndf-bypass', 'true');
+          sessionStorage.setItem('__ndf-bypass', 'true');
           window.location.reload();
         });
       }
     } else {
       log.info(`No items found for ${rootDomain}. Reloading with bypass.`);
-      sessionStorage.setItem('ndf-bypass', 'true');
+      sessionStorage.setItem('__ndf-bypass', 'true');
       window.location.reload();
     }
   } catch (error) {
     log.error(`Failed to fetch items for ${rootDomain}:`, error);
-    sessionStorage.setItem('ndf-bypass', 'true');
+    sessionStorage.setItem('__ndf-bypass', 'true');
     window.location.reload();
   }
 };

@@ -49,7 +49,7 @@ describe('Portal Handler', () => {
     await handlePortal(mockClient);
 
     expect(logSpy).toHaveBeenCalledWith('Could not determine root domain. Reloading with bypass.');
-    expect(sessionStorage.getItem('ndf-bypass')).toBe('true');
+    expect(sessionStorage.getItem('__ndf-bypass')).toBe('true');
     logSpy.mockRestore();
   });
 
@@ -61,7 +61,7 @@ describe('Portal Handler', () => {
     await handlePortal(mockClient);
 
     expect(logSpy).toHaveBeenCalledWith('No items found for example.com. Reloading with bypass.');
-    expect(sessionStorage.getItem('ndf-bypass')).toBe('true');
+    expect(sessionStorage.getItem('__ndf-bypass')).toBe('true');
     logSpy.mockRestore();
   });
 
@@ -73,7 +73,7 @@ describe('Portal Handler', () => {
     await handlePortal(mockClient);
 
     expect(logSpy).toHaveBeenCalledWith('Failed to fetch items for example.com:', expect.any(Error));
-    expect(sessionStorage.getItem('ndf-bypass')).toBe('true');
+    expect(sessionStorage.getItem('__ndf-bypass')).toBe('true');
     logSpy.mockRestore();
   });
 });

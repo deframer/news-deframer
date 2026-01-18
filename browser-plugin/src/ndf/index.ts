@@ -9,14 +9,14 @@ export default {
   start: async (config: Settings) => {
     try {
       // Check for bypass flag (set if we stopped a page that turned out to be invalid)
-      if (sessionStorage.getItem('ndf-bypass')) {
+      if (sessionStorage.getItem('__ndf-bypass')) {
         log.info('NDF Bypass flag detected. Skipping Deframer for this load.');
-        sessionStorage.removeItem('ndf-bypass');
+        sessionStorage.removeItem('__ndf-bypass');
         return;
       }
 
       const client = new NewsDeframerClient(config);
-      
+
       // Phase 1: Check Local Cache (Fast Path)
       let domains = await getCachedDomains();
       const currentUrl = new URL(window.location.href);
@@ -26,7 +26,7 @@ export default {
          // We do not stop loading here to avoid blocking random pages.
          // We fetch domains in the background.
          domains = await client.getDomains();
-         
+
          if (domains.length === 0) {
            log.error('Could not get domains from backend, aborting.');
            return;

@@ -38,6 +38,7 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
             z-index: 1001;
             display: flex;
             align-items: center;
+            justify-content: space-between;
           }
 
           .btn-back {
@@ -57,6 +58,21 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
           }
 
           .btn-back:hover { background-color: #0069d9; }
+
+          .btn-hide {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            color: #333;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          }
+          .btn-hide:hover {
+            background-color: #f8f9fa;
+          }
 
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
 
@@ -198,6 +214,10 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
 
             .action-buttons {
               border-radius: 0 0 12px 12px;
+              justify-content: center;
+            }
+            .action-buttons .btn {
+              flex: 0 0 180px;
             }
           }
 
@@ -232,6 +252,7 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
         <div class="container">
           <header class="page-header">
             <a href="/" class="btn-back" title="Go back to ${rootDomain} portal">Back</a>
+            <button id="btn-hide" class="btn-hide">Hide</button>
           </header>
           ${imageUrl ? `<div class="image-container"><img src="${imageUrl}" alt="${title}"></div>` : ''}
           <div class="main-content">
@@ -283,9 +304,9 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
 
           ${createFooterHtml()}
           <div class="action-buttons">
-            <button id="btn-details" class="btn btn-primary">Details</button>
-            <button id="btn-original" class="btn">Original Title</button>
-            <a href="#" id="btn-view-anyway" class="btn">View anyway</a>
+            <button id="btn-original" class="btn btn-primary">Original Title</button>
+            <button id="btn-details" class="btn">Details</button>
+            <button id="btn-view-original" class="btn">View Original</button>
           </div>
         </div>
       </body>
@@ -353,25 +374,36 @@ export const handleArticle = async (client: NewsDeframerClient) => {
         });
       }
 
-      const btnViewAnyway = document.getElementById('btn-view-anyway');
-      if (btnViewAnyway) {
-        btnViewAnyway.addEventListener('click', (e) => {
+      const btnHide = document.getElementById('btn-hide');
+      if (btnHide) {
+        btnHide.addEventListener('click', (e) => {
           e.preventDefault();
           window.scrollTo(0, 0);
-          log.info('User clicked "View anyway". Bypassing for this session and reloading.');
-          sessionStorage.setItem('ndf-bypass', 'true');
+          log.info('User clicked "Hide". Bypassing for this session and reloading.');
+          sessionStorage.setItem('__ndf-bypass', 'true');
+          window.location.reload();
+        });
+      }
+
+      const btnViewOriginal = document.getElementById('btn-view-original');
+      if (btnViewOriginal) {
+        btnViewOriginal.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.scrollTo(0, 0);
+          log.info('User clicked "View Original". Bypassing for this session and reloading.');
+          sessionStorage.setItem('__ndf-bypass', 'true');
           window.location.reload();
         });
       }
 
     } else {
       log.info('No item found for this URL. Reloading with bypass.');
-      sessionStorage.setItem('ndf-bypass', 'true');
+      sessionStorage.setItem('__ndf-bypass', 'true');
       window.location.reload();
     }
   } catch (error) {
     log.error('Failed to fetch item:', error);
-    sessionStorage.setItem('ndf-bypass', 'true');
+    sessionStorage.setItem('__ndf-bypass', 'true');
     window.location.reload();
   }
 };
