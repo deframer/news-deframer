@@ -2,6 +2,7 @@ import { getDomain } from 'tldts';
 import log from '../shared/logger';
 import { AnalyzedItem, NewsDeframerClient } from './client';
 import { formatRatingPercent, getRatingColors } from './ratings';
+import { createFooterHtml, getFooterCss } from './footer';
 
 const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
   const title = item.title_corrected || item.title_original || 'No title';
@@ -27,6 +28,7 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
         <title>News Deframer: ${title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
+          ${getFooterCss()}
           .page-header {
             background-color: #fff;
             padding: 8px 1.5em;
@@ -143,7 +145,6 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
             padding: 1.5em;
             background-color: #fff;
             border-top: 1px solid #eee;
-            margin-top: 2em;
           }
 
           .btn {
@@ -279,6 +280,7 @@ const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
             </div>
           </div>
 
+          ${createFooterHtml()}
           <div class="action-buttons">
             <button id="btn-details" class="btn btn-primary">Details</button>
             <button id="btn-original" class="btn">Original Title</button>

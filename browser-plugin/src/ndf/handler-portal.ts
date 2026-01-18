@@ -3,7 +3,7 @@ import { getDomain } from 'tldts';
 import log from '../shared/logger';
 import { AnalyzedItem,NewsDeframerClient } from './client';
 import { formatRatingPercent, getRatingColors } from './ratings';
-
+import { createFooterHtml, getFooterCss } from './footer';
 const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
   const tiles = items
     .map((item) => {
@@ -51,6 +51,7 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
         <title>News Deframer: ${rootDomain}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
+          ${getFooterCss()}
           body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
@@ -141,6 +142,7 @@ const createTilesHtml = (items: AnalyzedItem[], rootDomain: string): string => {
           <div class="grid">
             ${tiles}
           </div>
+          ${createFooterHtml()}
         </div>
       </body>
     </html>
