@@ -2,6 +2,7 @@
   {
     "url": "http://wordpress/feed/",
     "language": "en",
-    "root_domain": "wordpress"
+    "root_domain": "wordpress",
+    "polling": true
   }
 ]
