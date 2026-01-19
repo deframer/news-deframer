@@ -1,4 +1,4 @@
-# Example
+# RSS Example
 
 This example is derived from the `https://rss.nytimes.com/services/xml/rss/nyt/World.xml` feed.
 

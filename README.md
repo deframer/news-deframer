@@ -6,7 +6,7 @@ News Deframer will detect journalistic neutrality and framing in news articles. 
 
 It is implemented as dual use. It can act as an RSS Feed Proxy or as a browser plugin for RSS feed items to provide a "framing score" and context, helping users decide if an article is worth reading or if it is heavily biased.
 
-Here an [example](docs/example/example.md) with screenshots.
+Here are examples with screenshots for our [browser plugin](docs/plugin-example/plugin-example.md) and an [RSS feed](docs/rss-example/rss-example.md).
 
 ## What this project is and is not
 
