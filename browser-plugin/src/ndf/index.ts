@@ -4,6 +4,7 @@ import { Settings } from '../shared/settings';
 import { NewsDeframerClient } from './client';
 import { handleArticle } from './handler-article';
 import { handlePortal } from './handler-portal';
+import { classifyUrl, PageType } from './url-classifier';
 
 export default {
   start: async (config: Settings) => {
@@ -51,9 +52,9 @@ export default {
       }
 
       // Determine if it's a portal or an article page.
-      const pathSegments = currentUrl.pathname.split('/').filter((p) => p.length > 0);
+      const pageType = classifyUrl(currentUrl);
 
-      if (pathSegments.length <= 1) {
+      if (pageType === PageType.PORTAL) {
         handlePortal(client);
       } else {
         handleArticle(client);
