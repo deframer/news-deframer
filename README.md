@@ -6,7 +6,7 @@ News Deframer will detect journalistic neutrality and framing in news articles. 
 
 It is implemented as dual use. It can act as an RSS Feed Proxy or as a browser plugin for RSS feed items to provide a "framing score" and context, helping users decide if an article is worth reading or if it is heavily biased.
 
-Here an [example](docs/example/example.md) with screenshots.
+Here are examples with screenshots for our [browser plugin](docs/plugin-example/plugin-example.md) and [RSS feed](docs/rss-example/rss-example.md).
 
 ## What this project is and is not
 
@@ -47,7 +47,9 @@ Why RSS?
 - [x] Enhance the parsing of items e.g. media / thumbnails etc.
 - [x] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
 - [ ] Handle empty items / special items e.g. special video news feeds / ads
+- [ ] Webbrowser Plugin Admin UI enhancement e.g. show the supported domains / disable the plugin etc.
 - [ ] Webbrowser Plugin support I18n, Dates, Authors, Categories
+- [ ] Publish Webbrowser Plugin (probably transform to V3 if possible)
 - [ ] Try to get a Favicon / Logo from somewhere
 - [ ] Fix support for multiple concurrent workers
 - [ ] Valkey Cache (read through)

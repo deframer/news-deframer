@@ -490,6 +490,7 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 		Table("items").
 		Joins("JOIN feeds ON feeds.id = items.feed_id").
 		Where("feeds.root_domain = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", rootDomain, true).
+		Where("items.think_result IS NOT NULL AND items.think_error IS NULL AND items.think_error_count = 0").
 		Order("items.url, items.pub_date DESC")
 
 	if err := r.db.Table("(?) as unique_items", subQuery).

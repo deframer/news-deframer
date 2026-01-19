@@ -80,23 +80,8 @@ docker-%:
 	@echo "Building Docker image for $*..."
 	docker build -t $(DOCKER_REPO)/$*:latest -f build/package/$*/Dockerfile .
 
-add-feeds: build
-	@if [ ! -f feeds.json ]; then echo "feeds.json not found"; exit 1; fi
-	@jq -c '.[]' feeds.json | while read -r feed_json; do \
-		url=$$(echo "$$feed_json" | jq -r '.url'); \
-		language=$$(echo "$$feed_json" | jq -r '.language'); \
-		root_domain=$$(echo "$$feed_json" | jq -r '.root_domain // .["root-domain"]'); \
-		echo "Adding feed: $$url"; \
-		if [ "$$language" != "null" ]; then \
-			./bin/admin feed add --enabled --polling --language "$$language" "$$url" || true; \
-		else \
-			./bin/admin feed add --enabled --polling "$$url" || true; \
-		fi; \
-		if [ "$$root_domain" != "null" ]; then \
-			echo "Setting root domain for $$url to $$root_domain"; \
-			./bin/admin root-domain set "$$url" "$$root_domain"; \
-		fi \
-	done
+import-feeds: build
+	./bin/admin feed import -f feeds.json
 
 service: build
 	./bin/service

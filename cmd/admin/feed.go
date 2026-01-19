@@ -43,8 +43,8 @@ func init() {
 	languageCmd.AddCommand(deleteLanguageCmd)
 	feedCmd.AddCommand(languageCmd)
 
-	addCmd.Flags().BoolVar(&feedEnabled, "enabled", true, "Enable the feed")
-	addCmd.Flags().BoolVar(&polling, "polling", false, "Enable polling")
+	addCmd.Flags().BoolVar(&feedEnabled, "enabled", DefaultFeedEnabled, "Enable the feed")
+	addCmd.Flags().BoolVar(&polling, "polling", DefaultFeedPolling, "Enable polling")
 	addCmd.Flags().StringVar(&language, "language", "", "Set a two-letter ISO 639-1 language code for the feed")
 	addCmd.Flags().BoolVar(&noRootDomain, "no-root-domain", false, "Do not automatically populate root_domain")
 	deleteCmd.Flags().BoolVar(&purgeFeed, "purge", false, "Purge the feed and all related data")
@@ -264,7 +264,7 @@ func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, lang
 		URL:               u.String(),
 		RootDomain:        rootDomain,
 		Enabled:           enabled,
-		EnforceFeedDomain: true,
+		EnforceFeedDomain: DefaultFeedEnforceDomain,
 		Polling:           polling,
 		Language:          languagePtr,
 	}
@@ -332,7 +332,7 @@ func resolveFeed(input string, onlyEnabled bool) *database.Feed {
 }
 
 func deleteFeed(input string, purge bool) {
-	feed := resolveFeed(input, true)
+	feed := resolveFeed(input, false)
 
 	if err := feedSyncer.StopPolling(feed.ID); err != nil {
 		fmt.Fprintf(os.Stderr, "Warning: Failed to stop polling: %v\n", err)
