@@ -1,18 +1,20 @@
-# Webbrowser Plugin Example
+# Web Browser Plugin Showcase
 
-## AI used for these tests
+## AI Configuration
 
-- Mac Mini M1 (16GB RAM), Tahoe 26.2
-- [LM Studio](https://lmstudio.ai/) 0.3.39
-- [meta-llama-3.1-8b-instruct](https://huggingface.co/lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF)
+The following setup was used to generate these examples:
 
-Using these [Prompts](../../pkg/think/prompts/)
+- **Hardware**: Mac Mini M1 (16GB RAM), running macOS Tahoe 26.2
+- **Software**: [LM Studio](https://lmstudio.ai/) 0.3.39
+- **Model**: [meta-llama-3.1-8b-instruct](https://huggingface.co/lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF)
+
+The system utilizes these [Prompts](../../pkg/think/prompts/).
 
 **Quote:** *"You are a strictly objective, neutral media analyst and news editor. Your task is to analyze texts (title and description) for journalistic quality, bias, and sensationalism, and to create a neutral version. You must provide specific, concise reasons for every assessment and correction, culminating in an overall summary. [...]"*
 
-The prompt instructs the AI to be objective, neutral, and strictly politically unbiased.
+This prompt directs the AI to maintain strict objectivity and political neutrality.
 
-The LLM is slow on the M1 (but also free, efficient and cheap).
+*Note: While the LLM performance on the M1 chip is modest (approx. 26s per request), it provides a cost-effective and efficient local solution.*
 
 ```txt
 level=DEBUG msg="openai request duration" duration=26.833331235s
@@ -25,27 +27,30 @@ level=DEBUG msg="openai token usage" prompt_tokens=1470 completion_tokens=303 th
 
 - RSS feed `https://feeds.bbci.co.uk/news/world/rss.xml`
 
-
 **Portal**
 
-We replace the entire web page. Press "Hide" to see the original page.
+The plugin overlays the original web page to provide a distraction-free environment.
 
-Please note - you never see the title or description of the original page. You always see neutral titles and descriptions converted by the AI to >not< spike emotional reactions.
+**Key Features:**
+- **Neutralized Content**: You will not see the original, potentially emotionally charged titles or descriptions. Instead, the AI generates neutral summaries designed to inform rather than provoke.
+- **Sensationalism Score**: The percentage indicator reveals the level of detected sensationalism or bias. A red indicator suggests high levels of manipulation, framing, bias, or misinformation.
 
-The percentage shows, how much someone is messing with you. Red = bad.
+**Recommendation**: A score of 50% or higher suggests significant bias. We recommend seeking alternative sources for a more balanced perspective.
 
 <img src="bbc-portal.jpg" alt="BBC Portal" width="600"/>
 
-Hovering over the percentage bar displays the overall news deframer result for that news item. Usually at this point you don't have to click on the article.
+**Quick Insights**: Hovering over the percentage bar reveals the detailed analysis from the News Deframer. This often provides enough context to skip the full article.
 
 <img src="portal-hover.png" alt="Portal Hover" width="200"/>
 
-
 **Article**
 
-Hide closes the deframer overlay and shows you the article. We don't show the original title or description to protect your mental health. You have the freedom to expand the view and see all the details. "Hide" closes the deframer view and opens the original article.
+You retain full control over your reading experience. The plugin intercepts navigation to article URLs. Regardless of whether you access the article via the portal or a direct link, News Deframer always presents the analysis preview first to protect you.
 
-**NOTE**: The article itself was never touched by the deframer. We still use title and description of the RSS feed. This might change in the future by using trusted flaggers to trigger a full scan.
+**Important Note**: The plugin currently analyzes only the RSS feed metadata (title and description). The body of the article remains untouched. Future updates may include full-text AI analysis triggered via human trusted flaggers.
+
+- **"Hide" Button**: Dismisses the Deframer overlay to reveal the original article on the publisher's site.
+- **Protected Viewing**: By default, the original title and description are hidden to reduce emotional impact. You can choose to expand the view to see the AI's reasoning and the original text.
 
 Article 1
 
@@ -57,5 +62,26 @@ Article 2
 
 | Basic | Expanded |
 | :---: | :---: |
-| <img src="bbc-article2-basic.png" alt="BBC Article 1 - Basic" width="600"/> | <img src="bbc-article2-expanded.png" alt="BBC Article 1 - Expanded" width="600"/> |
+| <img src="bbc-article2-basic.png" alt="BBC Article 2 - Basic" width="600"/> | <img src="bbc-article2-expanded.png" alt="BBC Article 2 - Expanded" width="600"/> |
 
+### Tagesschau (German)
+
+- RSS feed `https://www.tagesschau.de/index~rss2.xml`
+
+**Portal**
+
+<img src="tagesschau-portal.jpg" alt="Tagesschau Portal" width="600"/>
+
+**Article**
+
+Article 1
+
+| Basic | Expanded |
+| :---: | :---: |
+| <img src="tagesschau-article1-basic.png" alt="Tagesschau Article 1 - Basic" width="600"/> | <img src="tagesschau-article1-expanded.png" alt="Tagesschau Article 1 - Expanded" width="600"/> |
+
+Article 2
+
+| Basic | Expanded |
+| :---: | :---: |
+| <img src="tagesschau-article2-basic.png" alt="Tagesschau Article 2 - Basic" width="600"/> | <img src="tagesschau-article2-expanded.png" alt="Tagesschau Article 2 - Expanded" width="600"/> |
