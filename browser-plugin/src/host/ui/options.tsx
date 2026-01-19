@@ -90,7 +90,7 @@ const Options = () => {
         <h3 style={{ marginTop: 0 }}>Connection</h3>
         <div style={{ marginBottom: '10px' }}>
           <label style={{ display: 'block', marginBottom: '5px' }}>
-            News Deframer URL:
+            News Deframer Server:
           </label>
           <input
             type="text"
