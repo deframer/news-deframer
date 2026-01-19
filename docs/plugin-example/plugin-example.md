@@ -37,7 +37,7 @@ The plugin overlays the original web page to provide a distraction-free environm
 
 **Recommendation**: A score of 50% or higher suggests significant bias. We recommend seeking alternative sources for a more balanced perspective.
 
-<img src="bbc-portal.jpg" alt="BBC Portal" width="600"/>
+<img src="bbc-portal.jpg" alt="BBC Portal" width="1000"/>
 
 **Quick Insights**: Hovering over the percentage bar reveals the detailed analysis from the News Deframer. This often provides enough context to skip the full article.
 
@@ -70,7 +70,7 @@ Article 2
 
 **Portal**
 
-<img src="tagesschau-portal.jpg" alt="Tagesschau Portal" width="600"/>
+<img src="tagesschau-portal.jpg" alt="Tagesschau Portal" width="1000"/>
 
 **Article**
 
