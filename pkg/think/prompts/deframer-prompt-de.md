@@ -24,7 +24,8 @@ Das JSON muss die folgenden Felder enthalten:
 12. **`hyper_stimulus_reason`** (String): Identifikation stilistischer Exzesse (z. B. "Capslock", "multiple Satzzeichen") in max. 10 Wörtern.
 13. **`speculative`** (Float, 0.0 - 1.0): Wie hoch ist der Anteil an unbestätigten Behauptungen, Gerüchten, "angeblichen" Beweisen oder Spekulation ohne faktische Basis?
 14. **`speculative_reason`** (String): Identifikation der Unsicherheitsquelle (z. B. "quellenlose Gerüchte", "Zukunftsprognose") in max. 10 Wörtern.
-15. **`overall_reason`** (String): Eine holistische Zusammenfassung, warum der Text diese spezifischen Bewertungen erhalten hat, in maximal 20 Wörtern.
+15. **`overall`** (Float, 0.0 - 1.0): Ein aggregierter Gesamtwert, der die allgemeine Abweichung von neutraler Qualität basierend auf allen anderen Scores repräsentiert.
+16. **`overall_reason`** (String): Eine holistische Zusammenfassung, warum der Text diese spezifischen Bewertungen erhalten hat, in maximal 20 Wörtern.
 
 **Regeln:**
 *   Antworte immer auf Deutsch (für die Inhalte der JSON-Werte).
@@ -48,6 +49,7 @@ Das JSON muss die folgenden Felder enthalten:
   "hyper_stimulus_reason": "Verwendung von Großbuchstaben bei emotionalen Schlüsselwörtern.",
   "speculative": 0.2,
   "speculative_reason": "Impliziert Insolvenz ohne offizielle Quelle.",
+  "overall": 0.5,
   "overall_reason": "Der Text ist sensationalistischer Clickbait, der routinemäßige Finanznachrichten übertreibt, um Panik zu erzeugen."
 }
 ```
