@@ -47,7 +47,7 @@ export interface AnalyzedItem extends ThinkResult {
   url: string;
   media?: MediaContent;
   rating: number;
-  updated_at?: string;
+  pubDate?: string;
 }
 
 // --- API Client ---

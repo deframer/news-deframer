@@ -629,20 +629,20 @@ func TestFindItemsByRootDomain(t *testing.T) {
 		return hex.EncodeToString(h[:])
 	}
 
-	t.Run("FilterByRootDomain", func(t *testing.T) {
+	t.Run("FilterByRootDomainAndProcessedStatus", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
 
-		root := "example.com"
+		root := "example.com." + uuid.New().String()
 		feed := Feed{URL: "http://example.com/rss", Enabled: true, RootDomain: &root}
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		h1 := makeHash("hash1")
-		// Item 1
+		// Item 1 (valid)
 		item1 := Item{
 			FeedID:      feed.ID,
-			Hash:        h1,
+			Hash:        h1, // Should be returned
 			URL:         "http://example.com/1",
 			Content:     "c1",
 			ThinkResult: &ThinkResult{TitleCorrected: "bar"},
@@ -651,15 +651,54 @@ func TestFindItemsByRootDomain(t *testing.T) {
 		}
 		assert.NoError(t, tx.Create(&item1).Error)
 
-		// Item 2 (Different root domain feed)
-		otherRoot := "other.com"
+		// Item 2 (wrong domain)
+		otherRoot := "other.com." + uuid.New().String()
 		feed2 := Feed{URL: "http://other.com/rss", Enabled: true, RootDomain: &otherRoot}
 		assert.NoError(t, tx.Create(&feed2).Error)
 		h2 := makeHash("hash2")
-		item2 := Item{FeedID: feed2.ID, Hash: h2, URL: "http://other.com/1", Content: "c2", PubDate: time.Now()}
+		item2 := Item{FeedID: feed2.ID, Hash: h2, URL: "http://other.com/1", Content: "c2", PubDate: time.Now()} // Wrong domain
 		assert.NoError(t, tx.Create(&item2).Error)
 
-		items, err := repo.FindItemsByRootDomain("example.com", 10)
+		// Item 3 (unprocessed)
+		h3 := makeHash("hash3")
+		item3 := Item{
+			FeedID:      feed.ID,
+			Hash:        h3, // Should NOT be returned (ThinkResult is nil)
+			URL:         "http://example.com/3",
+			Content:     "c3",
+			ThinkResult: nil,
+			PubDate:     time.Now().Add(-time.Hour),
+		}
+		assert.NoError(t, tx.Create(&item3).Error)
+
+		// Item 4 (error)
+		h4 := makeHash("hash4")
+		errMsg := "error"
+		item4 := Item{
+			FeedID:      feed.ID,
+			Hash:        h4, // Should NOT be returned (ThinkError is not nil)
+			URL:         "http://example.com/4",
+			Content:     "c4",
+			ThinkResult: &ThinkResult{TitleCorrected: "bad"},
+			ThinkError:  &errMsg,
+			PubDate:     time.Now().Add(-2 * time.Hour),
+		}
+		assert.NoError(t, tx.Create(&item4).Error)
+
+		// Item 5 (error count)
+		h5 := makeHash("hash5")
+		item5 := Item{
+			FeedID:          feed.ID,
+			Hash:            h5, // Should NOT be returned (ThinkErrorCount > 0)
+			URL:             "http://example.com/5",
+			Content:         "c5",
+			ThinkResult:     &ThinkResult{TitleCorrected: "bad"},
+			ThinkErrorCount: 1,
+			PubDate:         time.Now().Add(-3 * time.Hour),
+		}
+		assert.NoError(t, tx.Create(&item5).Error)
+
+		items, err := repo.FindItemsByRootDomain(root, 10)
 		assert.NoError(t, err)
 		assert.Len(t, items, 1)
 		assert.Equal(t, h1, items[0].Hash)

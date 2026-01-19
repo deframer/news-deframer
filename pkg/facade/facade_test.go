@@ -232,13 +232,13 @@ func TestGetItemsForRootDomain(t *testing.T) {
 					URL: "http://example.com/img1.jpg",
 				},
 				ThinkRating: 0.5,
-				UpdatedAt:   now,
+				PubDate:     now,
 			},
 			{
 				Hash: "hash2",
 				URL:  "http://example.com/2",
 				// Nil ThinkResult and MediaContent to test handling
-				UpdatedAt: now.Add(-1 * time.Hour),
+				PubDate: now.Add(-1 * time.Hour),
 			},
 		}
 
@@ -262,7 +262,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		assert.Equal(t, "Corrected Title 1", items[0].TitleCorrected)
 		assert.Equal(t, "http://example.com/img1.jpg", items[0].MediaContent.URL)
 		assert.Equal(t, 0.5, items[0].ThinkRating)
-		assert.Equal(t, now, items[0].UpdatedAt)
+		assert.Equal(t, now, items[0].PubDate)
 
 		// Verify Item 2
 		assert.Equal(t, "hash2", items[1].Hash)
@@ -270,7 +270,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		assert.Empty(t, items[1].TitleCorrected)
 		assert.Nil(t, items[1].MediaContent)
 		assert.Equal(t, 0.0, items[1].ThinkRating)
-		assert.Equal(t, now.Add(-1*time.Hour), items[1].UpdatedAt)
+		assert.Equal(t, now.Add(-1*time.Hour), items[1].PubDate)
 	})
 
 	t.Run("WithFilter", func(t *testing.T) {
@@ -324,7 +324,7 @@ func TestGetFirstItemForUrl(t *testing.T) {
 				TitleCorrected: "Corrected Title",
 			},
 			ThinkRating: 0.8,
-			UpdatedAt:   now,
+			PubDate:     now,
 		}
 
 		mockR := &mockRepo{
@@ -341,7 +341,7 @@ func TestGetFirstItemForUrl(t *testing.T) {
 		assert.NotNil(t, item)
 		assert.Equal(t, "hash1", item.Hash)
 		assert.Equal(t, "Corrected Title", item.TitleCorrected)
-		assert.Equal(t, now, item.UpdatedAt)
+		assert.Equal(t, now, item.PubDate)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
