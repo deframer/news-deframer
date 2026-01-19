@@ -84,6 +84,7 @@ type ThinkResult struct {
 	HyperStimulusReason         string  `json:"hyper_stimulus_reason,omitempty"`
 	Speculative                 float64 `json:"speculative,omitempty"`
 	SpeculativeReason           string  `json:"speculative_reason,omitempty"`
+	Overall                     float64 `json:"overall,omitempty"`
 	OverallReason               string  `json:"overall_reason,omitempty"`
 }
 

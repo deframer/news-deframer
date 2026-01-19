@@ -24,7 +24,8 @@ The JSON must contain the following fields:
 12. **`hyper_stimulus_reason`** (String): Identification of stylistic excesses (e.g., "caps lock," "multiple exclamation marks") in max 10 words.
 13. **`speculative`** (Float, 0.0 - 1.0): How high is the proportion of unconfirmed claims, rumors, "alleged" evidence, or speculation without a factual basis?
 14. **`speculative_reason`** (String): Identification of the source of uncertainty (e.g., "unsourced rumors," "future prediction") in max 10 words.
-15. **`overall_reason`** (String): A holistic summary of why the text received these specific scores in a maximum of 20 words.
+15. **`overall`** (Float, 0.0 - 1.0): An aggregate score representing the overall quality deviation based on framing, clickbait, persuasion, stimulus, and speculation.
+16. **`overall_reason`** (String): A holistic summary of why the text received these specific scores in a maximum of 20 words.
 
 **Rules:**
 *   Always answer in English.
@@ -48,6 +49,7 @@ The JSON must contain the following fields:
   "hyper_stimulus_reason": "Use of all-caps on key emotional words.",
   "speculative": 0.2,
   "speculative_reason": "Implies bankruptcy without official filing source.",
+  "overall": 0.5,
   "overall_reason": "The text is sensationalized clickbait exaggerating routine financial news to induce panic."
 }
 ```

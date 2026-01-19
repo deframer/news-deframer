@@ -29,6 +29,7 @@ var geminiSchema = &genai.Schema{
 		"hyper_stimulus_reason":         {Type: genai.TypeString},
 		"speculative":                   {Type: genai.TypeNumber},
 		"speculative_reason":            {Type: genai.TypeString},
+		"overall":                       {Type: genai.TypeNumber},
 		"overall_reason":                {Type: genai.TypeString},
 	},
 	Required: []string{
@@ -39,7 +40,7 @@ var geminiSchema = &genai.Schema{
 		"persuasive", "persuasive_reason",
 		"hyper_stimulus", "hyper_stimulus_reason",
 		"speculative", "speculative_reason",
-		"overall_reason",
+		"overall", "overall_reason",
 	},
 }
 

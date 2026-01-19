@@ -20,6 +20,7 @@ export interface ThinkResult {
   hyper_stimulus_reason?: string;
   speculative?: number;
   speculative_reason?: string;
+  overall?: number;
   overall_reason?: string;
 }
 
@@ -91,11 +92,11 @@ export class NewsDeframerClient {
     try {
       const result = await this.proxyRequest<string[]>('/api/domains', {});
       const domains = result ?? [];
-      
+
       if (domains.length > 0) {
         await setCachedDomains(domains);
       }
-      
+
       return domains;
     } catch (error) {
       await invalidateDomainCache();

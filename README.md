@@ -43,10 +43,11 @@ Why RSS?
 - [x] Grok LLM support (simply use OpenAI)
 - [x] Gemini LLM support
 - [x] Support filtering the RSS Proxy result with a min rating
-- [ ] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
+- [x] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
+- [x] Enhance the parsing of items e.g. media / thumbnails etc.
+- [x] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
+- [ ] Publish Webbrowser Plugin
 - [ ] Fix support for multiple concurrent workers
-- [ ] Enhance the parsing of items e.g. media / thumbnails etc.
-- [ ] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
 - [ ] Valkey Cache (read through)
 
 ## License
