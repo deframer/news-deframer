@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -435,6 +436,46 @@ func TestUpsertItem(t *testing.T) {
 		// Verify timestamps
 		assert.Equal(t, existing.CreatedAt.UTC(), stored.CreatedAt.UTC(), "CreatedAt should be preserved")
 		assert.True(t, stored.UpdatedAt.After(existing.UpdatedAt), "UpdatedAt should be updated")
+	})
+
+	t.Run("UpdateExisting_ByUrlConflict", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://upsert-item-conflict.test", Enabled: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		// 1. Create initial item with hash-1
+		item1 := &Item{
+			FeedID:  feed.ID,
+			Hash:    "hash-1",
+			URL:     "http://shared-url",
+			Content: "content-1",
+		}
+		assert.NoError(t, repo.UpsertItem(item1))
+
+		// 2. Create second item with same URL but hash-2
+		item2 := &Item{
+			FeedID:  feed.ID,
+			Hash:    "hash-2",
+			URL:     "http://shared-url",
+			Content: "content-2",
+		}
+
+		// This should trigger the mitigation logic: delete item1 and save item2
+		err := repo.UpsertItem(item2)
+		assert.NoError(t, err)
+
+		// 3. Verify state
+		var count int64
+		tx.Model(&Item{}).Where("feed_id = ? AND url = ?", feed.ID, "http://shared-url").Count(&count)
+		assert.Equal(t, int64(1), count, "Should only have one item for this URL")
+
+		var stored Item
+		tx.Where("feed_id = ? AND url = ?", feed.ID, "http://shared-url").First(&stored)
+		assert.Equal(t, "hash-2", strings.TrimSpace(stored.Hash))
+		assert.Equal(t, "content-2", stored.Content)
 	})
 }
 

@@ -370,6 +370,43 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 		}
 	}
 
+	if len(item.Enclosures) > 0 {
+		// spiegel uses this
+		for _, enc := range item.Enclosures {
+			if strings.HasPrefix(enc.Type, "image/") && enc.URL != "" {
+				if item.Extensions == nil {
+					item.Extensions = make(map[string]map[string][]ext.Extension)
+				}
+				if item.Extensions["media"] == nil {
+					item.Extensions["media"] = make(map[string][]ext.Extension)
+				}
+
+				if len(item.Extensions["media"]["content"]) == 0 {
+					// <media:credit> always delete this
+					delete(item.Extensions["media"], "credit")
+
+					w, h := parseDimensions(enc.URL)
+					attrs := map[string]string{
+						"url":    enc.URL,
+						"medium": "image",
+					}
+					if w > 0 {
+						attrs["width"] = fmt.Sprintf("%d", w)
+					}
+					if h > 0 {
+						attrs["height"] = fmt.Sprintf("%d", h)
+					}
+
+					item.Extensions["media"]["content"] = []ext.Extension{{
+						Name:  "content",
+						Attrs: attrs,
+					}}
+				}
+				break
+			}
+		}
+	}
+
 	if item.Extensions != nil {
 		if mediaExt, ok := item.Extensions["media"]; ok {
 			if _, hasGroup := mediaExt["group"]; hasGroup {

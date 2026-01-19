@@ -46,7 +46,9 @@ Why RSS?
 - [x] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
 - [x] Enhance the parsing of items e.g. media / thumbnails etc.
 - [x] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
-- [ ] Publish Webbrowser Plugin
+- [ ] Handle empty items / special items e.g. special video news feeds / ads
+- [ ] Webbrowser Plugin support I18n, Dates, Authors, Categories
+- [ ] Try to get a Favicon / Logo from somewhere
 - [ ] Fix support for multiple concurrent workers
 - [ ] Valkey Cache (read through)
 

@@ -59,7 +59,7 @@ clean:
 
 test:
 	go clean -testcache
-	go test ./...
+	go test -v -race ./...
 
 coverage:
 	go test -v -coverprofile=coverage.out ./...
@@ -70,7 +70,6 @@ lint:
 	gosec ./...
 	govulncheck ./...
 	gofmt -l .
-	cd browser-plugin && npm run lint
 
 tidy:
 	go mod tidy

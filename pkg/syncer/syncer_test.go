@@ -125,65 +125,65 @@ func TestStopPolling(t *testing.T) {
 	assert.Equal(t, id, repo.lastId)
 }
 
-func TestSyncFeedInternal(t *testing.T) {
-	// developer trigger
-	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		t.Skip("Skipping test on GitHub Actions")
-	}
+// func TestSyncFeedInternal(t *testing.T) {
+// 	// developer trigger
+// 	// if os.Getenv("GITHUB_ACTIONS") == "true" {
+// 	// 	t.Skip("Skipping test on GitHub Actions")
+// 	// }
 
-	t.Skip("Skipping test")
+// 	t.Skip("Skipping test")
 
-	cfg, err := config.Load()
-	assert.NoError(t, err)
+// 	cfg, err := config.Load()
+// 	assert.NoError(t, err)
 
-	repo, err := database.NewRepository(cfg)
-	assert.NoError(t, err)
+// 	repo, err := database.NewRepository(cfg)
+// 	assert.NoError(t, err)
 
-	tests := []struct {
-		name    string
-		url     string
-		wantErr bool
-		enabled bool
-	}{
-		{
-			name:    "Localhost Feed",
-			url:     "http://localhost:8003/feed",
-			wantErr: false,
-			enabled: true,
-		},
-		{
-			name:    "WordPress Feed",
-			url:     "http://wordpress/feed",
-			wantErr: true,
-			enabled: false,
-		},
-	}
+// 	tests := []struct {
+// 		name    string
+// 		url     string
+// 		wantErr bool
+// 		enabled bool
+// 	}{
+// 		{
+// 			name:    "Localhost Feed",
+// 			url:     "http://localhost:8003/feed",
+// 			wantErr: false,
+// 			enabled: true,
+// 		},
+// 		{
+// 			name:    "WordPress Feed",
+// 			url:     "http://wordpress/feed",
+// 			wantErr: true,
+// 			enabled: false,
+// 		},
+// 	}
 
-	s, err := New(context.Background(), cfg, repo)
-	assert.NoError(t, err)
+// 	s, err := New(context.Background(), cfg, repo)
+// 	assert.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if !tt.enabled {
-				t.Skip("Test case disabled")
-			}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			if !tt.enabled {
+// 				t.Skip("Test case disabled")
+// 			}
 
-			u, err := url.Parse(tt.url)
-			assert.NoError(t, err)
+// 			u, err := url.Parse(tt.url)
+// 			assert.NoError(t, err)
 
-			feed, err := repo.FindFeedByUrl(u)
-			assert.NoError(t, err)
-			if assert.NotNil(t, feed) {
-				err = s.updatingFeed(feed)
-				if tt.wantErr {
-					assert.Error(t, err)
-				} else {
-					assert.NoError(t, err)
-				}
-			}
-		})
-	}
-}
+// 			feed, err := repo.FindFeedByUrl(u)
+// 			assert.NoError(t, err)
+// 			if assert.NotNil(t, feed) {
+// 				err = s.updatingFeed(feed)
+// 				if tt.wantErr {
+// 					assert.Error(t, err)
+// 				} else {
+// 					assert.NoError(t, err)
+// 				}
+// 			}
+// 		})
+// 	}
+// }
 
 func TestNormalizeURL(t *testing.T) {
 	tests := []struct {
@@ -447,7 +447,9 @@ func TestUpdateContent(t *testing.T) {
 		expectedTitle       string
 		expectedDescription string
 		expectedContent     string
-		checkExtensions     bool
+		expectedMediaURL    string
+		expectedWidth       string
+		expectedHeight      string
 	}{
 		{
 			name: "Basic Update",
@@ -462,7 +464,6 @@ func TestUpdateContent(t *testing.T) {
 			expectedTitle:       "Corrected Title",
 			expectedDescription: "Corrected Description<br/><br/>",
 			expectedContent:     "",
-			checkExtensions:     false,
 		},
 		{
 			name: "With Content Encoded",
@@ -484,7 +485,32 @@ func TestUpdateContent(t *testing.T) {
 			expectedTitle:       "Corrected Foobar",
 			expectedDescription: "Corrected Short desc<br/><br/>Analysis",
 			expectedContent:     "",
-			checkExtensions:     true,
+			expectedMediaURL:    "https://foobar",
+			expectedWidth:       "1920",
+			expectedHeight:      "1080",
+		},
+		{
+			name: "With Image Enclosure",
+			item: &gofeed.Item{
+				Title:       "Enclosure Test",
+				Description: "Desc",
+				Enclosures: []*gofeed.Enclosure{
+					{
+						URL:  "https://example.com/image.jpg?width=1280",
+						Type: "image/jpeg",
+					},
+				},
+			},
+			res: &database.ThinkResult{
+				TitleCorrected:       "Corrected Enclosure",
+				DescriptionCorrected: "Corrected Desc",
+			},
+			expectedTitle:       "Corrected Enclosure",
+			expectedDescription: "Corrected Desc<br/><br/>",
+			expectedContent:     "",
+			expectedMediaURL:    "https://example.com/image.jpg?width=1280",
+			expectedWidth:       "1280",
+			expectedHeight:      "720",
 		},
 	}
 
@@ -496,16 +522,16 @@ func TestUpdateContent(t *testing.T) {
 			assert.Equal(t, tt.expectedDescription, tt.item.Description)
 			assert.Equal(t, tt.expectedContent, tt.item.Content)
 
-			if tt.checkExtensions {
+			if tt.expectedMediaURL != "" {
 				if assert.NotNil(t, tt.item.Extensions) {
 					media, ok := tt.item.Extensions["media"]
 					if assert.True(t, ok) {
 						contentExt, ok := media["content"]
 						if assert.True(t, ok) && assert.NotEmpty(t, contentExt) {
-							assert.Equal(t, "https://foobar", contentExt[0].Attrs["url"])
+							assert.Equal(t, tt.expectedMediaURL, contentExt[0].Attrs["url"])
 							assert.Equal(t, "image", contentExt[0].Attrs["medium"])
-							assert.Equal(t, "1920", contentExt[0].Attrs["width"])
-							assert.Equal(t, "1080", contentExt[0].Attrs["height"])
+							assert.Equal(t, tt.expectedWidth, contentExt[0].Attrs["width"])
+							assert.Equal(t, tt.expectedHeight, contentExt[0].Attrs["height"])
 						}
 
 						_, creditExists := media["credit"]

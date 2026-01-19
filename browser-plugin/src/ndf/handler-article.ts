@@ -1,15 +1,11 @@
+import { getDomain } from 'tldts';
+
 import log from '../shared/logger';
 import { AnalyzedItem, NewsDeframerClient } from './client';
+import { createFooterHtml, getFooterCss } from './footer';
+import { formatRatingPercent, getRatingColors } from './ratings';
 
-const formatRatingPercent = (rating: number | undefined): number => Math.round((rating || 0.0) * 100);
-
-const getRatingColors = (percentage: number): { bg: string; text: string } => {
-  if (percentage < 34) return { bg: '#198754', text: '#ffffff' }; // Accessible Green
-  if (percentage < 67) return { bg: '#ffc107', text: '#000000' }; // Accessible Yellow
-  return { bg: '#b02a37', text: '#ffffff' }; // Accessible Red
-};
-
-const createArticleHtml = (item: AnalyzedItem): string => {
+const createArticleHtml = (item: AnalyzedItem, rootDomain: string): string => {
   const title = item.title_corrected || item.title_original || 'No title';
   const description = item.description_corrected || item.description_original || 'No description';
   const imageUrl = item.media && item.media.medium === 'image' && item.media.url ? item.media.url : '';
@@ -33,6 +29,51 @@ const createArticleHtml = (item: AnalyzedItem): string => {
         <title>News Deframer: ${title}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <style>
+          ${getFooterCss()}
+          .page-header {
+            background-color: #fff;
+            padding: 8px 1.5em;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+
+          .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border: 1px solid #007bff;
+            border-radius: 8px;
+            background-color: #007bff;
+            color: #fff;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-decoration: none;
+          }
+
+          .btn-back:hover { background-color: #0069d9; }
+
+          .btn-hide {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            color: #333;
+            font-size: 0.9em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          }
+          .btn-hide:hover {
+            background-color: #f8f9fa;
+          }
+
           body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; color: #333; }
 
           /* MOBILE FIRST (Full Bleed) */
@@ -118,10 +159,9 @@ const createArticleHtml = (item: AnalyzedItem): string => {
             display: flex;
             justify-content: space-around;
             gap: 10px;
-            padding: 15px;
+            padding: 1.5em;
             background-color: #fff;
             border-top: 1px solid #eee;
-            margin-top: 2em;
           }
 
           .btn {
@@ -148,13 +188,16 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 
           /* DESKTOP LAYOUT (> 800px) */
           @media (min-width: 800px) {
+            .page-header {
+              border-radius: 12px 12px 0 0;
+            }
             .container {
               margin: 2em auto;
               border-radius: 12px;
               box-shadow: 0 6px 12px rgba(0,0,0,0.1);
             }
             .image-container img {
-              border-radius: 12px 12px 0 0;
+              border-radius: 0;
             }
 
             .metric-item {
@@ -171,12 +214,27 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 
             .action-buttons {
               border-radius: 0 0 12px 12px;
+              justify-content: center;
+            }
+            .action-buttons .btn {
+              flex: 0 0 180px;
             }
           }
 
           /* MOBILE STICKY BUTTONS (< 800px) */
           @media (max-width: 799px) {
-            body { padding-bottom: 80px; } /* Prevent content from being hidden behind sticky bar */
+            body {
+              padding-top: 48px; /* Space for sticky header */
+              padding-bottom: 80px; /* Prevent content from being hidden by sticky bar */
+            }
+            .page-header {
+              position: fixed;
+              top: 0;
+              left: 0;
+              width: 100%;
+              box-sizing: border-box;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
             .action-buttons {
               position: fixed;
               bottom: 0;
@@ -192,6 +250,10 @@ const createArticleHtml = (item: AnalyzedItem): string => {
       </head>
       <body>
         <div class="container">
+          <header class="page-header">
+            <a href="/" class="btn-back" title="Go back to ${rootDomain} portal">Back</a>
+            <button id="btn-hide" class="btn-hide">Hide</button>
+          </header>
           ${imageUrl ? `<div class="image-container"><img src="${imageUrl}" alt="${title}"></div>` : ''}
           <div class="main-content">
             <h1>${title}</h1>
@@ -203,7 +265,7 @@ const createArticleHtml = (item: AnalyzedItem): string => {
                   <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${overallValue}" aria-label="Overall rating: ${overallValue}%" aria-describedby="overall-reason">
                     <div class="bar" style="width: ${overallValue}%; background-color: ${overallColors.bg};"></div>
                     ${overallRaw !== undefined ? `
-                      <div class="bar-overlay" style="color: ${overallColors.text};">
+                      <div class="bar-overlay" style="color: ${overallColors.text}; ${overallColors.text === '#ffffff' ? 'text-shadow: 0 0 3px rgba(0,0,0,0.7);' : ''}">
                         <span>${overallValue}%</span>
                       </div>
                     ` : ''}
@@ -222,7 +284,7 @@ const createArticleHtml = (item: AnalyzedItem): string => {
                       <div class="bar-container" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${m.value}" aria-label="${m.label} rating: ${m.value}%" aria-describedby="${m.id}-reason">
                         <div class="bar" style="width: ${m.value}%; background-color: ${colors.bg};"></div>
                         ${m.raw !== undefined ? `
-                          <div class="bar-overlay" style="color: ${colors.text};">
+                          <div class="bar-overlay" style="color: ${colors.text}; ${colors.text === '#ffffff' ? 'text-shadow: 0 0 3px rgba(0,0,0,0.7);' : ''}">
                             <span>${m.value}%</span>
                           </div>
                         ` : ''}
@@ -240,10 +302,11 @@ const createArticleHtml = (item: AnalyzedItem): string => {
             </div>
           </div>
 
+          ${createFooterHtml()}
           <div class="action-buttons">
-            <button id="btn-details" class="btn btn-primary">Details</button>
-            <button id="btn-original" class="btn">Original Title</button>
-            <a href="#" class="btn">View anyway</a>
+            <button id="btn-original" class="btn btn-primary">Original Title</button>
+            <button id="btn-details" class="btn">Details</button>
+            <button id="btn-view-original" class="btn">View Original</button>
           </div>
         </div>
       </body>
@@ -252,6 +315,8 @@ const createArticleHtml = (item: AnalyzedItem): string => {
 };
 
 export const handleArticle = async (client: NewsDeframerClient) => {
+  const rootDomain = getDomain(window.location.hostname);
+
   log.info('Article page detected. Stopping window immediately.');
   window.stop();
 
@@ -259,7 +324,7 @@ export const handleArticle = async (client: NewsDeframerClient) => {
     const item = await client.getItem(window.location.href);
     if (item) {
       log.info('Successfully fetched item.');
-      document.documentElement.innerHTML = createArticleHtml(item);
+      document.documentElement.innerHTML = createArticleHtml(item, rootDomain || window.location.hostname);
 
       // Attach event listeners programmatically after HTML is injected
       const btnDetails = document.getElementById('btn-details');
@@ -309,14 +374,36 @@ export const handleArticle = async (client: NewsDeframerClient) => {
         });
       }
 
+      const btnHide = document.getElementById('btn-hide');
+      if (btnHide) {
+        btnHide.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.scrollTo(0, 0);
+          log.info('User clicked "Hide". Bypassing for this session and reloading.');
+          sessionStorage.setItem('__ndf-bypass', 'true');
+          window.location.reload();
+        });
+      }
+
+      const btnViewOriginal = document.getElementById('btn-view-original');
+      if (btnViewOriginal) {
+        btnViewOriginal.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.scrollTo(0, 0);
+          log.info('User clicked "View Original". Bypassing for this session and reloading.');
+          sessionStorage.setItem('__ndf-bypass', 'true');
+          window.location.reload();
+        });
+      }
+
     } else {
       log.info('No item found for this URL. Reloading with bypass.');
-      sessionStorage.setItem('ndf-bypass', 'true');
+      sessionStorage.setItem('__ndf-bypass', 'true');
       window.location.reload();
     }
   } catch (error) {
     log.error('Failed to fetch item:', error);
-    sessionStorage.setItem('ndf-bypass', 'true');
+    sessionStorage.setItem('__ndf-bypass', 'true');
     window.location.reload();
   }
 };
