@@ -70,6 +70,8 @@ Article 2
 
 #### Portal Tagesschau
 
+**Recommendation**: A score of 50% or higher serves as a warning. It indicates the use of speculation, framing, or sensationalism. We recommend avoiding the original title and description entirely and seeking more objective sources. This suggests that professional techniques are being intentionally employed to manipulate your perception.
+
 <img src="tagesschau-portal.jpg" alt="Tagesschau Portal" width="1000"/>
 
 #### Article Tagesschau
