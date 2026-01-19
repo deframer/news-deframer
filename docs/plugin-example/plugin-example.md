@@ -27,7 +27,7 @@ level=DEBUG msg="openai token usage" prompt_tokens=1470 completion_tokens=303 th
 
 - RSS feed `https://feeds.bbci.co.uk/news/world/rss.xml`
 
-**Portal**
+#### Portal BBC
 
 The plugin overlays the original web page to provide a distraction-free environment.
 
@@ -37,13 +37,13 @@ The plugin overlays the original web page to provide a distraction-free environm
 
 **Recommendation**: A score of 50% or higher suggests significant bias. We recommend seeking alternative sources for a more balanced perspective.
 
-<img src="bbc-portal.jpg" alt="BBC Portal" width="600"/>
+<img src="bbc-portal.jpg" alt="BBC Portal" width="1000"/>
 
 **Quick Insights**: Hovering over the percentage bar reveals the detailed analysis from the News Deframer. This often provides enough context to skip the full article.
 
 <img src="portal-hover.png" alt="Portal Hover" width="200"/>
 
-**Article**
+#### Article BBC
 
 You retain full control over your reading experience. The plugin intercepts navigation to article URLs. Regardless of whether you access the article via the portal or a direct link, News Deframer always presents the analysis preview first to protect you.
 
@@ -68,11 +68,13 @@ Article 2
 
 - RSS feed `https://www.tagesschau.de/index~rss2.xml`
 
-**Portal**
+#### Portal Tagesschau
 
-<img src="tagesschau-portal.jpg" alt="Tagesschau Portal" width="600"/>
+**Recommendation**: A score of 50% or higher serves as a warning. It indicates the use of speculation, framing, or sensationalism. We recommend avoiding the original title and description entirely and seeking more objective sources. This suggests that professional techniques are being intentionally employed to manipulate your perception.
 
-**Article**
+<img src="tagesschau-portal.jpg" alt="Tagesschau Portal" width="1000"/>
+
+#### Article Tagesschau
 
 Article 1
 
