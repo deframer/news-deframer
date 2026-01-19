@@ -53,7 +53,7 @@ describe('Article Handler', () => {
     await handleArticle(mockClient);
 
     expect(logSpy).toHaveBeenCalledWith('No item found for this URL. Reloading with bypass.');
-    expect(sessionStorage.getItem('ndf-bypass')).toBe('true');
+    expect(sessionStorage.getItem('__ndf-bypass')).toBe('true');
     logSpy.mockRestore();
   });
 });

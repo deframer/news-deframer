@@ -139,6 +139,16 @@ func (r *repository) UpsertItem(item *Item) error {
 				item.CreatedAt = existing.CreatedAt
 			}
 		}
+
+		// Mitigation: check for URL conflict within the same feed (different hash)
+		var urlConflict Item
+		if err := tx.Where("feed_id = ? AND url = ? AND hash != ?", item.FeedID, item.URL, item.Hash).First(&urlConflict).Error; err == nil {
+			slog.Warn("URL conflict detected, deleting old version to allow update", "url", item.URL, "old_hash", urlConflict.Hash, "new_hash", item.Hash)
+			if err := tx.Delete(&urlConflict).Error; err != nil {
+				return err
+			}
+		}
+
 		return tx.Save(item).Error
 	})
 }
