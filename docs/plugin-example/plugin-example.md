@@ -27,7 +27,7 @@ level=DEBUG msg="openai token usage" prompt_tokens=1470 completion_tokens=303 th
 
 - RSS feed `https://feeds.bbci.co.uk/news/world/rss.xml`
 
-**Portal**
+#### Portal BBC
 
 The plugin overlays the original web page to provide a distraction-free environment.
 
@@ -43,7 +43,7 @@ The plugin overlays the original web page to provide a distraction-free environm
 
 <img src="portal-hover.png" alt="Portal Hover" width="200"/>
 
-**Article**
+#### Article BBC
 
 You retain full control over your reading experience. The plugin intercepts navigation to article URLs. Regardless of whether you access the article via the portal or a direct link, News Deframer always presents the analysis preview first to protect you.
 
@@ -68,11 +68,11 @@ Article 2
 
 - RSS feed `https://www.tagesschau.de/index~rss2.xml`
 
-**Portal**
+#### Portal Tagesschau
 
 <img src="tagesschau-portal.jpg" alt="Tagesschau Portal" width="1000"/>
 
-**Article**
+#### Article Tagesschau
 
 Article 1
 
