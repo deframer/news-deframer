@@ -47,6 +47,7 @@ Why RSS?
 - [x] Enhance the parsing of items e.g. media / thumbnails etc.
 - [x] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
 - [ ] Handle empty items / special items e.g. special video news feeds / ads
+- [ ] Webbrowser Plugin Admin UI enhancement e.g. show the supported domains / disable the plugin etc.
 - [ ] Webbrowser Plugin support I18n, Dates, Authors, Categories
 - [ ] Publish Webbrowser Plugin (probably transform to V3 if possible)
 - [ ] Try to get a Favicon / Logo from somewhere
