@@ -22,8 +22,8 @@ Das JSON muss die folgenden Felder enthalten:
 10. **`persuasive_reason`** (String): Identifikation von Handlungsaufforderungen (Call-to-Action) oder Verkaufssprache in max. 10 Wörtern.
 11. **`hyper_stimulus`** (Float, 0.0 - 1.0): Nutzung von Reizen wie alles in Großbuchstaben, viele Ausrufezeichen, aggressiven Wörtern oder extremer Emotionalisierung.
 12. **`hyper_stimulus_reason`** (String): Identifiziere stilistische Exzesse (z.B. "exzessive Großschreibung", "mehrfache Ausrufezeichen") in max. 10 Wörtern.
-13. **`speculative`** (Float, 0.0 - 1.0): Wie hoch ist der Anteil an unbestätigten Behauptungen, Gerüchten, "angeblichen" Beweisen oder Spekulation ohne faktische Basis?
-14. **`speculative_reason`** (String): Identifikation der Unsicherheitsquelle (z. B. "quellenlose Gerüchte", "Zukunftsprognose") in max. 10 Wörtern.
+13. **`speculative`** (Float, 0.0 - 1.0): Wie hoch ist der Anteil an unbestätigten Behauptungen, Gerüchten, "angeblichen" Beweisen oder Spekulationen (inkl. Konjunktiv: hätte, sollte, könnte) ohne faktische Basis?
+14. **`speculative_reason`** (String): Identifikation der Unsicherheitsquelle (z. B. "quellenlose Gerüchte", "Zukunftsprognose", "Konjunktiv: hätte/sollte/könnte") in max. 10 Wörtern.
 15. **`overall`** (Float, 0.0 - 1.0): Ein aggregierter Gesamtwert, der die allgemeine Abweichung von neutraler Qualität basierend auf allen anderen Scores repräsentiert.
 16. **`overall_reason`** (String): Eine holistische Zusammenfassung, warum der Text diese spezifischen Bewertungen erhalten hat, in maximal 20 Wörtern.
 

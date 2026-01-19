@@ -22,8 +22,8 @@ The JSON must contain the following fields:
 10. **`persuasive_reason`** (String): Identification of calls to action or sales language in max 10 words.
 11. **`hyper_stimulus`** (Float, 0.0 - 1.0): Use of stimuli like all-caps, exclamation marks, aggressive words, or extreme emotionalization.
 12. **`hyper_stimulus_reason`** (String): Identify stylistic excesses (e.g., "excessive capitalization," "multiple exclamation marks") in 10 words max.
-13. **`speculative`** (Float, 0.0 - 1.0): How high is the proportion of unconfirmed claims, rumors, "alleged" evidence, or speculation without a factual basis?
-14. **`speculative_reason`** (String): Identification of the source of uncertainty (e.g., "unsourced rumors," "future prediction") in max 10 words.
+13. **`speculative`** (Float, 0.0 - 1.0): How high is the proportion of unconfirmed claims, rumors, "alleged" evidence, or speculation (including conditional language like "could," "should," "might") without a factual basis?
+14. **`speculative_reason`** (String): Identification of the source of uncertainty (e.g., "unsourced rumors," "future prediction," "conditional phrasing: could/should/might") in max 10 words.
 15. **`overall`** (Float, 0.0 - 1.0): An aggregate score representing the overall quality deviation based on framing, clickbait, persuasion, stimulus, and speculation.
 16. **`overall_reason`** (String): A holistic summary of why the text received these specific scores in a maximum of 20 words.
 
