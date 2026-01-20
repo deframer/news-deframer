@@ -1,5 +1,6 @@
 import log from '../shared/logger';
 import { DEFAULT_BACKEND_URL } from '../shared/settings';
+import { ProxyResponse } from '../shared/types';
 
 log.info('Background script running');
 
@@ -75,13 +76,14 @@ chrome.storage.onChanged.addListener((changes, namespace) => {
   }
 });
 
+
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.type === 'PROXY_REQ') {
     const { url, headers, timeout = 5000 } = request;
     log.info(`Proxying request to ${url} with timeout ${timeout}ms`);
 
     let responseSent = false;
-    const onceSendResponse = (response: any) => {
+    const onceSendResponse = (response: ProxyResponse) => {
       if (!responseSent) {
         responseSent = true;
         sendResponse(response);

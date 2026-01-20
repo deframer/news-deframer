@@ -7,8 +7,10 @@ import {
   getSettings,
   Settings,
 } from '../../shared/settings';
+import { ProxyResponse } from '../../shared/types';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
+
 
 const Options = () => {
   const [settings, setSettings] = useState<Settings>({
@@ -55,10 +57,10 @@ const Options = () => {
       const url =
         currentSettings.backendUrl.replace(/\/$/, '') + '/api/domains';
 
-      const response = await new Promise<any>((resolve, reject) => {
+      const response = await new Promise<ProxyResponse>((resolve, reject) => {
         chrome.runtime.sendMessage(
           { type: 'PROXY_REQ', url, headers, timeout: 5000 },
-          (res) => {
+          (res: ProxyResponse) => {
             if (chrome.runtime.lastError) {
               reject(new Error(chrome.runtime.lastError.message));
               return;
@@ -76,7 +78,7 @@ const Options = () => {
         setStatus('error');
         return false;
       }
-    } catch (e) {
+    } catch {
       setStatus('error');
       return false;
     }
