@@ -21,9 +21,9 @@ LABEL org.opencontainers.image.source=${REPO_URL}
 
 WORKDIR /
 
-COPY --from=builder /out/worker /worker
+COPY --from=builder /out/worker /usr/bin/worker
 COPY --from=builder /out/admin /usr/bin/admin
 
 USER nonroot:nonroot
 
-ENTRYPOINT ["/worker"]
+ENTRYPOINT ["worker"]
