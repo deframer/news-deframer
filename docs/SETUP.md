@@ -8,7 +8,7 @@
 - Alternative: Install a Local LLM (e.g. LM-Studio) with an OpenAPI API (this will also cost money - in terms of your power bill)
 - **Note**: Using commercial LLM APIs (OpenAI, Grok, Google Gemini) usually incurs usage costs.
 - **Cloud**: Obtain an API key from your chosen provider.
-- **Local**: Alternatively, you can host a local LLM (e.g., using LM-Studio) that exposes an OpenAI-compatible API. While this avoids API fees, it requires at least an Apple M1 or a lower end RTX with 16GB of VRAM..
+- **Local**: Alternatively, you can host a local LLM (e.g., using LM-Studio) that exposes an OpenAI-compatible API. While this avoids API fees, it requires at least an Apple M1 or a lower end RTX with 16GB of VRAM.
 
 ## Docker Compose
 
@@ -38,7 +38,6 @@ You can manage feeds using the `admin` CLI tool inside the running container.
 
 Once feeds are configured, you can access the proxied versions via the service.
 
-- TBD
 - **URL Pattern**: `http://<your-server-ip>:<port>/rss?url=<upstream-feed-url>`
 - **Example**: `http://192.168.1.1:8080/rss?url=https://my-fancy-newssite.com/rss`
 
