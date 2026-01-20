@@ -96,15 +96,20 @@ jobs:
           npm run test
           npm run dist
 
-      - name: Set Release Date
-        run: echo "RELEASE_DATE=v$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_ENV
+      - name: Prepare Release Artifacts
+        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+        run: |
+          VERSION=$(date +'%Y-%m-%d-%H%M')
+          echo "RELEASE_TAG=v$VERSION" >> $GITHUB_ENV
+          mv browser-plugin/extension.zip "browser-plugin/extension-$VERSION.zip"
+          echo "RELEASE_ASSET=browser-plugin/extension-$VERSION.zip" >> $GITHUB_ENV
 
       - name: Release
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.RELEASE_DATE }}
-          files: browser-plugin/extension.zip
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: ${{ env.RELEASE_ASSET }}
           prerelease: true
 
   docker:
