@@ -15,6 +15,7 @@ const Options = () => {
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
     password: '',
+    enabled: true,
   });
   const [status, setStatus] = useState<Status>('idle');
   const [loaded, setLoaded] = useState(false);
@@ -79,24 +80,105 @@ const Options = () => {
     testConnection(settings);
   };
 
-  if (!loaded) return <div>Loading...</div>;
+  if (!loaded) return <div style={{ padding: '20px' }}>Loading...</div>;
+
+  const isConnected = status === 'success';
+  const isError = status === 'error';
+  const isLoading = status === 'loading';
 
   return (
-    <div style={{ padding: '20px', maxWidth: '400px' }}>
-      <h2>News Deframer Settings</h2>
+    <div
+      style={{
+        padding: '24px',
+        maxWidth: '400px',
+        fontFamily:
+          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        color: '#333',
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+          borderBottom: '1px solid #eee',
+          paddingBottom: '16px',
+        }}
+      >
+        <h2 style={{ margin: 0, fontSize: '20px' }}>News Deframer</h2>
+        {/* Status Badge */}
+        {status !== 'idle' && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: isConnected
+                ? '#10B981'
+                : isError
+                ? '#EF4444'
+                : '#6B7280',
+              backgroundColor: isConnected
+                ? '#D1FAE5'
+                : isError
+                ? '#FEE2E2'
+                : '#F3F4F6',
+              padding: '4px 8px',
+              borderRadius: '12px',
+            }}
+          >
+            <span
+              style={{
+                display: 'block',
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: 'currentColor',
+                marginRight: '6px',
+              }}
+            />
+            {isConnected ? 'Connected' : isError ? 'Error' : 'Checking...'}
+          </div>
+        )}
+      </div>
 
       <div
         style={{
-          marginBottom: '20px',
-          border: '1px solid #ddd',
-          padding: '15px',
-          borderRadius: '4px',
+          backgroundColor: '#f9fafb',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          padding: '16px',
+          marginBottom: '24px',
+          opacity: settings.enabled ? 1 : 0.6,
+          transition: 'opacity 0.2s',
+          pointerEvents: settings.enabled ? 'auto' : 'none',
         }}
       >
-        <h3 style={{ marginTop: 0 }}>Connection</h3>
-        <div style={{ marginBottom: '10px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>
-            News Deframer Server:
+        <h3
+          style={{
+            marginTop: 0,
+            marginBottom: '16px',
+            fontSize: '14px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: '#6b7280',
+          }}
+        >
+          Connection Settings
+        </h3>
+
+        <div style={{ marginBottom: '16px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '6px',
+              fontSize: '14px',
+              fontWeight: 500,
+            }}
+          >
+            Server URL
           </label>
           <input
             type="text"
@@ -104,14 +186,33 @@ const Options = () => {
             onChange={(e) =>
               setSettings({ ...settings, backendUrl: e.target.value })
             }
-            style={{ width: '100%', padding: '5px' }}
+            disabled={!settings.enabled}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              boxSizing: 'border-box',
+              fontSize: '14px',
+              backgroundColor: settings.enabled ? '#fff' : '#f3f4f6',
+            }}
             placeholder="http://localhost:8080"
           />
         </div>
 
-        <div style={{ marginBottom: '10px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>
-            Username (Optional):
+        <div style={{ marginBottom: '16px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '6px',
+              fontSize: '14px',
+              fontWeight: 500,
+            }}
+          >
+            Username{' '}
+            <span style={{ fontWeight: 400, color: '#9ca3af' }}>
+              (Optional)
+            </span>
           </label>
           <input
             type="text"
@@ -119,13 +220,32 @@ const Options = () => {
             onChange={(e) =>
               setSettings({ ...settings, username: e.target.value })
             }
-            style={{ width: '100%', padding: '5px' }}
+            disabled={!settings.enabled}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              boxSizing: 'border-box',
+              fontSize: '14px',
+              backgroundColor: settings.enabled ? '#fff' : '#f3f4f6',
+            }}
           />
         </div>
 
-        <div style={{ marginBottom: '10px' }}>
-          <label style={{ display: 'block', marginBottom: '5px' }}>
-            Password (Optional):
+        <div style={{ marginBottom: '20px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '6px',
+              fontSize: '14px',
+              fontWeight: 500,
+            }}
+          >
+            Password{' '}
+            <span style={{ fontWeight: 400, color: '#9ca3af' }}>
+              (Optional)
+            </span>
           </label>
           <input
             type="password"
@@ -133,61 +253,71 @@ const Options = () => {
             onChange={(e) =>
               setSettings({ ...settings, password: e.target.value })
             }
-            style={{ width: '100%', padding: '5px' }}
+            disabled={!settings.enabled}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #d1d5db',
+              boxSizing: 'border-box',
+              fontSize: '14px',
+              backgroundColor: settings.enabled ? '#fff' : '#f3f4f6',
+            }}
           />
         </div>
 
-        <div
+        <button
+          onClick={handleTestClick}
+          disabled={!settings.enabled || isLoading}
+          style={{
+            width: '100%',
+            padding: '10px',
+            backgroundColor: settings.enabled ? '#fff' : '#f3f4f6',
+            border: '1px solid #d1d5db',
+            borderRadius: '6px',
+            cursor: !settings.enabled || isLoading ? 'not-allowed' : 'pointer',
+            fontSize: '14px',
+            fontWeight: 500,
+            color: settings.enabled ? '#374151' : '#9ca3af',
+            transition: 'background-color 0.2s, color 0.2s',
+          }}
+        >
+          {isLoading ? 'Testing...' : 'Test Connection'}
+        </button>
+      </div>
+
+      {/* Main Enable Toggle */}
+      <div style={{ marginBottom: '24px' }}>
+        <label
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '10px',
-            marginTop: '15px',
+            cursor: 'pointer',
+            fontSize: '16px',
+            fontWeight: 500,
           }}
         >
-          <button
-            onClick={handleTestClick}
-            disabled={status === 'loading'}
-            style={{ padding: '5px 10px' }}
-          >
-            {status === 'loading' ? 'Testing...' : 'Test Connection'}
-          </button>
+          <input
+            type="checkbox"
+            checked={settings.enabled}
+            onChange={async (e) => {
+              const enabled = e.target.checked;
+              const newSettings = { ...settings, enabled };
+              setSettings(newSettings);
 
-          {status !== 'idle' && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                color: status === 'success' ? 'green' : 'red',
-                fontWeight: 'bold',
-              }}
-            >
-              <span
-                style={{
-                  display: 'inline-block',
-                  width: '10px',
-                  height: '10px',
-                  borderRadius: '50%',
-                  backgroundColor: status === 'success' ? 'green' : 'red',
-                  marginRight: '5px',
-                }}
-              ></span>
-              {status === 'success' ? 'Connected' : 'Connection Failed'}
-            </div>
-          )}
-        </div>
+              if (enabled) {
+                testConnection(newSettings);
+              } else {
+                setStatus('idle');
+                await invalidateDomainCache();
+              }
+            }}
+            style={{ marginRight: '10px', width: '18px', height: '18px' }}
+          />
+          Enable Extension
+        </label>
       </div>
 
-      <div
-        style={{
-          marginTop: '20px',
-          fontSize: '12px',
-          color: '#999',
-          textAlign: 'center',
-        }}
-      >
-        Settings are saved automatically
-      </div>
     </div>
   );
 };

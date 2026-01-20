@@ -13,6 +13,7 @@
 - [x] Enhance the parsing of items e.g. media / thumbnails etc.
 - [x] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
 - [x] Updated the Browser Plugin Manifest to V3.
+- [x] Webbrowser Plugin enable/disable
 - [ ] Webbrowser Plugin show more data e.g. pubDate, author, category, etc.
 - [ ] Webbrowser Plugin add tabs or sections
 - [ ] Publish the Browser Plugin to Chrome Store
