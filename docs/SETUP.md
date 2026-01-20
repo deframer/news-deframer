@@ -8,7 +8,7 @@
 - Alternative: Install a Local LLM (e.g. LM-Studio) with an OpenAPI API (this will also cost money - in terms of your power bill)
 - **Note**: Using commercial LLM APIs (OpenAI, Grok, Google Gemini) usually incurs usage costs.
 - **Cloud**: Obtain an API key from your chosen provider.
-- **Local**: Alternatively, you can host a local LLM (e.g., using LM-Studio) that exposes an OpenAI-compatible API. While this avoids API fees, it requires significant local hardware resources (GPU/Power).
+- **Local**: Alternatively, you can host a local LLM (e.g., using LM-Studio) that exposes an OpenAI-compatible API. While this avoids API fees, it requires at least an Apple M1 or a lower end RTX with 16GB of VRAM..
 
 ## Docker Compose
 
@@ -34,19 +34,8 @@
 - Force a Sync `docker compose exec worker /admin feed sync-all`
 You can manage feeds using the `admin` CLI tool inside the running container.
 
-## RSS Proxy
-- **View Help**: `docker compose exec service admin -h`
-- **Import Example Feeds**: `cat feed-example.json | docker compose exec -T worker admin feed import`
-- **List Feeds**: `docker compose exec worker admin feed list`
-- **Force Sync**: `docker compose exec worker admin feed sync-all`
-
-- Pattern: `http://<your-server-ip>:<your-server-port>/rss?url=<url-of-your-newsfeed>`
-- Example: `http://192.168.1.1:8080/rss?url=https://my-fancy-newssite/rss`
-- Of course the news feed that you want to proxy needs to be part of your feeds.
-- Give the AI / worker some time to download and progress it.
 ## RSS Proxy Usage
 
-## Webbrowser Plugin
 Once feeds are configured, you can access the proxied versions via the service.
 
 - TBD
@@ -57,4 +46,4 @@ Once feeds are configured, you can access the proxied versions via the service.
 
 ## Browser Plugin
 
-- *Coming Soon*
+- TBD
