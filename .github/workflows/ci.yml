@@ -80,6 +80,8 @@ jobs:
 
   browser-plugin:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v6
       - name: Setup Node.js
@@ -94,6 +96,13 @@ jobs:
           npm run test
           npm run dist
 
+      - name: Release
+        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          files: browser-plugin/extension.zip
+          prerelease: true
 
   docker:
     needs: test

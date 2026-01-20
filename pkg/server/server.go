@@ -100,7 +100,7 @@ func (s *Server) handleHostname(w http.ResponseWriter, r *http.Request) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		s.logger.Error("failed to get hostname", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 	xmlData, err := s.facade.GetRssProxyFeed(r.Context(), &filter)
 	if err != nil {
 		s.logger.Error("failed to get rss proxy feed", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
@@ -170,7 +170,7 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 	item, err := s.facade.GetFirstItemForUrl(r.Context(), u)
 	if err != nil {
 		s.logger.Error("failed to get item", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
@@ -222,7 +222,7 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 	domains, err := s.facade.GetRootDomains(r.Context())
 	if err != nil {
 		s.logger.Error("failed to get root domains", "error", err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
+		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
