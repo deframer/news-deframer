@@ -1,0 +1,54 @@
+---
+services:
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-deframer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deframer}
+      POSTGRES_DB: ${POSTGRES_DB:-deframer}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ./init-uuid.sh:/docker-entrypoint-initdb.d/init-uuid.sh
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-deframer}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  service:
+    image: ghcr.io/egandro/news-deframer/service:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - PORT=${PORT:-8080}
+      - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+      - LOG_DATABASE=${LOG_DATABASE:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+      - BASIC_AUTH_USER=${BASIC_AUTH_USER:-}
+      - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD:-}
+    ports:
+      - "${PORT:-8080}:${PORT:-8080}"
+
+  worker:
+    image: ghcr.io/egandro/news-deframer/worker:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+      - LOG_DATABASE=${LOG_DATABASE:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-debug}
+      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+      - LLM_TYPE=${LLM_TYPE:-}
+      - LLM_MODEL=${LLM_MODEL:-}
+      - LLM_API_KEY=${LLM_API_KEY:-}
+      - LLM_BASE_URL=${LLM_BASE_URL:-}
+
+volumes:
+  postgres_data:
+

@@ -19,7 +19,7 @@ LABEL org.opencontainers.image.source=${REPO_URL}
 WORKDIR /
 
 COPY --from=builder /out/service /service
-COPY --from=builder /out/admin /admin
+COPY --from=builder /out/admin /usr/bin/admin
 
 USER nonroot:nonroot
 

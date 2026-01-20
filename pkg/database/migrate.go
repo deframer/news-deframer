@@ -28,6 +28,11 @@ func Migrate(db *gorm.DB) error {
 	}
 	defer db.Exec("SELECT pg_advisory_unlock(123456789)")
 
+	// Ensure the Extension for UUIDs exists
+	if err := db.Exec(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`).Error; err != nil {
+		return fmt.Errorf("failed to create extension uuid-ossp: %w", err)
+	}
+
 	// 1. AutoMigrate the schema
 	if err := db.AutoMigrate(&Feed{}, &CachedFeed{}, &Item{}, &FeedSchedule{}); err != nil {
 		return err

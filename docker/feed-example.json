@@ -1,0 +1,19 @@
+[
+  {
+    "url": "https://feeds.bbci.co.uk/news/world/rss.xml",
+    "root_domain": "bbc.com",
+    "polling": true
+  },
+  {
+    "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    "polling": true
+  },
+  {
+    "url": "https://www.spiegel.de/schlagzeilen/tops/index.rss",
+    "polling": true
+  },
+  {
+    "url": "https://www.tagesschau.de/index~rss2.xml",
+    "polling": true
+  }
+]
