@@ -12,6 +12,8 @@
 - [x] Webbrowser Plugin (make deframer act as an Ad-Blocker but for bad news)
 - [x] Enhance the parsing of items e.g. media / thumbnails etc.
 - [x] Enhance the handling of exotic feeds e.g. the bbc uses a different feed url then the item URLs.
+- [x] Updated the Browser Plugin Manifest to V3.
+- [ ] Publish the Browser Plugin to Chrome Store
 - [ ] Handle empty items / special items e.g. special video news feeds / ads
 - [ ] Webbrowser Plugin Admin UI enhancement e.g. show the supported domains / disable the plugin etc.
 - [ ] Webbrowser Plugin support I18n, Dates, Authors, Categories
@@ -20,7 +22,6 @@
 - [ ] Fix support for multiple concurrent workers
 - [ ] Valkey Cache (read through)
 - [ ] Make a public instance
-- [ ] Publish the Browser Plugin to Chrome Store (we might need a V3 version)
 
 ## Future ideas
 
