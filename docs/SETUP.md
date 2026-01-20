@@ -12,8 +12,8 @@
 ## Docker Compose
 
 1. Install Docker and Docker Compose.
-2. Download the `docker-compose.yml` file.
-3. Download `env.example` and save it as `.env`.
+2. Download the `docker/docker-compose.yml` file.
+3. Download `docker/env.example` and save it as `.env`.
 4. Edit `.env` to configure your API keys and preferences.
 5. Start the services:
    ```bash
