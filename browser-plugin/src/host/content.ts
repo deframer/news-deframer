@@ -4,6 +4,12 @@ import { getSettings } from '../shared/settings';
 
 async function startNdf() {
   const settings = await getSettings();
+
+  if (settings.enabled === false) {
+    log.info('NDF is disabled by user settings.');
+    return;
+  }
+
   log.info('Starting NDF...');
   ndf.start(settings);
 }
