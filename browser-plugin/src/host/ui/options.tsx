@@ -25,7 +25,9 @@ const Options = () => {
     getSettings().then((loadedSettings) => {
       setSettings(loadedSettings);
       setLoaded(true);
-      testConnection(loadedSettings);
+      if (loadedSettings.enabled) {
+        testConnection(loadedSettings);
+      }
     });
   }, []);
 
@@ -42,9 +44,6 @@ const Options = () => {
 
   const testConnection = async (currentSettings: Settings) => {
     setStatus('loading');
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
     try {
       const headers: HeadersInit = {};
       if (currentSettings.username && currentSettings.password) {
@@ -56,27 +55,37 @@ const Options = () => {
       const url =
         currentSettings.backendUrl.replace(/\/$/, '') + '/api/domains';
 
-      // Use background proxy to avoid browser auth dialog
-      const response = await chrome.runtime.sendMessage({
-        type: 'PROXY_REQ',
-        url,
-        headers,
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { type: 'PROXY_REQ', url, headers, timeout: 5000 },
+          (res) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+              return;
+            }
+            resolve(res);
+          },
+        );
       });
 
-      if (response.ok) {
+      if (response && response.ok) {
         setStatus('success');
         await invalidateDomainCache();
+        return true;
       } else {
         setStatus('error');
+        return false;
       }
-    } catch {
+    } catch (e) {
       setStatus('error');
-    } finally {
-      clearTimeout(timeoutId);
+      return false;
     }
   };
 
   const handleTestClick = () => {
+    if (status === 'loading') {
+      return; // Ignore click if test is already in progress
+    }
     testConnection(settings);
   };
 
@@ -305,11 +314,35 @@ const Options = () => {
               const newSettings = { ...settings, enabled };
               setSettings(newSettings);
 
+              // Persist immediately so the reloaded tab sees the new state
+              await chrome.storage.local.set(newSettings);
+
               if (enabled) {
-                testConnection(newSettings);
+                const success = await testConnection(newSettings);
+                if (success) {
+                  // On successful enable, reload tab and close popup
+                  const [tab] = await chrome.tabs.query({
+                    active: true,
+                    currentWindow: true,
+                  });
+                  if (tab?.id && tab.url?.match(/^https?:\/\//)) {
+                    chrome.tabs.reload(tab.id);
+                  }
+                  window.close();
+                }
+                // If not successful, do nothing (window stays open, no reload)
               } else {
+                // On disable, invalidate cache, reload tab, and close popup
                 setStatus('idle');
                 await invalidateDomainCache();
+                const [tab] = await chrome.tabs.query({
+                  active: true,
+                  currentWindow: true,
+                });
+                if (tab?.id && tab.url?.match(/^https?:\/\//)) {
+                  chrome.tabs.reload(tab.id);
+                }
+                window.close();
               }
             }}
             style={{ marginRight: '10px', width: '18px', height: '18px' }}
@@ -317,7 +350,6 @@ const Options = () => {
           Enable Extension
         </label>
       </div>
-
     </div>
   );
 };

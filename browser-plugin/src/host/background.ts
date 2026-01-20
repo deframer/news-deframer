@@ -5,6 +5,10 @@ log.info('Background script running');
 
 const updateAuthRules = (backendUrl: string) => {
   try {
+    if (typeof backendUrl !== 'string' || !backendUrl.startsWith('http')) {
+      log.error('Invalid backendUrl for auth rules:', backendUrl);
+      return;
+    }
     const url = new URL(backendUrl);
     // Construct a pattern that matches the origin (protocol + host + port)
     // We match any path under this origin
@@ -56,36 +60,63 @@ const updateAuthRules = (backendUrl: string) => {
 // Initialize rules on startup
 chrome.storage.local.get(['backendUrl'], (result) => {
   const backendUrl = result.backendUrl || DEFAULT_BACKEND_URL;
-  updateAuthRules(backendUrl);
+  if (typeof backendUrl === 'string') {
+    updateAuthRules(backendUrl);
+  }
 });
 
 // Listen for settings changes
 chrome.storage.onChanged.addListener((changes, namespace) => {
   if (namespace === 'local' && changes.backendUrl) {
-    updateAuthRules(changes.backendUrl.newValue);
+    const newUrl = changes.backendUrl.newValue;
+    if (typeof newUrl === 'string') {
+      updateAuthRules(newUrl);
+    }
   }
 });
 
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.type === 'PROXY_REQ') {
-    const { url, headers } = request;
-    log.info(`Proxying request to ${url}`);
+    const { url, headers, timeout = 5000 } = request;
+    log.info(`Proxying request to ${url} with timeout ${timeout}ms`);
 
-    fetch(url, { headers })
+    let responseSent = false;
+    const onceSendResponse = (response: any) => {
+      if (!responseSent) {
+        responseSent = true;
+        sendResponse(response);
+      }
+    };
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+      onceSendResponse({ ok: false, error: 'Connection timed out' });
+    }, timeout);
+
+    fetch(url, { headers, signal: controller.signal })
       .then(async (response) => {
+        clearTimeout(timeoutId);
         if (response.ok) {
           const data = await response.json();
-          return { ok: response.ok, status: response.status, data };
+          onceSendResponse({ ok: true, status: response.status, data });
         } else {
           const errorText = await response.text();
-          return { ok: response.ok, status: response.status, error: errorText };
+          onceSendResponse({
+            ok: false,
+            status: response.status,
+            error: errorText,
+          });
         }
       })
-      .then((result) => sendResponse(result))
       .catch((err) => {
-        log.error('Proxy request failed:', err);
-        sendResponse({ ok: false, error: err.toString() });
+        clearTimeout(timeoutId);
+        if (err.name !== 'AbortError') {
+          log.error('Proxy request failed:', err);
+          onceSendResponse({ ok: false, error: err.toString() });
+        }
       });
-    return true;
+
+    return true; // Indicates an asynchronous response
   }
 });
