@@ -1,7 +1,6 @@
 # Setup
 
-## LLM
-## LLM Configuration
+## LLM requirements
 
 - **WARNING**: This might cost money.
 - Get an OpenAPI account, Grok, Google Gemini
@@ -12,26 +11,22 @@
 
 ## Docker Compose
 
-- Install Docker
-- Download the [docker compose](../docker/docker-compose.yml) file
-- Download the [env-example](../docker/env.example) and save it as `.env`
-- Edit the configuration
-- Run `docker compose up -d`
 1. Install Docker and Docker Compose.
 2. Download the `docker-compose.yml` file.
 3. Download `env.example` and save it as `.env`.
 4. Edit `.env` to configure your API keys and preferences.
 5. Start the services:
    ```bash
+   docker compose pull
    docker compose up -d
    ```
 
 ## Handling Feeds
 
 - Run `docker compose exec service admin -h`
-- Add the example feeds `cat feed-example.json | docker compose exec -T  worker /admin feed import`
-- List `docker compose exec worker /admin feed list`
-- Force a Sync `docker compose exec worker /admin feed sync-all`
+- Add the example feeds `cat feed-example.json | docker compose exec -T  worker admin feed import`
+- List `docker compose exec worker admin feed list`
+- Force a Sync `docker compose exec worker admin feed sync-all`
 You can manage feeds using the `admin` CLI tool inside the running container.
 
 ## RSS Proxy Usage
@@ -40,6 +35,7 @@ Once feeds are configured, you can access the proxied versions via the service.
 
 - **URL Pattern**: `http://<your-server-ip>:<port>/rss?url=<upstream-feed-url>`
 - **Example**: `http://192.168.1.1:8080/rss?url=https://my-fancy-newssite.com/rss`
+- You might need to use a password. Some RSS reader require `https` connections. Use ngingx proxy manager or similar for a certificate.
 
 **Note**: The requested feed URL must be registered in the system (see 'Handling Feeds') before it can be proxied. Allow some time for the background worker to download and process items.
 
