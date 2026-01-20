@@ -96,11 +96,14 @@ jobs:
           npm run test
           npm run dist
 
+      - name: Set Release Date
+        run: echo "RELEASE_DATE=v$(date +'%Y-%m-%d-%H%M')" >> $GITHUB_ENV
+
       - name: Release
         if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
+          tag_name: ${{ env.RELEASE_DATE }}
           files: browser-plugin/extension.zip
           prerelease: true
 
