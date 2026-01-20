@@ -9,7 +9,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-deframer}
     volumes:
       - postgres_data:/var/lib/postgresql
-      - ./init-uuid.sh:/docker-entrypoint-initdb.d/init-uuid.sh
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-deframer}"]
       interval: 5s
