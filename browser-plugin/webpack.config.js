@@ -9,7 +9,7 @@ module.exports = {
         content: './src/host/content.ts',
         background: './src/host/background.ts'
     },
-    devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'eval-source-map',
+    devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'inline-source-map',
     module: {
         rules: [
             {

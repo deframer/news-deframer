@@ -54,7 +54,13 @@ const Options = () => {
 
       const url =
         currentSettings.backendUrl.replace(/\/$/, '') + '/api/domains';
-      const response = await fetch(url, { headers, signal: controller.signal });
+
+      // Use background proxy to avoid browser auth dialog
+      const response = await chrome.runtime.sendMessage({
+        type: 'PROXY_REQ',
+        url,
+        headers,
+      });
 
       if (response.ok) {
         setStatus('success');
