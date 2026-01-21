@@ -1,25 +1,22 @@
-SOURCES := $(wildcard *.md)
-
-PNGS  := $(SOURCES:.md=.png)
+PNGS := screenshot.png small_promo_tile.png marquee_promo_tile.png
 
 .PHONY: png
 
 all: png
 
-png:  $(PNGS)
+png: $(PNGS)
 
-install:
-	# echo you also need chrom(ium) for pdf/ppxt
-	sudo npm install -g @marp-team/marp-cli
-	sudo npm install -g inline-source-cli
-
-%.png: %.md
+screenshot.png: screenshot.md
 	mkdir -p dest
-	marp $< --images png --allow-local-files --width 1280 --height 800 -o "dest/$@"
-	touch "dest/$@"
+	marp $< --images png --allow-local-files -o "dest/$@"
 
-%: %.md
-	$(MAKE) $*.png
+small_promo_tile.png: small_promo_tile.md
+	mkdir -p dest
+	marp $< --images png --allow-local-files -o "dest/$@"
+
+marquee_promo_tile.png: marquee_promo_tile.md
+	mkdir -p dest
+	marp $< --images png --allow-local-files -o "dest/$@"
 
 clean:
 	rm -rf dest

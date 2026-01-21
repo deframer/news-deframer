@@ -29,8 +29,3 @@ Dashboard: <https://chrome.google.com/webstore/developer/dashboard>
 - **Dimensions:** 1400 x 560 pixels
 - **Format:** JPEG or 24-bit PNG (no alpha transparency)
 - **Description:** This is a larger promotional tile used for featuring in the Chrome Web Store's marquee carousel.
-
-
-## Sample
-
-- <https://chromewebstore.google.com/detail/e-mail-tracker-von-mailtr/ndnaehgpjlnokgebbaldlmgkapkpjkkb>

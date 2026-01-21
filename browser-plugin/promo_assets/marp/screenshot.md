@@ -42,15 +42,16 @@ style: |
     height: 100px; /* Adjust based on your logo aspect ratio */
     width: auto;
   }
+
 ---
 
 <!-- _class: showcase -->
 
 # Works with any portal e.g. CNN, Fox, BBC, Tagesschau, ...
 
-<img src="screenshot1.png" class="browser-shot" />
+<img src="assets/screenshot1.png" class="browser-shot" />
 
-<img src="logo.svg" class="logo" />
+<img src="assets/logo.svg" class="logo" />
 
 ---
 
@@ -58,9 +59,9 @@ style: |
 
 # Detects and rates framing, clickbait, persuasive intent, hyper stimulus and speculations
 
-<img src="screenshot2.png" class="browser-shot" />
+<img src="assets/screenshot2.png" class="browser-shot" />
 
-<img src="logo.svg" class="logo" />
+<img src="assets/logo.svg" class="logo" />
 
 ---
 
@@ -68,9 +69,9 @@ style: |
 
 # See why an article is worth your attention before a clickbait title can hijack your brain
 
-<img src="screenshot3.png" class="browser-shot" />
+<img src="assets/screenshot3.png" class="browser-shot" />
 
-<img src="logo.svg" class="logo" />
+<img src="assets/logo.svg" class="logo" />
 
 ---
 
@@ -78,7 +79,7 @@ style: |
 
 # Full privacy. You can use your own server
 
-<img src="screenshot4.png" class="browser-shot" />
+<img src="assets/screenshot4.png" class="browser-shot" />
 
-<img src="logo.svg" class="logo" />
+<img src="assets/logo.svg" class="logo" />
 
