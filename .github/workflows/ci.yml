@@ -108,33 +108,16 @@ jobs:
           npm run test
           npm run dist
 
-      - name: Prepare Artifacts and Pre-release for Main Branch
-        if: github.ref == 'refs/heads/main'
-        id: main_release
-        run: |
-          VERSION=$(date +'%Y-%m-%d-%H%M')
-          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
-          mv browser-plugin/extension.zip "extension-$VERSION.zip"
-          echo "asset_path=extension-$VERSION.zip" >> $GITHUB_OUTPUT
-
-      - name: Publish Pre-release to GitHub
-        if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.main_release.outputs.tag }}
-          files: ${{ steps.main_release.outputs.asset_path }}
-          prerelease: true
-
       - name: Prepare Artifact for Tagged Release
         if: startsWith(github.ref, 'refs/tags/v')
-        run: mv browser-plugin/extension.zip extension-${{ env.VERSION }}.zip
+        run: mv browser-plugin/extension.zip news-deframer-extension-${{ env.VERSION }}.zip
 
       - name: Upload Extension Artifact for Tagged Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v4
         with:
           name: extension-artifact
-          path: extension-${{ env.VERSION }}.zip
+          path: news-deframer-extension-${{ env.VERSION }}.zip
 
   docker:
     needs: test
@@ -198,4 +181,4 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: extension-${{ env.VERSION }}.zip
+          files: news-deframer-extension-${{ env.VERSION }}.zip
