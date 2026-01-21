@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const getRatingColors = (percentage: number): { bg: string; text: string } => {
   if (percentage < 34) return { bg: 'var(--success-color)', text: '#ffffff' }; // Accessible Green
@@ -46,6 +47,7 @@ interface RatingBarProps {
 }
 
 export const RatingBar = ({ value, label, id, reason }: RatingBarProps) => {
+  const { t } = useTranslation();
   const percentage = formatRatingPercent(value);
   const colors = getRatingColors(percentage);
   const textShadow =
@@ -62,7 +64,7 @@ export const RatingBar = ({ value, label, id, reason }: RatingBarProps) => {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={percentage}
-          aria-label={`${label || 'Rating'}: ${percentage}%`}
+          aria-label={t('rating.aria_label', { label: label || t('rating.label'), percentage })}
           aria-describedby={id ? `${id}-reason` : undefined}
         >
           <div

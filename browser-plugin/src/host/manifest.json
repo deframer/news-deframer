@@ -5,8 +5,7 @@
   "description": "Objectively analyzes news articles for journalistic quality, rewriting headlines to remove bias, framing, and sensationalism.",
   "permissions": [
     "storage",
-    "declarativeNetRequest",
-    "activeTab"
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "<all_urls>"

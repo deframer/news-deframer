@@ -1,9 +1,13 @@
+import '../../shared/i18n';
+
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
 import { AnalyzedItem } from '../client';
 import { Footer } from '../components/Footer';
+import { MetaData } from '../components/MetaData';
 import { RatingBar } from '../components/RatingBar';
 
 // All styles are encapsulated here. A Shadow DOM will prevent them from leaking.
@@ -26,7 +30,7 @@ const articlePageCss = `
   .image-container img { width: 100%; height: auto; border-radius: 0; display: block; }
   .main-content { padding: 1.5em; }
   h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
-  .description { font-size: 1.1em; color: var(--secondary-text); margin-bottom: 2em; }
+  .description { font-size: 1.1em; color: var(--secondary-text); margin-bottom: 0.5em; }
   .analysis-section { border-top: 2px solid var(--border-color); padding-top: 1.5em; margin-top: 1.5em; }
   .metric-item { display: block; margin-bottom: 1.5em; }
   .metric-label { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; display: block; color: var(--text-color); }
@@ -59,22 +63,23 @@ interface ArticlePageProps {
 }
 
 export const ArticlePage = ({ item }: ArticlePageProps) => {
+  const { t } = useTranslation();
   const [showDetails, setShowDetails] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
 
   const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
-  const title = item.title_corrected || item.title_original || 'No title';
-  const description = item.description_corrected || item.description_original || 'No description';
+  const title = item.title_corrected || item.title_original || t('article.no_title');
+  const description = item.description_corrected || item.description_original || t('article.no_description');
   const imageUrl = item.media?.medium === 'image' ? item.media.url : '';
 
   const metrics = [
-    { id: 'framing', label: 'Framing', value: item.framing, reason: item.framing_reason },
-    { id: 'clickbait', label: 'Clickbait', value: item.clickbait, reason: item.clickbait_reason },
-    { id: 'persuasive', label: 'Persuasive', value: item.persuasive, reason: item.persuasive_reason },
-    { id: 'hyper_stimulus', label: 'Hyper Stimulus', value: item.hyper_stimulus, reason: item.hyper_stimulus_reason },
-    { id: 'speculative', label: 'Speculative', value: item.speculative, reason: item.speculative_reason },
+    { id: 'framing', label: t('metrics.framing'), value: item.framing, reason: item.framing_reason },
+    { id: 'clickbait', label: t('metrics.clickbait'), value: item.clickbait, reason: item.clickbait_reason },
+    { id: 'persuasive', label: t('metrics.persuasive'), value: item.persuasive, reason: item.persuasive_reason },
+    { id: 'hyper_stimulus', label: t('metrics.hyper_stimulus'), value: item.hyper_stimulus, reason: item.hyper_stimulus_reason },
+    { id: 'speculative', label: t('metrics.speculative'), value: item.speculative, reason: item.speculative_reason },
   ];
-  
+
   const bypassAndReload = () => {
     window.scrollTo(0, 0);
     log.info('Bypassing for this session and reloading.');
@@ -87,8 +92,8 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
       <style>{articlePageCss}</style>
       <div className="container">
         <header className="page-header">
-          <a href="/" className="btn-back" title={`Go back to ${rootDomain} portal`}>Back</a>
-          <button onClick={bypassAndReload} className="btn-hide">Hide</button>
+          <a href="/" className="btn-back" title={t('article.back_tooltip', { domain: rootDomain })}>{t('article.back')}</a>
+          <button onClick={bypassAndReload} className="btn-hide">{t('article.hide')}</button>
         </header>
 
         {imageUrl && (
@@ -100,10 +105,11 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
         <div className="main-content">
           <h1>{title}</h1>
           <p className="description">{description}</p>
-          
+          <MetaData pubDate={(item as AnalyzedItem & { pubDate?: string | Date }).pubDate} />
+
           <div className="analysis-section">
             <div className="metric-item">
-                <RatingBar value={item.rating} label="Overall Rating" reason={item.overall_reason} />
+                <RatingBar value={item.rating} label={t('metrics.overall_rating')} reason={item.overall_reason} />
             </div>
 
             {showDetails && (
@@ -118,7 +124,7 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
 
             {showOriginal && (
                <div id="original-content" className="original-content">
-                 <h3>Original</h3>
+                 <h3>{t('article.original_section')}</h3>
                  <h4>{item.title_original || ''}</h4>
                  <p>{item.description_original || ''}</p>
                </div>
@@ -128,11 +134,11 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
         </div>
 
         <div className="action-buttons">
-          <button onClick={() => setShowOriginal(true)} className="btn btn-primary">Original Title</button>
-          <button onClick={() => { setShowDetails(true); setShowOriginal(true); }} className="btn">Details</button>
-          <button onClick={bypassAndReload} className="btn">View Original</button>
+          <button onClick={() => setShowOriginal(true)} className="btn btn-primary">{t('article.btn_original_title')}</button>
+          <button onClick={() => { setShowDetails(true); setShowOriginal(true); }} className="btn">{t('article.btn_details')}</button>
+          <button onClick={bypassAndReload} className="btn">{t('article.btn_view_original')}</button>
         </div>
-        
+
         <Footer />
       </div>
     </>
