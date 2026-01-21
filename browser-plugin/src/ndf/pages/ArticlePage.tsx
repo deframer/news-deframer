@@ -4,6 +4,7 @@ import { getDomain } from 'tldts';
 import log from '../../shared/logger';
 import { AnalyzedItem } from '../client';
 import { Footer } from '../components/Footer';
+import { MetaData } from '../components/MetaData';
 import { RatingBar } from '../components/RatingBar';
 
 // All styles are encapsulated here. A Shadow DOM will prevent them from leaking.
@@ -26,7 +27,7 @@ const articlePageCss = `
   .image-container img { width: 100%; height: auto; border-radius: 0; display: block; }
   .main-content { padding: 1.5em; }
   h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
-  .description { font-size: 1.1em; color: var(--secondary-text); margin-bottom: 2em; }
+  .description { font-size: 1.1em; color: var(--secondary-text); margin-bottom: 0.5em; }
   .analysis-section { border-top: 2px solid var(--border-color); padding-top: 1.5em; margin-top: 1.5em; }
   .metric-item { display: block; margin-bottom: 1.5em; }
   .metric-label { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; display: block; color: var(--text-color); }
@@ -74,7 +75,7 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
     { id: 'hyper_stimulus', label: 'Hyper Stimulus', value: item.hyper_stimulus, reason: item.hyper_stimulus_reason },
     { id: 'speculative', label: 'Speculative', value: item.speculative, reason: item.speculative_reason },
   ];
-  
+
   const bypassAndReload = () => {
     window.scrollTo(0, 0);
     log.info('Bypassing for this session and reloading.');
@@ -100,7 +101,8 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
         <div className="main-content">
           <h1>{title}</h1>
           <p className="description">{description}</p>
-          
+          <MetaData pubDate={(item as AnalyzedItem & { pubDate?: string | Date }).pubDate} />
+
           <div className="analysis-section">
             <div className="metric-item">
                 <RatingBar value={item.rating} label="Overall Rating" reason={item.overall_reason} />
@@ -132,7 +134,7 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
           <button onClick={() => { setShowDetails(true); setShowOriginal(true); }} className="btn">Details</button>
           <button onClick={bypassAndReload} className="btn">View Original</button>
         </div>
-        
+
         <Footer />
       </div>
     </>
