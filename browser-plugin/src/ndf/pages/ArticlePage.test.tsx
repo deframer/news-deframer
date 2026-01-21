@@ -9,6 +9,20 @@ jest.mock('../../shared/logger', () => ({
   error: jest.fn(),
 }));
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: {
+      language: 'en',
+      changeLanguage: jest.fn(),
+    },
+  }),
+  initReactI18next: {
+    type: '3rdParty',
+    init: jest.fn(),
+  },
+}));
+
 describe('ArticlePage', () => {
   const mockItem: AnalyzedItem = {
     url: 'http://example.com/article1',
