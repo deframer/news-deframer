@@ -1,8 +1,11 @@
+import { Theme } from './theme';
+
 export interface Settings {
   backendUrl: string;
   username?: string;
   password?: string;
   enabled: boolean;
+  theme: Theme;
 }
 
 export const DEFAULT_BACKEND_URL = 'http://localhost:8080';
@@ -15,6 +18,7 @@ export const getSettings = (): Promise<Settings> => {
         username: '',
         password: '',
         enabled: true,
+        theme: 'system',
       },
       (items: Settings) => {
         resolve(items);

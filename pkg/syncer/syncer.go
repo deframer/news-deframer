@@ -289,7 +289,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	dbItem := &database.Item{
 		Hash:            hash,
 		FeedID:          feed.ID,
-		URL:             item.Link,
+		URL:             normalizeURL(item.Link),
 		Language:        &language,
 		Content:         content,
 		PubDate:         pubDate,
@@ -596,7 +596,7 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	return s.repo.UpsertCachedFeed(cachedFeed)
 }
 
-// normalizeURL removes fragments and common tracking/marketing parameters from a URL.
+// normalizeURL removes fragments, common tracking/marketing parameters, and trailing slashes from a URL.
 func normalizeURL(rawURL string) string {
 	u, err := url.Parse(rawURL)
 	if err != nil {
@@ -606,6 +606,9 @@ func normalizeURL(rawURL string) string {
 	// Remove fragment (e.g., #ref=rss)
 	u.Fragment = ""
 	u.RawFragment = ""
+
+	// Remove trailing slash from path
+	u.Path = strings.TrimSuffix(u.Path, "/")
 
 	// Remove common tracking/marketing parameters (case-insensitive)
 	q := u.Query()

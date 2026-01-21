@@ -15,6 +15,7 @@
 - [x] Updated the Browser Plugin Manifest to V3.
 - [x] Webbrowser Plugin enable/disable
 - [x] Webbrowser Plugin icon
+- [x] Webbrowser Plugin theme support
 - [ ] Webbrowser Plugin show more data e.g. pubDate, author, category, etc.
 - [ ] Webbrowser Plugin add tabs or sections
 - [ ] Publish the Browser Plugin to Chrome Store

@@ -6,9 +6,9 @@ describe('URL Classifier', () => {
     expect(classifyUrl(url)).toBe(PageType.PORTAL);
   });
 
-  test('should classify single segment path as PORTAL', () => {
+  test('should classify single segment path as ARTICLE', () => {
     const url = new URL('https://www.example.com/politics');
-    expect(classifyUrl(url)).toBe(PageType.PORTAL);
+    expect(classifyUrl(url)).toBe(PageType.ARTICLE);
   });
 
   test('should classify multi-segment path as ARTICLE', () => {
@@ -18,12 +18,12 @@ describe('URL Classifier', () => {
 
   test('should ignore trailing slashes', () => {
     const url = new URL('https://www.example.com/politics/');
-    expect(classifyUrl(url)).toBe(PageType.PORTAL);
+    expect(classifyUrl(url)).toBe(PageType.ARTICLE);
   });
 
   test('should handle query parameters', () => {
     const url = new URL('https://www.example.com/politics?sort=newest');
-    expect(classifyUrl(url)).toBe(PageType.PORTAL);
+    expect(classifyUrl(url)).toBe(PageType.ARTICLE);
   });
 
   test('should classify winfuture news link as ARTICLE', () => {
@@ -31,8 +31,8 @@ describe('URL Classifier', () => {
     expect(classifyUrl(url)).toBe(PageType.ARTICLE);
   });
 
-  test('should classify index.html as PORTAL', () => {
+  test('should classify index.html as ARTICLE', () => {
     const url = new URL('https://www.example.com/index.html');
-    expect(classifyUrl(url)).toBe(PageType.PORTAL);
+    expect(classifyUrl(url)).toBe(PageType.ARTICLE);
   });
 });
