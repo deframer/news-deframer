@@ -149,8 +149,7 @@ export const Options = () => {
     }
   }, [lang, i18n]);
 
-  const handleLangChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
+  const handleLangChange = async (val: string) => {
     setLang(val);
     // Save to chrome.storage.local so content scripts can read it
     await chrome.storage.local.set({ ndf_language: val });
@@ -492,10 +491,10 @@ export const Options = () => {
             </h3>
             <select
               value={lang}
-              onChange={handleLangChange}
+              onChange={(e) => handleLangChange(e.target.value)}
               style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--btn-border)', fontSize: '14px', backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
             >
-              <option value="default">{t('options.system_default')}</option>
+              <option value="default">{t('options.default')}</option>
               <option value="en">English</option>
               <option value="de">Deutsch</option>
             </select>
@@ -549,7 +548,7 @@ export const Options = () => {
                     transition: 'background-color 0.2s',
                   }}
                 >
-                  {t(`options.theme_${themeMode}`)}
+                  {themeMode === 'system' ? t('options.default') : t(`options.theme_${themeMode}`)}
                 </button>
               ))}
             </div>
