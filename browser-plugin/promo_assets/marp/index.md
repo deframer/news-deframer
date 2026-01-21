@@ -5,7 +5,7 @@ size: 16:10
 style: |
   /* Define the layout for the specific slide class 'showcase' */
   section.showcase {
-    background-color: #102A2A; /* Dark Teal Background matched from image */
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%); /* Dark blue gradient */
     color: #ffffff;
     display: flex;
     flex-direction: column;
@@ -39,7 +39,7 @@ style: |
     position: absolute;
     bottom: 30px;
     right: 40px;
-    height: 60px; /* Adjust based on your logo aspect ratio */
+    height: 100px; /* Adjust based on your logo aspect ratio */
     width: auto;
   }
 ---
