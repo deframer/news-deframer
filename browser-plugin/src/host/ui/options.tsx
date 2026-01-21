@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
+import { getDomain } from 'tldts';
 
+import { classifyUrl, PageType } from '../../ndf/utils/url-classifier';
 import { invalidateDomainCache } from '../../shared/domain-cache';
+import log from '../../shared/logger';
 import {
   DEFAULT_BACKEND_URL,
   getSettings,
   Settings,
 } from '../../shared/settings';
-import log from '../../shared/logger';
 import { getThemeCss } from '../../shared/theme';
 import { ProxyResponse } from '../../shared/types';
-import { classifyUrl, PageType } from '../../ndf/utils/url-classifier';
-import { getDomain } from 'tldts';
 import { Footer } from './Footer';
 import { ToggleSwitch } from './ToggleSwitch';
 
@@ -81,7 +81,7 @@ export const Options = () => {
             func: () => !!document.getElementById('ndf-root')
           });
           hasNdf = !!(results && results[0] && results[0].result);
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -162,15 +162,15 @@ export const Options = () => {
         await invalidateDomainCache();
         // Assume response.data is the domains array or { domains: [...] }, possibly as string
         if (response.data) {
-          let data = response.data;
+          let data: unknown = response.data;
           if (typeof data === 'string') {
             try {
               data = JSON.parse(data);
-            } catch (e) {
+            } catch {
               // ignore
             }
           }
-          const domainList = Array.isArray(data) ? data : (data as any)?.domains || (data as any)?.data;
+          const domainList = Array.isArray(data) ? data as string[] : (data as Record<string, unknown>)?.domains || (data as Record<string, unknown>)?.data;
           if (Array.isArray(domainList)) {
             loadedDomains = domainList;
             setDomains(domainList);
