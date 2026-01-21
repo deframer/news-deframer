@@ -5,76 +5,88 @@ size: 16:10
 style: |
   /* --- LAYOUT CONTAINER --- */
   section.small-layout {
-    /* Dark blue gradient background */
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
     position: relative;
-    overflow: hidden; /* Cuts off images that slide off the edge */
+    overflow: hidden;
     font-family: 'Helvetica', 'Arial', sans-serif;
     color: #ffffff;
+    padding: 0;
   }
 
-  /* --- TEXT STYLING --- */
-  .text-content {
+  /* --- TEXT BOX --- */
+  .text-box {
     position: absolute;
-    left: 60px;
-    top: 25%;
-    width: 35%; /* Restrict text to the left side */
-    z-index: 10;
+    left: 80px;
+    top: 40%;
+    transform: translateY(-50%);
+    width: 42%;
+
+    /* Glass Effect */
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+
+    padding: 40px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    z-index: 20; /* High Z-Index ensures text sits ON TOP of the large images */
   }
 
-  .text-content h1 {
-    font-size: 60px;
+  .text-box h1 {
+    font-size: 48px;
+    font-weight: bold;
     color: #ffffff;
-    margin-bottom: 20px;
+    margin: 0 0 20px 0;
     line-height: 1.1;
   }
 
-  .text-content p {
-    font-size: 32px;
-    color: #ffffff;
+  .text-box p {
+    font-size: 26px;
+    color: #cbd5e1;
+    margin: 0;
     line-height: 1.4;
   }
 
-  /* --- MAIN BROWSER IMAGE (BACKGROUND) --- */
+  /* --- MAIN BROWSER IMAGE --- */
   img.main-browser {
     position: absolute;
-    right: -100px; /* Push slightly off screen */
+    right: -20px; /* Moved Left (closer to center) */
     top: 80px;
-    width: 65%;
-    box-shadow: -10px 10px 30px rgba(0,0,0,0.15);
+    width: 75%;   /* MUCH Larger (was 55%) */
+
+    box-shadow: -10px 10px 30px rgba(0,0,0,0.3);
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.1);
-    z-index: 1; /* Sits behind */
+    opacity: 0.9;
+    z-index: 1;   /* Sits behind text box */
   }
 
-  /* --- SMALL OVERLAY IMAGE (FOREGROUND) --- */
+  /* --- SMALL OVERLAY IMAGE --- */
   img.small-overlay {
     position: absolute;
-    bottom: 50px;
-    left: 30%; /* Positions it bridging the text and browser */
-    width: 40%;
+    bottom: 40px;
+    left: 40%;    /* Moved Left (was 48%) */
+    width: 42%;   /* Larger (was 30%) */
 
-    /* Styling to make it pop */
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     border-radius: 12px;
-    border: 3px solid #ffffff; /* White border like the reference */
-    z-index: 5; /* Sits on top */
+    border: 3px solid #ffffff;
+    z-index: 5;
   }
 
-  /* Style the Logo in bottom right */
+  /* --- LOGO --- */
   img.logo {
     position: absolute;
-    bottom: 30px;
-    right: 40px;
-    height: 100px; /* Adjust based on your logo aspect ratio */
+    bottom: 40px;
+    right: 100px;
+    height: 70px;
     width: auto;
+    z-index: 10;
   }
-
 ---
 
 <!-- _class: small-layout -->
 
-<div class="text-content">
+<div class="text-box">
 
 # News Deframer
 
@@ -83,7 +95,5 @@ Detect and avoid clickbait from your favorite news portal
 </div>
 
 <img src="assets/screenshot2.png" class="main-browser" />
-
 <img src="assets/screenshot1.png" class="small-overlay" />
-
 <img src="assets/logo.svg" class="logo" />
