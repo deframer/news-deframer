@@ -1,7 +1,7 @@
 {
   "name": "news-deframer",
   "version": "0.1.0",
-  "description": "Browser extension to deframe news sites",
+  "description": "Objectively analyzes news articles for journalistic quality, rewriting headlines to remove bias, framing, and sensationalism.",
   "scripts": {
     "test": "jest",
     "lint": "eslint src",
