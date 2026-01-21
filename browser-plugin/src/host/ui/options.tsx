@@ -1,8 +1,9 @@
+import '../../shared/i18n';
+
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
-import '../../shared/i18n';
 import { classifyUrl, PageType } from '../../ndf/utils/url-classifier';
 import { invalidateDomainCache } from '../../shared/domain-cache';
 import log from '../../shared/logger';
@@ -34,24 +35,6 @@ export const Options = () => {
   const [isDark, setIsDark] = useState(false);
   const [domains, setDomains] = useState<string[]>([]);
   const [lang, setLang] = useState<string>('default');
-
-  const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setLang(val);
-    // Save to chrome.storage.local so content scripts can read it
-    chrome.storage.local.set({ ndf_language: val });
-
-    if (val === 'default') {
-      const detected = navigator.language.split('-')[0];
-      if (['de', 'en'].includes(detected)) {
-        i18n.changeLanguage(detected);
-      } else {
-        i18n.changeLanguage('en');
-      }
-    } else {
-      i18n.changeLanguage(val);
-    }
-  };
 
   // Load settings on mount (only from chrome.storage, no network calls)
   useEffect(() => {
@@ -152,6 +135,27 @@ export const Options = () => {
     style.textContent = getThemeCss(settings.theme);
   }, [settings.theme]);
 
+  // Update language on change
+  useEffect(() => {
+    if (lang === 'default') {
+      const detected = navigator.language.split('-')[0];
+      if (['de', 'en'].includes(detected)) {
+        i18n.changeLanguage(detected);
+      } else {
+        i18n.changeLanguage('en');
+      }
+    } else {
+      i18n.changeLanguage(lang);
+    }
+  }, [lang, i18n]);
+
+  const handleLangChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setLang(val);
+    // Save to chrome.storage.local so content scripts can read it
+    await chrome.storage.local.set({ ndf_language: val });
+    saveAndRefresh(settings);
+  };
 
 
   const testConnection = async (currentSettings: Settings) => {
