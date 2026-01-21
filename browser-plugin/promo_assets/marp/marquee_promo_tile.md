@@ -1,6 +1,7 @@
 ---
 marp: true
 theme: default
+size: 16:9
 style: |
   /* --- LAYOUT CONTAINER --- */
   section.small-layout {
