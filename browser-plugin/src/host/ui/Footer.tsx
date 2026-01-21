@@ -1,11 +1,9 @@
-import React from 'react';
-
 const footerCss = `
   .page-footer-text {
     text-align: center;
     padding: 1.5em;
     color: var(--secondary-text);
-    font-size: 0.9em;
+    font-size: 14px;
     line-height: 1.5;
   }
   .page-footer-text a {
