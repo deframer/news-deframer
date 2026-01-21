@@ -1,4 +1,19 @@
 export const Spinner = () => {
+  const spinnerSvgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <circle cx="50" cy="50" r="42" fill="#FFFFFF"/>
+  <circle cx="50" cy="50" r="40" fill="#1F2937"/>
+  <path d="M50,50 L50,15 L75,25 Z" fill="#4B5563"/>
+  <path d="M50,50 L75,25 L85,50 Z" fill="#6B7280"/>
+  <path d="M50,50 L85,50 L75,75 Z" fill="#9CA3AF"/>
+  <path d="M50,50 L75,75 L50,85 Z" fill="#D1D5DB"/>
+  <path d="M50,50 L50,85 L25,75 Z" fill="#9CA3AF"/>
+  <path d="M50,50 L25,75 L15,50 Z" fill="#6B7280"/>
+  <path d="M50,50 L15,50 L25,25 Z" fill="#4B5563"/>
+  <path d="M50,50 L25,25 L50,15 Z" fill="#374151"/>
+  <circle cx="50" cy="50" r="10" fill="#fff"/>
+</svg>`;
+  const encodedSvg = `data:image/svg+xml;base64,${btoa(spinnerSvgContent)}`;
+
   return (
     <div
       style={{
@@ -17,7 +32,7 @@ export const Spinner = () => {
         `}
       </style>
       <img
-        src="chrome-extension://__MSG_@@extension_id__/assets/spinner.svg"
+        src={encodedSvg}
         alt="Loading..."
         style={{
           width: '64px',

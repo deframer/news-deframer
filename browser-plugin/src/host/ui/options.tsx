@@ -16,6 +16,7 @@ type Status = 'idle' | 'loading' | 'success' | 'error';
 // This file is the component, index.tsx is the entry point
 
 export const Options = () => {
+  console.log('Options component rendering');
   const [settings, setSettings] = useState<Settings>({
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
@@ -29,36 +30,41 @@ export const Options = () => {
 
   // Load settings on mount
   useEffect(() => {
+    console.log('Options: Loading settings...');
     getSettings().then((loadedSettings) => {
+      console.log('Options: Settings loaded:', loadedSettings);
       setSettings(loadedSettings);
       setLoaded(true);
       if (loadedSettings.enabled) {
         testConnection(loadedSettings);
       }
+    }).catch((error) => {
+      console.error('Options: Failed to load settings:', error);
     });
   }, []);
 
-  // Autosave when settings change (skip initial load)
+  // Autosave when settings change (skip initial load) - NO REFRESH for regular changes
   useEffect(() => {
     if (!loaded) return;
 
     const handler = setTimeout(async () => {
       await chrome.storage.local.set(settings);
-      
-      // Reload tab if enabled and theme changed (or just settings generally updated)
-      if (settings.enabled) {
-         const [tab] = await chrome.tabs.query({
-            active: true,
-            currentWindow: true,
-          });
-          if (tab?.id && tab.url?.match(/^https?:\/\//)) {
-            chrome.tabs.reload(tab.id);
-          }
-      }
     }, 500);
 
     return () => clearTimeout(handler);
   }, [settings, loaded]);
+
+  // Save immediately and refresh tab when specific user interactions require it
+  const saveAndRefresh = async (newSettings: Settings) => {
+    await chrome.storage.local.set(newSettings);
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+    if (tab?.id && tab.url?.match(/^https?:\/\//)) {
+      chrome.tabs.reload(tab.id);
+    }
+  };
 
   // Update theme on change
   useEffect(() => {
@@ -128,6 +134,7 @@ export const Options = () => {
       return; // Ignore click if test is already in progress
     }
     testConnection(settings);
+    saveAndRefresh(settings);
   };
 
   const handleEnableToggle = async (enabled: boolean) => {
@@ -138,9 +145,9 @@ export const Options = () => {
     await chrome.storage.local.set(newSettings);
 
     if (enabled) {
-      // On successful enable, just test the connection.
-      // The window will stay open. The autosave useEffect will handle reloading the tab.
+      // On successful enable, just test the connection and refresh
       await testConnection(newSettings);
+      await saveAndRefresh(newSettings);
     } else {
       // On disable, invalidate cache, reload tab, and close popup
       setStatus('idle');
@@ -392,11 +399,15 @@ export const Options = () => {
               Theme
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(['light', 'dark', 'system'] as const).map((theme) => (
-                <button
-                  key={theme}
-                  onClick={() => setSettings({ ...settings, theme })}
-                  style={{
+               {(['light', 'dark', 'system'] as const).map((theme) => (
+                 <button
+                   key={theme}
+                   onClick={() => {
+                     const newSettings = { ...settings, theme };
+                     setSettings(newSettings);
+                     saveAndRefresh(newSettings);
+                   }}
+                   style={{
                     padding: '10px',
                     border: `1px solid ${
                       settings.theme === theme

@@ -34,6 +34,8 @@ const App = ({ theme }: { theme: Theme }) => {
 
   React.useEffect(() => {
     const init = async () => {
+      // For debugging the spinner, uncomment the following line
+      // await new Promise(resolve => setTimeout(resolve, 2000));
       try {
         // We don't need to check settings here, start() already did.
         const settings = await getSettings();
@@ -42,20 +44,47 @@ const App = ({ theme }: { theme: Theme }) => {
         setPageType(type);
 
         if (type === PageType.PORTAL) {
-          const rootDomain = getDomain(window.location.hostname);
-          if (!rootDomain) throw new Error('Could not determine root domain.');
-          const items = await client.getSite(rootDomain);
-          if (items.length > 0) {
-            setData(items);
+          const allDomains = await client.getDomains();
+          const siteHost = window.location.host;
+          const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
+
+          // Check if the site's full host or root domain is registered in the backend.
+          log.info(`Checking domain authorization for siteHost="${siteHost}", rootDomain="${rootDomain}", allDomains=[${allDomains.join(', ')}]`);
+          let authorizedDomain: string | null = null;
+
+          if (allDomains.includes(siteHost)) {
+            authorizedDomain = siteHost;
+          } else if (rootDomain && allDomains.includes(rootDomain)) {
+            authorizedDomain = rootDomain;
+          }
+
+          if (authorizedDomain) {
+            // Fetch the content using the authorized domain from the list.
+            const items = await client.getSite(authorizedDomain);
+            if (items.length > 0) {
+              setData(items);
+            } else {
+              // This can happen if the authorized domain has no items.
+              log.error(`Attempted to get site data for authorized domain "${authorizedDomain}", but received no items.`);
+              throw new Error(`No items found for this portal (${authorizedDomain}).`);
+            }
           } else {
-            throw new Error('No items found for this portal.');
+            // If neither the full host nor root domain is in the list, the site is not supported.
+            const checkedDomains = [siteHost];
+            if (rootDomain) checkedDomains.push(rootDomain);
+            log.error(`Domain authorization failed: checked [${checkedDomains.join(', ')}] but none found in allDomains=[${allDomains.join(', ')}]`);
+            throw new Error(`Domain "${checkedDomains.join('" or "')}" is not configured in the Deframer backend.`);
           }
         } else if (type === PageType.ARTICLE) {
-          const item = await client.getItem(window.location.href);
+          const articleUrl = window.location.href;
+          log.info(`Attempting to fetch article data for URL: "${articleUrl}"`);
+          const item = await client.getItem(articleUrl);
           if (item) {
+            log.info(`Successfully retrieved article data for URL: "${articleUrl}"`);
             setData(item);
           } else {
-            throw new Error('No item found for this URL.');
+            log.error(`No article data found for URL: "${articleUrl}" - this URL may not be in the backend database`);
+            throw new Error(`No item found for this URL: ${articleUrl}`);
           }
         }
       } catch (err: unknown) {
