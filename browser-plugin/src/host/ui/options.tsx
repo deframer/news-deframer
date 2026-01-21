@@ -9,6 +9,8 @@ import {
 import log from '../../shared/logger';
 import { getThemeCss } from '../../shared/theme';
 import { ProxyResponse } from '../../shared/types';
+import { classifyUrl, PageType } from '../../ndf/utils/url-classifier';
+import { getDomain } from 'tldts';
 import { Footer } from './Footer';
 import { ToggleSwitch } from './ToggleSwitch';
 
@@ -27,6 +29,7 @@ export const Options = () => {
   const [status, setStatus] = useState<Status>('idle');
   const [loaded, setLoaded] = useState(false);
   const [isDark, setIsDark] = useState(false);
+  const [domains, setDomains] = useState<string[]>([]);
 
   // Load settings on mount (only from chrome.storage, no network calls)
   useEffect(() => {
@@ -63,14 +66,44 @@ export const Options = () => {
   }, [settings, loaded]);
 
   // Save immediately and refresh tab when specific user interactions require it
-  const saveAndRefresh = async (newSettings: Settings) => {
+  const saveAndRefresh = async (newSettings: Settings, checkDomain = true, overrideDomains?: string[], skipScripting = false) => {
     await chrome.storage.local.set(newSettings);
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
     });
     if (tab?.id && tab.url?.match(/^https?:\/\//)) {
-      chrome.tabs.reload(tab.id);
+      let hasNdf = false;
+      if (!skipScripting) {
+        try {
+          const results = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => !!document.getElementById('ndf-root')
+          });
+          hasNdf = !!(results && results[0] && results[0].result);
+        } catch (e) {
+          // ignore
+        }
+      }
+      if (hasNdf) {
+        chrome.tabs.reload(tab.id);
+        return;
+      }
+      // If not has NDF, check if classified as portal or article
+      const url = new URL(tab.url);
+      const pageType = classifyUrl(url);
+      const useDomains = overrideDomains || domains;
+      if (pageType === PageType.PORTAL || pageType === PageType.ARTICLE) {
+        if (!checkDomain) {
+          chrome.tabs.reload(tab.id);
+        } else {
+          const siteHost = url.host;
+          const rootDomain = getDomain(siteHost.replace(/:\d+$/, ''));
+          if (useDomains.includes(siteHost) || (rootDomain && useDomains.includes(rootDomain))) {
+            chrome.tabs.reload(tab.id);
+          }
+        }
+      }
     }
   };
 
@@ -99,6 +132,7 @@ export const Options = () => {
 
   const testConnection = async (currentSettings: Settings) => {
     setStatus('loading');
+    let loadedDomains: string[] = [];
     try {
       const headers: HeadersInit = {};
       if (currentSettings.username && currentSettings.password) {
@@ -126,14 +160,30 @@ export const Options = () => {
       if (response && response.ok) {
         setStatus('success');
         await invalidateDomainCache();
-        return true;
+        // Assume response.data is the domains array or { domains: [...] }, possibly as string
+        if (response.data) {
+          let data = response.data;
+          if (typeof data === 'string') {
+            try {
+              data = JSON.parse(data);
+            } catch (e) {
+              // ignore
+            }
+          }
+          const domainList = Array.isArray(data) ? data : (data as any)?.domains || (data as any)?.data;
+          if (Array.isArray(domainList)) {
+            loadedDomains = domainList;
+            setDomains(domainList);
+          }
+        }
+        return { connected: true, domains: loadedDomains };
       } else {
         setStatus('error');
-        return false;
+        return { connected: false, domains: [] };
       }
     } catch {
       setStatus('error');
-      return false;
+      return { connected: false, domains: [] };
     }
   };
 
@@ -142,7 +192,6 @@ export const Options = () => {
       return; // Ignore click if test is already in progress
     }
     testConnection(settings);
-    saveAndRefresh(settings);
   };
 
   const handleEnableToggle = async (enabled: boolean) => {
@@ -153,11 +202,13 @@ export const Options = () => {
     await chrome.storage.local.set(newSettings);
 
     if (enabled) {
-      // On successful enable, just test the connection and refresh
-      await testConnection(newSettings);
-      await saveAndRefresh(newSettings);
+      // On successful enable, test the connection and refresh only if connected and domain matches
+      const { connected, domains: loadedDomains } = await testConnection(newSettings);
+      if (connected) {
+        await saveAndRefresh(newSettings, true, loadedDomains, true);
+      }
     } else {
-      // On disable, invalidate cache, reload tab, and close popup
+      // On disable, invalidate cache, reload tab if on supported domain, and close popup
       setStatus('idle');
       await invalidateDomainCache();
       const [tab] = await chrome.tabs.query({
@@ -165,7 +216,12 @@ export const Options = () => {
         currentWindow: true,
       });
       if (tab?.id && tab.url?.match(/^https?:\/\//)) {
-        chrome.tabs.reload(tab.id);
+        const url = new URL(tab.url);
+        const siteHost = url.host;
+        const rootDomain = getDomain(siteHost.replace(/:\d+$/, ''));
+        if (domains.includes(siteHost) || (rootDomain && domains.includes(rootDomain))) {
+          chrome.tabs.reload(tab.id);
+        }
       }
       window.close();
     }
@@ -410,11 +466,11 @@ export const Options = () => {
                {(['light', 'dark', 'system'] as const).map((theme) => (
                  <button
                    key={theme}
-                   onClick={() => {
-                     const newSettings = { ...settings, theme };
-                     setSettings(newSettings);
-                     saveAndRefresh(newSettings);
-                   }}
+                    onClick={() => {
+                      const newSettings = { ...settings, theme };
+                      setSettings(newSettings);
+                      saveAndRefresh(newSettings);
+                    }}
                    style={{
                     padding: '10px',
                     border: `1px solid ${
