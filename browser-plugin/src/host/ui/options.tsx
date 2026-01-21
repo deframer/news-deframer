@@ -6,6 +6,7 @@ import {
   getSettings,
   Settings,
 } from '../../shared/settings';
+import log from '../../shared/logger';
 import { getThemeCss } from '../../shared/theme';
 import { ProxyResponse } from '../../shared/types';
 import { Footer } from './Footer';
@@ -16,7 +17,6 @@ type Status = 'idle' | 'loading' | 'success' | 'error';
 // This file is the component, index.tsx is the entry point
 
 export const Options = () => {
-  console.log('Options component rendering');
   const [settings, setSettings] = useState<Settings>({
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
@@ -28,18 +28,26 @@ export const Options = () => {
   const [loaded, setLoaded] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
-  // Load settings on mount
+  // Load settings on mount (only from chrome.storage, no network calls)
   useEffect(() => {
-    console.log('Options: Loading settings...');
+    log.debug('Loading settings...');
     getSettings().then((loadedSettings) => {
-      console.log('Options: Settings loaded:', loadedSettings);
+      log.debug('Settings loaded:', loadedSettings);
       setSettings(loadedSettings);
       setLoaded(true);
+
+      // Show "Checking..." status and test connection if extension is enabled
+      // Delay slightly to ensure dialog window is fully open
       if (loadedSettings.enabled) {
-        testConnection(loadedSettings);
+        log.debug('Extension enabled, dialog window should be fully open now, starting connection check in 100ms');
+        setTimeout(() => {
+          log.debug('Starting connection test...');
+          testConnection(loadedSettings);
+        }, 100);
       }
+      // Don't auto-test connection - only when user clicks Test button
     }).catch((error) => {
-      console.error('Options: Failed to load settings:', error);
+      log.error('Failed to load settings:', error);
     });
   }, []);
 
