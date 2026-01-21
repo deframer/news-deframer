@@ -88,6 +88,18 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '24'
+
+      - name: Get Version from Tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Update package.json version
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          cd browser-plugin
+          # Use --allow-same-version in case the version was already updated manually
+          npm version ${{ env.VERSION }} --no-git-tag-version --allow-same-version
+
       - name: Test, Lint and Build Browser Plugin
         run: |
           cd browser-plugin
@@ -96,21 +108,33 @@ jobs:
           npm run test
           npm run dist
 
-      - name: Prepare Release Artifacts
-        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+      - name: Prepare Artifacts and Pre-release for Main Branch
+        if: github.ref == 'refs/heads/main'
+        id: main_release
         run: |
           VERSION=$(date +'%Y-%m-%d-%H%M')
-          echo "RELEASE_TAG=v$VERSION" >> $GITHUB_ENV
-          mv browser-plugin/extension.zip "browser-plugin/extension-$VERSION.zip"
-          echo "RELEASE_ASSET=browser-plugin/extension-$VERSION.zip" >> $GITHUB_ENV
+          echo "tag=v$VERSION" >> $GITHUB_OUTPUT
+          mv browser-plugin/extension.zip "extension-$VERSION.zip"
+          echo "asset_path=extension-$VERSION.zip" >> $GITHUB_OUTPUT
 
-      - name: Release
-        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+      - name: Publish Pre-release to GitHub
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          files: ${{ env.RELEASE_ASSET }}
+          tag_name: ${{ steps.main_release.outputs.tag }}
+          files: ${{ steps.main_release.outputs.asset_path }}
           prerelease: true
+
+      - name: Prepare Artifact for Tagged Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: mv browser-plugin/extension.zip extension-${{ env.VERSION }}.zip
+
+      - name: Upload Extension Artifact for Tagged Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-artifact
+          path: extension-${{ env.VERSION }}.zip
 
   docker:
     needs: test
@@ -120,24 +144,26 @@ jobs:
       packages: write
     strategy:
       matrix:
-        app: [service, worker] # List your apps here
+        app: [service, worker]
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Log in to the Container registry
-        if: github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch'
+        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Calculate Image ID
-        run: |
-          echo "IMAGE_ID=ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.app }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -145,9 +171,31 @@ jobs:
           context: .
           file: build/package/${{ matrix.app }}/Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref == 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          tags: ${{ env.IMAGE_ID }}/${{ matrix.app }}:latest
           build-args: |
             REPO_URL=${{ github.server_url }}/${{ github.repository }}
+
+  release:
+    needs: [browser-plugin, docker]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write # to create the release
+    steps:
+      - name: Get Version from Tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+
+      - name: Download extension artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: extension-artifact
+          path: .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: extension-${{ env.VERSION }}.zip

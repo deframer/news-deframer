@@ -1,6 +1,7 @@
 const path = require('path');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const packageJson = require('./package.json');
 
 module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -44,7 +45,15 @@ module.exports = {
   plugins: [
         new CopyPlugin({
             patterns: [
-                { from: 'src/host/manifest.json', to: 'manifest.json' },
+                {
+                    from: 'src/host/manifest.json',
+                    to: 'manifest.json',
+                    transform(content, absoluteFrom) {
+                        const manifest = JSON.parse(content.toString());
+                        manifest.version = packageJson.version;
+                        return JSON.stringify(manifest, null, 2);
+                    }
+                },
                 { from: 'src/host/assets', to: 'assets', noErrorOnMissing: true },
             ],
         }),

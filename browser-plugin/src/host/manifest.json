@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "News Deframer Host",
-  "version": "0.1.0",
-  "description": "Host extension for News Deframer",
+  "name": "News Deframer",
+  "version": "set-by-webpack",
+  "description": "Objectively analyzes news articles for journalistic quality, rewriting headlines to remove bias, framing, and sensationalism.",
   "permissions": [
     "storage",
     "declarativeNetRequest"
@@ -28,8 +28,12 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_start"
     }
   ],
@@ -38,8 +42,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["assets/*"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "assets/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }
