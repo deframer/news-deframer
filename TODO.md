@@ -17,9 +17,9 @@
 - [x] Webbrowser Plugin icon
 - [x] Webbrowser Plugin theme support
 - [x] Publish the Browser Plugin to Chrome Store (Waiting for Test)
-- [ ] Webbrowser Plugin i18n
+- [x] Webbrowser Plugin i18n
 - [ ] Webbrowser Plugin show more data (missing: author, category)
-  - [ ] pubDate
+  - [x] pubDate
 - [ ] Webbrowser Plugin add tabs or sections
 - [ ] Handle empty items / special items e.g. special video news feeds / ads
 - [ ] Webbrowser Plugin Admin UI enhancement e.g. show the supported domains / disable the plugin etc.
