@@ -1,7 +1,7 @@
 ---
 marp: true
 theme: default
-size: 16:10
+size: 16:9
 style: |
   /* Define the layout for the specific slide class 'showcase' */
   section.showcase {
@@ -38,7 +38,7 @@ style: |
   section.showcase img.logo {
     position: absolute;
     bottom: 30px;
-    right: 40px;
+    right: 80px;
     height: 100px; /* Adjust based on your logo aspect ratio */
     width: auto;
   }
@@ -82,4 +82,3 @@ style: |
 <img src="assets/screenshot4.png" class="browser-shot" />
 
 <img src="assets/logo.svg" class="logo" />
-
