@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+
 import { globalStyles } from '../../shared/theme';
 import { Options } from './options';
 

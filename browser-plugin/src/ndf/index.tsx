@@ -4,11 +4,11 @@ import { getDomain } from 'tldts';
 
 import log from '../shared/logger';
 import { getSettings } from '../shared/settings';
+import { getThemeCss, globalStyles, Theme } from '../shared/theme';
 import { AnalyzedItem, NewsDeframerClient } from './client';
+import { Spinner } from './components/Spinner';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
-import { Spinner } from './components/Spinner';
-import { getThemeCss, globalStyles, Theme } from '../shared/theme';
 import { classifyUrl, PageType } from './utils/url-classifier';
 
 const App = ({ theme }: { theme: Theme }) => {
