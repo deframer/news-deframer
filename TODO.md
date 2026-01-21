@@ -16,12 +16,13 @@
 - [x] Webbrowser Plugin enable/disable
 - [x] Webbrowser Plugin icon
 - [x] Webbrowser Plugin theme support
-- [ ] Webbrowser Plugin show more data e.g. pubDate, author, category, etc.
+- [x] Publish the Browser Plugin to Chrome Store (Waiting for Test)
+- [ ] Webbrowser Plugin i18n
+- [ ] Webbrowser Plugin show more data (missing: author, category)
+  - [ ] pubDate
 - [ ] Webbrowser Plugin add tabs or sections
-- [ ] Publish the Browser Plugin to Chrome Store
 - [ ] Handle empty items / special items e.g. special video news feeds / ads
 - [ ] Webbrowser Plugin Admin UI enhancement e.g. show the supported domains / disable the plugin etc.
-- [ ] Webbrowser Plugin support I18n, Dates, Authors, Categories
 - [ ] Publish Webbrowser Plugin (probably transform to V3 if possible)
 - [ ] Try to get a Favicon / Logo from somewhere
 - [ ] Fix support for multiple concurrent workers
