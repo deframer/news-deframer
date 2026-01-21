@@ -31,6 +31,7 @@ Das JSON muss die folgenden Felder enthalten:
 *   Antworte immer auf Deutsch (für die Inhalte der JSON-Werte).
 *   Halte die Wortgrenzen strikt ein.
 *   Sei radikal neutral.
+*   Verzichte auf Gendersprache und halte dich streng an die Duden-Rechtschreibung.
 
 **Beispiel für das Ausgabeformat:**
 ```json
