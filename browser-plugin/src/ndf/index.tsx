@@ -7,14 +7,30 @@ import { getSettings } from '../shared/settings';
 import { AnalyzedItem, NewsDeframerClient } from './client';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
+import { Spinner } from './components/Spinner';
+import { getThemeCss, globalStyles, Theme } from '../shared/theme';
 import { classifyUrl, PageType } from './utils/url-classifier';
 
-const App = () => {
+const App = ({ theme }: { theme: Theme }) => {
   const [pageType, setPageType] = React.useState<PageType | null>(null);
   const [data, setData] = React.useState<
     AnalyzedItem | AnalyzedItem[] | null
   >(null);
   const [error, setError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    // Inject global styles into the Light DOM to fix body margin and background "frame"
+    const styleId = 'ndf-global-styles';
+    let style = document.getElementById(styleId);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      document.head.appendChild(style);
+    }
+
+    const themeCss = getThemeCss(theme);
+    style.textContent = themeCss + globalStyles;
+  }, [theme]);
 
   React.useEffect(() => {
     const init = async () => {
@@ -61,16 +77,26 @@ const App = () => {
 
   if (!pageType || !data) {
     // Render a loading state, as the page is currently blank.
-    return <div>Loading...</div>;
+    return <Spinner />;
   }
 
   switch (pageType) {
     case PageType.ARTICLE:
       // data is AnalyzedItem
-      return <ArticlePage item={data as AnalyzedItem} />;
+      return (
+        <>
+          <style>{getThemeCss(theme)}</style>
+          <ArticlePage item={data as AnalyzedItem} />
+        </>
+      );
     case PageType.PORTAL:
       // data is AnalyzedItem[]
-      return <PortalPage items={data as AnalyzedItem[]} />;
+      return (
+        <>
+          <style>{getThemeCss(theme)}</style>
+          <PortalPage items={data as AnalyzedItem[]} />
+        </>
+      );
     default:
       return null;
   }
@@ -108,7 +134,7 @@ const start = async () => {
       shadowRoot.appendChild(appContainer);
 
       const root = createRoot(appContainer);
-      root.render(<App />);
+      root.render(<App theme={settings.theme} />);
     }
   } catch (e) {
     log.error('Could not start NDF', e);

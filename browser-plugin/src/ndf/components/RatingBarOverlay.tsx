@@ -1,9 +1,9 @@
 import React from 'react';
 
 const getRatingColors = (percentage: number): { bg: string; text: string } => {
-  if (percentage < 34) return { bg: '#198754', text: '#ffffff' }; // Accessible Green
-  if (percentage < 67) return { bg: '#ffc107', text: '#000000' }; // Accessible Yellow
-  return { bg: '#b02a37', text: '#ffffff' }; // Accessible Red
+  if (percentage < 34) return { bg: 'var(--success-color)', text: '#ffffff' }; // Accessible Green
+  if (percentage < 67) return { bg: 'var(--warning-color)', text: '#000000' }; // Accessible Yellow
+  return { bg: 'var(--danger-color)', text: '#ffffff' }; // Accessible Red
 };
 
 const formatRatingPercent = (rating: number | undefined): number =>
@@ -11,7 +11,7 @@ const formatRatingPercent = (rating: number | undefined): number =>
 
 const overlayCss = `
   .bar-container {
-    background-color: #e9ecef;
+    background-color: var(--rating-bg);
     height: 30px;
     width: 100%;
     position: relative; /* For overlay and tooltip */
@@ -37,8 +37,8 @@ const overlayCss = `
     visibility: hidden;
     opacity: 0;
     width: 250px;
-    background-color: rgba(0,0,0,0.85);
-    color: #fff;
+    background-color: var(--tooltip-bg);
+    color: var(--tooltip-text);
     text-align: left;
     border-radius: 6px;
     padding: 10px;

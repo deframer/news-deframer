@@ -1,9 +1,9 @@
 import React from 'react';
 
 const getRatingColors = (percentage: number): { bg: string; text: string } => {
-  if (percentage < 34) return { bg: '#198754', text: '#ffffff' }; // Accessible Green
-  if (percentage < 67) return { bg: '#ffc107', text: '#000000' }; // Accessible Yellow
-  return { bg: '#b02a37', text: '#ffffff' }; // Accessible Red
+  if (percentage < 34) return { bg: 'var(--success-color)', text: '#ffffff' }; // Accessible Green
+  if (percentage < 67) return { bg: 'var(--warning-color)', text: '#000000' }; // Accessible Yellow
+  return { bg: 'var(--danger-color)', text: '#ffffff' }; // Accessible Red
 };
 
 const formatRatingPercent = (rating: number | undefined): number =>
@@ -11,7 +11,7 @@ const formatRatingPercent = (rating: number | undefined): number =>
 
 const ratingBarCss = `
   .bar-container {
-    background-color: #e9ecef;
+    background-color: var(--rating-bg);
     border-radius: 5px;
     height: 30px;
     width: 100%;

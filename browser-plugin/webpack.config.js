@@ -6,7 +6,7 @@ const packageJson = require('./package.json');
 module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: {
-        options: './src/host/ui/options.tsx',
+        options: './src/host/ui/index.tsx',
         content: './src/ndf/index.tsx',
         background: './src/host/background.ts'
     },
@@ -55,6 +55,7 @@ module.exports = {
                     }
                 },
                 { from: 'src/host/assets', to: 'assets', noErrorOnMissing: true },
+                { from: 'src/ndf/assets', to: 'assets', noErrorOnMissing: true },
             ],
         }),
         new HtmlWebpackPlugin({

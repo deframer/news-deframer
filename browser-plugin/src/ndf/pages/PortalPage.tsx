@@ -7,14 +7,17 @@ import { ArticleTile } from '../components/ArticleTile';
 import { Footer } from '../components/Footer';
 
 const portalPageCss = `
-  body {
+  :host {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-    background-color: #f0f2f5;
+    display: block;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    min-height: 100vh;
   }
   .container { padding: 2em; }
   .header {
-    background-color: #fff;
+    background-color: var(--header-bg);
+    color: var(--text-color);
     padding: 1em;
     text-align: center;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -28,10 +31,10 @@ const portalPageCss = `
   h1 { margin: 0; font-size: 1.5em; }
   .btn {
     padding: 10px 16px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--btn-border);
     border-radius: 8px;
-    background-color: #fff;
-    color: #333;
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
     font-size: 0.95em;
     font-weight: 500;
     cursor: pointer;
@@ -39,7 +42,7 @@ const portalPageCss = `
     text-decoration: none;
     flex-shrink: 0;
   }
-  .btn:hover { background-color: #f8f9fa; }
+  .btn:hover { background-color: var(--btn-hover-bg); }
 
   #btn-hide {
     position: absolute;

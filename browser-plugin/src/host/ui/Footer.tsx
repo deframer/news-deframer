@@ -22,15 +22,13 @@ export const Footer = () => {
     <>
       <style>{footerCss}</style>
       <footer className="page-footer-text">
-        This content was replaced by the{' '}
         <a
           href="https://github.com/egandro/news-deframer"
           target="_blank"
           rel="noopener noreferrer"
         >
-          News Deframer
-        </a>{' '}
-        browser plugin.
+          News Deframer on GitHub
+        </a>
       </footer>
     </>
   );
