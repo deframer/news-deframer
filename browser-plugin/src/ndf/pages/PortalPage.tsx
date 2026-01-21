@@ -1,4 +1,7 @@
+import '../../shared/i18n';
+
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
@@ -59,6 +62,7 @@ interface PortalPageProps {
 }
 
 export const PortalPage = ({ items }: PortalPageProps) => {
+  const { t } = useTranslation();
   const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
 
   const bypassAndReload = () => {
@@ -73,8 +77,8 @@ export const PortalPage = ({ items }: PortalPageProps) => {
       <style>{portalPageCss}</style>
       <div className="container">
         <div className="header">
-          <h1>News Deframer: {rootDomain}</h1>
-          <button id="btn-hide" className="btn" onClick={bypassAndReload}>Hide</button>
+          <h1>{t('portal.title', { domain: rootDomain })}</h1>
+          <button id="btn-hide" className="btn" onClick={bypassAndReload}>{t('portal.hide')}</button>
         </div>
         <div className="grid">
           {items.map((item) => (

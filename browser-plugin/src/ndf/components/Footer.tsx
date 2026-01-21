@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const footerCss = `
   .page-footer-text {
@@ -18,11 +19,12 @@ const footerCss = `
 `;
 
 export const Footer = () => {
+  const { t } = useTranslation();
   return (
     <>
       <style>{footerCss}</style>
       <footer className="page-footer-text">
-        This content was replaced by the{' '}
+        {t('footer.text_pre')}
         <a
           href="https://github.com/egandro/news-deframer"
           target="_blank"
@@ -30,7 +32,7 @@ export const Footer = () => {
         >
           News Deframer
         </a>{' '}
-        browser plugin.
+        {t('footer.text_post')}
       </footer>
     </>
   );

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
+import '../../shared/i18n';
 import { classifyUrl, PageType } from '../../ndf/utils/url-classifier';
 import { invalidateDomainCache } from '../../shared/domain-cache';
 import log from '../../shared/logger';
@@ -19,6 +21,7 @@ type Status = 'idle' | 'loading' | 'success' | 'error';
 // This file is the component, index.tsx is the entry point
 
 export const Options = () => {
+  const { t, i18n } = useTranslation();
   const [settings, setSettings] = useState<Settings>({
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
@@ -30,13 +33,34 @@ export const Options = () => {
   const [loaded, setLoaded] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [domains, setDomains] = useState<string[]>([]);
+  const [lang, setLang] = useState<string>('default');
+
+  const handleLangChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setLang(val);
+    // Save to chrome.storage.local so content scripts can read it
+    chrome.storage.local.set({ ndf_language: val });
+
+    if (val === 'default') {
+      const detected = navigator.language.split('-')[0];
+      if (['de', 'en'].includes(detected)) {
+        i18n.changeLanguage(detected);
+      } else {
+        i18n.changeLanguage('en');
+      }
+    } else {
+      i18n.changeLanguage(val);
+    }
+  };
 
   // Load settings on mount (only from chrome.storage, no network calls)
   useEffect(() => {
     log.debug('Loading settings...');
-    getSettings().then((loadedSettings) => {
+    // Load settings AND language
+    Promise.all([getSettings(), chrome.storage.local.get('ndf_language')]).then(([loadedSettings, storage]) => {
       log.debug('Settings loaded:', loadedSettings);
       setSettings(loadedSettings);
+      setLang(storage.ndf_language || 'default');
       setLoaded(true);
 
       // Show "Checking..." status and test connection if extension is enabled
@@ -227,7 +251,7 @@ export const Options = () => {
     }
   };
 
-  if (!loaded) return <div style={{ padding: '20px' }}>Loading...</div>;
+  if (!loaded) return <div style={{ padding: '20px' }}>{t('options.loading')}</div>;
 
   const isConnected = status === 'success';
   const isError = status === 'error';
@@ -291,7 +315,7 @@ export const Options = () => {
                 marginRight: '6px',
               }}
             />
-            {isConnected ? 'Connected' : isError ? 'Error' : 'Checking...'}
+            {isConnected ? t('options.status_connected') : isError ? t('options.status_error') : t('options.status_checking')}
           </div>
         )}
       </div>
@@ -319,7 +343,7 @@ export const Options = () => {
               color: 'var(--secondary-text)',
             }}
           >
-            Connection
+            {t('options.section_connection')}
           </h3>
 
         <div style={{ marginBottom: '16px' }}>
@@ -331,7 +355,7 @@ export const Options = () => {
               fontWeight: 500,
             }}
           >
-            Server URL
+            {t('options.label_server_url')}
           </label>
           <input
             type="text"
@@ -362,9 +386,9 @@ export const Options = () => {
               fontWeight: 500,
             }}
           >
-            Username{' '}
+            {t('options.label_username')}{' '}
             <span style={{ fontWeight: 400, color: 'var(--secondary-text)' }}>
-              (Optional)
+              {t('options.label_optional')}
             </span>
           </label>
           <input
@@ -395,9 +419,9 @@ export const Options = () => {
               fontWeight: 500,
             }}
           >
-            Password{' '}
+            {t('options.label_password')}{' '}
             <span style={{ fontWeight: 400, color: 'var(--secondary-text)' }}>
-              (Optional)
+              {t('options.label_optional')}
             </span>
           </label>
           <input
@@ -435,11 +459,44 @@ export const Options = () => {
               transition: 'background-color 0.2s, color 0.2s',
             }}
           >
-            {isLoading ? 'Testing...' : 'Test Connection'}
+            {isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}
           </button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Language Selection */}
+          <div
+            style={{
+              backgroundColor: 'var(--card-bg)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px',
+              padding: '16px',
+              boxShadow: 'var(--card-shadow)',
+            }}
+          >
+            <h3
+              style={{
+                marginTop: 0,
+                marginBottom: '16px',
+                fontSize: '14px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                color: 'var(--secondary-text)',
+              }}
+            >
+              {t('options.language_label')}
+            </h3>
+            <select
+              value={lang}
+              onChange={handleLangChange}
+              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--btn-border)', fontSize: '14px', backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
+            >
+              <option value="default">{t('options.system_default')}</option>
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+            </select>
+          </div>
+
           {/* Theme Selection */}
           <div
             style={{
@@ -460,42 +517,35 @@ export const Options = () => {
                 color: 'var(--secondary-text)',
               }}
             >
-              Theme
+              {t('options.theme_label')}
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-               {(['light', 'dark', 'system'] as const).map((theme) => (
+            <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+               {(['light', 'dark', 'system'] as const).map((themeMode) => (
                  <button
-                   key={theme}
+                   key={themeMode}
                     onClick={() => {
-                      const newSettings = { ...settings, theme };
+                      const newSettings = { ...settings, theme: themeMode };
                       setSettings(newSettings);
                       saveAndRefresh(newSettings);
                     }}
                    style={{
-                    padding: '10px',
-                    border: `1px solid ${
-                      settings.theme === theme
-                        ? 'var(--accent-color)'
-                        : 'var(--btn-border)'
-                    }`,
-                    borderRadius: '6px',
+                    flex: 1,
+                    padding: '8px 16px',
+                    border: 'none',
+                    borderRight: themeMode !== 'system' ? '1px solid var(--border-color)' : 'none',
                     backgroundColor:
-                      settings.theme === theme ? 'var(--accent-color)' : 'var(--btn-bg)',
+                      settings.theme === themeMode ? 'var(--accent-color)' : 'var(--btn-bg)',
                     color:
-                      settings.theme === theme
+                      settings.theme === themeMode
                         ? 'var(--accent-text)'
-                        : 'var(--btn-text)',
+                        : 'var(--text-color)',
                     cursor: 'pointer',
                     fontSize: '14px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
+                    fontWeight: 500,
+                    transition: 'background-color 0.2s',
                   }}
                 >
-                  {theme === 'light' && '☀️ Light Mode'}
-                  {theme === 'dark' && '🌙 Dark Mode'}
-                  {theme === 'system' && '💻 System Default'}
+                  {t(`options.theme_${themeMode}`)}
                 </button>
               ))}
             </div>
@@ -520,11 +570,11 @@ export const Options = () => {
                 color: 'var(--secondary-text)',
               }}
             >
-              General
+              {t('options.section_general')}
             </h3>
             <ToggleSwitch
               id="enable-extension"
-              label="Enable Extension"
+              label={t('options.label_enable_extension')}
               checked={settings.enabled}
               onChange={handleEnableToggle}
             />

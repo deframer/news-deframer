@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { getDomain } from 'tldts';
 
+import i18n from '../shared/i18n';
 import log from '../shared/logger';
 import { getSettings } from '../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../shared/theme';
@@ -143,6 +144,21 @@ const start = async () => {
     if (!settings.enabled) {
       log.info('NDF is disabled.');
       return;
+    }
+
+    // Apply language setting from storage
+    const storage = await chrome.storage.local.get('ndf_language');
+    const lang = storage.ndf_language || 'default';
+    if (lang !== 'default') {
+      await i18n.changeLanguage(lang);
+    }
+    else {
+      const detected = navigator.language.split('-')[0];
+      if (['de', 'en'].includes(detected)) {
+        await i18n.changeLanguage(detected);
+      } else {
+        await i18n.changeLanguage('en');
+      }
     }
 
     const type = classifyUrl(new URL(window.location.href));

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const metaDataCss = `
   .meta-data {
@@ -33,12 +34,12 @@ interface MetaDataProps {
   category?: string;
 }
 
-const getRelativeTime = (dateStr: string | Date): string => {
+const getRelativeTime = (dateStr: string | Date, locale: string): string => {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return '';
 
   const seconds = (new Date().getTime() - date.getTime()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat('en', { style: 'narrow' });
+  const rtf = new Intl.RelativeTimeFormat(locale, { style: 'narrow' });
 
   if (seconds < 60) return rtf.format(-Math.floor(seconds), 'second');
   if (seconds < 3600) return rtf.format(-Math.floor(seconds / 60), 'minute');
@@ -50,12 +51,13 @@ const getRelativeTime = (dateStr: string | Date): string => {
 };
 
 export const MetaData = ({ pubDate, author, category }: MetaDataProps) => {
+  const { i18n } = useTranslation();
   // If no metadata is available, don't render anything to save space
   if (!pubDate && !author && !category) return null;
 
   let timeAgo = '';
   if (pubDate) {
-    timeAgo = getRelativeTime(pubDate);
+    timeAgo = getRelativeTime(pubDate, i18n.language);
   }
 
   return (

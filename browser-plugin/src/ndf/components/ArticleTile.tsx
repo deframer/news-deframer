@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { AnalyzedItem } from '../client';
 import { MetaData } from './MetaData';
@@ -31,8 +32,9 @@ interface ArticleTileProps {
 }
 
 export const ArticleTile = ({ item }: ArticleTileProps) => {
-  const title = item.title_corrected || item.title_original || 'No title';
-  const description = item.description_corrected || item.description_original || 'No description';
+  const { t } = useTranslation();
+  const title = item.title_corrected || item.title_original || t('article.no_title');
+  const description = item.description_corrected || item.description_original || t('article.no_description');
   const imageUrl = item.media?.medium === 'image' ? item.media.url : '';
 
   return (

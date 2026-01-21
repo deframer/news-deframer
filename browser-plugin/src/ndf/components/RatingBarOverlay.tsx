@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 const getRatingColors = (percentage: number): { bg: string; text: string } => {
   if (percentage < 34) return { bg: 'var(--success-color)', text: '#ffffff' }; // Accessible Green
@@ -69,6 +70,7 @@ export const RatingBarOverlay = ({
   reason,
   className,
 }: RatingBarOverlayProps) => {
+  const { t } = useTranslation();
   const percentage = formatRatingPercent(value);
   const colors = getRatingColors(percentage);
   const textShadow =
@@ -83,7 +85,7 @@ export const RatingBarOverlay = ({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percentage}
-        aria-label={`Overall rating: ${percentage}%. Reason: ${reason || 'No reason provided.'}`}
+        aria-label={t('rating.overlay_aria_label', { percentage, reason: reason || t('rating.no_reason') })}
       >
         <div
           className="bar"
@@ -95,7 +97,7 @@ export const RatingBarOverlay = ({
         >
           <span>{percentage}%</span>
         </div>
-        <div className="tooltip-text">{reason || 'No reason provided.'}</div>
+        <div className="tooltip-text">{reason || t('rating.no_reason')}</div>
       </div>
     </div>
   );
