@@ -20,7 +20,12 @@ store_icon.png: assets/store_icon.svg
 
 screenshot.png: screenshot.md
 	mkdir -p dest
-	marp $< --images png --allow-local-files -o "dest/$@"
+	marp $< --image-scale 1.11111 --images png --allow-local-files -o "dest/tmp-$@"
+	for img in dest/tmp-*.png; do \
+		final_name=$$(echo $$img | sed 's/tmp-//'); \
+		convert "$$img" -gravity Center -crop 1280x800+0+0 +repage "$$final_name"; \
+	done
+	rm dest/tmp-*.png
 
 small_promo_tile.png: small_promo_tile.md
 	mkdir -p dest

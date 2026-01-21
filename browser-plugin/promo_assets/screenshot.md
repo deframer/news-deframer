@@ -1,7 +1,7 @@
 ---
 marp: true
 theme: default
-size: 16:10
+size: 16:9
 style: |
   /* Define the layout for the specific slide class 'showcase' */
   section.showcase {
