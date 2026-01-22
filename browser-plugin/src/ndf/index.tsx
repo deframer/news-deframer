@@ -163,8 +163,8 @@ const start = async () => {
 
     const type = classifyUrl(new URL(window.location.href));
     if (type === PageType.PORTAL || type === PageType.ARTICLE) {
-      log.info(`Page detected as ${type}. Stopping window immediately.`);
-      window.stop();
+      log.info(`Page detected as ${type}.`);
+      // window.stop(); // this causes issues
 
       // Manual DOM reset. document.open() is unreliable in content scripts
       // and can cause "Cannot read properties of null" errors.
