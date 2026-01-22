@@ -78,10 +78,10 @@ const App = ({ theme }: { theme: Theme }) => {
           }
         } else if (type === PageType.ARTICLE) {
           const articleUrl = window.location.href;
-          log.info(`Attempting to fetch article data for URL: "${articleUrl}"`);
+          log.debug(`Attempting to fetch article data for URL: "${articleUrl}"`);
           const item = await client.getItem(articleUrl);
           if (item) {
-            log.info(`Successfully retrieved article data for URL: "${articleUrl}"`);
+            log.debug(`Successfully retrieved article data for URL: "${articleUrl}"`);
             setData(item);
           } else {
             log.error(`No article data found for URL: "${articleUrl}" - this URL may not be in the backend database`);
@@ -166,13 +166,32 @@ const start = async () => {
       log.info(`Page detected as ${type}. Stopping window immediately.`);
       window.stop();
 
-      // Create a clean slate
-      document.documentElement.innerHTML =
-        '<head><title>News Deframer</title></head><body></body>';
+      // Manual DOM reset. document.open() is unreliable in content scripts
+      // and can cause "Cannot read properties of null" errors.
+      const html = document.documentElement;
+      if (html) {
+        // 1. Remove all attributes from <html> (fixes anti-flicker hiding)
+        while (html.attributes.length > 0) {
+          html.removeAttribute(html.attributes[0].name);
+        }
+        // 2. Clear content
+        html.innerHTML = '<head><title>News Deframer</title></head><body></body>';
+      }
+
+      // Ensure body exists and is accessible
+      let body = document.body;
+      if (!body) {
+        body = document.createElement('body');
+        if (html) {
+          html.appendChild(body);
+        } else {
+          document.appendChild(body);
+        }
+      }
 
       const rootEl = document.createElement('div');
       rootEl.id = 'ndf-root';
-      document.body.appendChild(rootEl);
+      body.appendChild(rootEl);
 
       const shadowRoot = rootEl.attachShadow({ mode: 'open' });
       const appContainer = document.createElement('div');
