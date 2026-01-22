@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/stretchr/testify/assert"
 )
 

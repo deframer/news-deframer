@@ -1,7 +1,7 @@
 package think
 
 import (
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/database"
 )
 
 type dummy struct{}

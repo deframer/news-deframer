@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

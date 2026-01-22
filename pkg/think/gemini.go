@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/database"
 	"google.golang.org/genai"
 )
 

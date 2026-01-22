@@ -13,7 +13,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
 )

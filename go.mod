@@ -1,4 +1,4 @@
-module github.com/egandro/news-deframer
+module github.com/deframer/news-deframer
 
 go 1.25.5
 

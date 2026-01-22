@@ -4,8 +4,8 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
 )
 
 func main() {

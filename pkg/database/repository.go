@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
-	mylogger "github.com/egandro/news-deframer/pkg/logger"
+	"github.com/deframer/news-deframer/pkg/config"
+	mylogger "github.com/deframer/news-deframer/pkg/logger"
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

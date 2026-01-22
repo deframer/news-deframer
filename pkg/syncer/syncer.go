@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/egandro/news-deframer/pkg/database"
-	"github.com/egandro/news-deframer/pkg/downloader"
-	"github.com/egandro/news-deframer/pkg/feeds"
-	"github.com/egandro/news-deframer/pkg/think"
+	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/downloader"
+	"github.com/deframer/news-deframer/pkg/feeds"
+	"github.com/deframer/news-deframer/pkg/think"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
@@ -28,7 +28,7 @@ const pollingInterval = 10 * time.Minute
 const feedTitlePrefix = "Deframer: "
 const promptScope = "deframer"
 const customPrefix = "deframer"
-const customNamespace = "https://github.com/egandro/news-deframer/"
+const customNamespace = "https://github.com/deframer/news-deframer/"
 const maxThinkRetries = 3
 
 type FeedSyncer interface {

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )

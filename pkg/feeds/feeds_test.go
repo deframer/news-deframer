@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
 	"github.com/stretchr/testify/assert"
