@@ -24,7 +24,7 @@ describe('Footer', () => {
     expect(linkElement).toBeInTheDocument();
     expect(linkElement).toHaveAttribute(
       'href',
-      'https://github.com/deframer/news-deframer',
+      'https://deframer.github.io/',
     );
   });
 });
