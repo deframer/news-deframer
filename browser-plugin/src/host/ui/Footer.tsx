@@ -21,7 +21,7 @@ export const Footer = () => {
       <style>{footerCss}</style>
       <footer className="page-footer-text">
         <a
-          href="https://github.com/deframer/news-deframer"
+          href="https://deframer.github.io/"
           target="_blank"
           rel="noopener noreferrer"
         >

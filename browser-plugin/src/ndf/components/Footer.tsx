@@ -26,7 +26,7 @@ export const Footer = () => {
       <footer className="page-footer-text">
         {t('footer.text_pre')}
         <a
-          href="https://github.com/deframer/news-deframer"
+          href="https://deframer.github.io/"
           target="_blank"
           rel="noopener noreferrer"
         >
