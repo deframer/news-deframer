@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/config"
 )
 
 type downloader struct {

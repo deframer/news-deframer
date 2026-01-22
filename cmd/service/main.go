@@ -12,10 +12,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/egandro/news-deframer/pkg/database"
-	"github.com/egandro/news-deframer/pkg/facade"
-	"github.com/egandro/news-deframer/pkg/server"
+	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/facade"
+	"github.com/deframer/news-deframer/pkg/server"
 )
 
 func main() {

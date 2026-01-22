@@ -5,8 +5,8 @@ import (
 	"embed"
 	"fmt"
 
-	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
 )
 
 //go:embed prompts/*.md

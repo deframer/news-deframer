@@ -10,9 +10,9 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/egandro/news-deframer/pkg/database"
-	"github.com/egandro/news-deframer/pkg/syncer"
-	"github.com/egandro/news-deframer/pkg/util/netutil"
+	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/syncer"
+	"github.com/deframer/news-deframer/pkg/util/netutil"
 	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )

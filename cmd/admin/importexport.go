@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/egandro/news-deframer/pkg/database"
-	"github.com/egandro/news-deframer/pkg/util/netutil"
+	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/util/netutil"
 	"github.com/spf13/cobra"
 )
 

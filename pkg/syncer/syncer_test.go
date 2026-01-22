@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"

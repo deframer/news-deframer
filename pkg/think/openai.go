@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
 )

@@ -3,7 +3,7 @@ package syncer
 import (
 	"testing"
 
-	"github.com/egandro/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/mmcdole/gofeed"
 	"github.com/stretchr/testify/assert"
 )

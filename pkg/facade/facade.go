@@ -8,9 +8,9 @@ import (
 	"sort"
 	"time"
 
-	"github.com/egandro/news-deframer/pkg/config"
-	"github.com/egandro/news-deframer/pkg/database"
-	"github.com/egandro/news-deframer/pkg/downloader"
+	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/downloader"
 )
 
 type RSSProxyFilter struct {
