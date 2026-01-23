@@ -1,14 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-const getRatingColors = (percentage: number): { bg: string; text: string } => {
-  if (percentage < 34) return { bg: 'var(--success-color)', text: '#ffffff' }; // Accessible Green
-  if (percentage < 67) return { bg: 'var(--warning-color)', text: '#000000' }; // Accessible Yellow
-  return { bg: 'var(--danger-color)', text: '#ffffff' }; // Accessible Red
-};
-
-const formatRatingPercent = (rating: number | undefined): number =>
-  Math.round((rating || 0.0) * 100);
+import { formatRatingPercent, getRatingColors } from '../utils/rating';
 
 const ratingBarCss = `
   .bar-container {
