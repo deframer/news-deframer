@@ -175,7 +175,8 @@ const start = async () => {
           html.removeAttribute(html.attributes[0].name);
         }
         // 2. Clear content
-        html.innerHTML = '<head><title>News Deframer</title></head><body></body>';
+        const domain = getDomain(window.location.hostname) || window.location.hostname;
+        html.innerHTML = `<head><title>NDF • ${domain}</title></head><body></body>`;
       }
 
       // Ensure body exists and is accessible
