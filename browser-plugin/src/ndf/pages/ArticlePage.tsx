@@ -9,6 +9,7 @@ import { AnalyzedItem } from '../client';
 import { Footer } from '../components/Footer';
 import { MetaData } from '../components/MetaData';
 import { RatingBar } from '../components/RatingBar';
+import { stripHtml } from '../utils/html-utils';
 
 // All styles are encapsulated here. A Shadow DOM will prevent them from leaking.
 const articlePageCss = `
@@ -125,8 +126,8 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
             {showOriginal && (
                <div id="original-content" className="original-content">
                  <h3>{t('article.original_section')}</h3>
-                 <h4>{item.title_original || ''}</h4>
-                 <p>{item.description_original || ''}</p>
+                 <h4>{stripHtml(item.title_original || '')}</h4>
+                 <p>{stripHtml(item.description_original || '')}</p>
                </div>
             )}
           </div>
