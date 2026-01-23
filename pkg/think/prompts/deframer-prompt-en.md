@@ -24,7 +24,7 @@ The JSON must contain the following fields:
 12. **`hyper_stimulus_reason`** (String): Identify stylistic excesses (e.g., "excessive capitalization," "multiple exclamation marks") in 10 words max.
 13. **`speculative`** (Float, 0.0 - 1.0): How high is the proportion of unconfirmed claims, rumors, "alleged" evidence, or speculation (including conditional language like "could," "should," "might") without a factual basis?
 14. **`speculative_reason`** (String): Identification of the source of uncertainty (e.g., "unsourced rumors," "future prediction," "conditional phrasing: could/should/might") in max 10 words.
-15. **`overall`** (Float, 0.0 - 1.0): An aggregate score to decide if reading the article is recommended.
+15. **`overall`** (Float, 0.0 - 1.0 with 0.0 = recommended and 1.0 = not recommended): An aggregate score to decide if reading the article is recommended.
 16. **`overall_reason`** (String): A holistic summary of why the text received these specific scores in a maximum of 20 words.
 
 **Rules:**
