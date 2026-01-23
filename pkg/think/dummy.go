@@ -30,6 +30,7 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 		HyperStimulusReason:         "Use of all-caps on key emotional words.",
 		Speculative:                 0.2,
 		SpeculativeReason:           "Implies bankruptcy without official filing source.",
+		Overall:                     0.5,
 		OverallReason:               "The text is sensationalized clickbait exaggerating routine financial news to induce panic.",
 	}, nil
 }
