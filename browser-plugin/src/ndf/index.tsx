@@ -193,6 +193,49 @@ const start = async () => {
       rootEl.id = 'ndf-root';
       body.appendChild(rootEl);
 
+      // MutationObserver to prevent original page content from appearing
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          // If the mutation happens inside our root or styles, ignore it
+          if (rootEl.contains(mutation.target)) return;
+          if (
+            mutation.target instanceof Element &&
+            mutation.target.id === 'ndf-global-styles'
+          )
+            return;
+
+          mutation.addedNodes.forEach((node) => {
+            // Allow our critical elements
+            if (
+              node === rootEl ||
+              node === document.head ||
+              node === document.body ||
+              node.nodeName === 'TITLE'
+            ) {
+              return;
+            }
+
+            // Allow our global styles
+            if (
+              node instanceof Element &&
+              node.id === 'ndf-global-styles'
+            ) {
+              return;
+            }
+
+            // Remove anything else (original page content streaming in)
+            if (node.parentNode) {
+              node.parentNode.removeChild(node);
+            }
+          });
+        });
+      });
+
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+      });
+
       const shadowRoot = rootEl.attachShadow({ mode: 'open' });
       const appContainer = document.createElement('div');
       shadowRoot.appendChild(appContainer);
