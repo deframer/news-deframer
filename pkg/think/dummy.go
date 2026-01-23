@@ -1,20 +1,16 @@
 package think
 
 import (
-	"math/rand"
-	"time"
+	"crypto/rand"
+	"encoding/binary"
 
 	"github.com/deframer/news-deframer/pkg/database"
 )
 
-type dummy struct {
-	rng *rand.Rand
-}
+type dummy struct{}
 
 func newDummy() *dummy {
-	return &dummy{
-		rng: rand.New(rand.NewSource(time.Now().UnixNano())),
-	}
+	return &dummy{}
 }
 
 func (d *dummy) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
@@ -22,11 +18,11 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 		return nil, err
 	}
 
-	framing := d.rng.Float64()
-	clickbait := d.rng.Float64()
-	persuasive := d.rng.Float64()
-	hyperStimulus := d.rng.Float64()
-	speculative := d.rng.Float64()
+	framing := secureFloat64()
+	clickbait := secureFloat64()
+	persuasive := secureFloat64()
+	hyperStimulus := secureFloat64()
+	speculative := secureFloat64()
 	overall := (framing + clickbait + persuasive + hyperStimulus + speculative) / 5.0
 
 	return &database.ThinkResult{
@@ -68,4 +64,10 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 			OverallReason:               "The text is sensationalized clickbait exaggerating routine financial news to induce panic.",
 		}, nil
 	*/
+}
+
+func secureFloat64() float64 {
+	var b [8]byte
+	_, _ = rand.Read(b[:])
+	return float64(binary.LittleEndian.Uint64(b[:])>>11) / float64(1<<53)
 }
