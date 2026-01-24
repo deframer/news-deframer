@@ -4,7 +4,7 @@
 
 services:
   rsshub:
-    image: diygod/rsshub
+    build: .
     restart: always
     ports:
       - "${RSSHUB_PORT:-8004}:1200"
