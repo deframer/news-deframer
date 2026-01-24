@@ -1,0 +1,76 @@
+---
+
+# https://github.com/DIYgod/RSSHub
+
+services:
+  rsshub:
+    image: diygod/rsshub
+    restart: always
+    ports:
+      - "${RSSHUB_PORT:-8004}:1200"
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: redis
+      REDIS_URL: 'redis://valkey:6379/'
+      PUPPETEER_WS_ENDPOINT: 'ws://browserless:3000'
+      PUPPETEER_REAL_BROWSER_SERVICE: 'http://real-browser:3000'
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:1200/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - valkey
+      - browserless
+    networks:
+      - test-env-net
+      - rsshub-network
+
+  real-browser:
+    image: ghcr.io/hyoban/puppeteer-real-browser-hono
+    restart: always
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - rsshub-network
+
+  browserless:
+    image: browserless/chrome
+    restart: always
+    ulimits:
+      core:
+        hard: 0
+        soft: 0
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/pressure']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - rsshub-network
+
+  valkey:
+    image: valkey/valkey:alpine
+    restart: always
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+    networks:
+      - rsshub-network
+
+networks:
+  rsshub-network:
+  test-env-net:
+    external: true
+    name: deframer-test-env-net
+
+volumes:
+  valkey-data:
