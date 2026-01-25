@@ -20,9 +20,10 @@
 - [x] Webbrowser Plugin i18n
 - [ ] Webbrowser Plugin show more data (missing: author, category)
   - [x] pubDate
-- [ ] Move to <https://github.com/deframer>
-- [ ] Website <https://deframer.github.io/>
+- [x] Website <https://deframer.github.io/>
+- [x] Move to <https://github.com/deframer>
 - [ ] Video
+- [ ] Webbrowser Plugin i18n support more languages
 - [ ] Webbrowser Plugin add tabs or sections
 - [ ] Handle empty items / special items e.g. special video news feeds / ads
 - [ ] Webbrowser Plugin Admin UI enhancement e.g. show the supported domains / disable the plugin etc.
