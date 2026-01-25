@@ -37,6 +37,7 @@ const resources = {
       footer: {
         text_pre: 'This content was replaced by the ',
         text_post: ' browser plugin.',
+        github_link: 'News Deframer on GitHub',
       },
       metadata: {
         just_now: 'just now',
@@ -100,6 +101,7 @@ const resources = {
       footer: {
         text_pre: 'Dieser Inhalt wurde durch das ',
         text_post: ' Browser-Plugin ersetzt.',
+        github_link: 'News Deframer auf GitHub',
       },
       metadata: {
         just_now: 'gerade eben',

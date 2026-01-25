@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 const footerCss = `
   .page-footer-text {
     text-align: center;
@@ -16,6 +18,8 @@ const footerCss = `
 `;
 
 export const Footer = () => {
+  const { t } = useTranslation();
+
   return (
     <>
       <style>{footerCss}</style>
@@ -25,7 +29,7 @@ export const Footer = () => {
           target="_blank"
           rel="noopener noreferrer"
         >
-          News Deframer on GitHub
+          {t('footer.github_link')}
         </a>
       </footer>
     </>
