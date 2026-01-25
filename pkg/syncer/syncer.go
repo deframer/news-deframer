@@ -16,6 +16,7 @@ import (
 	"github.com/deframer/news-deframer/pkg/downloader"
 	"github.com/deframer/news-deframer/pkg/feeds"
 	"github.com/deframer/news-deframer/pkg/think"
+	"github.com/deframer/news-deframer/pkg/util/text"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
@@ -236,8 +237,8 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 
 func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item, language string, currentErrorCount int) {
 	req := think.Request{
-		Title:       item.Title,
-		Description: item.Description,
+		Title:       text.StripHTML(item.Title),
+		Description: text.StripHTML(item.Description),
 	}
 	res, err := s.think.Run(promptScope, language, req)
 
@@ -370,7 +371,7 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 		}
 	}
 
-	if len(item.Enclosures) > 0 {
+	if len(item.Extensions["media"]["content"]) == 0 && len(item.Enclosures) > 0 {
 		// spiegel uses this
 		for _, enc := range item.Enclosures {
 			if strings.HasPrefix(enc.Type, "image/") && enc.URL != "" {
@@ -403,6 +404,50 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 					}}
 				}
 				break
+			}
+		}
+	}
+
+	if len(item.Extensions["media"]["content"]) == 0 {
+		// apollo-news uses this
+		target := res.DescriptionOriginal
+		mediaData, err := transformContent(target)
+		if err != nil || mediaData.URL == "" {
+			target = res.TitleOriginal
+			mediaData, err = transformContent(target)
+		}
+
+		if err == nil && mediaData.URL != "" {
+			if item.Extensions == nil {
+				item.Extensions = make(map[string]map[string][]ext.Extension)
+			}
+			if item.Extensions["media"] == nil {
+				item.Extensions["media"] = make(map[string][]ext.Extension)
+			}
+
+			delete(item.Extensions["media"], "credit")
+
+			attrs := map[string]string{
+				"url":    mediaData.URL,
+				"medium": mediaData.Medium,
+			}
+			if mediaData.Width > 0 {
+				attrs["width"] = fmt.Sprintf("%d", mediaData.Width)
+			}
+			if mediaData.Height > 0 {
+				attrs["height"] = fmt.Sprintf("%d", mediaData.Height)
+			}
+
+			item.Extensions["media"]["content"] = []ext.Extension{{
+				Name:  "content",
+				Attrs: attrs,
+			}}
+
+			if len(mediaData.Alt) > 0 {
+				item.Extensions["media"]["description"] = []ext.Extension{{
+					Name:  "description",
+					Value: mediaData.Alt,
+				}}
 			}
 		}
 	}
