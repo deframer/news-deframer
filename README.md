@@ -31,7 +31,7 @@ Set up your own [instance](docs/SETUP.md).
 - [Algorithm](docs/ALGORITHM.md)
 - [Specification of our Testing Systems](docs/specs-testing.md)
 - [Implementation Details](docs/specs.md)
-- [TODO List / Status](TODO.md)
+- [TODO List / Status](https://deframer.github.io/de/todo/)
 
 ## License
 
