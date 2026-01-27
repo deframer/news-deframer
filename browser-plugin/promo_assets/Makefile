@@ -39,5 +39,13 @@ marquee_promo_tile.png: marquee_promo_tile.md
 	convert "dest/tmp.001.png" -gravity center -crop 1400x560+0+0 +repage "dest/$@"
 	rm -f "dest/tmp.001.png"
 
+video_en.png: video_en.md
+	mkdir -p dest
+	marp $< --image-scale 1.5 --images png --allow-local-files -o "dest/$@"
+
+video_de.png: video_de.md
+	mkdir -p dest
+	marp $< --image-scale 1.5 --images png --allow-local-files -o "dest/$@"
+
 clean:
 	rm -rf dest
