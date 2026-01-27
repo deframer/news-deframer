@@ -37,7 +37,7 @@ style: |
   /* --- MAIN BROWSER IMAGE --- */
   img.main-browser {
     position: absolute;
-    right: -80px;
+    right: -20px;
     top: 80px;
     width: 58%;
     box-shadow: -10px 10px 30px rgba(0,0,0,0.15);
@@ -50,9 +50,10 @@ style: |
   img.small-overlay {
     position: absolute;
     bottom: 50px;
-    left: 34%;    /* Adjusted slightly left to balance width increase */
-    width: 34%;   /* LARGER (was 30%) */
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    left: 34%;
+    width: 34%;
+    /* HEAVY SHADOW ADDED BELOW */
+    box-shadow: 0 35px 70px rgba(0,0,0,0.7);
     border-radius: 12px;
     border: 3px solid #ffffff;
     z-index: 5;
@@ -61,7 +62,7 @@ style: |
   /* --- LOGO --- */
   img.logo {
     position: absolute;
-    bottom: 140px; /* LOWER (was 160px) - sits just above the crop line */
+    bottom: 40px;
     right: 40px;
     height: 80px;
     width: auto;
@@ -76,7 +77,7 @@ style: |
 
 # News Deframer
 
-Detect and avoid clickbait on your favorite news portals
+Erkenne und vermeide Clickbait auf deinen Nachrichtenportalen
 
 </div>
 
