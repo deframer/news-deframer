@@ -26,6 +26,10 @@ Why is language analysis effective?
 
 Set up your own [instance](docs/SETUP.md).
 
+## Chrome Extension
+
+Install the [Chrome Extension](https://chromewebstore.google.com/detail/ffpibngfmnagagggbjpgjbmehhilfinp).
+
 ## Overview
 
 - [Algorithm](docs/ALGORITHM.md)

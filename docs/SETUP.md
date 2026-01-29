@@ -43,7 +43,11 @@ Once feeds are configured, you can access the proxied versions via the service.
 
 You can install the plugin by loading it as an unpacked extension.
 
-### Option 1: Use a Pre-built Release
+### Option 1: Install from Chrome Store
+
+[Chrome Extension](https://chromewebstore.google.com/detail/ffpibngfmnagagggbjpgjbmehhilfinp).
+
+### Option 2: Use a Pre-built Release
 
 1.  Navigate to the project's GitHub Releases page.
 2.  Download the `extension.zip` file from the latest release.
@@ -52,7 +56,7 @@ You can install the plugin by loading it as an unpacked extension.
 5.  Enable **Developer mode** using the toggle in the top-right corner.
 6.  Click **Load unpacked** and select the folder where you unzipped the extension.
 
-### Option 2: Build from Source
+### Option 3: Build from Source
 
 1.  Clone this repository.
 2.  Navigate into the `browser-plugin` directory.
