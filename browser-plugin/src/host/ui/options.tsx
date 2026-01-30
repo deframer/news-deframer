@@ -27,7 +27,7 @@ export const Options = () => {
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
     password: '',
-    enabled: true,
+    enabled: false,
     theme: 'system',
   });
   const [status, setStatus] = useState<Status>('idle');
