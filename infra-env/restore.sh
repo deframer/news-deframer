@@ -7,11 +7,6 @@ DATABASE=${1:-deframer}
 DB_USER=${POSTGRES_USER:-deframer}
 DB_PASSWORD=${POSTGRES_PASSWORD:-deframer}
 
-# Infrastructure settings
-NETWORK="deframer-infra-env-net"
-SERVER="postgres"
-IMAGE="postgres:18"
-
 INPUT_FILE="${DATABASE}.dump"
 
 if [ ! -f "${INPUT_FILE}" ]; then
@@ -25,10 +20,8 @@ echo "Starting restore for database: ${DATABASE} from ${INPUT_FILE}..."
 # We connect to the 'postgres' maintenance database to perform operations on the target database
 # We also terminate any existing connections to the target database to ensure DROP works
 echo "Recreating database..."
-docker run --rm --network ${NETWORK} \
-  -e PGPASSWORD="${DB_PASSWORD}" \
-  ${IMAGE} \
-  psql -h ${SERVER} -U ${DB_USER} -d postgres -c "
+docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
+  psql -U ${DB_USER} -d postgres -c "
     SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${DATABASE}';
     DROP DATABASE IF EXISTS ${DATABASE};
     CREATE DATABASE ${DATABASE} WITH OWNER ${DB_USER};
@@ -36,9 +29,7 @@ docker run --rm --network ${NETWORK} \
 
 # Restore dump
 echo "Restoring data..."
-cat "${INPUT_FILE}" | docker run --rm -i --network ${NETWORK} \
-  -e PGPASSWORD="${DB_PASSWORD}" \
-  ${IMAGE} \
-  psql -h ${SERVER} -U ${DB_USER} ${DATABASE}
+cat "${INPUT_FILE}" | docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
+  psql -U ${DB_USER} ${DATABASE}
 
 echo "Restore completed."
