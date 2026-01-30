@@ -59,6 +59,8 @@ jobs:
         uses: securego/gosec@master
         with:
           args: ./...
+        env:
+          GOTOOLCHAIN: auto
 
       - name: Run govulncheck
         run: |
