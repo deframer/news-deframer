@@ -9,17 +9,22 @@ import (
 )
 
 // Connects to the database and runs the migration
-func RunMigrations(cfg *config.Config) error {
+func RunMigrations(cfg *config.Config, forced bool) error {
 	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{})
 	if err != nil {
 		return fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	return Migrate(db)
+	return Migrate(db, forced)
 }
 
 // Migrate updates the database schema and seeds initial data.
-func Migrate(db *gorm.DB) error {
+func Migrate(db *gorm.DB, forced bool) error {
+	// If not forced, check if the main table exists. If so, assume migrated.
+	if !forced && db.Migrator().HasTable(&Feed{}) {
+		return nil
+	}
+
 	// Acquire an advisory lock to prevent concurrent migrations from causing race conditions
 	// (like "duplicate key value violates unique constraint pg_type_typname_nsp_index").
 	// 123456789 is an arbitrary lock ID.
@@ -33,12 +38,12 @@ func Migrate(db *gorm.DB) error {
 		return fmt.Errorf("failed to create extension uuid-ossp: %w", err)
 	}
 
-	// 1. AutoMigrate the schema
+	// AutoMigrate the schema
 	if err := db.AutoMigrate(&Feed{}, &CachedFeed{}, &Item{}, &FeedSchedule{}); err != nil {
 		return err
 	}
 
-	// 2. Manually add FK for CachedFeed -> Feed (Shared PK)
+	// Manually add FK for CachedFeed -> Feed (Shared PK)
 	// Workaround for GORM AutoMigrate issue:
 	// GORM struggles with Shared PK + Belongs To direction inference,
 	// causing circular dependency errors during table creation if defined in the struct.
@@ -52,7 +57,7 @@ func Migrate(db *gorm.DB) error {
 	END $$;`)
 
 	return nil
-	// // 3. Seed Dummy Data
+	// Seed Dummy Data
 	// return seed(db)
 }
 

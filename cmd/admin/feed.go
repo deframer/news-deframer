@@ -18,15 +18,16 @@ import (
 )
 
 var (
-	jsonOutput   bool
-	showDeleted  bool
-	feedEnabled  bool
-	polling      bool
-	language     string
-	noRootDomain bool
-	purgeFeed    bool
-	repo         database.Repository
-	feedSyncer   *syncer.Syncer
+	jsonOutput     bool
+	showDeleted    bool
+	feedEnabled    bool
+	polling        bool
+	resolveItemUrl bool
+	language       string
+	noRootDomain   bool
+	purgeFeed      bool
+	repo           database.Repository
+	feedSyncer     *syncer.Syncer
 )
 
 func init() {
@@ -36,6 +37,7 @@ func init() {
 	feedCmd.AddCommand(disableCmd)
 	feedCmd.AddCommand(listCmd)
 	feedCmd.AddCommand(pollingCmd)
+	feedCmd.AddCommand(resolveItemUrlCmd)
 	feedCmd.AddCommand(syncCmd)
 	feedCmd.AddCommand(syncAllCmd)
 
@@ -45,6 +47,7 @@ func init() {
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", DefaultFeedEnabled, "Enable the feed")
 	addCmd.Flags().BoolVar(&polling, "polling", DefaultFeedPolling, "Enable polling")
+	addCmd.Flags().BoolVar(&resolveItemUrl, "resolve-item-url", DefaultResolveItemUrl, "Enable item URL resolution")
 	addCmd.Flags().StringVar(&language, "language", "", "Set a two-letter ISO 639-1 language code for the feed")
 	addCmd.Flags().BoolVar(&noRootDomain, "no-root-domain", false, "Do not automatically populate root_domain")
 	deleteCmd.Flags().BoolVar(&purgeFeed, "purge", false, "Purge the feed and all related data")
@@ -80,7 +83,7 @@ var addCmd = &cobra.Command{
 	Short: "Add a new feed URL",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		addFeed(args[0], feedEnabled, polling, noRootDomain, language)
+		addFeed(args[0], feedEnabled, polling, noRootDomain, language, resolveItemUrl)
 	},
 }
 
@@ -117,6 +120,15 @@ var pollingCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		setPolling(args[0], args[1])
+	},
+}
+
+var resolveItemUrlCmd = &cobra.Command{
+	Use:   "resolve-item-url <uuid|url> <true|false>",
+	Short: "Set item URL resolution for a feed",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		setResolveItemUrl(args[0], args[1])
 	},
 }
 
@@ -186,7 +198,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tLanguage\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tResolveItemUrl\tLanguage\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -219,7 +231,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 			language = *f.Language
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, language, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.ResolveItemUrl, language, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
@@ -230,7 +242,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 }
 
-func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, language string) {
+func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, language string, resolveItemUrl bool) {
 	u, err := parseAndNormalizeURL(feedUrl)
 
 	if err != nil {
@@ -267,6 +279,7 @@ func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, lang
 		EnforceFeedDomain: DefaultFeedEnforceDomain,
 		Polling:           polling,
 		Language:          languagePtr,
+		ResolveItemUrl:    resolveItemUrl,
 	}
 
 	if err := repo.UpsertFeed(newFeed); err != nil {
@@ -288,6 +301,9 @@ func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, lang
 	output := fmt.Sprintf("Added feed for url=%s with id=%s enabled=%v polling=%v root_domain=%s", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling, rootDomainStr)
 	if newFeed.Language != nil {
 		output += fmt.Sprintf(" language=%s", *newFeed.Language)
+	}
+	if newFeed.ResolveItemUrl {
+		output += fmt.Sprintf(" resolve_item_url=%v", newFeed.ResolveItemUrl)
 	}
 	fmt.Println(output)
 }
@@ -413,6 +429,24 @@ func setPolling(input string, stateStr string) {
 	}
 
 	fmt.Printf("Set polling to %v for url=%s with id=%s\n", feed.Polling, feed.URL, feed.ID)
+}
+
+func setResolveItemUrl(input string, stateStr string) {
+	state, err := strconv.ParseBool(stateStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid boolean value: %s\n", stateStr)
+		os.Exit(1)
+	}
+
+	feed := resolveFeed(input, false)
+
+	feed.ResolveItemUrl = state
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set resolve_item_url: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Set resolve_item_url to %v for url=%s with id=%s\n", feed.ResolveItemUrl, feed.URL, feed.ID)
 }
 
 func syncFeed(input string) {

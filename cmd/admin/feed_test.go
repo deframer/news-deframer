@@ -77,7 +77,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 1. Create Feed
 	out := captureOutput(func() {
-		addFeed(testURL, true, false, false, "")
+		addFeed(testURL, true, false, false, "", false)
 	})
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)
@@ -226,7 +226,7 @@ func TestFeedCommands(t *testing.T) {
 	// 14. Test Enable with Polling triggers Sync
 	testURL2 := "http://example.com/rss2"
 	captureOutput(func() {
-		addFeed(testURL2, false, true, false, "") // Add disabled feed with polling=true
+		addFeed(testURL2, false, true, false, "", false) // Add disabled feed with polling=true
 	})
 
 	out = captureOutput(func() {
@@ -247,7 +247,7 @@ func TestFeedCommands(t *testing.T) {
 	// 15. Test --no-root-domain
 	testURL3 := "http://no-root.com/rss"
 	captureOutput(func() {
-		addFeed(testURL3, true, false, true, "")
+		addFeed(testURL3, true, false, true, "", false)
 	})
 
 	out = captureOutput(func() {
@@ -268,7 +268,7 @@ func TestFeedCommands(t *testing.T) {
 	// 16. Test Root Domain Extraction (Subdomain)
 	testURL4 := "http://blog.example.co.uk/rss"
 	captureOutput(func() {
-		addFeed(testURL4, true, false, false, "")
+		addFeed(testURL4, true, false, false, "", false)
 	})
 
 	out = captureOutput(func() {
@@ -290,7 +290,7 @@ func TestFeedCommands(t *testing.T) {
 	// 17. Test Language Commands
 	testURL5 := "http://example.com/rss5"
 	captureOutput(func() {
-		addFeed(testURL5, true, false, false, "en")
+		addFeed(testURL5, true, false, false, "en", false)
 	})
 
 	out = captureOutput(func() {
@@ -361,6 +361,46 @@ func TestFeedCommands(t *testing.T) {
 	// Deleted/Disabled feeds should not be synced. testURL is deleted.
 	// We add " with" to ensure we don't match partial URLs (like rss vs rss2)
 	assert.NotContains(t, out, "Triggered sync for url="+testURL+" with")
+
+	// 18. Test ResolveItemUrl Commands
+	testURL6 := "http://example.com/rss6"
+	captureOutput(func() {
+		addFeed(testURL6, true, false, false, "", true)
+	})
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundResolve *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL6 {
+			foundResolve = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundResolve)
+	assert.True(t, foundResolve.ResolveItemUrl)
+
+	out = captureOutput(func() {
+		setResolveItemUrl(testURL6, "false")
+	})
+	assert.Contains(t, out, "Set resolve_item_url to false")
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	for i := range feeds {
+		if feeds[i].URL == testURL6 {
+			foundResolve = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundResolve)
+	assert.False(t, foundResolve.ResolveItemUrl)
 }
 
 // --- Mock Repository ---

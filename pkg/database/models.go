@@ -35,6 +35,7 @@ type Feed struct {
 	EnforceFeedDomain bool          `gorm:"not null;default:true"` // item url must be from our URL
 	Enabled           bool          `gorm:"not null;default:false;index"`
 	Polling           bool          `gorm:"not null;default:false"`
+	ResolveItemUrl    bool          `gorm:"not null;default:false"`
 	FeedSchedule      *FeedSchedule `gorm:"foreignKey:ID;references:ID"`
 }
 

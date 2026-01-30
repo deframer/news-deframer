@@ -16,6 +16,7 @@ import (
 	"github.com/deframer/news-deframer/pkg/downloader"
 	"github.com/deframer/news-deframer/pkg/feeds"
 	"github.com/deframer/news-deframer/pkg/think"
+	"github.com/deframer/news-deframer/pkg/util/netutil"
 	"github.com/deframer/news-deframer/pkg/util/text"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
@@ -136,7 +137,15 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 	}
 
 	for _, item := range parsedFeed.Items {
-		item.Link = normalizeURL(item.Link)
+		if feed.ResolveItemUrl {
+			resolved, err := s.dl.ResolveRedirect(s.ctx, item.Link)
+			if err != nil {
+				s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)
+			} else {
+				item.Link = resolved
+			}
+		}
+		item.Link = netutil.NormalizeURL(item.Link)
 	}
 
 	domains, err := s.wantedDomains(feed)
@@ -290,7 +299,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	dbItem := &database.Item{
 		Hash:            hash,
 		FeedID:          feed.ID,
-		URL:             normalizeURL(item.Link),
+		URL:             netutil.NormalizeURL(item.Link),
 		Language:        &language,
 		Content:         content,
 		PubDate:         pubDate,
@@ -639,41 +648,4 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	}
 
 	return s.repo.UpsertCachedFeed(cachedFeed)
-}
-
-// normalizeURL removes fragments, common tracking/marketing parameters, and trailing slashes from a URL.
-func normalizeURL(rawURL string) string {
-	u, err := url.Parse(rawURL)
-	if err != nil {
-		return rawURL
-	}
-
-	// Remove fragment (e.g., #ref=rss)
-	u.Fragment = ""
-	u.RawFragment = ""
-
-	// Remove trailing slash from path
-	u.Path = strings.TrimSuffix(u.Path, "/")
-
-	// Remove common tracking/marketing parameters (case-insensitive)
-	q := u.Query()
-	trackingParams := map[string]bool{
-		"utm_source": true, "utm_medium": true, "utm_campaign": true,
-		"utm_term": true, "utm_content": true, "ref": true,
-		"fbclid": true, "gclid": true, "msclkid": true,
-		"mc_cid": true, "mc_eid": true, "_hsenc": true, "_hsmi": true,
-	}
-	for k := range q {
-		if trackingParams[strings.ToLower(k)] {
-			q.Del(k)
-		}
-	}
-
-	if len(q) == 0 {
-		u.RawQuery = ""
-	} else {
-		u.RawQuery = q.Encode()
-	}
-
-	return u.String()
 }

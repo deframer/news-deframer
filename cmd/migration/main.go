@@ -18,7 +18,7 @@ func main() {
 	// Print the DSN as requested
 	slog.Info("Running migrations", "dsn", cfg.DSN)
 
-	if err := database.RunMigrations(cfg); err != nil {
+	if err := database.RunMigrations(cfg, true); err != nil {
 		slog.Error("Failed to run migrations", "error", err)
 		os.Exit(1)
 	}

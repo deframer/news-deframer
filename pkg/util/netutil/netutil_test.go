@@ -54,3 +54,49 @@ func TestGetRootDomain(t *testing.T) {
 		})
 	}
 }
+
+func TestNormalizeURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "Basic",
+			input:    "http://example.com/page",
+			expected: "http://example.com/page",
+		},
+		{
+			name:     "Trailing Slash",
+			input:    "http://example.com/page/",
+			expected: "http://example.com/page",
+		},
+		{
+			name:     "Fragment",
+			input:    "http://example.com/page#section",
+			expected: "http://example.com/page",
+		},
+		{
+			name:     "Tracking Params",
+			input:    "http://example.com/page?utm_source=twitter&utm_medium=social&id=123",
+			expected: "http://example.com/page?id=123",
+		},
+		{
+			name:     "All Tracking Params",
+			input:    "http://example.com/page?utm_source=a&utm_medium=b&utm_campaign=c&fbclid=d",
+			expected: "http://example.com/page",
+		},
+		{
+			name:     "Mixed Params",
+			input:    "http://example.com/page?keep=me&utm_source=remove",
+			expected: "http://example.com/page?keep=me",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizeURL(tt.input)
+			assert.Equal(t, tt.expected, got)
+		})
+	}
+}

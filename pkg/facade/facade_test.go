@@ -15,6 +15,7 @@ import (
 
 type mockDownloader struct {
 	downloadRSSFeed func(ctx context.Context, feed *url.URL) (io.ReadCloser, error)
+	resolveRedirect func(ctx context.Context, targetURL string) (string, error)
 }
 
 func (m *mockDownloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.ReadCloser, error) {
@@ -22,6 +23,13 @@ func (m *mockDownloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io
 		return m.downloadRSSFeed(ctx, feed)
 	}
 	return nil, nil
+}
+
+func (m *mockDownloader) ResolveRedirect(ctx context.Context, targetURL string) (string, error) {
+	if m.resolveRedirect != nil {
+		return m.resolveRedirect(ctx, targetURL)
+	}
+	return targetURL, nil
 }
 
 type mockRepo struct {

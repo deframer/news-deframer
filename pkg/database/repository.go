@@ -61,7 +61,7 @@ func NewRepository(cfg *config.Config) (Repository, error) {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	if err := Migrate(db); err != nil {
+	if err := Migrate(db, false); err != nil {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
