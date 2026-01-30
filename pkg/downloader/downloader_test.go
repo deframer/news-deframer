@@ -80,3 +80,34 @@ func TestDownloadRSSFeed_File_Disabled(t *testing.T) {
 	_, err = d.DownloadRSSFeed(ctx, u)
 	assert.Error(t, err)
 }
+
+func TestResolveRedirect(t *testing.T) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/initial":
+			http.Redirect(w, r, "/redirect1", http.StatusMovedPermanently)
+		case "/redirect1":
+			http.Redirect(w, r, "/final", http.StatusFound)
+		case "/final":
+			w.WriteHeader(http.StatusOK)
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer ts.Close()
+
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{})
+
+	t.Run("FollowRedirects", func(t *testing.T) {
+		finalURL, err := d.ResolveRedirect(ctx, ts.URL+"/initial")
+		assert.NoError(t, err)
+		assert.Equal(t, ts.URL+"/final", finalURL)
+	})
+
+	t.Run("NoRedirect", func(t *testing.T) {
+		finalURL, err := d.ResolveRedirect(ctx, ts.URL+"/final")
+		assert.NoError(t, err)
+		assert.Equal(t, ts.URL+"/final", finalURL)
+	})
+}

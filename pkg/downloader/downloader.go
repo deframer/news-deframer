@@ -15,6 +15,8 @@ import (
 	"github.com/deframer/news-deframer/pkg/config"
 )
 
+const userAgent = "Mozilla/5.0 (compatible; Deframer/1.0; +https://github.com/deframer/news-deframer)"
+
 type downloader struct {
 	ctx    context.Context
 	cfg    *config.Config
@@ -24,6 +26,7 @@ type downloader struct {
 
 type Downloader interface {
 	DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.ReadCloser, error)
+	ResolveRedirect(ctx context.Context, targetURL string) (string, error)
 }
 
 // NewDownloader initializes a new downloader
@@ -53,6 +56,7 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request for URL %q: %w", feed.String(), err)
 		}
+		req.Header.Set("User-Agent", userAgent)
 
 		resp, err := d.client.Do(req)
 		if err != nil {
@@ -91,4 +95,23 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 	default:
 		return nil, fmt.Errorf("unsupported scheme %s", feed.Scheme)
 	}
+}
+
+// ResolveRedirect performs a HEAD request to resolve the final URL after redirects.
+func (d *downloader) ResolveRedirect(ctx context.Context, targetURL string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, "HEAD", targetURL, nil)
+	if err != nil {
+		return targetURL, err
+	}
+
+	// Mimic a browser to avoid some anti-bot protections
+	req.Header.Set("User-Agent", userAgent)
+
+	resp, err := d.client.Do(req)
+	if err != nil {
+		return targetURL, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return resp.Request.URL.String(), nil
 }

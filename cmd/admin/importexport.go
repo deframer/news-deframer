@@ -49,6 +49,7 @@ type ImportFeed struct {
 	Enabled           *bool   `json:"enabled,omitempty"`
 	EnforceFeedDomain *bool   `json:"enforce_feed_domain,omitempty"`
 	Polling           *bool   `json:"polling,omitempty"`
+	ResolveItemUrl    *bool   `json:"resolve_item_url,omitempty"`
 }
 
 func importFeeds() {
@@ -119,6 +120,11 @@ func importFeeds() {
 			polling = *f.Polling
 		}
 
+		resolveItemUrl := DefaultResolveItemUrl
+		if f.ResolveItemUrl != nil {
+			resolveItemUrl = *f.ResolveItemUrl
+		}
+
 		newFeed := &database.Feed{
 			URL:               u.String(),
 			RootDomain:        rootDomain,
@@ -126,6 +132,7 @@ func importFeeds() {
 			Enabled:           enabled,
 			EnforceFeedDomain: enforce,
 			Polling:           polling,
+			ResolveItemUrl:    resolveItemUrl,
 		}
 
 		if err := repo.UpsertFeed(newFeed); err != nil {
@@ -163,6 +170,12 @@ func exportFeeds() {
 			polling = &v
 		}
 
+		var resolveItemUrl *bool
+		if f.ResolveItemUrl {
+			v := f.ResolveItemUrl
+			resolveItemUrl = &v
+		}
+
 		var exportRootDomain *string
 		u, err := parseAndNormalizeURL(f.URL)
 		if err != nil {
@@ -183,6 +196,7 @@ func exportFeeds() {
 			Enabled:           enabled,
 			EnforceFeedDomain: enforce,
 			Polling:           polling,
+			ResolveItemUrl:    resolveItemUrl,
 		})
 	}
 
