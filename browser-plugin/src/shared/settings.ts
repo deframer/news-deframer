@@ -17,7 +17,7 @@ export const getSettings = (): Promise<Settings> => {
         backendUrl: DEFAULT_BACKEND_URL,
         username: '',
         password: '',
-        enabled: true,
+        enabled: false,
         theme: 'system',
       },
       (items: Settings) => {
