@@ -86,6 +86,9 @@ import-feeds: build
 service: build
 	./bin/service
 
+service-no-cache: build
+	./bin/service --disable-etag
+
 worker: build
 	./bin/admin feed sync-all
 	./bin/worker

@@ -20,6 +20,7 @@ import (
 
 func main() {
 	jsonLog := flag.Bool("json-log", false, "Enable JSON logging")
+	disableETag := flag.Bool("disable-etag", false, "Disable ETag caching")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
@@ -30,6 +31,10 @@ func main() {
 	if err != nil {
 		slog.Error("Failed to load config", "error", err)
 		os.Exit(1)
+	}
+
+	if *disableETag {
+		cfg.DisableETag = true
 	}
 
 	var lvl slog.Level
@@ -54,7 +59,7 @@ func main() {
 	}
 
 	hostname, _ := os.Hostname()
-	slog.Info("Service", "level", lvl, "hostname", hostname)
+	slog.Info("Service", "level", lvl, "hostname", hostname, "etag_disabled", cfg.DisableETag)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

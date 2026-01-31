@@ -1,8 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net"
 	"net/http"
@@ -16,10 +20,27 @@ import (
 	"github.com/deframer/news-deframer/pkg/facade"
 )
 
+// responseWriter is a wrapper for http.ResponseWriter to capture the status code and body
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+	body       bytes.Buffer
+}
+
+func (rw *responseWriter) WriteHeader(statusCode int) {
+	rw.statusCode = statusCode
+	rw.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	return rw.body.Write(b)
+}
+
 type Server struct {
 	httpServer *http.Server
 	logger     *slog.Logger
 	facade     facade.Facade
+	cfg        *config.Config
 }
 
 type RSSRequest struct {
@@ -33,34 +54,23 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	s := &Server{
 		logger: slog.With("component", "server"),
 		facade: f,
+		cfg:    cfg,
 	}
 
 	mux := http.NewServeMux()
-
-	// debug stuff
 	mux.HandleFunc("/ping", s.handlePing)
 	mux.HandleFunc("/hostname", s.handleHostname)
+	mux.Handle("/rss", s.basicAuthMiddleware(s.handleRSSProxy))
+	mux.Handle("/api/item", s.basicAuthMiddleware(s.handleItem))
+	mux.Handle("/api/site", s.basicAuthMiddleware(s.handleSite))
+	mux.Handle("/api/domains", s.basicAuthMiddleware(s.handleDomains))
 
-	// Middleware
-	protect := func(h http.HandlerFunc) http.Handler {
-		if cfg.BasicAuthUser != "" && cfg.BasicAuthPassword != "" {
-			return s.basicAuthMiddleware(cfg.BasicAuthUser, cfg.BasicAuthPassword, h)
-		}
-		return h
-	}
-
-	if cfg.BasicAuthUser != "" && cfg.BasicAuthPassword != "" {
-		s.logger.Info("Basic auth enabled")
-	}
-
-	mux.Handle("/rss", protect(s.handleRSSProxy))
-	mux.Handle("/api/item", protect(s.handleItem))
-	mux.Handle("/api/site", protect(s.handleSite))
-	mux.Handle("/api/domains", protect(s.handleDomains))
+	// Chain middlewares: etag -> cache-control -> mux
+	handler := s.etagMiddleware(s.cacheControlMiddleware(mux))
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: mux,
+		Handler: handler,
 		BaseContext: func(_ net.Listener) context.Context {
 			return ctx
 		},
@@ -69,10 +79,67 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	return s
 }
 
-func (s *Server) basicAuthMiddleware(user, password string, next http.Handler) http.Handler {
+func (s *Server) cacheControlMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			maxAge := int(config.PollingInterval.Seconds() / 2)
+			if strings.HasPrefix(r.URL.Path, "/rss") {
+				w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
+			} else if strings.HasPrefix(r.URL.Path, "/api/") {
+				w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(config.ETagTTL.Seconds())))
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) etagMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if s.cfg.DisableETag || r.Method != http.MethodGet {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(rw, r)
+
+		if rw.statusCode != http.StatusOK {
+			w.WriteHeader(rw.statusCode)
+		}
+
+		if rw.body.Len() == 0 {
+			if rw.statusCode != http.StatusOK {
+				return
+			}
+			if _, err := w.Write(rw.body.Bytes()); err != nil {
+				s.logger.Error("failed to write original empty response", "error", err)
+			}
+			return
+		}
+
+		hash := sha256.Sum256(rw.body.Bytes())
+		etag := `"` + hex.EncodeToString(hash[:]) + `"`
+		w.Header().Set("ETag", etag)
+
+		if match := r.Header.Get("If-None-Match"); match != "" {
+			if strings.Contains(match, etag) {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+		}
+		if _, err := w.Write(rw.body.Bytes()); err != nil {
+			s.logger.Error("failed to write response", "error", err)
+		}
+	})
+}
+
+func (s *Server) basicAuthMiddleware(next http.HandlerFunc) http.Handler {
+	if s.cfg.BasicAuthUser == "" || s.cfg.BasicAuthPassword == "" {
+		return next
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, p, ok := r.BasicAuth()
-		if !ok || u != user || p != password {
+		if !ok || u != s.cfg.BasicAuthUser || p != s.cfg.BasicAuthPassword {
 			w.Header().Set("WWW-Authenticate", `Basic realm="Restricted"`)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
