@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -29,7 +30,6 @@ type responseWriter struct {
 
 func (rw *responseWriter) WriteHeader(statusCode int) {
 	rw.statusCode = statusCode
-	rw.ResponseWriter.WriteHeader(statusCode)
 }
 
 func (rw *responseWriter) Write(b []byte) (int, error) {
@@ -103,17 +103,11 @@ func (s *Server) etagMiddleware(next http.Handler) http.Handler {
 		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
 		next.ServeHTTP(rw, r)
 
-		if rw.statusCode != http.StatusOK {
-			w.WriteHeader(rw.statusCode)
-		}
+		// After handler has run, we can inspect the body and status code
 
+		// Don't set ETag for empty bodies, just write headers and return
 		if rw.body.Len() == 0 {
-			if rw.statusCode != http.StatusOK {
-				return
-			}
-			if _, err := w.Write(rw.body.Bytes()); err != nil {
-				s.logger.Error("failed to write original empty response", "error", err)
-			}
+			w.WriteHeader(rw.statusCode)
 			return
 		}
 
@@ -127,6 +121,8 @@ func (s *Server) etagMiddleware(next http.Handler) http.Handler {
 				return
 			}
 		}
+
+		w.WriteHeader(rw.statusCode)
 		if _, err := w.Write(rw.body.Bytes()); err != nil {
 			s.logger.Error("failed to write response", "error", err)
 		}
@@ -292,6 +288,8 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
+
+	sort.Strings(domains)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(domains); err != nil {
