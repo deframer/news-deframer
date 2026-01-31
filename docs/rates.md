@@ -49,7 +49,7 @@ This model assumes you use a paid external provider.
 
 **Assumptions:**
 *   **Model:** Low-cost tier (GPT-4o-mini or Gemini Flash). High-end models (GPT-4o) are cost-prohibitive for this volume.
-*   **Tokens:** ~1,500 tokens per article (1k context + 500 output).
+*   **Tokens:** ~1,500 tokens per feed item (1k context + 500 output).
 *   **Price:** ~$0.15 - $0.30 per 1M tokens.
 
 | Scenario | Daily Cost | Monthly Cost |
@@ -80,29 +80,25 @@ Let's compare buying hardware vs. paying the cloud bill for the **100 Feed** sce
 *   **Cloud Cost:** **$750/month**.
 *   **Break Even:** $\approx$ **2.7 Months**.
 
-#### Option 2: Mac Mini M4 (Best Value)
+#### Option 2: Mac Mini M4 (Cheap)
 The M4 chip has a significantly faster Neural Engine than the M2, making it an excellent budget choice.
-*   **Hardware:** Mac Mini M4 Pro (24GB RAM) $\approx$ **$1,400**.
-*   **Electricity:** ~40W avg load $\approx$ **$9/month**.
+*   **Hardware:** Mac Mini M4 (16GB RAM) $\approx$ **$700**.
+*   **Electricity:** ~30W avg load $\approx$ **$7/month**.
 *   **Cloud Cost:** **$750/month**.
 
-$$ \text{Break Even Time} = \frac{\$1,400}{\$750 - \$9} \approx \mathbf{1.9 \text{ Months}} $$
+$$ \text{Break Even Time} = \frac{\$700}{\$750 - \$7} \approx \mathbf{0.94 \text{ Months}} $$
 
-**Verdict:** The **Mac Mini M4 Pro** is the optimal "Home Data Center" machine for this workload. It pays for itself in under 2 months.
+**Verdict:** The **Mac Mini M4** is the optimal "Home Data Center" machine for this workload. It pays for itself in under 1 month.
 
-### C. The Hidden Constraint: Your ISP (Home Network)
-Hosting at home introduces network bottlenecks that don't exist in the datacenter.
+### C. Network Considerations for Home Hosting
+While the application's data usage is minimal, there are a few network factors to consider.
 
-1.  **Downstream (Download):**
-    *   **RSS Only:** Negligible.
-    *   **Full Scraping:** If you enable full article text extraction, usage jumps to **~16 Mbps constant** for 100 feeds.
+1.  **Data Usage & Bandwidth:**
+    *   The application only downloads small RSS/XML feed files, not the full article webpages.
+    *   Data consumption is very low, amounting to a few gigabytes per month at most.
+    *   This will not strain your download bandwidth or put you at risk of exceeding typical ISP data caps.
 
-2.  **Upstream (Upload):**
-    *   Your Mac must upload the analysis results to your Database.
-    *   If your DB is in the cloud (AWS/Heroku), this requires stable upstream bandwidth.
-    *   **Risk:** Many home connections have slow upload speeds (e.g., 20 Mbps) which might saturate during bursts.
-
-3.  **Data Caps (The "Usage Limit"):**
-    *   **RSS Only:** Safe.
-    *   **Full Scraping:** 100 feeds can consume **~5 TB/month** of data.
-    *   **Warning:** Many residential ISPs have a 1 TB/month cap. Exceeding this often leads to throttling or account termination. **Verify your ISP plan is truly uncapped before enabling full scraping.**
+2.  **Upstream (Upload) Stability:**
+    *   Your Mac must upload the analysis results to your database.
+    *   If your database is hosted in the cloud (e.g., AWS, Heroku), a stable, reliable internet connection is important.
+    *   Brief internet outages are fine, but prolonged instability could delay your feeds from updating.
