@@ -24,7 +24,6 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const defaultLockDuration = 5 * time.Minute
 const feedTitlePrefix = "Deframer: "
 const promptScope = "deframer"
 const customPrefix = "deframer"
@@ -64,7 +63,7 @@ func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Sy
 
 func (s *Syncer) SyncFeed(id uuid.UUID) error {
 	s.logger.Info("Syncing feed", "id", id)
-	return s.repo.EnqueueSync(id, 0, defaultLockDuration)
+	return s.repo.EnqueueSync(id, 0, config.DefaultLockDuration)
 }
 
 func (s *Syncer) StopPolling(id uuid.UUID) error {
@@ -100,7 +99,7 @@ func (s *Syncer) Poll() {
 // syncNextScheduledFeed return true if this has updated entries
 func (s *Syncer) syncNextScheduledFeed() bool {
 	s.logger.Info("syncNextScheduledFeed")
-	feed, err := s.repo.BeginFeedUpdate(defaultLockDuration)
+	feed, err := s.repo.BeginFeedUpdate(config.DefaultLockDuration)
 	if err != nil {
 		s.logger.Error("Failed query the next feed to sync", "error", err)
 		return false
