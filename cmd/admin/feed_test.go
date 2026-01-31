@@ -77,7 +77,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 1. Create Feed
 	out := captureOutput(func() {
-		addFeed(testURL, true, false, false, "", false)
+		addFeed(testURL, true, false, false, false, "", false, []string{})
 	})
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)
@@ -226,7 +226,7 @@ func TestFeedCommands(t *testing.T) {
 	// 14. Test Enable with Polling triggers Sync
 	testURL2 := "http://example.com/rss2"
 	captureOutput(func() {
-		addFeed(testURL2, false, true, false, "", false) // Add disabled feed with polling=true
+		addFeed(testURL2, false, true, false, false, "", false, []string{}) // Add disabled feed with polling=true
 	})
 
 	out = captureOutput(func() {
@@ -247,7 +247,7 @@ func TestFeedCommands(t *testing.T) {
 	// 15. Test --no-root-domain
 	testURL3 := "http://no-root.com/rss"
 	captureOutput(func() {
-		addFeed(testURL3, true, false, true, "", false)
+		addFeed(testURL3, true, false, false, true, "", false, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -268,7 +268,7 @@ func TestFeedCommands(t *testing.T) {
 	// 16. Test Root Domain Extraction (Subdomain)
 	testURL4 := "http://blog.example.co.uk/rss"
 	captureOutput(func() {
-		addFeed(testURL4, true, false, false, "", false)
+		addFeed(testURL4, true, false, false, false, "", false, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -290,7 +290,7 @@ func TestFeedCommands(t *testing.T) {
 	// 17. Test Language Commands
 	testURL5 := "http://example.com/rss5"
 	captureOutput(func() {
-		addFeed(testURL5, true, false, false, "en", false)
+		addFeed(testURL5, true, false, false, false, "en", false, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -365,7 +365,7 @@ func TestFeedCommands(t *testing.T) {
 	// 18. Test ResolveItemUrl Commands
 	testURL6 := "http://example.com/rss6"
 	captureOutput(func() {
-		addFeed(testURL6, true, false, false, "", true)
+		addFeed(testURL6, true, false, false, false, "", true, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -490,6 +490,17 @@ func (m *MockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lock
 			ID:        id,
 			NextRunAt: &now,
 		}
+	}
+	return nil
+}
+
+func (m *MockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+	if f, ok := m.feeds[id]; ok {
+		now := time.Now()
+		if f.FeedSchedule == nil {
+			f.FeedSchedule = &database.FeedSchedule{ID: id}
+		}
+		f.FeedSchedule.NextMiningAt = &now
 	}
 	return nil
 }

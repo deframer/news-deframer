@@ -35,7 +35,9 @@ type Feed struct {
 	EnforceFeedDomain bool          `gorm:"not null;default:true"` // item url must be from our URL
 	Enabled           bool          `gorm:"not null;default:false;index"`
 	Polling           bool          `gorm:"not null;default:false"`
+	Mining            bool          `gorm:"not null;default:false"`
 	ResolveItemUrl    bool          `gorm:"not null;default:false"`
+	Categories        StringArray   `gorm:"type:text[];not null;default:'{}'"`
 	FeedSchedule      *FeedSchedule `gorm:"foreignKey:ID;references:ID"`
 }
 
@@ -59,12 +61,15 @@ func (a StringArray) Value() (driver.Value, error) {
 }
 
 type FeedSchedule struct {
-	ID          uuid.UUID  `gorm:"primaryKey;type:uuid"` // this is a FK to Feed.ID
-	CreatedAt   time.Time  `gorm:"not null;default:now()"`
-	UpdatedAt   time.Time  `gorm:"not null;default:now()"`
-	NextRunAt   *time.Time `gorm:"index"`
-	LockedUntil *time.Time
-	LastError   *string `gorm:"type:text"`
+	ID                uuid.UUID  `gorm:"primaryKey;type:uuid"` // this is a FK to Feed.ID
+	CreatedAt         time.Time  `gorm:"not null;default:now()"`
+	UpdatedAt         time.Time  `gorm:"not null;default:now()"`
+	NextRunAt         *time.Time `gorm:"index"`
+	LockedUntil       *time.Time
+	LastError         *string    `gorm:"type:text"`
+	NextMiningAt      *time.Time `gorm:"index"`
+	MiningLockedUntil *time.Time
+	MiningError       *string `gorm:"type:text"`
 }
 
 // ThinkResult we make omitempty to not serialize default e.g. 0.0 or ""
@@ -163,6 +168,8 @@ type Item struct {
 	ThinkError      *string       `gorm:"type:text;null"`
 	ThinkErrorCount int           `gorm:"not null;default:0"`
 	ThinkRating     float64       `gorm:"not null;default:0.0"`
+	MiningDoneAt    *time.Time    `gorm:"index"`
+	Categories      StringArray   `gorm:"type:text[];not null;default:'{}'"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.

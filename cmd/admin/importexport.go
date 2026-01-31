@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 
@@ -43,13 +44,15 @@ var exportCmd = &cobra.Command{
 
 // ImportFeed struct matches the format in feeds.json
 type ImportFeed struct {
-	URL               string  `json:"url"`
-	Language          *string `json:"language,omitempty"`
-	RootDomain        *string `json:"root_domain,omitempty"`
-	Enabled           *bool   `json:"enabled,omitempty"`
-	EnforceFeedDomain *bool   `json:"enforce_feed_domain,omitempty"`
-	Polling           *bool   `json:"polling,omitempty"`
-	ResolveItemUrl    *bool   `json:"resolve_item_url,omitempty"`
+	URL               string   `json:"url"`
+	Language          *string  `json:"language,omitempty"`
+	Categories        []string `json:"categories,omitempty"`
+	RootDomain        *string  `json:"root_domain,omitempty"`
+	Enabled           *bool    `json:"enabled,omitempty"`
+	EnforceFeedDomain *bool    `json:"enforce_feed_domain,omitempty"`
+	Polling           *bool    `json:"polling,omitempty"`
+	Mining            *bool    `json:"mining,omitempty"`
+	ResolveItemUrl    *bool    `json:"resolve_item_url,omitempty"`
 }
 
 func importFeeds() {
@@ -92,54 +95,94 @@ func importFeeds() {
 		}
 
 		if existing != nil {
-			fmt.Printf("Feed already exists: %s\n", u.String())
+			fmt.Printf("Updating existing feed: %s\n", u.String())
+			updateExistingFeed(existing, f)
+			if err := repo.UpsertFeed(existing); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to update feed %s: %v\n", u.String(), err)
+			}
 			continue
 		}
 
-		// Calculate RootDomain if not provided
-		var rootDomain *string
-		if f.RootDomain != nil {
-			rootDomain = f.RootDomain
-		} else {
-			d := netutil.GetRootDomain(u)
-			rootDomain = &d
-		}
-
-		enabled := DefaultFeedEnabled
-		if f.Enabled != nil {
-			enabled = *f.Enabled
-		}
-
-		enforce := DefaultFeedEnforceDomain
-		if f.EnforceFeedDomain != nil {
-			enforce = *f.EnforceFeedDomain
-		}
-
-		polling := DefaultFeedPolling
-		if f.Polling != nil {
-			polling = *f.Polling
-		}
-
-		resolveItemUrl := DefaultResolveItemUrl
-		if f.ResolveItemUrl != nil {
-			resolveItemUrl = *f.ResolveItemUrl
-		}
-
-		newFeed := &database.Feed{
-			URL:               u.String(),
-			RootDomain:        rootDomain,
-			Language:          f.Language,
-			Enabled:           enabled,
-			EnforceFeedDomain: enforce,
-			Polling:           polling,
-			ResolveItemUrl:    resolveItemUrl,
-		}
-
+		fmt.Printf("Importing new feed: %s\n", u.String())
+		newFeed := createNewFeed(u, f)
 		if err := repo.UpsertFeed(newFeed); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create feed %s: %v\n", u.String(), err)
 			continue
 		}
-		fmt.Printf("Imported feed: %s\n", u.String())
+	}
+}
+
+func createNewFeed(u *url.URL, f ImportFeed) *database.Feed {
+	var rootDomain *string
+	if f.RootDomain != nil {
+		rootDomain = f.RootDomain
+	} else {
+		d := netutil.GetRootDomain(u)
+		rootDomain = &d
+	}
+
+	enabled := DefaultFeedEnabled
+	if f.Enabled != nil {
+		enabled = *f.Enabled
+	}
+
+	enforce := DefaultFeedEnforceDomain
+	if f.EnforceFeedDomain != nil {
+		enforce = *f.EnforceFeedDomain
+	}
+
+	polling := DefaultFeedPolling
+	if f.Polling != nil {
+		polling = *f.Polling
+	}
+
+	mining := DefaultFeedMining
+	if f.Mining != nil {
+		mining = *f.Mining
+	}
+
+	resolveItemUrl := DefaultResolveItemUrl
+	if f.ResolveItemUrl != nil {
+		resolveItemUrl = *f.ResolveItemUrl
+	}
+
+	return &database.Feed{
+		URL:               u.String(),
+		RootDomain:        rootDomain,
+		Language:          f.Language,
+		Categories:        f.Categories,
+		Enabled:           enabled,
+		EnforceFeedDomain: enforce,
+		Polling:           polling,
+		Mining:            mining,
+		ResolveItemUrl:    resolveItemUrl,
+	}
+}
+
+func updateExistingFeed(existing *database.Feed, f ImportFeed) {
+	if f.Language != nil {
+		existing.Language = f.Language
+	}
+	if f.Categories != nil {
+		existing.Categories = f.Categories
+	}
+	if f.RootDomain != nil {
+		existing.RootDomain = f.RootDomain
+	}
+	if f.Enabled != nil {
+		existing.Enabled = *f.Enabled
+	}
+	if f.EnforceFeedDomain != nil {
+		existing.EnforceFeedDomain = *f.EnforceFeedDomain
+	}
+	if f.Polling != nil {
+		existing.Polling = *f.Polling
+	}
+	if f.Mining != nil {
+		existing.Mining = *f.Mining
+	}
+	if f.ResolveItemUrl != nil {
+		existing.ResolveItemUrl = *f.ResolveItemUrl
 	}
 }
 
@@ -152,51 +195,16 @@ func exportFeeds() {
 
 	var exportFeeds []ImportFeed
 	for _, f := range feeds {
-		var enabled *bool
-		if !f.Enabled {
-			v := f.Enabled
-			enabled = &v
-		}
-
-		var enforce *bool
-		if !f.EnforceFeedDomain {
-			v := f.EnforceFeedDomain
-			enforce = &v
-		}
-
-		var polling *bool
-		if f.Polling {
-			v := f.Polling
-			polling = &v
-		}
-
-		var resolveItemUrl *bool
-		if f.ResolveItemUrl {
-			v := f.ResolveItemUrl
-			resolveItemUrl = &v
-		}
-
-		var exportRootDomain *string
-		u, err := parseAndNormalizeURL(f.URL)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Skipping invalid URL in export %s: %v\n", f.URL, err)
-			continue
-		}
-		defaultRootDomain := netutil.GetRootDomain(u)
-		if f.RootDomain != nil {
-			if *f.RootDomain != defaultRootDomain {
-				exportRootDomain = f.RootDomain
-			}
-		}
-
 		exportFeeds = append(exportFeeds, ImportFeed{
 			URL:               f.URL,
 			Language:          f.Language,
-			RootDomain:        exportRootDomain,
-			Enabled:           enabled,
-			EnforceFeedDomain: enforce,
-			Polling:           polling,
-			ResolveItemUrl:    resolveItemUrl,
+			Categories:        f.Categories,
+			RootDomain:        f.RootDomain,
+			Enabled:           &f.Enabled,
+			EnforceFeedDomain: &f.EnforceFeedDomain,
+			Polling:           &f.Polling,
+			Mining:            &f.Mining,
+			ResolveItemUrl:    &f.ResolveItemUrl,
 		})
 	}
 

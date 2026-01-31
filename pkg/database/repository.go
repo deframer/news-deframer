@@ -32,6 +32,7 @@ type Repository interface {
 	DeleteFeedById(id uuid.UUID) error
 	PurgeFeedById(id uuid.UUID) error
 	EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error
+	EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error
 	RemoveSync(id uuid.UUID) error
 	BeginFeedUpdate(lockDuration time.Duration) (*Feed, error)
 	EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval time.Duration) error
@@ -127,6 +128,9 @@ func (r *repository) UpsertFeed(feed *Feed) error {
 }
 
 func (r *repository) UpsertItem(item *Item) error {
+	if item.Categories == nil {
+		item.Categories = []string{}
+	}
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		if item.ID == uuid.Nil {
 			var existing Item
@@ -156,6 +160,12 @@ func (r *repository) UpsertItem(item *Item) error {
 func (r *repository) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
 		return r.enqueueSyncTx(tx, id, pollingInterval, lockDuration)
+	})
+}
+
+func (r *repository) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return r.enqueueMineTx(tx, id, miningInterval, lockDuration)
 	})
 }
 
@@ -208,6 +218,58 @@ func (r *repository) enqueueSyncTx(tx *gorm.DB, id uuid.UUID, pollingInterval ti
 		"locked_until": nil,
 		"last_error":   nil,
 		"updated_at":   gorm.Expr("NOW()"),
+	}).Error
+}
+
+func (r *repository) enqueueMineTx(tx *gorm.DB, id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+	var feed Feed
+	// Check if feed exists, is enabled, and is not deleted.
+	if err := tx.Where("id = ? AND enabled = ?", id, true).First(&feed).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("feed not found or unavailable")
+		}
+		return err
+	}
+
+	if lockDuration > 0 {
+		lockInterval := fmt.Sprintf("INTERVAL '%f seconds'", lockDuration.Seconds())
+
+		// Check if the feed is locked for longer than the requested duration
+		var count int64
+		if err := tx.Model(&FeedSchedule{}).
+			Where("id = ? AND mining_locked_until > NOW() + "+lockInterval, id).
+			Count(&count).Error; err != nil {
+			return err
+		}
+
+		if count > 0 {
+			// Lock is > now + duration, do nothing
+			return nil
+		}
+	}
+
+	runInterval := fmt.Sprintf("INTERVAL '%f seconds'", miningInterval.Seconds())
+
+	// Upsert FeedSchedule
+	var schedule FeedSchedule
+	if err := tx.Where("id = ?", id).First(&schedule).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return tx.Model(&FeedSchedule{}).Create(map[string]interface{}{
+				"id":                  id,
+				"next_mining_at":      gorm.Expr("NOW() + " + runInterval),
+				"mining_locked_until": nil,
+				"mining_error":        nil,
+				"updated_at":          gorm.Expr("NOW()"),
+			}).Error
+		}
+		return err
+	}
+
+	return tx.Model(&schedule).Updates(map[string]interface{}{
+		"next_mining_at":      gorm.Expr("NOW() + " + runInterval),
+		"mining_locked_until": nil,
+		"mining_error":        nil,
+		"updated_at":          gorm.Expr("NOW()"),
 	}).Error
 }
 

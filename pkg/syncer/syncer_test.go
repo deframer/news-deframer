@@ -82,6 +82,10 @@ func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lock
 	return nil
 }
 
+func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+	return nil
+}
+
 func TestSyncFeed(t *testing.T) {
 	repo := &mockRepo{}
 	cfg, err := config.Load()

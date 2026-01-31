@@ -113,6 +113,10 @@ func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lock
 	return nil
 }
 
+func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+	return nil
+}
+
 func (m *mockRepo) RemoveSync(id uuid.UUID) error {
 	if m.removeSync != nil {
 		return m.removeSync(id)
