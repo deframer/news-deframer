@@ -401,6 +401,130 @@ func TestFeedCommands(t *testing.T) {
 	}
 	assert.NotNil(t, foundResolve)
 	assert.False(t, foundResolve.ResolveItemUrl)
+
+	// 19. Test Mining Commands
+	testURL7 := "http://example.com/rss7"
+	captureOutput(func() {
+		addFeed(testURL7, true, false, true, false, "", false, []string{})
+	})
+
+	out = captureOutput(func() {
+		mineFeed(testURL7)
+	})
+	assert.Contains(t, out, "Triggered mining for url=http://example.com/rss7")
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundMine *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL7 {
+			foundMine = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundMine)
+	assert.True(t, foundMine.Mining)
+	assert.NotNil(t, foundMine.FeedSchedule)
+	assert.NotNil(t, foundMine.FeedSchedule.NextMiningAt)
+
+	out = captureOutput(func() {
+		setMining(testURL7, "false")
+	})
+	assert.Contains(t, out, "Set mining to false")
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	for i := range feeds {
+		if feeds[i].URL == testURL7 {
+			foundMine = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundMine)
+	assert.False(t, foundMine.Mining)
+
+	// 20. Test mine-all
+	// Reset schedule for testURL7
+	if f, err := mock.FindFeedByUrlAndAvailability(&url.URL{Scheme: "http", Host: "example.com", Path: "/rss7"}, true); err == nil && f != nil {
+		f.FeedSchedule.NextMiningAt = nil
+		setMining(f.URL, "true")
+	}
+
+	// Add another feed that is enabled but not for mining
+	testURL8 := "http://example.com/rss8"
+	captureOutput(func() {
+		addFeed(testURL8, true, false, false, false, "", false, []string{})
+	})
+
+	out = captureOutput(func() {
+		mineAllFeeds()
+	})
+	assert.Contains(t, out, "Triggered mining for url=http://example.com/rss7")
+	assert.NotContains(t, out, "Triggered mining for url=http://example.com/rss8")
+
+	// 21. Test sync on non-polling feed
+	testURL9 := "http://example.com/rss9"
+	captureOutput(func() {
+		addFeed(testURL9, true, false, false, false, "", false, []string{}) // Polling is false
+	})
+
+	out = captureOutput(func() {
+		syncFeed(testURL9)
+	})
+	assert.Contains(t, out, "Triggered sync for url=http://example.com/rss9")
+
+	// Verify Schedule was created for one-time sync
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundSync *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL9 {
+			foundSync = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundSync)
+	assert.False(t, foundSync.Polling, "Polling should remain false")
+	assert.NotNil(t, foundSync.FeedSchedule)
+	assert.NotNil(t, foundSync.FeedSchedule.NextRunAt, "NextRunAt should be set for the immediate sync")
+
+	// 22. Test mine on non-mining feed
+	testURL10 := "http://example.com/rss10"
+	captureOutput(func() {
+		addFeed(testURL10, true, false, false, false, "", false, []string{}) // Mining is false
+	})
+
+	out = captureOutput(func() {
+		mineFeed(testURL10)
+	})
+	assert.Contains(t, out, "Triggered mining for url=http://example.com/rss10")
+
+	// Verify Schedule was created for one-time mine
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundMineNoMining *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL10 {
+			foundMineNoMining = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundMineNoMining)
+	assert.False(t, foundMineNoMining.Mining, "Mining should remain false")
+	assert.NotNil(t, foundMineNoMining.FeedSchedule)
+	assert.NotNil(t, foundMineNoMining.FeedSchedule.NextMiningAt, "NextMiningAt should be set for the immediate mine")
 }
 
 // --- Mock Repository ---

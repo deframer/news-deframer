@@ -43,6 +43,7 @@ func init() {
 	feedCmd.AddCommand(resolveItemUrlCmd)
 	feedCmd.AddCommand(syncCmd)
 	feedCmd.AddCommand(syncAllCmd)
+	feedCmd.AddCommand(mineCmd)
 	feedCmd.AddCommand(mineAllCmd)
 
 	languageCmd.AddCommand(setLanguageCmd)
@@ -157,6 +158,15 @@ var syncCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		syncFeed(args[0])
+	},
+}
+
+var mineCmd = &cobra.Command{
+	Use:   "mine <uuid|url>",
+	Short: "Mine a feed immediately",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		mineFeed(args[0])
 	},
 }
 
@@ -535,6 +545,16 @@ func syncFeed(input string) {
 		os.Exit(1)
 	}
 	fmt.Printf("Triggered sync for url=%s with id=%s\n", feed.URL, feed.ID)
+}
+
+func mineFeed(input string) {
+	feed := resolveFeed(input, false)
+
+	if err := repo.EnqueueMine(feed.ID, 0, 0); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to enqueue mining for feed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Triggered mining for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
 func syncAllFeeds() {
