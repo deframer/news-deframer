@@ -70,6 +70,9 @@ func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, e
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	return nil, nil
 }
+func (m *mockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
+	return nil
+}
 func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
 	return nil, nil
 }
@@ -662,7 +665,9 @@ type mockFeeds struct {
 func (m *mockFeeds) ParseFeed(ctx context.Context, content io.Reader) (*gofeed.Feed, error) {
 	return nil, nil
 }
-func (m *mockFeeds) RenderFeed(ctx context.Context, feed *gofeed.Feed) (string, error) { return "", nil }
+func (m *mockFeeds) RenderFeed(ctx context.Context, feed *gofeed.Feed) (string, error) {
+	return "", nil
+}
 func (m *mockFeeds) FilterItems(ctx context.Context, feed *gofeed.Feed, domains []string) []feeds.ItemHashPair {
 	return nil
 }
@@ -714,5 +719,5 @@ func TestProcessItem_Categories(t *testing.T) {
 	s.processItem(feed, hash, item, language, currentErrorCount)
 
 	assert.NotNil(t, capturedItem)
-	assert.Equal(t, []string{"cat1", "cat2", "cat3"}, capturedItem.Categories)
+	assert.Equal(t, database.StringArray{"cat1", "cat2", "cat3"}, capturedItem.Categories)
 }

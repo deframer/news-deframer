@@ -673,6 +673,15 @@ func (m *MockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedul
 	return nil, nil
 }
 
+func (m *MockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
+	if f, ok := m.feeds[feedID]; ok {
+		if f.FeedSchedule == nil {
+			f.FeedSchedule = &database.FeedSchedule{ID: feedID}
+		}
+	}
+	return nil
+}
+
 func (m *MockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
 	return nil, nil
 }

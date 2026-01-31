@@ -184,6 +184,10 @@ func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedul
 	return nil, nil
 }
 
+func (m *mockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
+	return nil
+}
+
 func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
 	if m.findItemsByRootDomain != nil {
 		return m.findItemsByRootDomain(rootDomain, limit)

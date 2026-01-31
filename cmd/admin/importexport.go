@@ -100,6 +100,9 @@ func importFeeds() {
 			if err := repo.UpsertFeed(existing); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to update feed %s: %v\n", u.String(), err)
 			}
+			if err := repo.CreateFeedSchedule(existing.ID); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to ensure schedule for feed %s: %v\n", u.String(), err)
+			}
 			continue
 		}
 
@@ -108,6 +111,9 @@ func importFeeds() {
 		if err := repo.UpsertFeed(newFeed); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create feed %s: %v\n", u.String(), err)
 			continue
+		}
+		if err := repo.CreateFeedSchedule(newFeed.ID); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create schedule for feed %s: %v\n", u.String(), err)
 		}
 	}
 }

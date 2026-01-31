@@ -42,6 +42,7 @@ type Repository interface {
 	UpsertCachedFeed(cachedFeed *CachedFeed) error
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
+	CreateFeedSchedule(feedID uuid.UUID) error
 }
 
 type repository struct {
@@ -491,6 +492,19 @@ func (r *repository) FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, erro
 		return nil, err
 	}
 	return &schedule, nil
+}
+
+func (r *repository) CreateFeedSchedule(feedID uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		var count int64
+		if err := tx.Model(&FeedSchedule{}).Where("id = ?", feedID).Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return nil
+		}
+		return tx.Create(&FeedSchedule{ID: feedID}).Error
+	})
 }
 
 func (r *repository) DeleteFeedById(id uuid.UUID) error {
