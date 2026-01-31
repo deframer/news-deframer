@@ -24,6 +24,9 @@ const (
 	// ETagTTL defines the cache duration for API endpoints.
 	// This is set below half the PollingInterval (the Nyquist limit) to ensure clients never miss an update.
 	ETagTTL = 150 * time.Second
+
+	// lock duration
+	DefaultLockDuration = 5 * time.Minute
 )
 
 const (

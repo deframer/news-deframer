@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"io"
 	"log/slog"
 	"net/url"
 	"os"
@@ -10,6 +11,8 @@ import (
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/feeds"
+	"github.com/deframer/news-deframer/pkg/think"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
@@ -67,6 +70,9 @@ func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, e
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	return nil, nil
 }
+func (m *mockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
+	return nil
+}
 func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
 	return nil, nil
 }
@@ -79,6 +85,10 @@ func (m *mockRepo) PurgeFeedById(id uuid.UUID) error {
 func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
 	m.enqueueSyncCalled = true
 	m.lastId = id
+	return nil
+}
+
+func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
 	return nil
 }
 
@@ -633,4 +643,81 @@ func TestDetermineLanguage(t *testing.T) {
 			assert.Equal(t, tc.expectedLang, lang)
 		})
 	}
+}
+
+// Mocks for testing processItem
+type mockThink struct {
+	runFunc func(scope string, language string, req think.Request) (*database.ThinkResult, error)
+}
+
+func (m *mockThink) Run(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+	if m.runFunc != nil {
+		return m.runFunc(scope, language, req)
+	}
+	return &database.ThinkResult{}, nil
+}
+
+type mockFeeds struct {
+	extractCategoriesFunc func(item *gofeed.Item) []string
+	renderItemFunc        func(ctx context.Context, item *gofeed.Item) (string, error)
+}
+
+func (m *mockFeeds) ParseFeed(ctx context.Context, content io.Reader) (*gofeed.Feed, error) {
+	return nil, nil
+}
+func (m *mockFeeds) RenderFeed(ctx context.Context, feed *gofeed.Feed) (string, error) {
+	return "", nil
+}
+func (m *mockFeeds) FilterItems(ctx context.Context, feed *gofeed.Feed, domains []string) []feeds.ItemHashPair {
+	return nil
+}
+func (m *mockFeeds) RenderItem(ctx context.Context, item *gofeed.Item) (string, error) {
+	if m.renderItemFunc != nil {
+		return m.renderItemFunc(ctx, item)
+	}
+	return "<item></item>", nil
+}
+func (m *mockFeeds) ExtractCategories(item *gofeed.Item) []string {
+	if m.extractCategoriesFunc != nil {
+		return m.extractCategoriesFunc(item)
+	}
+	return []string{"mocked-cat"}
+}
+
+func TestProcessItem_Categories(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	// Replace dependencies with mocks
+	s.think = &mockThink{}
+	mockFeeds := &mockFeeds{}
+	s.feeds = mockFeeds
+
+	feed := &database.Feed{Base: database.Base{ID: uuid.New()}}
+	hash := "test-hash"
+	item := &gofeed.Item{
+		Title: "Test item with categories",
+		Link:  "http://example.com/item",
+	}
+	language := "en"
+	currentErrorCount := 0
+
+	var capturedItem *database.Item
+	repo.upsertItemFunc = func(dbItem *database.Item) error {
+		capturedItem = dbItem
+		return nil
+	}
+
+	mockFeeds.extractCategoriesFunc = func(item *gofeed.Item) []string {
+		return []string{"cat1", "cat2", "cat3"}
+	}
+
+	s.processItem(feed, hash, item, language, currentErrorCount)
+
+	assert.NotNil(t, capturedItem)
+	assert.Equal(t, database.StringArray{"cat1", "cat2", "cat3"}, capturedItem.Categories)
 }

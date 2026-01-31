@@ -113,6 +113,10 @@ func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lock
 	return nil
 }
 
+func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+	return nil
+}
+
 func (m *mockRepo) RemoveSync(id uuid.UUID) error {
 	if m.removeSync != nil {
 		return m.removeSync(id)
@@ -178,6 +182,10 @@ func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedul
 		return m.findFeedScheduleById(feedID)
 	}
 	return nil, nil
+}
+
+func (m *mockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
+	return nil
 }
 
 func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {

@@ -3,6 +3,37 @@
     "url": "http://wordpress/feed/",
     "language": "en",
     "root_domain": "wordpress",
-    "polling": true
+    "polling": true,
+    "categories": [
+      "local",
+      "testing"
+    ]
+  },
+  {
+    "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
+    "language": "en",
+    "polling": true,
+    "categories": [
+      "politics",
+      "uk"
+    ]
+  },
+  {
+    "url": "https://www.spiegel.de/international/index.rss",
+    "language": "en",
+    "polling": true,
+    "categories": [
+      "politics",
+      "de"
+    ]
+  },
+  {
+    "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    "language": "en",
+    "polling": true,
+    "categories": [
+      "politics",
+      "us"
+    ]
   }
 ]

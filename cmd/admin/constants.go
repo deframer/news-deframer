@@ -3,6 +3,7 @@ package main
 const (
 	DefaultFeedEnabled       = true
 	DefaultFeedPolling       = false
-	DefaultFeedEnforceDomain = true
+	DefaultFeedMining        = false
 	DefaultResolveItemUrl    = false
+	DefaultFeedEnforceDomain = true
 )

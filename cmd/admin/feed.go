@@ -22,8 +22,10 @@ var (
 	showDeleted    bool
 	feedEnabled    bool
 	polling        bool
+	mining         bool
 	resolveItemUrl bool
 	language       string
+	categories     []string
 	noRootDomain   bool
 	purgeFeed      bool
 	repo           database.Repository
@@ -37,18 +39,27 @@ func init() {
 	feedCmd.AddCommand(disableCmd)
 	feedCmd.AddCommand(listCmd)
 	feedCmd.AddCommand(pollingCmd)
+	feedCmd.AddCommand(miningCmd)
 	feedCmd.AddCommand(resolveItemUrlCmd)
 	feedCmd.AddCommand(syncCmd)
 	feedCmd.AddCommand(syncAllCmd)
+	feedCmd.AddCommand(mineCmd)
+	feedCmd.AddCommand(mineAllCmd)
 
 	languageCmd.AddCommand(setLanguageCmd)
 	languageCmd.AddCommand(deleteLanguageCmd)
 	feedCmd.AddCommand(languageCmd)
 
+	categoriesCmd.AddCommand(setCategoriesCmd)
+	categoriesCmd.AddCommand(deleteCategoriesCmd)
+	feedCmd.AddCommand(categoriesCmd)
+
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", DefaultFeedEnabled, "Enable the feed")
 	addCmd.Flags().BoolVar(&polling, "polling", DefaultFeedPolling, "Enable polling")
+	addCmd.Flags().BoolVar(&mining, "mining", DefaultFeedMining, "Enable mining")
 	addCmd.Flags().BoolVar(&resolveItemUrl, "resolve-item-url", DefaultResolveItemUrl, "Enable item URL resolution")
 	addCmd.Flags().StringVar(&language, "language", "", "Set a two-letter ISO 639-1 language code for the feed")
+	addCmd.Flags().StringSliceVar(&categories, "categories", []string{}, "Set a comma-separated list of categories for the feed")
 	addCmd.Flags().BoolVar(&noRootDomain, "no-root-domain", false, "Do not automatically populate root_domain")
 	deleteCmd.Flags().BoolVar(&purgeFeed, "purge", false, "Purge the feed and all related data")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
@@ -83,7 +94,7 @@ var addCmd = &cobra.Command{
 	Short: "Add a new feed URL",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		addFeed(args[0], feedEnabled, polling, noRootDomain, language, resolveItemUrl)
+		addFeed(args[0], feedEnabled, polling, mining, noRootDomain, language, resolveItemUrl, categories)
 	},
 }
 
@@ -123,6 +134,15 @@ var pollingCmd = &cobra.Command{
 	},
 }
 
+var miningCmd = &cobra.Command{
+	Use:   "mining <uuid|url> <true|false>",
+	Short: "Set mining for a feed",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		setMining(args[0], args[1])
+	},
+}
+
 var resolveItemUrlCmd = &cobra.Command{
 	Use:   "resolve-item-url <uuid|url> <true|false>",
 	Short: "Set item URL resolution for a feed",
@@ -141,11 +161,28 @@ var syncCmd = &cobra.Command{
 	},
 }
 
+var mineCmd = &cobra.Command{
+	Use:   "mine <uuid|url>",
+	Short: "Mine a feed immediately",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		mineFeed(args[0])
+	},
+}
+
 var syncAllCmd = &cobra.Command{
 	Use:   "sync-all",
 	Short: "Sync all active enabled feeds immediately",
 	Run: func(cmd *cobra.Command, args []string) {
 		syncAllFeeds()
+	},
+}
+
+var mineAllCmd = &cobra.Command{
+	Use:   "mine-all",
+	Short: "Mine all active enabled feeds immediately",
+	Run: func(cmd *cobra.Command, args []string) {
+		mineAllFeeds()
 	},
 }
 
@@ -169,6 +206,29 @@ var deleteLanguageCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		deleteLanguage(args[0])
+	},
+}
+
+var categoriesCmd = &cobra.Command{
+	Use:   "categories",
+	Short: "Manage feed categories",
+}
+
+var setCategoriesCmd = &cobra.Command{
+	Use:   "set <uuid|url> <category1,category2,...>",
+	Short: "Set the categories for a feed",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		setCategories(args[0], args[1])
+	},
+}
+
+var deleteCategoriesCmd = &cobra.Command{
+	Use:   "delete <uuid|url>",
+	Short: "Delete the categories for a feed",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		deleteCategories(args[0])
 	},
 }
 
@@ -198,7 +258,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tResolveItemUrl\tLanguage\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCategories\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -231,7 +291,12 @@ func listFeeds(asJson bool, showDeleted bool) {
 			language = *f.Language
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.ResolveItemUrl, language, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
+		categories := "-"
+		if len(f.Categories) > 0 {
+			categories = strings.Join(f.Categories, ",")
+		}
+
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, categories, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
@@ -242,7 +307,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 }
 
-func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, language string, resolveItemUrl bool) {
+func addFeed(feedUrl string, enabled bool, polling bool, mining bool, noRootDomain bool, language string, resolveItemUrl bool, categories []string) {
 	u, err := parseAndNormalizeURL(feedUrl)
 
 	if err != nil {
@@ -278,8 +343,10 @@ func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, lang
 		Enabled:           enabled,
 		EnforceFeedDomain: DefaultFeedEnforceDomain,
 		Polling:           polling,
+		Mining:            mining,
 		Language:          languagePtr,
 		ResolveItemUrl:    resolveItemUrl,
+		Categories:        categories,
 	}
 
 	if err := repo.UpsertFeed(newFeed); err != nil {
@@ -298,12 +365,15 @@ func addFeed(feedUrl string, enabled bool, polling bool, noRootDomain bool, lang
 		rootDomainStr = *newFeed.RootDomain
 	}
 
-	output := fmt.Sprintf("Added feed for url=%s with id=%s enabled=%v polling=%v root_domain=%s", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling, rootDomainStr)
+	output := fmt.Sprintf("Added feed for url=%s with id=%s enabled=%v polling=%v mining=%v root_domain=%s", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling, newFeed.Mining, rootDomainStr)
 	if newFeed.Language != nil {
 		output += fmt.Sprintf(" language=%s", *newFeed.Language)
 	}
 	if newFeed.ResolveItemUrl {
 		output += fmt.Sprintf(" resolve_item_url=%v", newFeed.ResolveItemUrl)
+	}
+	if len(newFeed.Categories) > 0 {
+		output += fmt.Sprintf(" categories=%s", strings.Join(newFeed.Categories, ","))
 	}
 	fmt.Println(output)
 }
@@ -431,6 +501,24 @@ func setPolling(input string, stateStr string) {
 	fmt.Printf("Set polling to %v for url=%s with id=%s\n", feed.Polling, feed.URL, feed.ID)
 }
 
+func setMining(input string, stateStr string) {
+	state, err := strconv.ParseBool(stateStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid boolean value: %s\n", stateStr)
+		os.Exit(1)
+	}
+
+	feed := resolveFeed(input, false)
+
+	feed.Mining = state
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set mining: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Set mining to %v for url=%s with id=%s\n", feed.Mining, feed.URL, feed.ID)
+}
+
 func setResolveItemUrl(input string, stateStr string) {
 	state, err := strconv.ParseBool(stateStr)
 	if err != nil {
@@ -459,6 +547,16 @@ func syncFeed(input string) {
 	fmt.Printf("Triggered sync for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
+func mineFeed(input string) {
+	feed := resolveFeed(input, false)
+
+	if err := repo.EnqueueMine(feed.ID, 0, 0); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to enqueue mining for feed: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Triggered mining for url=%s with id=%s\n", feed.URL, feed.ID)
+}
+
 func syncAllFeeds() {
 	feeds, err := repo.GetAllFeeds(false)
 	if err != nil {
@@ -479,6 +577,28 @@ func syncAllFeeds() {
 		}
 	}
 	fmt.Printf("Triggered sync for %d feeds\n", count)
+}
+
+func mineAllFeeds() {
+	feeds, err := repo.GetAllFeeds(false)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to list feeds: %v\n", err)
+		os.Exit(1)
+	}
+
+	count := 0
+	for _, f := range feeds {
+		if !f.Enabled || !f.Mining {
+			continue
+		}
+		if err := repo.EnqueueMine(f.ID, 0, 0); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to enqueue mining for feed %s (%s): %v\n", f.URL, f.ID, err)
+		} else {
+			fmt.Printf("Triggered mining for url=%s with id=%s\n", f.URL, f.ID)
+			count++
+		}
+	}
+	fmt.Printf("Triggered mining for %d feeds\n", count)
 }
 
 func setLanguage(input string, language string) {
@@ -509,4 +629,29 @@ func parseAndNormalizeURL(rawURL string) (*url.URL, error) {
 	rawURL = strings.TrimSpace(rawURL)
 	rawURL = strings.TrimSuffix(rawURL, "/")
 	return url.ParseRequestURI(rawURL)
+}
+
+func setCategories(input string, categoriesStr string) {
+	feed := resolveFeed(input, false)
+
+	categories := strings.Split(categoriesStr, ",")
+	feed.Categories = categories
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set categories: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Set categories to %v for url=%s with id=%s\n", categories, feed.URL, feed.ID)
+}
+
+func deleteCategories(input string) {
+	feed := resolveFeed(input, false)
+
+	feed.Categories = []string{}
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to delete categories: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Deleted categories for url=%s with id=%s\n", feed.URL, feed.ID)
 }

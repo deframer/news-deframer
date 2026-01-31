@@ -77,7 +77,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 1. Create Feed
 	out := captureOutput(func() {
-		addFeed(testURL, true, false, false, "", false)
+		addFeed(testURL, true, false, false, false, "", false, []string{})
 	})
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)
@@ -226,7 +226,7 @@ func TestFeedCommands(t *testing.T) {
 	// 14. Test Enable with Polling triggers Sync
 	testURL2 := "http://example.com/rss2"
 	captureOutput(func() {
-		addFeed(testURL2, false, true, false, "", false) // Add disabled feed with polling=true
+		addFeed(testURL2, false, true, false, false, "", false, []string{}) // Add disabled feed with polling=true
 	})
 
 	out = captureOutput(func() {
@@ -247,7 +247,7 @@ func TestFeedCommands(t *testing.T) {
 	// 15. Test --no-root-domain
 	testURL3 := "http://no-root.com/rss"
 	captureOutput(func() {
-		addFeed(testURL3, true, false, true, "", false)
+		addFeed(testURL3, true, false, false, true, "", false, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -268,7 +268,7 @@ func TestFeedCommands(t *testing.T) {
 	// 16. Test Root Domain Extraction (Subdomain)
 	testURL4 := "http://blog.example.co.uk/rss"
 	captureOutput(func() {
-		addFeed(testURL4, true, false, false, "", false)
+		addFeed(testURL4, true, false, false, false, "", false, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -290,7 +290,7 @@ func TestFeedCommands(t *testing.T) {
 	// 17. Test Language Commands
 	testURL5 := "http://example.com/rss5"
 	captureOutput(func() {
-		addFeed(testURL5, true, false, false, "en", false)
+		addFeed(testURL5, true, false, false, false, "en", false, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -365,7 +365,7 @@ func TestFeedCommands(t *testing.T) {
 	// 18. Test ResolveItemUrl Commands
 	testURL6 := "http://example.com/rss6"
 	captureOutput(func() {
-		addFeed(testURL6, true, false, false, "", true)
+		addFeed(testURL6, true, false, false, false, "", true, []string{})
 	})
 
 	out = captureOutput(func() {
@@ -401,6 +401,130 @@ func TestFeedCommands(t *testing.T) {
 	}
 	assert.NotNil(t, foundResolve)
 	assert.False(t, foundResolve.ResolveItemUrl)
+
+	// 19. Test Mining Commands
+	testURL7 := "http://example.com/rss7"
+	captureOutput(func() {
+		addFeed(testURL7, true, false, true, false, "", false, []string{})
+	})
+
+	out = captureOutput(func() {
+		mineFeed(testURL7)
+	})
+	assert.Contains(t, out, "Triggered mining for url=http://example.com/rss7")
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundMine *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL7 {
+			foundMine = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundMine)
+	assert.True(t, foundMine.Mining)
+	assert.NotNil(t, foundMine.FeedSchedule)
+	assert.NotNil(t, foundMine.FeedSchedule.NextMiningAt)
+
+	out = captureOutput(func() {
+		setMining(testURL7, "false")
+	})
+	assert.Contains(t, out, "Set mining to false")
+
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	for i := range feeds {
+		if feeds[i].URL == testURL7 {
+			foundMine = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundMine)
+	assert.False(t, foundMine.Mining)
+
+	// 20. Test mine-all
+	// Reset schedule for testURL7
+	if f, err := mock.FindFeedByUrlAndAvailability(&url.URL{Scheme: "http", Host: "example.com", Path: "/rss7"}, true); err == nil && f != nil {
+		f.FeedSchedule.NextMiningAt = nil
+		setMining(f.URL, "true")
+	}
+
+	// Add another feed that is enabled but not for mining
+	testURL8 := "http://example.com/rss8"
+	captureOutput(func() {
+		addFeed(testURL8, true, false, false, false, "", false, []string{})
+	})
+
+	out = captureOutput(func() {
+		mineAllFeeds()
+	})
+	assert.Contains(t, out, "Triggered mining for url=http://example.com/rss7")
+	assert.NotContains(t, out, "Triggered mining for url=http://example.com/rss8")
+
+	// 21. Test sync on non-polling feed
+	testURL9 := "http://example.com/rss9"
+	captureOutput(func() {
+		addFeed(testURL9, true, false, false, false, "", false, []string{}) // Polling is false
+	})
+
+	out = captureOutput(func() {
+		syncFeed(testURL9)
+	})
+	assert.Contains(t, out, "Triggered sync for url=http://example.com/rss9")
+
+	// Verify Schedule was created for one-time sync
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundSync *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL9 {
+			foundSync = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundSync)
+	assert.False(t, foundSync.Polling, "Polling should remain false")
+	assert.NotNil(t, foundSync.FeedSchedule)
+	assert.NotNil(t, foundSync.FeedSchedule.NextRunAt, "NextRunAt should be set for the immediate sync")
+
+	// 22. Test mine on non-mining feed
+	testURL10 := "http://example.com/rss10"
+	captureOutput(func() {
+		addFeed(testURL10, true, false, false, false, "", false, []string{}) // Mining is false
+	})
+
+	out = captureOutput(func() {
+		mineFeed(testURL10)
+	})
+	assert.Contains(t, out, "Triggered mining for url=http://example.com/rss10")
+
+	// Verify Schedule was created for one-time mine
+	out = captureOutput(func() {
+		listFeeds(true, false)
+	})
+	err = json.Unmarshal([]byte(out), &feeds)
+	assert.NoError(t, err)
+
+	var foundMineNoMining *database.Feed
+	for i := range feeds {
+		if feeds[i].URL == testURL10 {
+			foundMineNoMining = &feeds[i]
+		}
+	}
+	assert.NotNil(t, foundMineNoMining)
+	assert.False(t, foundMineNoMining.Mining, "Mining should remain false")
+	assert.NotNil(t, foundMineNoMining.FeedSchedule)
+	assert.NotNil(t, foundMineNoMining.FeedSchedule.NextMiningAt, "NextMiningAt should be set for the immediate mine")
 }
 
 // --- Mock Repository ---
@@ -494,6 +618,17 @@ func (m *MockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lock
 	return nil
 }
 
+func (m *MockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+	if f, ok := m.feeds[id]; ok {
+		now := time.Now()
+		if f.FeedSchedule == nil {
+			f.FeedSchedule = &database.FeedSchedule{ID: id}
+		}
+		f.FeedSchedule.NextMiningAt = &now
+	}
+	return nil
+}
+
 func (m *MockRepo) RemoveSync(id uuid.UUID) error {
 	if f, ok := m.feeds[id]; ok && f.FeedSchedule != nil {
 		f.FeedSchedule.NextRunAt = nil
@@ -536,6 +671,15 @@ func (m *MockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedul
 		return f.FeedSchedule, nil
 	}
 	return nil, nil
+}
+
+func (m *MockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
+	if f, ok := m.feeds[feedID]; ok {
+		if f.FeedSchedule == nil {
+			f.FeedSchedule = &database.FeedSchedule{ID: feedID}
+		}
+	}
+	return nil
 }
 
 func (m *MockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
