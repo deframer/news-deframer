@@ -25,8 +25,6 @@ import (
 )
 
 const defaultLockDuration = 5 * time.Minute
-const idleSleepTime = 10 * time.Second
-const pollingInterval = 10 * time.Minute
 const feedTitlePrefix = "Deframer: "
 const promptScope = "deframer"
 const customPrefix = "deframer"
@@ -88,13 +86,13 @@ func (s *Syncer) Poll() {
 			continue
 		}
 
-		s.logger.Info("Sleeping...", "duration", idleSleepTime)
+		s.logger.Info("Sleeping...", "duration", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():
 			s.logger.Info("Stopping poller")
 			return
-		case <-time.After(idleSleepTime):
+		case <-time.After(config.IdleSleepTime):
 		}
 	}
 }
@@ -111,7 +109,7 @@ func (s *Syncer) syncNextScheduledFeed() bool {
 		return false
 	}
 	err = s.updatingFeed(feed)
-	if err := s.repo.EndFeedUpdate(feed.ID, err, pollingInterval); err != nil {
+	if err := s.repo.EndFeedUpdate(feed.ID, err, config.PollingInterval); err != nil {
 		s.logger.Error("Failed to end feed update", "error", err)
 	}
 	return true

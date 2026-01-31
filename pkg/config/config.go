@@ -5,12 +5,26 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
 )
 
 type LLMType int
+
+const (
+	// PollingInterval defines how often a single feed is re-synced.
+	// If a feed was synced at T, it will be eligible again at T + PollingInterval.
+	PollingInterval = 10 * time.Minute
+
+	// IdleSleepTime defines how long the worker sleeps when no feeds are due for syncing.
+	IdleSleepTime = 10 * time.Second
+
+	// ETagTTL defines the cache duration for API endpoints.
+	// This is set below half the PollingInterval (the Nyquist limit) to ensure clients never miss an update.
+	ETagTTL = 150 * time.Second
+)
 
 const (
 	Dummy LLMType = iota
@@ -46,6 +60,8 @@ type Config struct {
 
 	BasicAuthUser     string `env:"BASIC_AUTH_USER" envDefault:""`
 	BasicAuthPassword string `env:"BASIC_AUTH_PASSWORD" envDefault:""`
+
+	DisableETag bool `env:"DISABLE_ETAG" envDefault:"false"`
 
 	LLM_Type    LLMType `env:"LLM_TYPE" envDefault:"dummy"`
 	LLM_Model   string  `env:"LLM_MODEL" envDefault:""`
