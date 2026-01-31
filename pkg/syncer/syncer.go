@@ -223,6 +223,14 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 	}
 
 	language := s.determineLanguage(feed, parsedFeed)
+	if feed.Language == nil || *feed.Language == "" {
+		s.logger.Info("Feed language is not set, updating it.", "feed_id", feed.ID, "language", language)
+		feed.Language = &language
+		if err := s.repo.UpsertFeed(feed); err != nil {
+			// Log the error but continue, as this is not a critical failure
+			s.logger.Error("Failed to update feed language", "error", err, "feed_id", feed.ID)
+		}
+	}
 
 	count = 0
 	for _, item := range items {
@@ -305,6 +313,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		ThinkError:      thinkError,
 		ThinkErrorCount: nextErrorCount,
 		ThinkRating:     thinkRating,
+		Categories:      s.feeds.ExtractCategories(item),
 	}
 
 	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)

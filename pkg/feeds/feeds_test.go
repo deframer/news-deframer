@@ -544,3 +544,85 @@ func TestAddNamespace(t *testing.T) {
 	assert.NotNil(t, feed.Custom)
 	assert.Equal(t, "http://test.com", feed.Custom["xmlns:test"])
 }
+
+func TestExtractCategories(t *testing.T) {
+	ctx := context.Background()
+	cfg := &config.Config{}
+	f := NewFeeds(ctx, cfg)
+
+	tests := []struct {
+		name     string
+		item     *gofeed.Item
+		expected []string
+	}{
+		{
+			name:     "Nil item",
+			item:     nil,
+			expected: nil,
+		},
+		{
+			name:     "No categories",
+			item:     &gofeed.Item{},
+			expected: []string{},
+		},
+		{
+			name: "From Categories field",
+			item: &gofeed.Item{
+				Categories: []string{"News", "Tech", " "},
+			},
+			expected: []string{"News", "Tech"},
+		},
+		{
+			name: "From Extensions",
+			item: &gofeed.Item{
+				Extensions: ext.Extensions{
+					"": {
+						"category": []ext.Extension{
+							{Value: "Finance"},
+							{Value: "Business"},
+						},
+					},
+				},
+			},
+			expected: []string{"Business", "Finance"},
+		},
+		{
+			name: "Mixed and duplicate",
+			item: &gofeed.Item{
+				Categories: []string{"News", "Tech"},
+				Extensions: ext.Extensions{
+					"": {
+						"category": []ext.Extension{
+							{Value: "Tech"},
+							{Value: "World"},
+						},
+					},
+				},
+			},
+			expected: []string{"News", "Tech", "World"},
+		},
+		{
+			name: "With empty values",
+			item: &gofeed.Item{
+				Categories: []string{"", "  ", "Science"},
+				Extensions: ext.Extensions{
+					"": {
+						"category": []ext.Extension{
+							{Value: ""},
+							{Value: "   "},
+							{Value: "Politics"},
+						},
+					},
+				},
+			},
+			expected: []string{"Politics", "Science"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cats := f.ExtractCategories(tt.item)
+			assert.Equal(t, tt.expected, cats)
+		})
+	}
+}

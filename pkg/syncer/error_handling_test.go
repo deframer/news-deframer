@@ -15,11 +15,11 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type mockThink struct {
+type mockThinkEH struct {
 	runFunc func(scope string, language string, req think.Request) (*database.ThinkResult, error)
 }
 
-func (m *mockThink) Run(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+func (m *mockThinkEH) Run(scope string, language string, req think.Request) (*database.ThinkResult, error) {
 	if m.runFunc != nil {
 		return m.runFunc(scope, language, req)
 	}
@@ -34,7 +34,7 @@ func TestProcessItemErrorHandling(t *testing.T) {
 	feed := &database.Feed{Base: database.Base{ID: feedID}}
 
 	t.Run("IncrementErrorCountOnError", func(t *testing.T) {
-		mockT := &mockThink{
+		mockT := &mockThinkEH{
 			runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
 				return nil, errors.New("thinking failed")
 			},
@@ -70,7 +70,7 @@ func TestProcessItemErrorHandling(t *testing.T) {
 	})
 
 	t.Run("ResetErrorCountOnSuccess", func(t *testing.T) {
-		mockT := &mockThink{
+		mockT := &mockThinkEH{
 			runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
 				return &database.ThinkResult{TitleCorrected: "Cool"}, nil
 			},

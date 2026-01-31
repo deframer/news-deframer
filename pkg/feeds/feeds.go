@@ -23,6 +23,7 @@ type Feeds interface {
 	RenderFeed(ctx context.Context, feed *gofeed.Feed) (string, error)
 	FilterItems(ctx context.Context, feed *gofeed.Feed, domains []string) []ItemHashPair
 	RenderItem(ctx context.Context, item *gofeed.Item) (string, error)
+	ExtractCategories(item *gofeed.Item) []string
 }
 
 type feeds struct {
@@ -173,6 +174,47 @@ func (f *feeds) RenderItem(ctx context.Context, item *gofeed.Item) (string, erro
 		return "", fmt.Errorf("failed to marshal item: %w", err)
 	}
 	return string(output), nil
+}
+
+// ExtractCategories extracts all category string values from an item.
+// It merges categories from the item's Categories field and any
+// category extensions, ensuring uniqueness.
+func (f *feeds) ExtractCategories(item *gofeed.Item) []string {
+	if item == nil {
+		return nil
+	}
+
+	uniqueCategories := make(map[string]struct{})
+
+	// From item.Categories
+	for _, cat := range item.Categories {
+		if c := strings.TrimSpace(cat); c != "" {
+			uniqueCategories[c] = struct{}{}
+		}
+	}
+
+	// From extensions (parsed manually in ParseFeed)
+	if item.Extensions != nil {
+		if catExts, ok := item.Extensions[""]["category"]; ok {
+			for _, ext := range catExts {
+				if v := strings.TrimSpace(ext.Value); v != "" {
+					uniqueCategories[v] = struct{}{}
+				}
+			}
+		}
+	}
+
+	if len(uniqueCategories) == 0 {
+		return []string{}
+	}
+
+	cats := make([]string, 0, len(uniqueCategories))
+	for cat := range uniqueCategories {
+		cats = append(cats, cat)
+	}
+	sort.Strings(cats) // for deterministic output
+
+	return cats
 }
 
 // FilterItems iterates over the items, calculates the hash.
