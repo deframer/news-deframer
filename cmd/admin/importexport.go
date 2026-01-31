@@ -163,9 +163,7 @@ func updateExistingFeed(existing *database.Feed, f ImportFeed) {
 	if f.Language != nil {
 		existing.Language = f.Language
 	}
-	if f.Categories != nil {
-		existing.Categories = f.Categories
-	}
+	existing.Categories = f.Categories
 	if f.RootDomain != nil {
 		existing.RootDomain = f.RootDomain
 	}
