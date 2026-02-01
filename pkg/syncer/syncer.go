@@ -340,7 +340,7 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 		item.Description = res.DescriptionCorrected
 	}
 
-	// Add the reason
+	// Append the reason to the description
 	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
 
 	if item.Content != "" {
