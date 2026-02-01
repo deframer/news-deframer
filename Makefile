@@ -83,10 +83,10 @@ docker-%:
 import-feeds: build
 	./bin/admin feed import -f feeds.json
 
-service: build
+service-cached: build
 	./bin/service
 
-service-no-cache: build
+service: build
 	./bin/service --disable-etag
 
 worker: build

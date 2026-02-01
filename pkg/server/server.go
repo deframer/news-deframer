@@ -66,7 +66,10 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.Handle("/api/domains", s.basicAuthMiddleware(s.handleDomains))
 
 	// Chain middlewares: etag -> cache-control -> mux
-	handler := s.etagMiddleware(s.cacheControlMiddleware(mux))
+	var handler http.Handler = mux
+	if !cfg.DisableETag {
+		handler = s.etagMiddleware(s.cacheControlMiddleware(handler))
+	}
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -95,7 +98,7 @@ func (s *Server) cacheControlMiddleware(next http.Handler) http.Handler {
 
 func (s *Server) etagMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.cfg.DisableETag || r.Method != http.MethodGet {
+		if r.Method != http.MethodGet {
 			next.ServeHTTP(w, r)
 			return
 		}
