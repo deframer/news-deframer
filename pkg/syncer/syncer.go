@@ -261,6 +261,13 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	var thinkRating float64
 	nextErrorCount := currentErrorCount
 
+	// put it in the item as "deframer:title_original"
+	// we technically don't need it here - but helps decoupling the trend miner loop
+	// usually we don't persist the xml with the "deframer:..." this is an exception here
+	// so that we don't technically need a thinker result
+	feeds.SetExtension(item, customPrefix, "title_original", item.Title)
+	feeds.SetExtension(item, customPrefix, "description_original", item.Description)
+
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
 			// worker is shutting down don't store this as an error
@@ -340,136 +347,30 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 		item.Description = res.DescriptionCorrected
 	}
 
-	// Add the reason
+	// Append the reason to the description
 	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
 
-	if item.Content != "" {
-		// tagesschau uses "content:encoded"
-		// let's try to grab any image and keep the title/description
-		mediaData, err := transformContent(item.Content)
-		if err == nil && mediaData.URL != "" {
-			// s.logger.Debug("removed content:encoded", "url", item.Link)
-			item.Content = ""
+	var mediaData *MediaData
 
-			if item.Extensions == nil {
-				item.Extensions = make(map[string]map[string][]ext.Extension)
-			}
-			if item.Extensions["media"] == nil {
-				item.Extensions["media"] = make(map[string][]ext.Extension)
-			}
-
-			// <media:credit> always delete this
-			delete(item.Extensions["media"], "credit")
-
-			attrs := map[string]string{
-				"url":    mediaData.URL,
-				"medium": mediaData.Medium,
-			}
-			if mediaData.Width > 0 {
-				attrs["width"] = fmt.Sprintf("%d", mediaData.Width)
-			}
-			if mediaData.Height > 0 {
-				attrs["height"] = fmt.Sprintf("%d", mediaData.Height)
-			}
-
-			item.Extensions["media"]["content"] = []ext.Extension{{
-				Name:  "content",
-				Attrs: attrs,
-			}}
-
-			if len(mediaData.Alt) > 0 {
-				item.Extensions["media"]["description"] = []ext.Extension{{
-					Name:  "description",
-					Value: mediaData.Alt,
-				}}
-			}
-		}
-	}
-
-	if len(item.Extensions["media"]["content"]) == 0 && len(item.Enclosures) > 0 {
-		// spiegel uses this
-		for _, enc := range item.Enclosures {
-			if strings.HasPrefix(enc.Type, "image/") && enc.URL != "" {
-				if item.Extensions == nil {
-					item.Extensions = make(map[string]map[string][]ext.Extension)
-				}
-				if item.Extensions["media"] == nil {
-					item.Extensions["media"] = make(map[string][]ext.Extension)
-				}
-
-				if len(item.Extensions["media"]["content"]) == 0 {
-					// <media:credit> always delete this
-					delete(item.Extensions["media"], "credit")
-
-					w, h := parseDimensions(enc.URL)
-					attrs := map[string]string{
-						"url":    enc.URL,
-						"medium": "image",
-					}
-					if w > 0 {
-						attrs["width"] = fmt.Sprintf("%d", w)
-					}
-					if h > 0 {
-						attrs["height"] = fmt.Sprintf("%d", h)
-					}
-
-					item.Extensions["media"]["content"] = []ext.Extension{{
-						Name:  "content",
-						Attrs: attrs,
-					}}
-				}
-				break
-			}
-		}
-	}
-
+	// If we don't have existing media content, try to extract it
 	if len(item.Extensions["media"]["content"]) == 0 {
-		// apollo-news uses this
-		target := res.DescriptionOriginal
-		mediaData, err := transformContent(target)
-		if err != nil || mediaData.URL == "" {
-			target = res.TitleOriginal
-			mediaData, err = transformContent(target)
+		if mediaData = s.extractFromContentTag(item); mediaData != nil {
+			item.Content = ""
+		} else if mediaData = s.extractFromEnclosureTag(item); mediaData != nil {
+			// found in enclosure
+		} else {
+			mediaData = s.extractFromDescriptionFallback(res)
 		}
+	}
 
-		if err == nil && mediaData.URL != "" {
-			if item.Extensions == nil {
-				item.Extensions = make(map[string]map[string][]ext.Extension)
-			}
-			if item.Extensions["media"] == nil {
-				item.Extensions["media"] = make(map[string][]ext.Extension)
-			}
-
-			delete(item.Extensions["media"], "credit")
-
-			attrs := map[string]string{
-				"url":    mediaData.URL,
-				"medium": mediaData.Medium,
-			}
-			if mediaData.Width > 0 {
-				attrs["width"] = fmt.Sprintf("%d", mediaData.Width)
-			}
-			if mediaData.Height > 0 {
-				attrs["height"] = fmt.Sprintf("%d", mediaData.Height)
-			}
-
-			item.Extensions["media"]["content"] = []ext.Extension{{
-				Name:  "content",
-				Attrs: attrs,
-			}}
-
-			if len(mediaData.Alt) > 0 {
-				item.Extensions["media"]["description"] = []ext.Extension{{
-					Name:  "description",
-					Value: mediaData.Alt,
-				}}
-			}
-		}
+	if mediaData != nil {
+		s.applyMediaData(item, mediaData)
 	}
 
 	if item.Extensions != nil {
 		if mediaExt, ok := item.Extensions["media"]; ok {
 			if _, hasGroup := mediaExt["group"]; hasGroup {
+				// sometimes media is organized in a media:group
 				delete(mediaExt, "group")
 				s.logger.Info("removed media:group tag", "url", item.Link)
 			}
@@ -477,6 +378,81 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 	}
 
 	return nil
+}
+
+func (s *Syncer) extractFromContentTag(item *gofeed.Item) *MediaData {
+	if item.Content == "" {
+		return nil
+	}
+	mediaData, err := transformContent(item.Content)
+	if err == nil && mediaData.URL != "" {
+		return &mediaData
+	}
+	return nil
+}
+
+func (s *Syncer) extractFromEnclosureTag(item *gofeed.Item) *MediaData {
+	for _, enc := range item.Enclosures {
+		if strings.HasPrefix(enc.Type, "image/") && enc.URL != "" {
+			w, h := parseDimensions(enc.URL)
+			return &MediaData{
+				URL:    enc.URL,
+				Medium: "image",
+				Width:  w,
+				Height: h,
+			}
+		}
+	}
+	return nil
+}
+
+func (s *Syncer) extractFromDescriptionFallback(res *database.ThinkResult) *MediaData {
+	target := res.DescriptionOriginal
+	mediaData, err := transformContent(target)
+	if err != nil || mediaData.URL == "" {
+		target = res.TitleOriginal
+		mediaData, err = transformContent(target)
+	}
+
+	if err == nil && mediaData.URL != "" {
+		return &mediaData
+	}
+	return nil
+}
+
+func (s *Syncer) applyMediaData(item *gofeed.Item, data *MediaData) {
+	if item.Extensions == nil {
+		item.Extensions = make(map[string]map[string][]ext.Extension)
+	}
+	if item.Extensions["media"] == nil {
+		item.Extensions["media"] = make(map[string][]ext.Extension)
+	}
+
+	// <media:credit> always delete this
+	delete(item.Extensions["media"], "credit")
+
+	attrs := map[string]string{
+		"url":    data.URL,
+		"medium": data.Medium,
+	}
+	if data.Width > 0 {
+		attrs["width"] = fmt.Sprintf("%d", data.Width)
+	}
+	if data.Height > 0 {
+		attrs["height"] = fmt.Sprintf("%d", data.Height)
+	}
+
+	item.Extensions["media"]["content"] = []ext.Extension{{
+		Name:  "content",
+		Attrs: attrs,
+	}}
+
+	if len(data.Alt) > 0 {
+		item.Extensions["media"]["description"] = []ext.Extension{{
+			Name:  "description",
+			Value: data.Alt,
+		}}
+	}
 }
 
 func (s *Syncer) extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
