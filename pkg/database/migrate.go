@@ -38,6 +38,11 @@ func Migrate(db *gorm.DB, forced bool) error {
 		return fmt.Errorf("failed to create extension uuid-ossp: %w", err)
 	}
 
+	// Ensure the Extension for pg_duckdb exists
+	if err := db.Exec(`CREATE EXTENSION IF NOT EXISTS "pg_duckdb";`).Error; err != nil {
+		return fmt.Errorf("failed to create extension pg_duckdb: %w. are you using the pgduckdb/pgduckdb docker image or a postgres build with pg_duckdb? check https://github.com/duckdb/pg_duckdb and https://pgxman.com/x/pg_duckdb", err)
+	}
+
 	// AutoMigrate the schema
 	if err := db.AutoMigrate(&Feed{}, &CachedFeed{}, &Item{}, &FeedSchedule{}); err != nil {
 		return err
