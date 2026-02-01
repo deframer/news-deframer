@@ -2,12 +2,15 @@
 set -e
 set -o pipefail
 
-# Defaults based on docker-compose.yml
-DATABASE=${1:-deframer}
+if [ -z "$1" ] || [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    echo "Usage: $0 <input_file> [database_name]"
+    exit 1
+fi
+
+INPUT_FILE="$1"
+DATABASE=${2:-deframer}
 DB_USER=${POSTGRES_USER:-deframer}
 DB_PASSWORD=${POSTGRES_PASSWORD:-deframer}
-
-INPUT_FILE="${DATABASE}.dump"
 
 if [ ! -f "${INPUT_FILE}" ]; then
     echo "Error: Dump file '${INPUT_FILE}' not found."

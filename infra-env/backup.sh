@@ -7,7 +7,7 @@ DATABASE=${1:-deframer}
 DB_USER=${POSTGRES_USER:-deframer}
 DB_PASSWORD=${POSTGRES_PASSWORD:-deframer}
 
-OUTPUT_FILE="${DATABASE}.dump"
+OUTPUT_FILE="${DATABASE}-$(date +%Y-%m-%d-%H-%M).dump"
 
 echo "Starting backup for database: ${DATABASE}..."
 
