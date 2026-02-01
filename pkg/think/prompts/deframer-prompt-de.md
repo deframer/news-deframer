@@ -24,7 +24,7 @@ Das JSON muss die folgenden Felder enthalten:
 12. **`hyper_stimulus_reason`** (String): Identifiziere stilistische Exzesse (z.B. "exzessive Großschreibung", "mehrfache Ausrufezeichen") in max. 10 Wörtern.
 13. **`speculative`** (Float, 0.0 - 1.0): Wie hoch ist der Anteil an unbestätigten Behauptungen, Gerüchten, "angeblichen" Beweisen oder Spekulationen (inkl. Konjunktiv: hätte, sollte, könnte) ohne faktische Basis?
 14. **`speculative_reason`** (String): Identifikation der Unsicherheitsquelle (z. B. "quellenlose Gerüchte", "Zukunftsprognose", "Konjunktiv: hätte/sollte/könnte") in max. 10 Wörtern.
-15. **`overall`** (Float, 0.0 - 1.0 mit 0.0 = empfohlen und 1.0 = nicht empfohlen): Ein aggregierter Gesamtwert, der zur Entscheidung dient, ob das Lesen des Artikels empfohlen wird.
+15. **`overall`** (Float, 0.0 - 1.0): Ein aggregierter Gesamtwert, der zur Entscheidung dient, ob der Artikel verworfen werden soll.
 16. **`overall_reason`** (String): Eine holistische Zusammenfassung, warum der Text diese spezifischen Bewertungen erhalten hat, in maximal 20 Wörtern.
 
 **Regeln:**
