@@ -166,7 +166,6 @@ type Item struct {
 	ThinkError      *string       `gorm:"type:text;null"`
 	ThinkErrorCount int           `gorm:"not null;default:0"`
 	ThinkRating     float64       `gorm:"not null;default:0.0"`
-	MiningDoneAt    *time.Time    `gorm:"index"`
 	Categories      StringArray   `gorm:"type:text[];not null;default:'{}'"`
 }
 
