@@ -59,6 +59,8 @@ services:
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
       - LOG_LEVEL=${LOG_LEVEL:-info}
+      # we download the models on demand
+      - SPACY_MODELS=${SPACY_MODELS:-en de es}
 
 volumes:
   postgres_data:
