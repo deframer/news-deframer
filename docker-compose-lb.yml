@@ -13,7 +13,6 @@ services:
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
-      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
       - BASIC_AUTH_USER=${BASIC_AUTH_USER:-}
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD:-}
     deploy:
@@ -49,7 +48,6 @@ services:
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
       - LOG_LEVEL=${LOG_LEVEL:-debug}
-      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
     deploy:
       replicas: ${DOCKER_WORKER_REPLICAS:-2}
     networks:

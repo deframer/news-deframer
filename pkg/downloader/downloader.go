@@ -8,8 +8,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
@@ -69,28 +67,6 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 		}
 
 		return resp.Body, nil
-
-	case "file", "":
-		if d.cfg.LocalFeedFilesDir == "" {
-			return nil, fmt.Errorf("unsupported scheme %s", feed.Scheme)
-		}
-
-		// Use os.OpenRoot to scope file access (Go >= 1.24)
-		root, err := os.OpenRoot(d.cfg.LocalFeedFilesDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open local feed root: %w", err)
-		}
-		defer func() { _ = root.Close() }()
-
-		// URL paths start with '/', strip it to make it relative to root
-		relPath := strings.TrimPrefix(feed.Path, "/")
-		f, err := root.Open(relPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open file %q: %w", relPath, err)
-		}
-		// We return the file handle; caller is responsible for closing it.
-		// Note: root can be closed here because 'f' keeps the file open.
-		return f, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported scheme %s", feed.Scheme)

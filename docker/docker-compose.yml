@@ -19,7 +19,7 @@ services:
       retries: 5
 
   service:
-    image: ghcr.io/egandro/news-deframer/service:latest
+    image: ghcr.io/deframer/news-deframer/service:latest
     restart: unless-stopped
     depends_on:
       postgres:
@@ -28,15 +28,14 @@ services:
       - PORT=${PORT:-8080}
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
-      - LOG_LEVEL=${LOG_LEVEL:-debug}
-      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
       - BASIC_AUTH_USER=${BASIC_AUTH_USER:-}
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD:-}
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
 
   worker:
-    image: ghcr.io/egandro/news-deframer/worker:latest
+    image: ghcr.io/deframer/news-deframer/worker:latest
     restart: unless-stopped
     depends_on:
       postgres:
@@ -44,13 +43,22 @@ services:
     environment:
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
-      - LOG_LEVEL=${LOG_LEVEL:-debug}
-      - LOCAL_FEED_FILES_DIR=${LOCAL_FEED_FILES_DIR:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
       - LLM_TYPE=${LLM_TYPE:-}
       - LLM_MODEL=${LLM_MODEL:-}
       - LLM_API_KEY=${LLM_API_KEY:-}
       - LLM_BASE_URL=${LLM_BASE_URL:-}
 
+  miner:
+    image:  ghcr.io/deframer/news-deframer-mining/miner:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+      - LOG_DATABASE=${LOG_DATABASE:-false}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+
 volumes:
   postgres_data:
-

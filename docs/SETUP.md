@@ -27,6 +27,7 @@
 - Add the example feeds `cat feed-example.json | docker compose exec -T  worker admin feed import`
 - List `docker compose exec worker admin feed list`
 - Force a Sync `docker compose exec worker admin feed sync-all`
+- Force a Miner Run `docker compose exec worker admin feed mine-all`
 You can manage feeds using the `admin` CLI tool inside the running container.
 
 ## RSS Proxy Usage

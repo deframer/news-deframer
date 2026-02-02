@@ -1,5 +1,4 @@
-APP_NAME := news-deframer
-DOCKER_REPO := egandro
+DOCKER_REPO := ghcr.io/deframer/news-deframer
 BUILD_DIR := bin
 CMD_DIR := cmd
 DOCKER_COMPOSE_FILE ?= docker-compose.yml

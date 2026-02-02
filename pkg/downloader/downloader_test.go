@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/deframer/news-deframer/pkg/config"
@@ -35,50 +33,29 @@ func TestDownloadRSSFeed_HTTP(t *testing.T) {
 	assert.Equal(t, "mock content", string(content))
 }
 
-func TestDownloadRSSFeed_File(t *testing.T) {
-	// Create temp file
-	tmpDir := t.TempDir()
-	tmpFile := filepath.Join(tmpDir, "test.xml")
-	err := os.WriteFile(tmpFile, []byte("file content"), 0644)
-	assert.NoError(t, err)
-
+func TestDownloadRSSFeed_UnsupportedScheme(t *testing.T) {
 	ctx := context.Background()
-	d := NewDownloader(ctx, &config.Config{
-		LocalFeedFilesDir: tmpDir,
-	})
+	d := NewDownloader(ctx, &config.Config{})
 
-	// Test with file path (relative to root)
-	u1, err := url.Parse("test.xml")
-	assert.NoError(t, err)
-	rc1, err := d.DownloadRSSFeed(ctx, u1)
-	assert.NoError(t, err)
-	defer func() { _ = rc1.Close() }()
-	content1, err := io.ReadAll(rc1)
-	assert.NoError(t, err)
-	assert.Equal(t, "file content", string(content1))
+	tests := []struct {
+		url string
+		err string
+	}{
+		{"file:///tmp/test", "unsupported scheme file"},
+		{"invalid://test", "unsupported scheme invalid"},
+	}
 
-	// Test with file:// prefix (path /test.xml relative to root)
-	u2, err := url.Parse("file:///test.xml")
-	assert.NoError(t, err)
-	rc2, err := d.DownloadRSSFeed(ctx, u2)
-	assert.NoError(t, err)
-	defer func() { _ = rc2.Close() }()
-	content2, err := io.ReadAll(rc2)
-	assert.NoError(t, err)
-	assert.Equal(t, "file content", string(content2))
-}
+	for _, tt := range tests {
+		t.Run(tt.url, func(t *testing.T) {
+			u, err := url.Parse(tt.url)
+			assert.NoError(t, err)
 
-func TestDownloadRSSFeed_File_Disabled(t *testing.T) {
-	ctx := context.Background()
-	d := NewDownloader(ctx, &config.Config{
-		LocalFeedFilesDir: "",
-	})
-
-	// Even if the file existed, it should fail due to config
-	u, err := url.Parse("file:///tmp/test.xml")
-	assert.NoError(t, err)
-	_, err = d.DownloadRSSFeed(ctx, u)
-	assert.Error(t, err)
+			rc, err := d.DownloadRSSFeed(ctx, u)
+			assert.Error(t, err)
+			assert.Nil(t, rc)
+			assert.EqualError(t, err, tt.err)
+		})
+	}
 }
 
 func TestResolveRedirect(t *testing.T) {
