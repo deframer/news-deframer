@@ -40,11 +40,11 @@ func Migrate(db *gorm.DB, forced bool) error {
 
 	// Ensure the Extension for pg_duckdb exists
 	if err := db.Exec(`CREATE EXTENSION IF NOT EXISTS "pg_duckdb";`).Error; err != nil {
-		return fmt.Errorf("failed to create extension pg_duckdb: %w. are you using the pgduckdb/pgduckdb docker image or a postgres build with pg_duckdb? check https://github.com/duckdb/pg_duckdb and https://pgxman.com/x/pg_duckdb", err)
+		return fmt.Errorf("failed to create extension pg_duckdb: %w. Are you using the pgduckdb/pgduckdb docker image or a postgres build with pg_duckdb? Check https://github.com/duckdb/pg_duckdb and https://pgxman.com/x/pg_duckdb", err)
 	}
 
 	// AutoMigrate the schema
-	if err := db.AutoMigrate(&Feed{}, &CachedFeed{}, &Item{}, &FeedSchedule{}); err != nil {
+	if err := db.AutoMigrate(&Feed{}, &CachedFeed{}, &Item{}, &FeedSchedule{}, &Trend{}); err != nil {
 		return err
 	}
 
@@ -58,6 +58,11 @@ func Migrate(db *gorm.DB, forced bool) error {
 		END IF;
 		IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_feed_schedules_feeds') THEN
 			ALTER TABLE feed_schedules ADD CONSTRAINT fk_feed_schedules_feeds FOREIGN KEY (id) REFERENCES feeds(id) ON DELETE CASCADE ON UPDATE CASCADE;
+		END IF;
+		IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_trends_items') THEN
+		END IF;
+		IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_trends_feeds') THEN
+			ALTER TABLE trends ADD CONSTRAINT fk_trends_feeds FOREIGN KEY (feed_id) REFERENCES feeds(id) ON DELETE CASCADE ON UPDATE CASCADE;
 		END IF;
 	END $$;`)
 
