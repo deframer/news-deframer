@@ -27,6 +27,14 @@ func TestDummy_Run(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestFail_Run(t *testing.T) {
+	f := newFail()
+
+	_, err := f.Run("deframer", "en", Request{})
+	assert.Error(t, err)
+	assert.EqualError(t, err, "intentionally failed")
+}
+
 func TestNew_Gemini(t *testing.T) {
 	t.Skip("skipping test")
 

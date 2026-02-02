@@ -21,6 +21,8 @@ func New(ctx context.Context, cfg *config.Config) (Think, error) {
 	switch t {
 	case config.Dummy:
 		return newDummy(), nil
+	case config.Fail:
+		return newFail(), nil
 	case config.Gemini:
 		return newGemini(ctx, cfg.LLM_Model, cfg.LLM_APIKey)
 	case config.OpenAI:

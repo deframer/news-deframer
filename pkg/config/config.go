@@ -31,6 +31,7 @@ const (
 
 const (
 	Dummy LLMType = iota
+	Fail
 	Gemini
 	OpenAI
 )
@@ -39,6 +40,8 @@ func (t *LLMType) UnmarshalText(text []byte) error {
 	switch strings.ToLower(string(text)) {
 	case "dummy":
 		*t = Dummy
+	case "fail":
+		*t = Fail
 	case "gemini":
 		*t = Gemini
 	case "openai":
