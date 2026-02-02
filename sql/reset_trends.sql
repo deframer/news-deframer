@@ -1,0 +1,8 @@
+BEGIN TRANSACTION;
+
+-- SELECT * FROM trends LIMIT 10;
+
+DELETE FROM trends;
+
+
+ROLLBACK;
