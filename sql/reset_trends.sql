@@ -4,5 +4,6 @@ BEGIN TRANSACTION;
 
 DELETE FROM trends;
 
+UPDATE items SET mining_done_at = NULL;
 
 ROLLBACK;
