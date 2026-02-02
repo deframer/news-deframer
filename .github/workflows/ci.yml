@@ -17,7 +17,7 @@ jobs:
       PGPASSWORD: deframer
     services:
       postgres:
-        image: postgres:17
+        image: pgduckdb/pgduckdb:18-main
         env:
           POSTGRES_USER: deframer
           POSTGRES_PASSWORD: ${{ env.PGPASSWORD }}
