@@ -149,6 +149,9 @@ func (r *repository) UpsertItem(item *Item) error {
 		var urlConflict Item
 		if err := tx.Where("feed_id = ? AND url = ? AND hash != ?", item.FeedID, item.URL, item.Hash).First(&urlConflict).Error; err == nil {
 			slog.Warn("URL conflict detected, deleting old version to allow update", "url", item.URL, "old_hash", urlConflict.Hash, "new_hash", item.Hash)
+			if err := tx.Where("item_id = ?", urlConflict.ID).Delete(&Trend{}).Error; err != nil {
+				return err
+			}
 			if err := tx.Delete(&urlConflict).Error; err != nil {
 				return err
 			}
@@ -520,6 +523,10 @@ func (r *repository) PurgeFeedById(id uuid.UUID) error {
 		// 2. Delete FeedSchedule (1:1 with Feed ID)
 		if err := tx.Where("id = ?", id).Delete(&FeedSchedule{}).Error; err != nil {
 			return fmt.Errorf("failed to delete feed schedule: %w", err)
+		}
+		// Delete Trends (N:1 with Feed ID)
+		if err := tx.Where("feed_id = ?", id).Delete(&Trend{}).Error; err != nil {
+			return fmt.Errorf("failed to delete trends: %w", err)
 		}
 		// 3. Delete Items (N:1 with Feed ID)
 		if err := tx.Where("feed_id = ?", id).Delete(&Item{}).Error; err != nil {

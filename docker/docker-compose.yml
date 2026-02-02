@@ -1,7 +1,10 @@
 ---
 services:
   postgres:
-    image: postgres:18
+    # this is postgres with the pg_duckdb extension precompiled
+    # https://pgxman.com/x/pg_duckdb
+    # https://github.com/duckdb/pg_duckdb
+    image: pgduckdb/pgduckdb:18-main
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-deframer}
