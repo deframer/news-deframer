@@ -816,7 +816,7 @@ func TestEnqueueSync(t *testing.T) {
 
 		// Lock for 1 hour
 		future := time.Now().Add(time.Hour)
-		schedule := FeedSchedule{ID: feed.ID, LockedUntil: &future}
+		schedule := FeedSchedule{ID: feed.ID, ThinkerLockedUntil: &future}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
 		// Try to sync with 5 min lock
@@ -826,7 +826,7 @@ func TestEnqueueSync(t *testing.T) {
 		// Verify lock was NOT updated (should still be ~1 hour from now)
 		var updated FeedSchedule
 		assert.NoError(t, tx.First(&updated, feed.ID).Error)
-		assert.WithinDuration(t, future, *updated.LockedUntil, 5*time.Second)
+		assert.WithinDuration(t, future, *updated.ThinkerLockedUntil, 5*time.Second)
 	})
 
 	t.Run("CreateSchedule", func(t *testing.T) {
@@ -843,10 +843,9 @@ func TestEnqueueSync(t *testing.T) {
 		var schedule FeedSchedule
 		err = tx.Where("id = ?", feed.ID).First(&schedule).Error
 		assert.NoError(t, err)
-		assert.NotNil(t, schedule.NextRunAt)
-		assert.WithinDuration(t, time.Now(), *schedule.NextRunAt, 5*time.Second)
-		assert.Nil(t, schedule.LockedUntil)
-		assert.Nil(t, schedule.LastError)
+		assert.NotNil(t, schedule.NextThinkerAt)
+		assert.WithinDuration(t, time.Now(), *schedule.NextThinkerAt, 5*time.Second)
+		assert.Nil(t, schedule.ThinkerLockedUntil)
 	})
 
 	t.Run("UpdateSchedule_ForceUnlock", func(t *testing.T) {
@@ -859,11 +858,9 @@ func TestEnqueueSync(t *testing.T) {
 
 		// Create existing schedule with a lock (short duration, so it passes the check)
 		future := time.Now().Add(time.Minute)
-		errMsg := "old error"
 		schedule := FeedSchedule{
-			ID:          feed.ID,
-			LockedUntil: &future,
-			LastError:   &errMsg,
+			ID:                 feed.ID,
+			ThinkerLockedUntil: &future,
 		}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
@@ -874,10 +871,9 @@ func TestEnqueueSync(t *testing.T) {
 		var updated FeedSchedule
 		err = tx.Where("id = ?", feed.ID).First(&updated).Error
 		assert.NoError(t, err)
-		assert.NotNil(t, updated.NextRunAt)
-		assert.WithinDuration(t, time.Now(), *updated.NextRunAt, 5*time.Second)
-		assert.Nil(t, updated.LockedUntil) // Should be nilled out
-		assert.Nil(t, updated.LastError)   // Should be nilled out
+		assert.NotNil(t, updated.NextThinkerAt)
+		assert.WithinDuration(t, time.Now(), *updated.NextThinkerAt, 5*time.Second)
+		assert.Nil(t, updated.ThinkerLockedUntil) // Should be nilled out
 	})
 }
 
@@ -899,11 +895,9 @@ func TestRemoveSync(t *testing.T) {
 
 		// Create schedule
 		now := time.Now()
-		errMsg := "some error"
 		schedule := FeedSchedule{
-			ID:        feed.ID,
-			NextRunAt: &now,
-			LastError: &errMsg,
+			ID:            feed.ID,
+			NextThinkerAt: &now,
 		}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
@@ -913,9 +907,8 @@ func TestRemoveSync(t *testing.T) {
 		var updated FeedSchedule
 		err = tx.Where("id = ?", feed.ID).First(&updated).Error
 		assert.NoError(t, err)
-		assert.Nil(t, updated.NextRunAt)
-		assert.Nil(t, updated.LockedUntil)
-		assert.Nil(t, updated.LastError)
+		assert.Nil(t, updated.NextThinkerAt)
+		assert.Nil(t, updated.ThinkerLockedUntil)
 	})
 
 	t.Run("RemoveNonExistent", func(t *testing.T) {
@@ -958,7 +951,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 
 		// Create schedule due now
 		now := time.Now().Add(-1 * time.Minute)
-		schedule := FeedSchedule{ID: feed.ID, NextRunAt: &now}
+		schedule := FeedSchedule{ID: feed.ID, NextThinkerAt: &now}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
 		f, err := repo.BeginFeedUpdate(15 * time.Minute)
@@ -969,8 +962,8 @@ func TestBeginFeedUpdate(t *testing.T) {
 		// Verify locked
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
-		if assert.NotNil(t, s.LockedUntil) {
-			assert.True(t, s.LockedUntil.After(time.Now()))
+		if assert.NotNil(t, s.ThinkerLockedUntil) {
+			assert.True(t, s.ThinkerLockedUntil.After(time.Now()))
 		}
 	})
 
@@ -984,7 +977,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		now := time.Now().Add(-1 * time.Minute)
-		schedule := FeedSchedule{ID: feed.ID, NextRunAt: &now}
+		schedule := FeedSchedule{ID: feed.ID, NextThinkerAt: &now}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
 		f, err := repo.BeginFeedUpdate(15 * time.Minute)
@@ -994,7 +987,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 		// Verify schedule cleared (RemoveSync logic)
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
-		assert.Nil(t, s.NextRunAt)
+		assert.Nil(t, s.NextThinkerAt)
 	})
 
 	t.Run("DueFeed_Deleted", func(t *testing.T) {
@@ -1008,7 +1001,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 		assert.NoError(t, tx.Delete(&feed).Error)
 
 		now := time.Now().Add(-1 * time.Minute)
-		schedule := FeedSchedule{ID: feed.ID, NextRunAt: &now}
+		schedule := FeedSchedule{ID: feed.ID, NextThinkerAt: &now}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
 		f, err := repo.BeginFeedUpdate(15 * time.Minute)
@@ -1018,7 +1011,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 		// Verify schedule cleared
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
-		assert.Nil(t, s.NextRunAt)
+		assert.Nil(t, s.NextThinkerAt)
 	})
 }
 
@@ -1040,7 +1033,7 @@ func TestEndFeedUpdate(t *testing.T) {
 
 		// Create locked schedule
 		future := time.Now().Add(time.Hour)
-		schedule := FeedSchedule{ID: feed.ID, LockedUntil: &future}
+		schedule := FeedSchedule{ID: feed.ID, ThinkerLockedUntil: &future}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
 		pollingInterval := 10 * time.Minute
@@ -1049,11 +1042,10 @@ func TestEndFeedUpdate(t *testing.T) {
 
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
-		assert.Nil(t, s.LockedUntil)
-		assert.Nil(t, s.LastError)
-		assert.NotNil(t, s.NextRunAt)
+		assert.Nil(t, s.ThinkerLockedUntil)
+		assert.NotNil(t, s.NextThinkerAt)
 		// Should be scheduled for future (now + pollingInterval)
-		assert.WithinDuration(t, time.Now().Add(pollingInterval), *s.NextRunAt, 5*time.Second)
+		assert.WithinDuration(t, time.Now().Add(pollingInterval), *s.NextThinkerAt, 5*time.Second)
 	})
 
 	t.Run("With_Error", func(t *testing.T) {
@@ -1073,9 +1065,7 @@ func TestEndFeedUpdate(t *testing.T) {
 
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
-		if assert.NotNil(t, s.LastError) {
-			assert.Equal(t, "something went wrong", *s.LastError)
-		}
+		assert.Nil(t, s.NextThinkerAt)
 	})
 
 	t.Run("Polling_Disabled", func(t *testing.T) {
@@ -1088,7 +1078,7 @@ func TestEndFeedUpdate(t *testing.T) {
 
 		// Schedule was due now
 		now := time.Now()
-		schedule := FeedSchedule{ID: feed.ID, NextRunAt: &now}
+		schedule := FeedSchedule{ID: feed.ID, NextThinkerAt: &now}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
 		err := repo.EndFeedUpdate(feed.ID, nil, time.Minute)
@@ -1096,8 +1086,8 @@ func TestEndFeedUpdate(t *testing.T) {
 
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
-		assert.Nil(t, s.LockedUntil)
-		assert.Nil(t, s.NextRunAt)
+		assert.Nil(t, s.ThinkerLockedUntil)
+		assert.Nil(t, s.NextThinkerAt)
 	})
 }
 
@@ -1434,8 +1424,8 @@ func TestFindFeedScheduleById(t *testing.T) {
 
 		now := time.Now()
 		schedule := FeedSchedule{
-			ID:        feed.ID,
-			NextRunAt: &now,
+			ID:            feed.ID,
+			NextThinkerAt: &now,
 		}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
@@ -1443,7 +1433,7 @@ func TestFindFeedScheduleById(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, found)
 		assert.Equal(t, feed.ID, found.ID)
-		assert.WithinDuration(t, now, *found.NextRunAt, time.Second)
+		assert.WithinDuration(t, now, *found.NextThinkerAt, time.Second)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {

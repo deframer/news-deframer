@@ -33,6 +33,7 @@ type Repository interface {
 	PurgeFeedById(id uuid.UUID) error
 	EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error
 	EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error
+	RemoveMine(id uuid.UUID) error
 	RemoveSync(id uuid.UUID) error
 	BeginFeedUpdate(lockDuration time.Duration) (*Feed, error)
 	EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval time.Duration) error
@@ -189,7 +190,7 @@ func (r *repository) enqueueSyncTx(tx *gorm.DB, id uuid.UUID, pollingInterval ti
 		// Check if the feed is locked for longer than the requested duration
 		var count int64
 		if err := tx.Model(&FeedSchedule{}).
-			Where("id = ? AND locked_until > NOW() + "+lockInterval, id).
+			Where("id = ? AND thinker_locked_until > NOW() + "+lockInterval, id).
 			Count(&count).Error; err != nil {
 			return err
 		}
@@ -207,21 +208,19 @@ func (r *repository) enqueueSyncTx(tx *gorm.DB, id uuid.UUID, pollingInterval ti
 	if err := tx.Where("id = ?", id).First(&schedule).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return tx.Model(&FeedSchedule{}).Create(map[string]interface{}{
-				"id":           id,
-				"next_run_at":  gorm.Expr("NOW() + " + runInterval),
-				"locked_until": nil,
-				"last_error":   nil,
-				"updated_at":   gorm.Expr("NOW()"),
+				"id":                   id,
+				"next_thinker_at":      gorm.Expr("NOW() + " + runInterval),
+				"thinker_locked_until": nil,
+				"updated_at":           gorm.Expr("NOW()"),
 			}).Error
 		}
 		return err
 	}
 
 	return tx.Model(&schedule).Updates(map[string]interface{}{
-		"next_run_at":  gorm.Expr("NOW() + " + runInterval),
-		"locked_until": nil,
-		"last_error":   nil,
-		"updated_at":   gorm.Expr("NOW()"),
+		"next_thinker_at":      gorm.Expr("NOW() + " + runInterval),
+		"thinker_locked_until": nil,
+		"updated_at":           gorm.Expr("NOW()"),
 	}).Error
 }
 
@@ -262,7 +261,6 @@ func (r *repository) enqueueMineTx(tx *gorm.DB, id uuid.UUID, miningInterval tim
 				"id":                  id,
 				"next_mining_at":      gorm.Expr("NOW() + " + runInterval),
 				"mining_locked_until": nil,
-				"mining_error":        nil,
 				"updated_at":          gorm.Expr("NOW()"),
 			}).Error
 		}
@@ -272,7 +270,27 @@ func (r *repository) enqueueMineTx(tx *gorm.DB, id uuid.UUID, miningInterval tim
 	return tx.Model(&schedule).Updates(map[string]interface{}{
 		"next_mining_at":      gorm.Expr("NOW() + " + runInterval),
 		"mining_locked_until": nil,
-		"mining_error":        nil,
+		"updated_at":          gorm.Expr("NOW()"),
+	}).Error
+}
+
+func (r *repository) RemoveMine(id uuid.UUID) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return r.removeMineTx(tx, id)
+	})
+}
+
+func (r *repository) removeMineTx(tx *gorm.DB, id uuid.UUID) error {
+	var count int64
+	if err := tx.Model(&FeedSchedule{}).Where("id = ?", id).Count(&count).Error; err != nil {
+		return err
+	}
+	if count == 0 {
+		return nil
+	}
+	return tx.Model(&FeedSchedule{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"next_mining_at":      nil,
+		"mining_locked_until": nil,
 		"updated_at":          gorm.Expr("NOW()"),
 	}).Error
 }
@@ -292,10 +310,9 @@ func (r *repository) removeSyncTx(tx *gorm.DB, id uuid.UUID) error {
 		return nil
 	}
 	return tx.Model(&FeedSchedule{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"next_run_at":  nil,
-		"locked_until": nil,
-		"last_error":   nil,
-		"updated_at":   gorm.Expr("NOW()"),
+		"next_thinker_at":      nil,
+		"thinker_locked_until": nil,
+		"updated_at":           gorm.Expr("NOW()"),
 	}).Error
 }
 
@@ -304,9 +321,9 @@ func (r *repository) BeginFeedUpdate(lockDuration time.Duration) (*Feed, error) 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
 		var schedule FeedSchedule
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
-			Where("next_run_at <= NOW()").
-			Where("locked_until IS NULL OR locked_until < NOW()"). // another worker / thread
-			Order("next_run_at ASC").                              // the oldest not scheduled
+			Where("next_thinker_at <= NOW()").
+			Where("thinker_locked_until IS NULL OR thinker_locked_until < NOW()"). // another worker / thread
+			Order("next_thinker_at ASC").                                          // the oldest not scheduled
 			First(&schedule).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil
@@ -330,8 +347,8 @@ func (r *repository) BeginFeedUpdate(lockDuration time.Duration) (*Feed, error) 
 		interval := fmt.Sprintf("INTERVAL '%f seconds'", lockDuration.Seconds())
 		// Lock the feed
 		if err := tx.Model(&schedule).Updates(map[string]interface{}{
-			"locked_until": gorm.Expr("NOW() + " + interval), // lock
-			"updated_at":   gorm.Expr("NOW()"),
+			"thinker_locked_until": gorm.Expr("NOW() + " + interval), // lock
+			"updated_at":           gorm.Expr("NOW()"),
 		}).Error; err != nil {
 			return err
 		}
@@ -350,17 +367,15 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 		}
 
 		updates := map[string]interface{}{
-			"locked_until": nil,
-			"updated_at":   gorm.Expr("NOW()"),
+			"thinker_locked_until": nil,
+			"updated_at":           gorm.Expr("NOW()"),
 		}
 
 		if jobErr != nil {
-			updates["last_error"] = jobErr.Error()
-			updates["next_run_at"] = nil
+			updates["next_thinker_at"] = nil
 		} else {
-			updates["last_error"] = nil
 			if !feed.Polling {
-				updates["next_run_at"] = nil
+				updates["next_thinker_at"] = nil
 			}
 		}
 

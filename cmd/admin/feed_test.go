@@ -117,7 +117,7 @@ func TestFeedCommands(t *testing.T) {
 	assert.Len(t, feeds, 1)
 	assert.False(t, feeds[0].Enabled)
 	if feeds[0].FeedSchedule != nil {
-		assert.Nil(t, feeds[0].FeedSchedule.NextRunAt)
+		assert.Nil(t, feeds[0].FeedSchedule.NextThinkerAt)
 	}
 
 	// 6. Enable Feed
@@ -154,7 +154,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 	if feeds[0].FeedSchedule != nil {
-		assert.Nil(t, feeds[0].FeedSchedule.NextRunAt)
+		assert.Nil(t, feeds[0].FeedSchedule.NextThinkerAt)
 	}
 
 	// 11. Sync Feed (Create Schedule for Delete test)
@@ -175,41 +175,11 @@ func TestFeedCommands(t *testing.T) {
 	assert.Len(t, feeds, 1)
 	assert.True(t, feeds[0].DeletedAt.Valid)
 	if feeds[0].FeedSchedule != nil {
-		assert.Nil(t, feeds[0].FeedSchedule.NextRunAt)
+		assert.Nil(t, feeds[0].FeedSchedule.NextThinkerAt)
 	}
 
 	// 13a. Purge Feed (Must resolve deleted feeds too)
 	out = captureOutput(func() {
-		// We deleted it in step 12, so resolveFeed needs to find it even if deleted
-		// The current deleteFeed implementation uses resolveFeed(input, true) which means onlyEnabled=true? No wait.
-		// Let's check resolveFeed implementation in feed.go
-		// resolveFeed(input, true) -> FindFeedByUrlAndAvailability(u, true) -> onlyEnabled=true
-		// Wait, deleteFeed calls resolveFeed(input, true).
-		// In step 12 we called deleteFeed(testURL, false). This soft deleted it.
-		// Now we want to purge it.
-		// But deleteFeed calls resolveFeed(input, true). true means onlyEnabled?
-		// Let's check resolveFeed signature: resolveFeed(input string, onlyEnabled bool)
-		// If we pass true, it calls FindFeedByUrlAndAvailability(u, true).
-		// FindFeedByUrlAndAvailability implementation in MockRepo:
-		// if onlyEnabled && !f.Enabled { continue }
-		// A soft deleted feed is not enabled? Or is it?
-		// In MockRepo:
-		// if f.DeletedAt.Valid { continue } -> It skips deleted feeds!
-
-		// So deleteFeed cannot find a soft-deleted feed by URL if the mock implementation skips deleted ones.
-		// Real implementation of FindFeedByUrlAndAvailability:
-		// query := r.db.Where("url = ?", u.String())
-		// if onlyEnabled { query = query.Where("enabled = ?", true) }
-		// And GORM by default filters out soft deleted records unless Unscoped is used.
-		// So resolveFeed cannot find a soft deleted feed by URL.
-
-		// To test purge, we need to purge an existing (non-deleted) feed, OR we need to use UUID if we want to target a specific one that might be deleted (but resolveFeed tries UUID then URL).
-		// But even for UUID, resolveFeed uses repo.FindFeedById.
-		// Real repo.FindFeedById uses Unscoped(). So it finds deleted ones.
-		// MockRepo.FindFeedById: return f, nil (no check for deleted).
-
-		// So if we use UUID, it should work.
-		// Let's get the UUID first.
 		id := feeds[0].ID
 		deleteFeed(id.String(), true)
 	})
@@ -351,7 +321,7 @@ func TestFeedCommands(t *testing.T) {
 	// 17. Sync All (should trigger sync for all enabled feeds)
 	// Reset schedule for testURL2
 	if f, err := mock.FindFeedByUrlAndAvailability(&url.URL{Scheme: "http", Host: "example.com", Path: "/rss2"}, true); err == nil && f != nil {
-		f.FeedSchedule.NextRunAt = nil
+		f.FeedSchedule.NextThinkerAt = nil
 	}
 
 	out = captureOutput(func() {
@@ -495,7 +465,7 @@ func TestFeedCommands(t *testing.T) {
 	assert.NotNil(t, foundSync)
 	assert.False(t, foundSync.Polling, "Polling should remain false")
 	assert.NotNil(t, foundSync.FeedSchedule)
-	assert.NotNil(t, foundSync.FeedSchedule.NextRunAt, "NextRunAt should be set for the immediate sync")
+	assert.NotNil(t, foundSync.FeedSchedule.NextThinkerAt, "NextThinkerAt should be set for the immediate sync")
 
 	// 22. Test mine on non-mining feed
 	testURL10 := "http://example.com/rss10"
@@ -611,8 +581,8 @@ func (m *MockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lock
 	if f, ok := m.feeds[id]; ok {
 		now := time.Now()
 		f.FeedSchedule = &database.FeedSchedule{
-			ID:        id,
-			NextRunAt: &now,
+			ID:            id,
+			NextThinkerAt: &now,
 		}
 	}
 	return nil
@@ -631,9 +601,16 @@ func (m *MockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockD
 
 func (m *MockRepo) RemoveSync(id uuid.UUID) error {
 	if f, ok := m.feeds[id]; ok && f.FeedSchedule != nil {
-		f.FeedSchedule.NextRunAt = nil
-		f.FeedSchedule.LockedUntil = nil
-		f.FeedSchedule.LastError = nil
+		f.FeedSchedule.NextThinkerAt = nil
+		f.FeedSchedule.ThinkerLockedUntil = nil
+	}
+	return nil
+}
+
+func (m *MockRepo) RemoveMine(id uuid.UUID) error {
+	if f, ok := m.feeds[id]; ok && f.FeedSchedule != nil {
+		f.FeedSchedule.NextMiningAt = nil
+		f.FeedSchedule.MiningLockedUntil = nil
 	}
 	return nil
 }

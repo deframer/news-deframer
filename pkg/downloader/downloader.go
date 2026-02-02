@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -29,12 +30,28 @@ type Downloader interface {
 
 // NewDownloader initializes a new downloader
 func NewDownloader(ctx context.Context, cfg *config.Config) Downloader {
+	// Custom transport to allow more idle connections per host
+	transport := &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}).DialContext,
+		ForceAttemptHTTP2:     true,
+		MaxIdleConns:          100,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		MaxIdleConnsPerHost:   20, // Optimized for concurrent feed item resolution
+	}
+
 	return &downloader{
 		ctx:    ctx,
 		cfg:    cfg,
 		logger: slog.With("component", "downloader"),
 		client: &http.Client{
-			Timeout: 15 * time.Second,
+			Timeout:   15 * time.Second,
+			Transport: transport,
 		},
 	}
 }

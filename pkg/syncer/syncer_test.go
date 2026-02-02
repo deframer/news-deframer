@@ -92,6 +92,10 @@ func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockD
 	return nil
 }
 
+func (m *mockRepo) RemoveMine(id uuid.UUID) error {
+	return nil
+}
+
 func TestSyncFeed(t *testing.T) {
 	repo := &mockRepo{}
 	cfg, err := config.Load()
