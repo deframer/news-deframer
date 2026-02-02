@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/stretchr/testify/assert"
@@ -87,4 +89,54 @@ func TestResolveRedirect(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, ts.URL+"/final", finalURL)
 	})
+}
+
+func TestNewDownloader_TransportConfig(t *testing.T) {
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{})
+
+	impl, ok := d.(*downloader)
+	assert.True(t, ok, "NewDownloader should return *downloader")
+	assert.NotNil(t, impl.client)
+	assert.NotNil(t, impl.client.Transport)
+
+	transport, ok := impl.client.Transport.(*http.Transport)
+	assert.True(t, ok, "Transport should be *http.Transport")
+
+	assert.Equal(t, 100, transport.MaxIdleConns)
+	assert.Equal(t, 20, transport.MaxIdleConnsPerHost)
+	assert.Equal(t, 90*time.Second, transport.IdleConnTimeout)
+	assert.Equal(t, 10*time.Second, transport.TLSHandshakeTimeout)
+	assert.Equal(t, 1*time.Second, transport.ExpectContinueTimeout)
+	assert.True(t, transport.ForceAttemptHTTP2)
+}
+
+func TestResolveRedirect_Concurrent(t *testing.T) {
+	// Setup a server that redirects
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/redirect" {
+			http.Redirect(w, r, "/final", http.StatusFound)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ts.Close()
+
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{})
+
+	concurrency := 50 // Exceeds MaxIdleConnsPerHost to stress it slightly
+	var wg sync.WaitGroup
+	wg.Add(concurrency)
+
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			defer wg.Done()
+			target := ts.URL + "/redirect"
+			resolved, err := d.ResolveRedirect(ctx, target)
+			assert.NoError(t, err)
+			assert.Equal(t, ts.URL+"/final", resolved)
+		}()
+	}
+	wg.Wait()
 }

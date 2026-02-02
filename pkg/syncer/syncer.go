@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
@@ -133,16 +134,32 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 		return err
 	}
 
-	for _, item := range parsedFeed.Items {
-		if feed.ResolveItemUrl {
-			resolved, err := s.dl.ResolveRedirect(s.ctx, item.Link)
-			if err != nil {
-				s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)
-			} else {
-				item.Link = resolved
-			}
+	if feed.ResolveItemUrl {
+		var wg sync.WaitGroup
+		// Limit concurrency to avoid overwhelming the server or local resources
+		sem := make(chan struct{}, 10)
+
+		for _, item := range parsedFeed.Items {
+			wg.Add(1)
+			go func(item *gofeed.Item) {
+				defer wg.Done()
+				sem <- struct{}{}        // Acquire token
+				defer func() { <-sem }() // Release token
+
+				resolved, err := s.dl.ResolveRedirect(s.ctx, item.Link)
+				if err != nil {
+					s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)
+				} else {
+					item.Link = resolved
+				}
+				item.Link = netutil.NormalizeURL(item.Link)
+			}(item)
 		}
-		item.Link = netutil.NormalizeURL(item.Link)
+		wg.Wait()
+	} else {
+		for _, item := range parsedFeed.Items {
+			item.Link = netutil.NormalizeURL(item.Link)
+		}
 	}
 
 	domains, err := s.wantedDomains(feed)
