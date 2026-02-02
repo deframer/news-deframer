@@ -29,4 +29,11 @@ describe('stripHtml', () => {
     const input = 'Tom &amp; Jerry';
     expect(stripHtml(input)).toBe('Tom & Jerry');
   });
+
+  it('should handle escaped tags in content', () => {
+    // i have no idea if we should do this or keep this
+    // this is content from upstream
+    const input = '&lt;i&gt;content&lt;/i&gt;';
+    expect(stripHtml(input)).toBe('<i>content</i>');
+  });
 });
