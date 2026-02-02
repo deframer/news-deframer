@@ -258,7 +258,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCategories\tID\tURL\tRootDomain\tEnforceDomain\tUpdated\tSync Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCategories\tID\tURL\tRootDomain\tEnforceDomain\tSync Status\tMining Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -270,14 +270,21 @@ func listFeeds(asJson bool, showDeleted bool) {
 			status = "enabled"
 		}
 
-		state := "-"
+		syncState := "-"
 		if f.FeedSchedule != nil {
-			if f.FeedSchedule.LastError != nil {
-				state = fmt.Sprintf("Error: %s", *f.FeedSchedule.LastError)
-			} else if f.FeedSchedule.LockedUntil != nil {
-				state = "Running"
-			} else if f.FeedSchedule.NextRunAt != nil {
-				state = "Next: " + f.FeedSchedule.NextRunAt.Format("2006-01-02 15:04")
+			if f.FeedSchedule.ThinkerLockedUntil != nil {
+				syncState = "Running"
+			} else if f.FeedSchedule.NextThinkerAt != nil {
+				syncState = "Next: " + f.FeedSchedule.NextThinkerAt.Format("2006-01-02 15:04")
+			}
+		}
+
+		miningState := "-"
+		if f.FeedSchedule != nil {
+			if f.FeedSchedule.MiningLockedUntil != nil {
+				miningState = "Running"
+			} else if f.FeedSchedule.NextMiningAt != nil {
+				miningState = "Next: " + f.FeedSchedule.NextMiningAt.Format("2006-01-02 15:04")
 			}
 		}
 
@@ -296,7 +303,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 			categories = strings.Join(f.Categories, ",")
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, categories, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, f.UpdatedAt.Format("2006-01-02"), state); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, categories, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, syncState, miningState); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}

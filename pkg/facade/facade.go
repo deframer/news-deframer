@@ -83,10 +83,9 @@ func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 		if err != nil {
 			return "", err
 		}
-		if feedSchedule != nil && feedSchedule.LastError != nil {
-			return "", fmt.Errorf("last sync attempt at %s failed with error: %s", feedSchedule.UpdatedAt.Format(time.RFC1123), *feedSchedule.LastError)
+		if feedSchedule == nil {
+			return "", fmt.Errorf("feed not updated yet - come back later")
 		}
-		return "", fmt.Errorf("feed not updated yet - come back later")
 	}
 
 	return *cachedFeed.XMLContent, nil

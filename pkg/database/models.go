@@ -61,15 +61,13 @@ func (a StringArray) Value() (driver.Value, error) {
 }
 
 type FeedSchedule struct {
-	ID                uuid.UUID  `gorm:"primaryKey;type:uuid"` // this is a FK to Feed.ID
-	CreatedAt         time.Time  `gorm:"not null;default:now()"`
-	UpdatedAt         time.Time  `gorm:"not null;default:now()"`
-	NextRunAt         *time.Time `gorm:"index"`
-	LockedUntil       *time.Time
-	LastError         *string    `gorm:"type:text"`
-	NextMiningAt      *time.Time `gorm:"index"`
-	MiningLockedUntil *time.Time
-	MiningError       *string `gorm:"type:text"`
+	ID                 uuid.UUID  `gorm:"primaryKey;type:uuid"` // this is a FK to Feed.ID
+	CreatedAt          time.Time  `gorm:"not null;default:now()"`
+	UpdatedAt          time.Time  `gorm:"not null;default:now()"`
+	NextThinkerAt      *time.Time `gorm:"index"`
+	ThinkerLockedUntil *time.Time
+	NextMiningAt       *time.Time `gorm:"index"`
+	MiningLockedUntil  *time.Time
 }
 
 // ThinkResult we make omitempty to not serialize default e.g. 0.0 or ""
