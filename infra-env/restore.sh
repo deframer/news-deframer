@@ -23,12 +23,16 @@ echo "Starting restore for database: ${DATABASE} from ${INPUT_FILE}..."
 # We connect to the 'postgres' maintenance database to perform operations on the target database
 # We also terminate any existing connections to the target database to ensure DROP works
 echo "Recreating database..."
+
+# Terminate connections
 docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
-  psql -U ${DB_USER} -d postgres -c "
-    SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${DATABASE}';
-    DROP DATABASE IF EXISTS ${DATABASE};
-    CREATE DATABASE ${DATABASE} WITH OWNER ${DB_USER};
-  " || { echo "Error: Failed to recreate database."; exit 1; }
+  psql -U ${DB_USER} -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${DATABASE}';" || true
+
+docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
+  psql -U ${DB_USER} -d postgres -c "DROP DATABASE IF EXISTS ${DATABASE};" || { echo "Error: Failed to drop database."; exit 1; }
+
+docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
+  psql -U ${DB_USER} -d postgres -c "CREATE DATABASE ${DATABASE} WITH OWNER ${DB_USER};" || { echo "Error: Failed to create database."; exit 1; }
 
 # Restore dump
 echo "Restoring data..."
