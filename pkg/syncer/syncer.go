@@ -151,6 +151,7 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 					s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)
 				} else {
 					item.Link = resolved
+					// s.logger.Debug("resolved redirect", "url", item.Link)
 				}
 				item.Link = netutil.NormalizeURL(item.Link)
 			}(item)
