@@ -13,13 +13,14 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
       MYSQL_USER: ${MYSQL_USER:-wordpress}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+    command: '--innodb-use-native-aio=0'
     #ports:
     # - "3306:3306"
     healthcheck:
       test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
       interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 100
       start_period: 5s
 
   wordpress:

@@ -14,24 +14,24 @@ test-env-net-destroy:
 start: test-env-net-create
 	$(MAKE) -C freshrss $@
 	$(MAKE) -C rssbridge $@
-	$(MAKE) -C wordpress $@
 	$(MAKE) -C rsshub $@
+	$(MAKE) -C wordpress $@
 
 stop:
 	$(MAKE) -C freshrss $@
 	$(MAKE) -C rssbridge $@
-	$(MAKE) -C wordpress $@
 	$(MAKE) -C rsshub $@
+	$(MAKE) -C wordpress $@
 
 down:
 	$(MAKE) -C freshrss $@
 	$(MAKE) -C rssbridge $@
-	$(MAKE) -C wordpress $@
 	$(MAKE) -C rsshub $@
+	$(MAKE) -C wordpress $@
 
 clean: down
 	$(MAKE) -C freshrss $@
 	$(MAKE) -C rssbridge $@
-	$(MAKE) -C wordpress $@
 	$(MAKE) -C rsshub $@
+	$(MAKE) -C wordpress $@
 	$(MAKE) test-env-net-destroy
