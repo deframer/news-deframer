@@ -841,7 +841,7 @@ func TestEnqueueSync(t *testing.T) {
 		}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
-		// EnqueueSync should update/unlock
+		// EnqueueSync should update
 		err := repo.EnqueueSync(feed.ID, 0)
 		assert.NoError(t, err)
 
@@ -850,7 +850,8 @@ func TestEnqueueSync(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, updated.NextThinkerAt)
 		assert.WithinDuration(t, time.Now(), *updated.NextThinkerAt, 5*time.Second)
-		assert.Nil(t, updated.ThinkerLockedUntil) // Should be nilled out
+		assert.NotNil(t, updated.ThinkerLockedUntil)
+		assert.WithinDuration(t, future, *updated.ThinkerLockedUntil, time.Second)
 	})
 }
 
