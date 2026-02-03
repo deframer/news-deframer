@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
@@ -30,6 +31,14 @@ module.exports = {
         ],
     },
     plugins: [
+        new webpack.NormalModuleReplacementPlugin(
+            /\.\/loglevel$/,
+            (resource) => {
+                if (resource.context.endsWith('shared')) {
+                    resource.request = './loglevel-dev';
+                }
+            }
+        ),
         new HtmlWebpackPlugin({
             template: './src/debug/index.html',
         }),

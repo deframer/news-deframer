@@ -6,11 +6,11 @@ async function startNdf() {
   const settings = await getSettings();
 
   if (settings.enabled === false) {
-    log.info('NDF is disabled by user settings.');
+    log.debug('NDF is disabled by user settings.');
     return;
   }
 
-  log.info('Starting NDF...');
+  log.debug('Starting NDF...');
   ndf.start(settings);
 }
 

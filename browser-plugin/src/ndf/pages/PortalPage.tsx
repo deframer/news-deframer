@@ -66,7 +66,7 @@ export const PortalPage = ({ items }: PortalPageProps) => {
 
   const bypassAndReload = () => {
     window.scrollTo(0, 0);
-    log.info('Bypassing for this session and reloading.');
+    log.debug('Bypassing for this session and reloading.');
     sessionStorage.setItem('__ndf-bypass', 'true');
     window.location.reload();
   };

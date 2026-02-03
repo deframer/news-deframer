@@ -135,14 +135,14 @@ const App = ({ theme }: { theme: string }) => {
 export const start = async (providedSettings?: Settings) => {
   if (sessionStorage.getItem('__ndf-bypass')) {
     sessionStorage.removeItem('__ndf-bypass');
-    log.info('Bypass detected. Not starting NDF.');
+    log.debug('Bypass detected. Not starting NDF.');
     return;
   }
 
   try {
     const settings = providedSettings || await getSettings();
     if (!settings.enabled) {
-      log.info('NDF is disabled.');
+      log.debug('NDF is disabled.');
       return;
     }
 
@@ -163,7 +163,7 @@ export const start = async (providedSettings?: Settings) => {
 
     const type = classifyUrl(new URL(window.location.href));
     if (type === PageType.PORTAL || type === PageType.ARTICLE) {
-      log.info(`Page detected as ${type}.`);
+      log.debug(`Page detected as ${type}.`);
       // window.stop(); // this causes issues
 
       // Manual DOM reset. document.open() is unreliable in content scripts
