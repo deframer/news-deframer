@@ -1,10 +1,10 @@
-import React from 'react';
+import { useEffect,useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getDomain } from 'tldts';
 
 import i18n from '../shared/i18n';
 import log from '../shared/logger';
-import { getSettings } from '../shared/settings';
+import { getSettings, Settings } from '../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../shared/theme';
 import { AnalyzedItem, NewsDeframerClient } from './client';
 import { Spinner } from './components/Spinner';
@@ -12,14 +12,14 @@ import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
 import { classifyUrl, PageType } from './utils/url-classifier';
 
-const App = ({ theme }: { theme: Theme }) => {
-  const [pageType, setPageType] = React.useState<PageType | null>(null);
-  const [data, setData] = React.useState<
+const App = ({ theme }: { theme: string }) => {
+  const [pageType, setPageType] = useState<PageType | null>(null);
+  const [data, setData] = useState<
     AnalyzedItem | AnalyzedItem[] | null
   >(null);
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Inject global styles into the Light DOM to fix body margin and background "frame"
     const styleId = 'ndf-global-styles';
     let style = document.getElementById(styleId);
@@ -29,11 +29,11 @@ const App = ({ theme }: { theme: Theme }) => {
       document.head.appendChild(style);
     }
 
-    const themeCss = getThemeCss(theme);
+    const themeCss = getThemeCss(theme as Theme);
     style.textContent = themeCss + globalStyles;
   }, [theme]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const init = async () => {
       // For debugging the spinner, uncomment the following line
       // await new Promise(resolve => setTimeout(resolve, 2000));
@@ -50,7 +50,7 @@ const App = ({ theme }: { theme: Theme }) => {
           const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
 
           // Check if the site's full host or root domain is registered in the backend.
-          log.info(`Checking domain authorization for siteHost="${siteHost}", rootDomain="${rootDomain}", allDomains=[${allDomains.join(', ')}]`);
+          //log.debug(`Checking domain authorization for siteHost="${siteHost}", rootDomain="${rootDomain}", allDomains=[${allDomains.join(', ')}]`);
           let authorizedDomain: string | null = null;
 
           if (allDomains.includes(siteHost)) {
@@ -115,7 +115,7 @@ const App = ({ theme }: { theme: Theme }) => {
       // data is AnalyzedItem
       return (
         <>
-          <style>{getThemeCss(theme)}</style>
+          <style>{getThemeCss(theme as Theme)}</style>
           <ArticlePage item={data as AnalyzedItem} />
         </>
       );
@@ -123,7 +123,7 @@ const App = ({ theme }: { theme: Theme }) => {
       // data is AnalyzedItem[]
       return (
         <>
-          <style>{getThemeCss(theme)}</style>
+          <style>{getThemeCss(theme as Theme)}</style>
           <PortalPage items={data as AnalyzedItem[]} />
         </>
       );
@@ -132,7 +132,7 @@ const App = ({ theme }: { theme: Theme }) => {
   }
 };
 
-const start = async () => {
+export const start = async (providedSettings?: Settings) => {
   if (sessionStorage.getItem('__ndf-bypass')) {
     sessionStorage.removeItem('__ndf-bypass');
     log.info('Bypass detected. Not starting NDF.');
@@ -140,14 +140,14 @@ const start = async () => {
   }
 
   try {
-    const settings = await getSettings();
+    const settings = providedSettings || await getSettings();
     if (!settings.enabled) {
       log.info('NDF is disabled.');
       return;
     }
 
     // Apply language setting from storage
-    const storage = await chrome.storage.local.get('ndf_language');
+    const storage = (await chrome.storage.local.get('ndf_language')) as { ndf_language?: string };
     const lang = storage.ndf_language || 'default';
     if (lang !== 'default') {
       await i18n.changeLanguage(lang);
@@ -248,5 +248,3 @@ const start = async () => {
     log.error('Could not start NDF', e);
   }
 };
-
-start();

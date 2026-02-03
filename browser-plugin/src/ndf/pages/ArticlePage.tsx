@@ -1,6 +1,6 @@
 import '../../shared/i18n';
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 

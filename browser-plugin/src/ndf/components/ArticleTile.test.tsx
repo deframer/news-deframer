@@ -1,5 +1,4 @@
 import { render } from '@testing-library/react';
-import React from 'react';
 
 import { AnalyzedItem } from '../client';
 import { ArticleTile } from './ArticleTile';
@@ -21,6 +20,7 @@ jest.mock('react-i18next', () => ({
 describe('ArticleTile', () => {
   const mockItem: AnalyzedItem = {
     url: 'http://example.com/article1',
+    hash: 'test-hash',
     title_original: 'Original Title',
     description_original: 'Original Description',
     rating: 0.85,

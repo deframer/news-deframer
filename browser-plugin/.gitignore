@@ -5,3 +5,4 @@ extension.crx
 extension.pem
 dist/
 node_modules/
+src/host/assets/icons/*.png

@@ -1,4 +1,4 @@
-.PHONY: install build clean dev test dist lint lint-fix icons
+.PHONY: install build clean dev dev-react test dist lint lint-fix icons
 
 ICONS_DIR := src/host/assets/icons
 ICON_SVG := $(ICONS_DIR)/icon.svg
@@ -16,10 +16,18 @@ build: icons
 
 clean:
 	npm run clean
+	rm -rf debug-build
 	rm -f $(ICON_PNGS)
 
+# Development mode for the Browser Extension (Webpack watch)
+# Loads the extension in the browser, watching for file changes.
 dev: icons
 	npm run dev
+
+# Development mode for React Components (Webpack Dev Server)
+# Opens a standalone web server to develop UI components in isolation (hot-reload enabled).
+dev-react:
+	npm run dev-react
 
 test:
 	npm run test

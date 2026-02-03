@@ -7,7 +7,7 @@ module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: {
         options: './src/host/ui/index.tsx',
-        content: './src/ndf/index.tsx',
+        content: './src/host/content.ts',
         background: './src/host/background.ts'
     },
     devtool: process.env.NODE_ENV === 'production' ? 'source-map' : 'inline-source-map',
@@ -22,7 +22,7 @@ module.exports = {
                         transpileOnly: true
                     }
                 }],
-                exclude: /node_modules/,
+                exclude: [/node_modules/, path.resolve(__dirname, 'src/debug')],
             },
             {
                 test: /\.css$/i,
@@ -39,10 +39,10 @@ module.exports = {
         clean: true,
     },
     watchOptions: {
-    aggregateTimeout: 200,
-    ignored: /node_modules/,
-  },
-  plugins: [
+        aggregateTimeout: 200,
+        ignored: /node_modules/,
+    },
+    plugins: [
         new CopyPlugin({
             patterns: [
                 {
