@@ -15,6 +15,6 @@ prefix.apply(log, {
 });
 
 // Set the initial log level
-log.setLevel('debug');
+log.setLevel('info');
 
 export default log;

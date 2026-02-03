@@ -5,7 +5,11 @@ import { createRoot } from 'react-dom/client';
 import { AnalyzedItem } from '../ndf/client';
 import { ArticlePage } from '../ndf/pages/ArticlePage';
 import { PortalPage } from '../ndf/pages/PortalPage';
+import log from '../shared/logger';
 import { getThemeCss, globalStyles, Theme } from '../shared/theme';
+
+//log.setLevel('trace');
+log.setLevel('debug');
 
 // Import data (using require to ensure it loads without strict TS json config)
 // eslint-disable-next-line @typescript-eslint/no-require-imports
