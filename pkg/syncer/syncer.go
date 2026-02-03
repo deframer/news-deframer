@@ -395,7 +395,7 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 			if _, hasGroup := mediaExt["group"]; hasGroup {
 				// sometimes media is organized in a media:group
 				delete(mediaExt, "group")
-				s.logger.Info("removed media:group tag", "url", item.Link)
+				s.logger.Debug("removed media:group tag", "url", item.Link)
 			}
 		}
 	}
