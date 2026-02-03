@@ -6,7 +6,8 @@ const resources = {
   en: {
     translation: {
       portal: {
-        title: 'News Deframer • {{domain}}',
+        title: 'News Deframer',
+        trends: 'Trends',
         hide: 'Hide',
       },
       article: {
@@ -70,7 +71,8 @@ const resources = {
   de: {
     translation: {
       portal: {
-        title: 'News Deframer • {{domain}}',
+        title: 'News Deframer',
+        trends: 'Trends',
         hide: 'Ausblenden',
       },
       article: {
