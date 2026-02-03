@@ -577,7 +577,7 @@ func (m *MockRepo) PurgeFeedById(id uuid.UUID) error {
 	return nil
 }
 
-func (m *MockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
+func (m *MockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error {
 	if f, ok := m.feeds[id]; ok {
 		now := time.Now()
 		f.FeedSchedule = &database.FeedSchedule{
@@ -588,7 +588,7 @@ func (m *MockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lock
 	return nil
 }
 
-func (m *MockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+func (m *MockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration) error {
 	if f, ok := m.feeds[id]; ok {
 		now := time.Now()
 		if f.FeedSchedule == nil {

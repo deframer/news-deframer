@@ -82,13 +82,13 @@ func (m *mockRepo) PurgeFeedById(id uuid.UUID) error {
 }
 
 // Implement EnqueueSync
-func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
+func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error {
 	m.enqueueSyncCalled = true
 	m.lastId = id
 	return nil
 }
 
-func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration) error {
 	return nil
 }
 

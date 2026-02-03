@@ -106,7 +106,7 @@ func importFeeds() {
 
 			// Handle Polling schedule
 			if existing.Enabled && existing.Polling {
-				if err := repo.EnqueueSync(existing.ID, 0, 0); err != nil {
+				if err := repo.EnqueueSync(existing.ID, 0); err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to enqueue sync for feed %s: %v\n", u.String(), err)
 				}
 			} else {
@@ -117,7 +117,7 @@ func importFeeds() {
 
 			// Handle Mining schedule
 			if existing.Enabled && existing.Mining {
-				if err := repo.EnqueueMine(existing.ID, 0, 0); err != nil {
+				if err := repo.EnqueueMine(existing.ID, 0); err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to enqueue mine for feed %s: %v\n", u.String(), err)
 				}
 			} else {
@@ -139,12 +139,12 @@ func importFeeds() {
 		}
 		if newFeed.Enabled {
 			if newFeed.Polling {
-				if err := repo.EnqueueSync(newFeed.ID, 0, 0); err != nil {
+				if err := repo.EnqueueSync(newFeed.ID, 0); err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to enqueue sync for feed %s: %v\n", u.String(), err)
 				}
 			}
 			if newFeed.Mining {
-				if err := repo.EnqueueMine(newFeed.ID, 0, 0); err != nil {
+				if err := repo.EnqueueMine(newFeed.ID, 0); err != nil {
 					fmt.Fprintf(os.Stderr, "Failed to enqueue mine for feed %s: %v\n", u.String(), err)
 				}
 			}

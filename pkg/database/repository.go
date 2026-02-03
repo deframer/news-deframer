@@ -31,8 +31,8 @@ type Repository interface {
 	GetAllFeeds(deleted bool) ([]Feed, error)
 	DeleteFeedById(id uuid.UUID) error
 	PurgeFeedById(id uuid.UUID) error
-	EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error
-	EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error
+	EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error
+	EnqueueMine(id uuid.UUID, miningInterval time.Duration) error
 	RemoveMine(id uuid.UUID) error
 	RemoveSync(id uuid.UUID) error
 	BeginFeedUpdate(lockDuration time.Duration) (*Feed, error)
@@ -162,19 +162,19 @@ func (r *repository) UpsertItem(item *Item) error {
 	})
 }
 
-func (r *repository) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
+func (r *repository) EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		return r.enqueueSyncTx(tx, id, pollingInterval, lockDuration)
+		return r.enqueueSyncTx(tx, id, pollingInterval)
 	})
 }
 
-func (r *repository) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+func (r *repository) EnqueueMine(id uuid.UUID, miningInterval time.Duration) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		return r.enqueueMineTx(tx, id, miningInterval, lockDuration)
+		return r.enqueueMineTx(tx, id, miningInterval)
 	})
 }
 
-func (r *repository) enqueueSyncTx(tx *gorm.DB, id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
+func (r *repository) enqueueSyncTx(tx *gorm.DB, id uuid.UUID, pollingInterval time.Duration) error {
 	var feed Feed
 	// Check if feed exists, is enabled, and is not deleted.
 	if err := tx.Where("id = ? AND enabled = ?", id, true).First(&feed).Error; err != nil {
@@ -182,23 +182,6 @@ func (r *repository) enqueueSyncTx(tx *gorm.DB, id uuid.UUID, pollingInterval ti
 			return fmt.Errorf("feed not found or unavailable")
 		}
 		return err
-	}
-
-	if lockDuration > 0 {
-		lockInterval := fmt.Sprintf("INTERVAL '%f seconds'", lockDuration.Seconds())
-
-		// Check if the feed is locked for longer than the requested duration
-		var count int64
-		if err := tx.Model(&FeedSchedule{}).
-			Where("id = ? AND thinker_locked_until > NOW() + "+lockInterval, id).
-			Count(&count).Error; err != nil {
-			return err
-		}
-
-		if count > 0 {
-			// Lock is > now + duration, do nothing
-			return nil
-		}
 	}
 
 	runInterval := fmt.Sprintf("INTERVAL '%f seconds'", pollingInterval.Seconds())
@@ -208,23 +191,21 @@ func (r *repository) enqueueSyncTx(tx *gorm.DB, id uuid.UUID, pollingInterval ti
 	if err := tx.Where("id = ?", id).First(&schedule).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return tx.Model(&FeedSchedule{}).Create(map[string]interface{}{
-				"id":                   id,
-				"next_thinker_at":      gorm.Expr("NOW() + " + runInterval),
-				"thinker_locked_until": nil,
-				"updated_at":           gorm.Expr("NOW()"),
+				"id":              id,
+				"next_thinker_at": gorm.Expr("NOW() + " + runInterval),
+				"updated_at":      gorm.Expr("NOW()"),
 			}).Error
 		}
 		return err
 	}
 
 	return tx.Model(&schedule).Updates(map[string]interface{}{
-		"next_thinker_at":      gorm.Expr("NOW() + " + runInterval),
-		"thinker_locked_until": nil,
-		"updated_at":           gorm.Expr("NOW()"),
+		"next_thinker_at": gorm.Expr("NOW() + " + runInterval),
+		"updated_at":      gorm.Expr("NOW()"),
 	}).Error
 }
 
-func (r *repository) enqueueMineTx(tx *gorm.DB, id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+func (r *repository) enqueueMineTx(tx *gorm.DB, id uuid.UUID, miningInterval time.Duration) error {
 	var feed Feed
 	// Check if feed exists, is enabled, and is not deleted.
 	if err := tx.Where("id = ? AND enabled = ?", id, true).First(&feed).Error; err != nil {
@@ -234,23 +215,6 @@ func (r *repository) enqueueMineTx(tx *gorm.DB, id uuid.UUID, miningInterval tim
 		return err
 	}
 
-	if lockDuration > 0 {
-		lockInterval := fmt.Sprintf("INTERVAL '%f seconds'", lockDuration.Seconds())
-
-		// Check if the feed is locked for longer than the requested duration
-		var count int64
-		if err := tx.Model(&FeedSchedule{}).
-			Where("id = ? AND mining_locked_until > NOW() + "+lockInterval, id).
-			Count(&count).Error; err != nil {
-			return err
-		}
-
-		if count > 0 {
-			// Lock is > now + duration, do nothing
-			return nil
-		}
-	}
-
 	runInterval := fmt.Sprintf("INTERVAL '%f seconds'", miningInterval.Seconds())
 
 	// Upsert FeedSchedule
@@ -258,19 +222,17 @@ func (r *repository) enqueueMineTx(tx *gorm.DB, id uuid.UUID, miningInterval tim
 	if err := tx.Where("id = ?", id).First(&schedule).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return tx.Model(&FeedSchedule{}).Create(map[string]interface{}{
-				"id":                  id,
-				"next_mining_at":      gorm.Expr("NOW() + " + runInterval),
-				"mining_locked_until": nil,
-				"updated_at":          gorm.Expr("NOW()"),
+				"id":             id,
+				"next_mining_at": gorm.Expr("NOW() + " + runInterval),
+				"updated_at":     gorm.Expr("NOW()"),
 			}).Error
 		}
 		return err
 	}
 
 	return tx.Model(&schedule).Updates(map[string]interface{}{
-		"next_mining_at":      gorm.Expr("NOW() + " + runInterval),
-		"mining_locked_until": nil,
-		"updated_at":          gorm.Expr("NOW()"),
+		"next_mining_at": gorm.Expr("NOW() + " + runInterval),
+		"updated_at":     gorm.Expr("NOW()"),
 	}).Error
 }
 
@@ -334,6 +296,8 @@ func (r *repository) BeginFeedUpdate(lockDuration time.Duration) (*Feed, error) 
 		var f Feed
 		if err := tx.Unscoped().First(&f, schedule.ID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// soft deleted
+				slog.Warn("Feed schedule exists but feed not found, removing sync", "feed_id", schedule.ID)
 				return r.removeSyncTx(tx, schedule.ID)
 			}
 			return err
@@ -341,6 +305,7 @@ func (r *repository) BeginFeedUpdate(lockDuration time.Duration) (*Feed, error) 
 
 		if !f.Enabled || f.DeletedAt.Valid {
 			// the feed might was disabled / delete
+			slog.Warn("Feed schedule exists but feed is disabled or deleted, removing sync", "feed_id", schedule.ID)
 			return r.removeSyncTx(tx, schedule.ID)
 		}
 
@@ -384,7 +349,7 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 		}
 
 		if jobErr == nil && feed.Enabled && feed.Polling {
-			return r.enqueueSyncTx(tx, id, pollingInterval, 0)
+			return r.enqueueSyncTx(tx, id, pollingInterval)
 		}
 
 		return nil

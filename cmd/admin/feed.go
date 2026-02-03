@@ -557,7 +557,7 @@ func syncFeed(input string) {
 func mineFeed(input string) {
 	feed := resolveFeed(input, false)
 
-	if err := repo.EnqueueMine(feed.ID, 0, 0); err != nil {
+	if err := repo.EnqueueMine(feed.ID, 0); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to enqueue mining for feed: %v\n", err)
 		os.Exit(1)
 	}
@@ -598,7 +598,7 @@ func mineAllFeeds() {
 		if !f.Enabled || !f.Mining {
 			continue
 		}
-		if err := repo.EnqueueMine(f.ID, 0, 0); err != nil {
+		if err := repo.EnqueueMine(f.ID, 0); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to enqueue mining for feed %s (%s): %v\n", f.URL, f.ID, err)
 		} else {
 			fmt.Printf("Triggered mining for url=%s with id=%s\n", f.URL, f.ID)

@@ -786,14 +786,14 @@ func TestEnqueueSync(t *testing.T) {
 		repo := NewFromDB(tx)
 
 		// Case 1: Feed does not exist
-		err := repo.EnqueueSync(uuid.New(), 0, time.Minute)
+		err := repo.EnqueueSync(uuid.New(), 0)
 		assert.Error(t, err)
 		assert.Equal(t, "feed not found or unavailable", err.Error())
 
 		// Case 2: Feed is disabled
 		feedDisabled := Feed{URL: "http://disabled.test", Enabled: false}
 		assert.NoError(t, tx.Create(&feedDisabled).Error)
-		err = repo.EnqueueSync(feedDisabled.ID, 0, time.Minute)
+		err = repo.EnqueueSync(feedDisabled.ID, 0)
 		assert.Error(t, err)
 		assert.Equal(t, "feed not found or unavailable", err.Error())
 
@@ -801,32 +801,9 @@ func TestEnqueueSync(t *testing.T) {
 		feedDeleted := Feed{URL: "http://deleted.test", Enabled: true}
 		assert.NoError(t, tx.Create(&feedDeleted).Error)
 		assert.NoError(t, tx.Delete(&feedDeleted).Error)
-		err = repo.EnqueueSync(feedDeleted.ID, 0, time.Minute)
+		err = repo.EnqueueSync(feedDeleted.ID, 0)
 		assert.Error(t, err)
 		assert.Equal(t, "feed not found or unavailable", err.Error())
-	})
-
-	t.Run("RespectLongLock", func(t *testing.T) {
-		tx := baseDB.Begin()
-		defer tx.Rollback()
-		repo := NewFromDB(tx)
-
-		feed := Feed{URL: "http://long-lock.test", Enabled: true}
-		assert.NoError(t, tx.Create(&feed).Error)
-
-		// Lock for 1 hour
-		future := time.Now().Add(time.Hour)
-		schedule := FeedSchedule{ID: feed.ID, ThinkerLockedUntil: &future}
-		assert.NoError(t, tx.Create(&schedule).Error)
-
-		// Try to sync with 5 min lock
-		err := repo.EnqueueSync(feed.ID, 0, 5*time.Minute)
-		assert.NoError(t, err)
-
-		// Verify lock was NOT updated (should still be ~1 hour from now)
-		var updated FeedSchedule
-		assert.NoError(t, tx.First(&updated, feed.ID).Error)
-		assert.WithinDuration(t, future, *updated.ThinkerLockedUntil, 5*time.Second)
 	})
 
 	t.Run("CreateSchedule", func(t *testing.T) {
@@ -837,7 +814,7 @@ func TestEnqueueSync(t *testing.T) {
 		feed := Feed{URL: "http://create-schedule.test", Enabled: true}
 		assert.NoError(t, tx.Create(&feed).Error)
 
-		err := repo.EnqueueSync(feed.ID, 0, time.Minute)
+		err := repo.EnqueueSync(feed.ID, 0)
 		assert.NoError(t, err)
 
 		var schedule FeedSchedule
@@ -848,7 +825,7 @@ func TestEnqueueSync(t *testing.T) {
 		assert.Nil(t, schedule.ThinkerLockedUntil)
 	})
 
-	t.Run("UpdateSchedule_ForceUnlock", func(t *testing.T) {
+	t.Run("UpdateSchedule", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
@@ -864,8 +841,8 @@ func TestEnqueueSync(t *testing.T) {
 		}
 		assert.NoError(t, tx.Create(&schedule).Error)
 
-		// EnqueueSync with 5 min lock duration (1 min < 5 min, so it proceeds)
-		err := repo.EnqueueSync(feed.ID, 0, 5*time.Minute)
+		// EnqueueSync should update/unlock
+		err := repo.EnqueueSync(feed.ID, 0)
 		assert.NoError(t, err)
 
 		var updated FeedSchedule
