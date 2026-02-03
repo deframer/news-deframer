@@ -40,9 +40,10 @@ export const Options = () => {
   useEffect(() => {
     log.debug('Loading settings...');
     // Load settings AND language
-    Promise.all([getSettings(), chrome.storage.local.get('ndf_language')]).then(([loadedSettings, storage]) => {
+    Promise.all([getSettings(), chrome.storage.local.get('ndf_language')]).then(([loadedSettings, storageResult]) => {
       log.debug('Settings loaded:', loadedSettings);
       setSettings(loadedSettings);
+      const storage = storageResult as { ndf_language?: string };
       setLang(storage.ndf_language || 'default');
       setLoaded(true);
 

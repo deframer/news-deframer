@@ -1,5 +1,4 @@
 import { render } from '@testing-library/react';
-import React from 'react';
 
 import { AnalyzedItem } from '../client';
 import { PortalPage } from '../pages/PortalPage';
@@ -27,12 +26,14 @@ describe('PortalPage', () => {
   const mockItems: AnalyzedItem[] = [
     {
       url: 'http://example.com/article1',
+      hash: 'test-hash-1',
       title_original: 'Original Title 1',
       description_original: 'Original Description 1',
       rating: 0.85,
     },
     {
       url: 'http://example.com/article2',
+      hash: 'test-hash-2',
       title_original: 'Original Title 2',
       description_original: 'Original Description 2',
       rating: 0.45,

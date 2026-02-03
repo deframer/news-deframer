@@ -1,4 +1,4 @@
-import ndf from '../ndf/index';
+import * as ndf from '../ndf/index';
 import log from '../shared/logger';
 import { getSettings } from '../shared/settings';
 

@@ -1,4 +1,4 @@
-.PHONY: install build clean dev test dist lint lint-fix icons render-article render-portal
+.PHONY: install build clean dev dev-react test dist lint lint-fix icons
 
 ICONS_DIR := src/host/assets/icons
 ICON_SVG := $(ICONS_DIR)/icon.svg
@@ -19,8 +19,15 @@ clean:
 	rm -rf debug-build
 	rm -f $(ICON_PNGS)
 
+# Development mode for the Browser Extension (Webpack watch)
+# Loads the extension in the browser, watching for file changes.
 dev: icons
 	npm run dev
+
+# Development mode for React Components (Webpack Dev Server)
+# Opens a standalone web server to develop UI components in isolation (hot-reload enabled).
+dev-react:
+	npm run dev-react
 
 test:
 	npm run test
@@ -35,14 +42,3 @@ icons: $(ICON_PNGS)
 
 $(ICONS_DIR)/icon%.png: $(ICON_SVG)
 	convert -background none -resize $*x$* $< $@
-
-debug-build:
-	mkdir -p debug-build
-
-render-article: debug-build
-	npm run -s render:article > debug-build/article.html
-	@echo "Rendered article to debug-build/article.html"
-
-render-portal: debug-build
-	npm run -s render:portal > debug-build/portal.html
-	@echo "Rendered portal to debug-build/portal.html"

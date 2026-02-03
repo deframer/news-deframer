@@ -3,5 +3,11 @@
   "compilerOptions": {
     "noEmit": false,
     "allowImportingTsExtensions": false
-  }
+  },
+  "exclude": [
+    "node_modules",
+    "src/debug",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }

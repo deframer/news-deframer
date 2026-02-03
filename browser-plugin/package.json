@@ -10,10 +10,9 @@
     "type-check": "tsc --noEmit",
     "type-check:watch": "tsc --noEmit --watch",
     "dev": "echo \"Starting webpack watch. Run 'npm run type-check:watch' in a separate terminal for type checking.\" && webpack --watch",
+    "dev-react": "webpack serve --config webpack.debug.config.js",
     "pack": "cd dist/host && zip -r ../../extension.zip .",
-    "clean": "rm -rf dist extension.zip",
-    "render:article": "ts-node -O '{\"module\":\"commonjs\",\"jsx\":\"react\",\"esModuleInterop\":true}' src/ndf/scripts/render-to-html.tsx src/debug/article.json article",
-    "render:portal": "ts-node -O '{\"module\":\"commonjs\",\"jsx\":\"react\",\"esModuleInterop\":true}' src/ndf/scripts/render-to-html.tsx src/debug/portal.json portal"
+    "clean": "rm -rf dist extension.zip"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
@@ -42,7 +41,8 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "webpack": "^5.104.1",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.0.2"
   },
   "dependencies": {
     "i18next": "^25.8.0",
