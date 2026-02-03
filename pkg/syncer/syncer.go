@@ -64,7 +64,7 @@ func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Sy
 
 func (s *Syncer) SyncFeed(id uuid.UUID) error {
 	s.logger.Info("Syncing feed", "id", id)
-	return s.repo.EnqueueSync(id, 0, config.DefaultLockDuration)
+	return s.repo.EnqueueSync(id, 0)
 }
 
 func (s *Syncer) StopPolling(id uuid.UUID) error {
@@ -346,6 +346,11 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	if err := s.repo.UpsertItem(dbItem); err != nil {
 		s.logger.Error("failed to create item", "error", err, "hash", hash)
 	}
+
+	// move the lock time in the future (we also extend the sleep time to have a fair execution window)
+	if err := s.repo.EnqueueSync(feed.ID, config.IdleSleepTime); err != nil {
+		s.logger.Error("failed to extend the lock duration item", "error", err, "hash", hash)
+	}
 }
 
 func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) error {
@@ -390,7 +395,7 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 			if _, hasGroup := mediaExt["group"]; hasGroup {
 				// sometimes media is organized in a media:group
 				delete(mediaExt, "group")
-				s.logger.Info("removed media:group tag", "url", item.Link)
+				s.logger.Debug("removed media:group tag", "url", item.Link)
 			}
 		}
 	}

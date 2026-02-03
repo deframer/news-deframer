@@ -40,7 +40,7 @@ type mockRepo struct {
 	findItemsByUrl               func(u *url.URL) ([]database.Item, error)
 	getAllFeeds                  func(deleted bool) ([]database.Feed, error)
 	deleteFeedById               func(id uuid.UUID) error
-	enqueueSync                  func(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error
+	enqueueSync                  func(id uuid.UUID, pollingInterval time.Duration) error
 	removeSync                   func(id uuid.UUID) error
 	beginFeedUpdate              func(lockDuration time.Duration) (*database.Feed, error)
 	endFeedUpdate                func(id uuid.UUID, err error, successDelay time.Duration) error
@@ -106,14 +106,14 @@ func (m *mockRepo) PurgeFeedById(id uuid.UUID) error {
 	return nil
 }
 
-func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration, lockDuration time.Duration) error {
+func (m *mockRepo) EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error {
 	if m.enqueueSync != nil {
-		return m.enqueueSync(id, pollingInterval, lockDuration)
+		return m.enqueueSync(id, pollingInterval)
 	}
 	return nil
 }
 
-func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration, lockDuration time.Duration) error {
+func (m *mockRepo) EnqueueMine(id uuid.UUID, miningInterval time.Duration) error {
 	return nil
 }
 
