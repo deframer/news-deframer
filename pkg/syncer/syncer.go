@@ -346,6 +346,11 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	if err := s.repo.UpsertItem(dbItem); err != nil {
 		s.logger.Error("failed to create item", "error", err, "hash", hash)
 	}
+
+	// move the lock time in the future (we also extend the sleep time to have a fair execution window)
+	if err := s.repo.EnqueueSync(feed.ID, config.IdleSleepTime, config.DefaultLockDuration); err != nil {
+		s.logger.Error("failed to extend the lock duration item", "error", err, "hash", hash)
+	}
 }
 
 func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) error {
