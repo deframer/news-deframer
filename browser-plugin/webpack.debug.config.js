@@ -32,10 +32,10 @@ module.exports = {
     },
     plugins: [
         new webpack.NormalModuleReplacementPlugin(
-            /\.\/mode$/,
+            /\.\/loglevel$/,
             (resource) => {
                 if (resource.context.endsWith('shared')) {
-                    resource.request = './mode-dev';
+                    resource.request = './loglevel-dev';
                 }
             }
         ),
