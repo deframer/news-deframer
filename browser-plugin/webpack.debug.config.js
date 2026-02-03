@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
@@ -30,6 +31,14 @@ module.exports = {
         ],
     },
     plugins: [
+        new webpack.NormalModuleReplacementPlugin(
+            /\.\/mode$/,
+            (resource) => {
+                if (resource.context.endsWith('shared')) {
+                    resource.request = './mode-dev';
+                }
+            }
+        ),
         new HtmlWebpackPlugin({
             template: './src/debug/index.html',
         }),

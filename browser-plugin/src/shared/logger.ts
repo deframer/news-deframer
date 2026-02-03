@@ -1,6 +1,8 @@
 import log from 'loglevel';
 import prefix from 'loglevel-plugin-prefix';
 
+import { LOG_LEVEL } from './mode';
+
 const NDF_PREFIX = '***** NDF';
 
 // Attach the prefix plugin
@@ -15,6 +17,6 @@ prefix.apply(log, {
 });
 
 // Set the initial log level
-log.setLevel('info');
+log.setLevel(LOG_LEVEL as log.LogLevelDesc);
 
 export default log;

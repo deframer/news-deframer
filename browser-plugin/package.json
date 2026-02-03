@@ -5,7 +5,7 @@
   "scripts": {
     "test": "jest",
     "lint": "eslint src",
-    "build": "webpack",
+    "build": "NODE_ENV=production webpack",
     "dist": "npm run clean && npm run build && cd dist/host && zip -r ../../extension.zip .",
     "type-check": "tsc --noEmit",
     "type-check:watch": "tsc --noEmit --watch",

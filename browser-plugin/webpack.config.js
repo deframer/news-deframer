@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const packageJson = require('./package.json');
@@ -43,6 +44,14 @@ module.exports = {
         ignored: /node_modules/,
     },
     plugins: [
+        process.env.NODE_ENV !== 'production' && new webpack.NormalModuleReplacementPlugin(
+            /\.\/mode$/,
+            (resource) => {
+                if (resource.context.endsWith('shared')) {
+                    resource.request = './mode-dev';
+                }
+            }
+        ),
         new CopyPlugin({
             patterns: [
                 {
@@ -63,5 +72,8 @@ module.exports = {
             filename: 'options.html',
             chunks: ['options'],
         }),
-    ],
+    ].filter(Boolean),
+    performance: {
+        hints: false,
+    },
 };
