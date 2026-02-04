@@ -172,6 +172,8 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 	items := s.feeds.FilterItems(s.ctx, parsedFeed, domains)
 	s.logger.Debug("items", "len", len(items))
 
+	// XXX do the feed.ResolveItemUrl much later...
+
 	hashes := feeds.GetHashes(items)
 	s.logger.Debug("hashes", "len", len(hashes))
 
