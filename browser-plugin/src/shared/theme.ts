@@ -23,6 +23,11 @@ export const cssVariables = {
     --danger-color: #b02a37;
     --tooltip-bg: rgba(0,0,0,0.85);
     --tooltip-text: #ffffff;
+    --bg-color-secondary: #f7f8fa;
+    --hover-bg: rgba(0,0,0,0.05);
+    --badge-bg: #e9ecef;
+    --primary-color: #007bff;
+    --primary-color-dark: #0069d9;
   `,
   dark: `
     --bg-color: #18191a;
@@ -46,6 +51,11 @@ export const cssVariables = {
      --danger-color: #f44336;
      --tooltip-bg: rgba(255,255,255,0.9);
      --tooltip-text: #000000;
+     --bg-color-secondary: #18191a;
+     --hover-bg: rgba(255,255,255,0.05);
+     --badge-bg: #3a3b3c;
+     --primary-color: #2d88ff;
+     --primary-color-dark: #4599ff;
    `
 };
 
