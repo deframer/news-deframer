@@ -47,7 +47,7 @@ Das JSON muss die folgenden Felder enthalten:
   "persuasive": 0.0,
   "persuasive_reason": "Keine Handlungsaufforderung erkannt.",
   "hyper_stimulus": 0.6,
-  "hyper_stimulus_reason": "Verwendung von Großbuchstaben bei emotionalen Schlüsselwörtern.",
+  "hyper_stimulus_reason": "Verwendung von emotionalen Schlüsselwörtern.",
   "speculative": 0.2,
   "speculative_reason": "Impliziert Insolvenz ohne offizielle Quelle.",
   "overall": 0.5,
