@@ -134,33 +134,8 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 		return err
 	}
 
-	if feed.ResolveItemUrl {
-		var wg sync.WaitGroup
-		// Limit concurrency to avoid overwhelming the server or local resources
-		sem := make(chan struct{}, 10)
-
-		for _, item := range parsedFeed.Items {
-			wg.Add(1)
-			go func(item *gofeed.Item) {
-				defer wg.Done()
-				sem <- struct{}{}        // Acquire token
-				defer func() { <-sem }() // Release token
-
-				resolved, err := s.dl.ResolveRedirect(s.ctx, item.Link)
-				if err != nil {
-					s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)
-				} else {
-					item.Link = resolved
-					// s.logger.Debug("resolved redirect", "url", item.Link)
-				}
-				item.Link = netutil.NormalizeURL(item.Link)
-			}(item)
-		}
-		wg.Wait()
-	} else {
-		for _, item := range parsedFeed.Items {
-			item.Link = netutil.NormalizeURL(item.Link)
-		}
+	for _, item := range parsedFeed.Items {
+		item.Link = netutil.NormalizeURL(item.Link)
 	}
 
 	domains, err := s.wantedDomains(feed)
@@ -248,6 +223,32 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 			// Log the error but continue, as this is not a critical failure
 			s.logger.Error("Failed to update feed language", "error", err, "feed_id", feed.ID)
 		}
+	}
+
+	if feed.ResolveItemUrl {
+		s.logger.Debug("resolving remaining item urls", "url", feed.URL)
+		var wg sync.WaitGroup
+		// Limit concurrency to avoid overwhelming the server or local resources
+		sem := make(chan struct{}, 10)
+
+		for _, item := range items {
+			wg.Add(1)
+			go func(item *gofeed.Item) {
+				defer wg.Done()
+				sem <- struct{}{}        // Acquire token
+				defer func() { <-sem }() // Release token
+
+				resolved, err := s.dl.ResolveRedirect(s.ctx, item.Link)
+				if err != nil {
+					s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)
+				} else {
+					item.Link = resolved
+					// s.logger.Debug("resolved redirect", "url", item.Link)
+				}
+				item.Link = netutil.NormalizeURL(item.Link)
+			}(item.Item)
+		}
+		wg.Wait()
 	}
 
 	count = 0
