@@ -77,7 +77,7 @@ export const RatingBarOverlay = ({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percentage}
-        aria-label={t('rating.overlay_aria_label', { percentage, reason: reason || t('rating.no_reason') })}
+        aria-label={t('rating.overlay_aria_label', 'Rating: {{percentage}}%. {{reason}}', { percentage, reason: reason || t('rating.no_reason', 'No reason provided') })}
       >
         <div
           className="bar"
@@ -89,7 +89,7 @@ export const RatingBarOverlay = ({
         >
           <span>{percentage}%</span>
         </div>
-        <div className="tooltip-text">{reason || t('rating.no_reason')}</div>
+        <div className="tooltip-text">{reason || t('rating.no_reason', 'No reason provided')}</div>
       </div>
     </div>
   );

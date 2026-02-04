@@ -107,7 +107,7 @@ export const TrendCompare = ({ items, baseItems, currentDomain, compareDomain, a
           </span>
         </li>
       ))}
-      {list.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>None</li>}
+      {list.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>{t('trends.none', 'None')}</li>}
     </ul>
   );
 
@@ -131,7 +131,7 @@ export const TrendCompare = ({ items, baseItems, currentDomain, compareDomain, a
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">
           <div className="col-header unique-a">
-            Our Topics
+            {t('trends.compare.our_topics', 'Our Topics')}
           </div>
           {compareDomain ? renderList(uniqueA, 'score_a') : renderBaseList(baseItems)}
         </div>
@@ -139,7 +139,7 @@ export const TrendCompare = ({ items, baseItems, currentDomain, compareDomain, a
         {/* Column B: Blindspots (Unique to Compare Domain) */}
         <div className="compare-col">
           <div className="col-header unique-b">
-            <span style={{ marginRight: '5px' }}>Their Topics</span>
+            <span style={{ marginRight: '5px' }}>{t('trends.compare.their_topics', 'Their Topics')}</span>
             <select
               className="header-select"
               value={compareDomain || ""}
@@ -156,7 +156,7 @@ export const TrendCompare = ({ items, baseItems, currentDomain, compareDomain, a
         {/* Column Intersect: Shared */}
         <div className="compare-col">
           <div className="col-header intersect">
-            Shared
+            {t('trends.compare.shared', 'Shared')}
           </div>
           {renderList(intersect, 'both')}
         </div>

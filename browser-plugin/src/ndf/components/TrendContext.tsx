@@ -106,21 +106,21 @@ export const TrendContext = ({ topic, className }: TrendContextProps) => {
     return () => { mounted = false; };
   }, [topic]);
 
-  if (loading) return <div className={`trend-context ${className || ''}`}>Loading context...</div>;
+  if (loading) return <div className={`trend-context ${className || ''}`}>{t('trends.loading_context', 'Loading context...')}</div>;
   if (items.length === 0) return null;
 
   return (
     <div className={`trend-context ${className || ''}`}>
       <style>{contextCss}</style>
       <div className="context-header">
-        Context: How is "{topic}" being described?
+        {t('trends.context_header', 'Context: How is "{{topic}}" being described?', { topic })}
       </div>
       <div className="context-list">
         {items.map((item) => (
           <span key={item.context_word} className="context-chip">
             {item.context_word}
             <div className="chip-tooltip">
-              {item.type} - Frequency: {item.frequency}
+              {item.type} - {t('trends.frequency_label', 'Frequency')}: {item.frequency}
             </div>
           </span>
         ))}

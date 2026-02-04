@@ -23,7 +23,7 @@ export const Footer = () => {
     <>
       <style>{footerCss}</style>
       <footer className="page-footer-text">
-        {t('footer.text_pre')}
+        {t('footer.text_pre', 'Visit')}
         <a
           href="https://deframer.github.io/"
           target="_blank"
@@ -31,7 +31,7 @@ export const Footer = () => {
         >
           News Deframer
         </a>{' '}
-        {t('footer.text_post')}
+        {t('footer.text_post', 'for more info.')}
       </footer>
     </>
   );

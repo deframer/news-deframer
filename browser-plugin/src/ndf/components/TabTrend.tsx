@@ -179,6 +179,10 @@ export const TabTrend = () => {
     <div className="trend-container">
       <style>{tabTrendCss}</style>
 
+      <div style={{ padding: '8px', textAlign: 'center', fontSize: '0.85em', color: 'var(--secondary-text)', background: 'var(--bg-color-secondary, #f5f5f5)' }}>
+        This is dummy data
+      </div>
+
       <div className="trend-header">
         {/* 1. Main Navigation Tabs */}
         <div className="nav-tabs">
@@ -186,31 +190,31 @@ export const TabTrend = () => {
             className={`nav-tab ${viewMode === 'list' ? 'active' : ''}`}
             onClick={() => setViewMode('list')}
           >
-            {t('trends.list') || 'List'}
+            {t('trends.list', 'List')}
           </button>
           <button
             className={`nav-tab ${viewMode === 'cloud' ? 'active' : ''}`}
             onClick={() => setViewMode('cloud')}
           >
-            {t('trends.cloud') || 'Cloud'}
+            {t('trends.cloud', 'Cloud')}
           </button>
           <button
             className={`nav-tab ${viewMode === 'compare' ? 'active' : ''}`}
             onClick={() => setViewMode('compare')}
           >
-            {t('trends.compare') || 'Compare'}
+            {t('trends.compare_view', 'Compare')}
           </button>
           <button
             className={`nav-tab ${viewMode === 'lifecycle' ? 'active' : ''}`}
             onClick={() => setViewMode('lifecycle')}
           >
-            {t('trends.lifecycle') || 'Lifecycle'}
+            {t('trends.lifecycle', 'Lifecycle')}
           </button>
         </div>
 
         {/* 2. Filter Bar (Time Selection) */}
         <div className="filter-bar">
-          <span className="filter-label">Time:</span>
+          <span className="filter-label">{t('trends.time_label', 'Time:')}</span>
           <div className="time-selector">
             {TIME_RANGES.map((range) => (
               <button

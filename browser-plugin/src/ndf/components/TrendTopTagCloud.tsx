@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrendItem } from './TrendTop';
 import { TrendContext } from './TrendContext';
 
@@ -70,6 +71,7 @@ const cloudCss = `
 `;
 
 export const TrendTopTagCloud = ({ items }: TrendTopTagCloudProps) => {
+  const { t } = useTranslation();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   if (items.length === 0) return null;
 
@@ -102,9 +104,9 @@ export const TrendTopTagCloud = ({ items }: TrendTopTagCloudProps) => {
           >
             {item.word}
             <div className="cloud-tooltip">
-              Rank: {item.rank}<br/>
-              Trend: {item.outlierRatio.toFixed(2)}x<br/>
-              Vol: {item.count}
+              {t('trends.rank', 'Rank')}: {item.rank}<br/>
+              {t('trends.trend', 'Trend')}: {item.outlierRatio.toFixed(2)}x<br/>
+              {t('trends.vol', 'Vol')}: {item.count}
             </div>
           </span>
         ))}

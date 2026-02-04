@@ -118,6 +118,7 @@ const trendTopCss = `
 `;
 
 export const TrendTop = ({ items }: TrendTopProps) => {
+  const { t } = useTranslation();
   // Ensure we only show top 10
   const sortedItems = [...items].sort((a, b) => a.rank - b.rank).slice(0, 10);
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
@@ -137,16 +138,16 @@ export const TrendTop = ({ items }: TrendTopProps) => {
               <span className="trend-word">{item.word}</span>
               <div className="trend-stats">
                 <div className="stat-item">
-                  <span className="stat-label">Trend</span>
+                  <span className="stat-label">{t('trends.trend_label', 'Trend')}</span>
                   <span className="stat-value" style={{ color: item.outlierRatio > 1.5 ? 'var(--primary-color, #0056b3)' : 'inherit' }}>
                     {item.outlierRatio.toFixed(1)}x
                   </span>
-                  <div className="stat-tooltip">Burstiness (Outlier Ratio)</div>
+                  <div className="stat-tooltip">{t('trends.burstiness_tooltip', 'Burstiness (Outlier Ratio)')}</div>
                 </div>
                 <div className="stat-item">
-                  <span className="stat-label">Vol</span>
+                  <span className="stat-label">{t('trends.vol_label', 'Vol')}</span>
                   <span className="stat-value">{item.count}</span>
-                  <div className="stat-tooltip">Frequency (Interest)</div>
+                  <div className="stat-tooltip">{t('trends.frequency_tooltip', 'Frequency (Interest)')}</div>
                 </div>
               </div>
               <div className={`expand-icon ${expandedTopic === item.word ? 'expanded' : ''}`}>

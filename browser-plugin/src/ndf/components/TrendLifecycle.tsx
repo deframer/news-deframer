@@ -168,13 +168,13 @@ export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
         <input
           type="text"
           className="lifecycle-input"
-          placeholder={t('trends.lifecycle_placeholder') || "Enter term to analyze..."}
+          placeholder={t('trends.lifecycle_placeholder', "Enter term to analyze...")}
           value={term}
           onChange={(e) => setTerm(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
         <button className="lifecycle-btn" onClick={handleSearch} disabled={loading}>
-          {loading ? '...' : (t('trends.analyze') || 'Analyze')}
+          {loading ? '...' : t('trends.analyze', 'Analyze')}
         </button>
       </div>
 
@@ -213,7 +213,11 @@ export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
                 className="chart-bar-wrapper"
                 tabIndex={0}
                 role="img"
-                aria-label={`${dateLabel}: Frequency ${item.frequency}, Velocity ${item.velocity > 0 ? '+' : ''}${item.velocity}`}
+                aria-label={t('trends.lifecycle_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
+                  date: dateLabel,
+                  frequency: item.frequency,
+                  velocity: (item.velocity > 0 ? '+' : '') + item.velocity
+                })}
               >
                 <div
                   className={barClass}
@@ -222,8 +226,8 @@ export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
                   {icon}
                   <div className="bar-tooltip">
                     {dateLabel}<br/>
-                    Freq: {item.frequency}<br/>
-                    Vel: {item.velocity > 0 ? '+' : ''}{item.velocity}
+                    {t('trends.freq', 'Freq')}: {item.frequency}<br/>
+                    {t('trends.vel', 'Vel')}: {item.velocity > 0 ? '+' : ''}{item.velocity}
                   </div>
                 </div>
                 {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
@@ -237,7 +241,7 @@ export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
 
       {data.length === 0 && !loading && term && (
         <div style={{ textAlign: 'center', color: 'var(--secondary-text)', marginTop: '2em' }}>
-          No data to display. Try searching for "trump".
+          {t('trends.lifecycle_no_data', 'No data to display. Try searching for "trump".')}
         </div>
       )}
     </div>

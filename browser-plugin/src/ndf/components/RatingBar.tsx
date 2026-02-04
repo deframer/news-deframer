@@ -56,7 +56,7 @@ export const RatingBar = ({ value, label, id, reason }: RatingBarProps) => {
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={percentage}
-          aria-label={t('rating.aria_label', { label: label || t('rating.label'), percentage })}
+          aria-label={t('rating.aria_label', '{{label}}: {{percentage}}%', { label: label || t('rating.label', 'Rating'), percentage })}
           aria-describedby={id ? `${id}-reason` : undefined}
         >
           <div
