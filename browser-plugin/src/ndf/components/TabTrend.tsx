@@ -4,6 +4,7 @@ import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
 import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
+import { Footer } from './Footer';
 import { TrendItem, TrendTop } from './TrendTop';
 import { TrendCompare } from './TrendCompare';
 import { TrendTopTagCloud } from './TrendTopTagCloud';
@@ -16,13 +17,32 @@ const tabTrendCss = `
     background: var(--card-bg, #fff);
     min-height: 400px;
   }
+  .trend-footer { display: none; }
+  @media (max-width: 799px) {
+    .trend-container {
+      height: calc(100vh - 160px);
+      min-height: 0;
+    }
+    .trend-footer { display: block; margin-top: 20px; }
+  }
+
+  .trend-header {
+    background: var(--card-bg, #fff);
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    z-index: 5;
+    position: relative;
+  }
 
   /* 1. Top Navigation Tabs */
   .nav-tabs {
     display: flex;
     border-bottom: 1px solid var(--border-color, #eee);
     background: var(--card-bg, #fff);
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .nav-tabs::-webkit-scrollbar { display: none; }
   .nav-tab {
     flex: 1;
     padding: 14px 10px;
@@ -35,6 +55,8 @@ const tabTrendCss = `
     border-bottom: 3px solid transparent;
     transition: all 0.2s;
     text-align: center;
+    white-space: nowrap;
+    min-width: fit-content;
   }
   .nav-tab:hover {
     color: var(--primary-color, #0056b3);
@@ -44,6 +66,12 @@ const tabTrendCss = `
     color: var(--primary-color, #0056b3);
     border-bottom-color: var(--primary-color, #0056b3);
     font-weight: 600;
+  }
+  @media (max-width: 799px) {
+    .nav-tab {
+      padding: 12px 5px;
+      font-size: 0.9em;
+    }
   }
 
   /* 2. Filter Bar (Time Selection) */
@@ -151,47 +179,49 @@ export const TabTrend = () => {
     <div className="trend-container">
       <style>{tabTrendCss}</style>
 
-      {/* 1. Main Navigation Tabs */}
-      <div className="nav-tabs">
-        <button
-          className={`nav-tab ${viewMode === 'list' ? 'active' : ''}`}
-          onClick={() => setViewMode('list')}
-        >
-          {t('trends.list') || 'List'}
-        </button>
-        <button
-          className={`nav-tab ${viewMode === 'cloud' ? 'active' : ''}`}
-          onClick={() => setViewMode('cloud')}
-        >
-          {t('trends.cloud') || 'Cloud'}
-        </button>
-        <button
-          className={`nav-tab ${viewMode === 'compare' ? 'active' : ''}`}
-          onClick={() => setViewMode('compare')}
-        >
-          {t('trends.compare') || 'Compare'}
-        </button>
-        <button
-          className={`nav-tab ${viewMode === 'lifecycle' ? 'active' : ''}`}
-          onClick={() => setViewMode('lifecycle')}
-        >
-          {t('trends.lifecycle') || 'Lifecycle'}
-        </button>
-      </div>
+      <div className="trend-header">
+        {/* 1. Main Navigation Tabs */}
+        <div className="nav-tabs">
+          <button
+            className={`nav-tab ${viewMode === 'list' ? 'active' : ''}`}
+            onClick={() => setViewMode('list')}
+          >
+            {t('trends.list') || 'List'}
+          </button>
+          <button
+            className={`nav-tab ${viewMode === 'cloud' ? 'active' : ''}`}
+            onClick={() => setViewMode('cloud')}
+          >
+            {t('trends.cloud') || 'Cloud'}
+          </button>
+          <button
+            className={`nav-tab ${viewMode === 'compare' ? 'active' : ''}`}
+            onClick={() => setViewMode('compare')}
+          >
+            {t('trends.compare') || 'Compare'}
+          </button>
+          <button
+            className={`nav-tab ${viewMode === 'lifecycle' ? 'active' : ''}`}
+            onClick={() => setViewMode('lifecycle')}
+          >
+            {t('trends.lifecycle') || 'Lifecycle'}
+          </button>
+        </div>
 
-      {/* 2. Filter Bar (Time Selection) */}
-      <div className="filter-bar">
-        <span className="filter-label">Time:</span>
-        <div className="time-selector">
-          {TIME_RANGES.map((range) => (
-            <button
-              key={range.id}
-              className={`time-btn ${timeRange === range.id ? 'active' : ''}`}
-              onClick={() => setTimeRange(range.id)}
-            >
-              {range.id}
-            </button>
-          ))}
+        {/* 2. Filter Bar (Time Selection) */}
+        <div className="filter-bar">
+          <span className="filter-label">Time:</span>
+          <div className="time-selector">
+            {TIME_RANGES.map((range) => (
+              <button
+                key={range.id}
+                className={`time-btn ${timeRange === range.id ? 'active' : ''}`}
+                onClick={() => setTimeRange(range.id)}
+              >
+                {range.id}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -213,6 +243,10 @@ export const TabTrend = () => {
         )}
 
         {viewMode === 'lifecycle' && <TrendLifecycle domain={rootDomain} timeRange={timeRange} />}
+
+        <div className="trend-footer">
+          <Footer />
+        </div>
       </div>
     </div>
   );

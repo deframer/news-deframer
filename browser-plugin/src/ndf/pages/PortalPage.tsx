@@ -64,12 +64,13 @@ const portalPageCss = `
   .tab-btn.active { border-bottom-color: var(--btn-bg); opacity: 1; font-weight: 600; }
 
   @media (max-width: 799px) {
-    :host { padding-top: 80px; }
-    .container { padding: 1em; padding-top: 0; }
-    .header { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; margin-bottom: 0; justify-content: space-between; padding: 10px 1em; }
+    .container { padding: 1em; padding-top: 125px; }
+    .header { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; margin-bottom: 0; justify-content: space-between; padding: 10px 1em; height: 60px; }
+    .tabs { position: fixed; top: 60px; left: 0; width: 100%; z-index: 999; background-color: var(--bg-color); margin-bottom: 0; }
     .title-desktop { display: none; }
     .title-mobile { display: inline; }
     #btn-hide { position: static; transform: none; }
+    .footer-container.trends { display: none; }
   }
 
 `;
@@ -119,7 +120,9 @@ export const PortalPage = ({ items }: PortalPageProps) => {
 
         {activeTab === 'portal' ? <TabPortal items={items} /> : <TabTrend />}
 
-        <Footer />
+        <div className={`footer-container ${activeTab}`}>
+          <Footer />
+        </div>
       </div>
     </>
   );

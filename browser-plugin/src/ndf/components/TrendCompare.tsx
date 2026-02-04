@@ -23,6 +23,11 @@ const compareCss = `
     gap: 16px;
     margin-top: 10px;
   }
+  @media (max-width: 799px) {
+    .compare-grid {
+      grid-template-columns: 1fr;
+    }
+  }
   .compare-col {
     background: var(--card-bg, #fff);
     border: 1px solid var(--border-color, #eee);
