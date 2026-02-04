@@ -59,6 +59,10 @@ const lifecycleCss = `
     position: relative;
     outline: none;
   }
+  .chart-bar-wrapper:hover,
+  .chart-bar-wrapper:focus-visible {
+    z-index: 20;
+  }
   .chart-bar-wrapper:focus-visible .chart-bar {
     box-shadow: 0 0 0 2px var(--text-color);
     opacity: 0.8;
@@ -113,7 +117,7 @@ const lifecycleCss = `
   }
   .bar-tooltip {
     position: absolute;
-    bottom: 100%;
+    bottom: 35px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(0,0,0,0.8);
@@ -126,7 +130,11 @@ const lifecycleCss = `
     pointer-events: none;
     transition: opacity 0.2s;
     z-index: 10;
-    margin-bottom: 5px;
+  }
+  @media (max-width: 799px) {
+    .bar-tooltip {
+      bottom: 70px;
+    }
   }
   .chart-bar-wrapper:hover .bar-tooltip,
   .chart-bar-wrapper:focus-visible .bar-tooltip {
@@ -211,13 +219,12 @@ export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
                   style={style}
                 >
                   {icon}
+                  <div className="bar-tooltip">
+                    {dateLabel}<br/>
+                    Freq: {item.frequency}<br/>
+                    Vel: {item.velocity > 0 ? '+' : ''}{item.velocity}
+                  </div>
                 </div>
-                <div className="bar-tooltip">
-                  {dateLabel}<br/>
-                  Freq: {item.frequency}<br/>
-                  Vel: {item.velocity > 0 ? '+' : ''}{item.velocity}
-                </div>
-                {/* Show label only for every nth item if too many items, or always if few */}
                 {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
                   <div className="bar-label" style={labelStyle}>{dateLabel}</div>
                 )}

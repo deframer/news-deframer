@@ -34,7 +34,7 @@ const STATIC_TREND_DATA: TrendMetric[] = [
   { trend_topic: 'syrer', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
   { trend_topic: 'prien', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-29 00:00:00+00' },
   { trend_topic: 'köln', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
-  { trend_topic: 'oeter', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-29 00:00:00+00' },
+  { trend_topic: 'peter', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-29 00:00:00+00' },
   { trend_topic: 'live', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
   { trend_topic: 'regierung', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
   { trend_topic: 'gericht', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-31 00:00:00+00' },
