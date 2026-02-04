@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { TrendItem } from './TrendTop';
 import { TrendContext } from './TrendContext';
 
+// https://visx.airbnb.tech/wordcloud
+
 interface TrendTopTagCloudProps {
   items: TrendItem[];
 }
