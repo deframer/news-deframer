@@ -20,8 +20,8 @@ Das JSON muss die folgenden Felder enthalten:
 8.  **`clickbait_reason`** (String): Identifikation der Köder-Taktik (z. B. "Vorenthaltung von Infos", "Cliffhanger") in max. 10 Wörtern.
 9.  **`persuasive`** (Float, 0.0 - 1.0): Wie stark ist die Absicht, den Leser zu einer Handlung, einem Kauf oder einer Einstellungsänderung zu bewegen (Werbecharakter)?
 10. **`persuasive_reason`** (String): Identifikation von Handlungsaufforderungen (Call-to-Action) oder Verkaufssprache in max. 10 Wörtern.
-11. **`hyper_stimulus`** (Float, 0.0 - 1.0): Nutzung von Reizen wie alles in Großbuchstaben, viele Ausrufezeichen, aggressiven Wörtern oder extremer Emotionalisierung.
-12. **`hyper_stimulus_reason`** (String): Identifiziere stilistische Exzesse (z.B. "exzessive Großschreibung", "mehrfache Ausrufezeichen") in max. 10 Wörtern.
+11. **`hyper_stimulus`** (Float, 0.0 - 1.0): Nutzung von Reizen wie etwa aggressiven Wörtern, ungewöhnliche Satzzeichen oder extremer Emotionalisierung.
+12. **`hyper_stimulus_reason`** (String): Identifiziere stilistische Exzesse (z.B. aggressiven Wörtern, ungewöhnliche Satzzeichen, emotionalen Schlüsselwörtern) in max. 10 Wörtern.
 13. **`speculative`** (Float, 0.0 - 1.0): Wie hoch ist der Anteil an unbestätigten Behauptungen, Gerüchten, "angeblichen" Beweisen oder Spekulationen (inkl. Konjunktiv: hätte, sollte, könnte) ohne faktische Basis?
 14. **`speculative_reason`** (String): Identifikation der Unsicherheitsquelle (z. B. "quellenlose Gerüchte", "Zukunftsprognose", "Konjunktiv: hätte/sollte/könnte") in max. 10 Wörtern.
 15. **`overall`** (Float, 0.0 - 1.0): Ein aggregierter Gesamtwert, der zur Entscheidung dient, ob der Artikel verworfen werden soll.
