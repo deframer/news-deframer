@@ -90,16 +90,14 @@ const lifecycleCss = `
   .bar-label {
     font-size: 0.85em;
     font-weight: bold;
-    text-align: left;
+    text-align: center;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     position: absolute;
     bottom: 8px;
-    left: 12px;
-    transform: rotate(-45deg);
-    transform-origin: bottom left;
-    width: 60px;
+    left: 0;
+    width: 100%;
     pointer-events: none;
     z-index: 2;
   }
