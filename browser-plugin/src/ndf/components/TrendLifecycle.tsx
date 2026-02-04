@@ -120,11 +120,12 @@ const lifecycleCss = `
     bottom: 35px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0,0,0,0.8);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.75em;
+    background-color: var(--tooltip-bg, rgba(0,0,0,0.8));
+    color: var(--tooltip-text, #fff);
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 0.9em;
+    line-height: 1.4;
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;

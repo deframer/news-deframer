@@ -44,6 +44,36 @@ const contextCss = `
     gap: 6px;
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
   }
+  .context-chip {
+    position: relative;
+  }
+  .context-chip:hover {
+    z-index: 10;
+  }
+  .chip-tooltip {
+    visibility: hidden;
+    opacity: 0;
+    background-color: var(--tooltip-bg, rgba(0,0,0,0.8));
+    color: var(--tooltip-text, #fff);
+    text-align: center;
+    border-radius: 6px;
+    padding: 6px 10px;
+    position: absolute;
+    z-index: 20;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 6px;
+    font-size: 0.9em;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  }
+  .context-chip:hover .chip-tooltip {
+    visibility: visible;
+    opacity: 1;
+  }
   .context-freq {
     background: var(--badge-bg, #eee);
     color: var(--secondary-text);
@@ -87,8 +117,11 @@ export const TrendContext = ({ topic, className }: TrendContextProps) => {
       </div>
       <div className="context-list">
         {items.map((item) => (
-          <span key={item.context_word} className="context-chip" title={`${item.type} - Frequency: ${item.frequency}`}>
+          <span key={item.context_word} className="context-chip">
             {item.context_word}
+            <div className="chip-tooltip">
+              {item.type} - Frequency: {item.frequency}
+            </div>
           </span>
         ))}
       </div>
