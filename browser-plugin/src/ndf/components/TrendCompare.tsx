@@ -1,10 +1,19 @@
 import { useTranslation } from 'react-i18next';
 import { TrendComparisonMetric } from './TrendRepo';
+import { TrendItem } from './TrendTop';
+
+interface DomainOption {
+  id: string;
+  name: string;
+}
 
 interface TrendCompareProps {
   items: TrendComparisonMetric[];
+  baseItems: TrendItem[];
   currentDomain: string;
-  compareDomain: string;
+  compareDomain: string | null;
+  availableDomains: DomainOption[];
+  onSelectDomain: (domain: string) => void;
 }
 
 const compareCss = `
@@ -30,6 +39,10 @@ const compareCss = `
     padding-bottom: 8px;
     border-bottom: 2px solid transparent;
     color: var(--text-color);
+  }
+  .col-header select {
+    font-size: 1em;
+    font-weight: bold;
   }
   .col-header.unique-a { border-color: var(--primary-color, #0056b3); }
   .col-header.intersect { border-color: var(--secondary-text, #6c757d); }
@@ -57,14 +70,25 @@ const compareCss = `
     padding: 2px 6px;
     border-radius: 4px;
   }
+  .header-select {
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color, #ddd);
+    background: var(--card-bg, #fff);
+    color: var(--text-color);
+    font-size: 0.9em;
+    font-weight: bold;
+    max-width: 100%;
+  }
 `;
 
-export const TrendCompare = ({ items, currentDomain, compareDomain }: TrendCompareProps) => {
+export const TrendCompare = ({ items, baseItems, currentDomain, compareDomain, availableDomains, onSelectDomain }: TrendCompareProps) => {
   const { t } = useTranslation();
 
-  const uniqueA = items.filter(i => i.classification === 'BLINDSPOT_A');
-  const intersect = items.filter(i => i.classification === 'INTERSECT');
-  const uniqueB = items.filter(i => i.classification === 'BLINDSPOT_B');
+  // If comparing, use the comparison data. If not, uniqueA is just the base list (top 10)
+  const uniqueA = compareDomain ? items.filter(i => i.classification === 'BLINDSPOT_A') : [];
+  const intersect = compareDomain ? items.filter(i => i.classification === 'INTERSECT') : [];
+  const uniqueB = compareDomain ? items.filter(i => i.classification === 'BLINDSPOT_B') : [];
 
   const renderList = (list: TrendComparisonMetric[], scoreKey: 'score_a' | 'score_b' | 'both') => (
     <ul className="compare-list">
@@ -82,6 +106,19 @@ export const TrendCompare = ({ items, currentDomain, compareDomain }: TrendCompa
     </ul>
   );
 
+  const renderBaseList = (list: TrendItem[]) => (
+    <ul className="compare-list">
+      {list.slice(0, 10).map((item) => (
+        <li key={item.word} className="compare-item">
+          <span className="topic-name">{item.word}</span>
+          <span className="topic-score">
+            {item.outlierRatio.toFixed(1)}x
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+
   return (
     <>
       <style>{compareCss}</style>
@@ -91,13 +128,22 @@ export const TrendCompare = ({ items, currentDomain, compareDomain }: TrendCompa
           <div className="col-header unique-a">
             Our Topics
           </div>
-          {renderList(uniqueA, 'score_a')}
+          {compareDomain ? renderList(uniqueA, 'score_a') : renderBaseList(baseItems)}
         </div>
 
         {/* Column B: Blindspots (Unique to Compare Domain) */}
         <div className="compare-col">
           <div className="col-header unique-b">
-            Their Topics
+            <span style={{ marginRight: '5px' }}>Their Topics</span>
+            <select
+              className="header-select"
+              value={compareDomain || ""}
+              onChange={(e) => onSelectDomain(e.target.value)}
+            >
+              {availableDomains.map(d => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
           </div>
           {renderList(uniqueB, 'score_b')}
         </div>

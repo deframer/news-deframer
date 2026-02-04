@@ -119,26 +119,27 @@ export const TabTrend = () => {
   const [timeRange, setTimeRange] = useState('7d');
   const [items, setItems] = useState<TrendItem[]>([]);
   const [compareItems, setCompareItems] = useState<TrendComparisonMetric[]>([]);
-  const [compareDomain, setCompareDomain] = useState('tagesschau.de');
 
   const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
   const availableDomains = TrendRepo.getAvailableDomains().filter(d => d.id !== rootDomain);
+  const [compareDomain, setCompareDomain] = useState<string | null>(availableDomains[0]?.id || null);
 
   log.info(`trend analysis - current domain: ${rootDomain}, range: ${timeRange}`);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (viewMode === 'list' || viewMode === 'cloud') {
-        const data = await TrendRepo.getTrends(rootDomain /*, timeRange */);
-        const mappedItems: TrendItem[] = data.map((d, index) => ({
-          word: d.trend_topic,
-          rank: index + 1,
-          count: d.frequency,
-          utility: d.utility,
-          outlierRatio: d.outlier_ratio
-        }));
-        setItems(mappedItems);
-      } else if (viewMode === 'compare') {
+      // Always fetch base trends so we have them for the "Our Topics" column in compare mode
+      const data = await TrendRepo.getTrends(rootDomain /*, timeRange */);
+      const mappedItems: TrendItem[] = data.map((d, index) => ({
+        word: d.trend_topic,
+        rank: index + 1,
+        count: d.frequency,
+        utility: d.utility,
+        outlierRatio: d.outlier_ratio
+      }));
+      setItems(mappedItems);
+
+      if (viewMode === 'compare' && compareDomain) {
         const data = await TrendRepo.getTrendComparison(rootDomain, compareDomain, timeRange);
         setCompareItems(data);
       }
@@ -201,25 +202,14 @@ export const TabTrend = () => {
         {viewMode === 'cloud' && <TrendTopTagCloud items={items} />}
 
         {viewMode === 'compare' && (
-          <div>
-            <div style={{ marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <label style={{ fontSize: '0.9em', color: 'var(--secondary-text)' }}>Compare with:</label>
-              <select
-                className="domain-select"
-                value={compareDomain}
-                onChange={(e) => setCompareDomain(e.target.value)}
-              >
-                {availableDomains.map(d => (
-                  <option key={d.id} value={d.id}>{d.name}</option>
-                ))}
-              </select>
-            </div>
-            <TrendCompare
-              items={compareItems}
-              currentDomain={rootDomain}
-              compareDomain={compareDomain}
-            />
-          </div>
+          <TrendCompare
+            items={compareItems}
+            baseItems={items}
+            currentDomain={rootDomain}
+            compareDomain={compareDomain}
+            availableDomains={availableDomains}
+            onSelectDomain={setCompareDomain}
+          />
         )}
 
         {viewMode === 'lifecycle' && <TrendLifecycle domain={rootDomain} timeRange={timeRange} />}

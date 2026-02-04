@@ -91,8 +91,8 @@ const trendTopCss = `
 `;
 
 export const TrendTop = ({ items }: TrendTopProps) => {
-  // Ensure we only show top 20
-  const sortedItems = [...items].sort((a, b) => a.rank - b.rank).slice(0, 20);
+  // Ensure we only show top 10
+  const sortedItems = [...items].sort((a, b) => a.rank - b.rank).slice(0, 10);
   const [expandedTopic, setExpandedTopic] = useState<string | null>(null);
 
   const toggleExpand = (word: string) => {

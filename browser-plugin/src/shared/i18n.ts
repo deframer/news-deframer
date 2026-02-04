@@ -10,6 +10,14 @@ const resources = {
         trends: 'Trends',
         hide: 'Hide',
       },
+      trends: {
+        list: 'List',
+        cloud: 'Tag Cloud',
+        compare: 'Compare',
+        lifecycle: 'Lifecycle',
+        lifecycle_placeholder: 'Enter term to analyze...',
+        analyze: 'Analyze',
+      },
       article: {
         back: 'Back',
         back_tooltip: 'Go back to {{domain}} portal',
@@ -74,6 +82,14 @@ const resources = {
         title: 'News Deframer',
         trends: 'Trends',
         hide: 'Ausblenden',
+      },
+      trends: {
+        list: 'Liste',
+        cloud: 'Tag Cloud',
+        compare: 'Vergleich',
+        lifecycle: 'Verlauf',
+        lifecycle_placeholder: 'Begriff eingeben...',
+        analyze: 'Analysieren',
       },
       article: {
         back: 'Zurück',
