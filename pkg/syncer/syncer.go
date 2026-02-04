@@ -146,10 +146,6 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 				sem <- struct{}{}        // Acquire token
 				defer func() { <-sem }() // Release token
 
-				// TODO: come up with a smart idea, that we don't have todo this very early
-				// the problem is the (final link) is part of the hash
-				// that is (may be?) not relevant - currently the hash
-				// is not (really?) used
 				resolved, err := s.dl.ResolveRedirect(s.ctx, item.Link)
 				if err != nil {
 					s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)

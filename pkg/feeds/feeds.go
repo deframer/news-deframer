@@ -586,24 +586,8 @@ func encodeExtensionChildren(e *xml.Encoder, children map[string][]ext.Extension
 	return nil
 }
 
-// HashType defines the strategy for generating the item hash
-type HashType int
-
-const (
-	// HashTypeDefault generates a hash based only on the item's identity (GUID/Link/Title)
-	HashTypeDefault HashType = iota
-	// HashTypeVersioned generates a hash based on identity + content (Title + Description)
-	HashTypeVersioned
-)
-
 // ItemHashKey creates a deterministic ID based on the item's attributes.
-// By default, it uses HashTypeDefault. You can pass a specific HashType as a second argument.
-func ItemHashKey(item *gofeed.Item, ht ...HashType) (string, error) {
-	mode := HashTypeDefault
-	if len(ht) > 0 {
-		mode = ht[0]
-	}
-
+func ItemHashKey(item *gofeed.Item) (string, error) {
 	link := strings.TrimSpace(item.Link)
 	if link == "" {
 		return "", fmt.Errorf("item link is empty")
@@ -612,13 +596,6 @@ func ItemHashKey(item *gofeed.Item, ht ...HashType) (string, error) {
 	seed := strings.TrimSpace(item.GUID)
 	if seed == "" {
 		seed = link
-	}
-
-	if mode == HashTypeVersioned {
-		cleanTitle := strings.TrimSpace(item.Title)
-		cleanDesc := strings.TrimSpace(item.Description)
-		// Combine identity with content to detect changes
-		seed = fmt.Sprintf("%s|%s|%s", seed, cleanTitle, cleanDesc)
 	}
 
 	if seed == "" {
