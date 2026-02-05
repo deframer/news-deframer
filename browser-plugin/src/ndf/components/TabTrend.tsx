@@ -9,129 +9,6 @@ import { TrendLifecycle } from './TrendLifecycle';
 import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
 import { TrendTopTagCloud } from './TrendTopTagCloud';
 
-const tabTrendCss = `
-  .trend-container {
-    display: flex;
-    flex-direction: column;
-    background: var(--card-bg, #fff);
-    min-height: 400px;
-  }
-  .trend-footer { display: none; }
-  @media (max-width: 799px) {
-    .trend-container {
-      height: calc(100vh - 160px);
-      min-height: 0;
-    }
-    .trend-footer { display: block; margin-top: 20px; }
-  }
-
-  .trend-header {
-    background: var(--card-bg, #fff);
-    flex-shrink: 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    z-index: 5;
-    position: relative;
-  }
-
-  /* 1. Top Navigation Tabs */
-  .nav-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border-color, #eee);
-    background: var(--card-bg, #fff);
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .nav-tabs::-webkit-scrollbar { display: none; }
-  .nav-tab {
-    flex: 1;
-    padding: 14px 10px;
-    border: none;
-    background: none;
-    cursor: pointer;
-    font-size: 0.95em;
-    font-weight: 500;
-    color: var(--secondary-text);
-    border-bottom: 3px solid transparent;
-    transition: all 0.2s;
-    text-align: center;
-    white-space: nowrap;
-    min-width: fit-content;
-  }
-  .nav-tab:hover {
-    color: var(--primary-color, #0056b3);
-    background-color: var(--hover-bg, rgba(0,0,0,0.02));
-  }
-  .nav-tab.active {
-    color: var(--primary-color, #0056b3);
-    border-bottom-color: var(--primary-color, #0056b3);
-    font-weight: 600;
-  }
-  @media (max-width: 799px) {
-    .nav-tab {
-      padding: 12px 5px;
-      font-size: 0.9em;
-    }
-  }
-
-  /* 2. Filter Bar (Time Selection) */
-  .filter-bar {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color, #f0f0f0);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    background: var(--bg-color-secondary, #fafafa);
-    gap: 10px;
-  }
-  .filter-label {
-    font-size: 0.85em;
-    font-weight: 600;
-    color: var(--secondary-text);
-  }
-  .time-selector {
-    display: flex;
-    gap: 2px;
-    background: var(--border-color, #e0e0e0);
-    padding: 2px;
-    border-radius: 6px;
-  }
-  .time-btn {
-    border: none;
-    background: transparent;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.8em;
-    cursor: pointer;
-    color: var(--secondary-text);
-    font-weight: 500;
-    transition: all 0.1s;
-  }
-  .time-btn:hover {
-    color: var(--text-color);
-  }
-  .time-btn.active {
-    background: var(--card-bg, #fff);
-    color: var(--text-color);
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    font-weight: 600;
-  }
-
-  /* 3. Content Area */
-  .trend-content {
-    padding: 16px;
-    flex: 1;
-    overflow-y: auto;
-  }
-  .domain-select {
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid var(--border-color, #ddd);
-    background: var(--card-bg, #fff);
-    color: var(--text-color);
-    font-size: 0.9em;
-  }
-`;
-
 const TIME_RANGES = [
   { id: '24h', days: 1, label: 'trends.time_ranges.last_24h' },
   { id: '7d', days: 7, label: 'trends.time_ranges.last_7d' },
@@ -186,8 +63,6 @@ export const TabTrend = ({ domain }: { domain: string }) => {
 
   return (
     <div className="trend-container">
-      <style>{tabTrendCss}</style>
-
       <div style={{ padding: '8px', textAlign: 'center', fontSize: '0.85em', color: 'var(--secondary-text)', background: 'var(--bg-color-secondary, #f5f5f5)' }}>
         This is dummy data
       </div>

@@ -16,77 +16,6 @@ interface TrendCompareProps {
   onSelectDomain: (domain: string) => void;
 }
 
-const compareCss = `
-  .compare-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 16px;
-    margin-top: 10px;
-  }
-  @media (max-width: 799px) {
-    .compare-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-  .compare-col {
-    background: var(--card-bg, #fff);
-    border: 1px solid var(--border-color, #eee);
-    border-radius: 8px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-  }
-  .col-header {
-    font-size: 0.9em;
-    font-weight: bold;
-    text-align: center;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid transparent;
-    color: var(--text-color);
-  }
-  .col-header select {
-    font-size: 1em;
-    font-weight: bold;
-  }
-  .col-header.unique-a { border-color: var(--primary-color, #0056b3); }
-  .col-header.intersect { border-color: var(--secondary-text, #6c757d); }
-  .col-header.unique-b { border-color: var(--danger-color, #dc3545); }
-
-  .compare-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .compare-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-color, #f5f5f5);
-    font-size: 0.9em;
-  }
-  .compare-item:last-child { border-bottom: none; }
-  .topic-name { font-weight: 500; }
-  .topic-score {
-    font-size: 0.8em;
-    color: var(--secondary-text);
-    background: var(--bg-color-secondary, #f5f5f5);
-    padding: 2px 6px;
-    border-radius: 4px;
-  }
-  .header-select {
-    padding: 4px 8px;
-    border-radius: 4px;
-    border: 1px solid var(--border-color, #ddd);
-    background: var(--card-bg, #fff);
-    color: var(--text-color);
-    font-size: 0.9em;
-    font-weight: bold;
-    max-width: 100%;
-  }
-`;
-
 export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains, onSelectDomain }: TrendCompareProps) => {
   const { t } = useTranslation();
 
@@ -126,7 +55,6 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
 
   return (
     <>
-      <style>{compareCss}</style>
       <div className="compare-grid">
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">

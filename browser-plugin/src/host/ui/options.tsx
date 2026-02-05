@@ -12,6 +12,7 @@ import {
   getSettings,
   Settings,
 } from '../../shared/settings';
+import { getThemeCss, globalStyles, Theme } from '../../shared/theme';
 import { ProxyResponse } from '../../shared/types';
 import { Footer } from './Footer';
 import { ToggleSwitch } from './ToggleSwitch';
@@ -31,7 +32,6 @@ export const Options = () => {
   });
   const [status, setStatus] = useState<Status>('idle');
   const [loaded, setLoaded] = useState(false);
-  const [setIsDark] = useState(false);
   const [domains, setDomains] = useState<string[]>([]);
   const [lang, setLang] = useState<string>('default');
 
@@ -116,19 +116,15 @@ export const Options = () => {
 
   // Update theme on change
   useEffect(() => {
-    let dark: boolean;
-    if (settings.theme === 'system') {
-      dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } else {
-      dark = settings.theme === 'dark';
+    // Inject shared theme styles
+    const styleId = 'ndf-theme-styles';
+    let style = document.getElementById(styleId);
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      document.head.appendChild(style);
     }
-    setIsDark(dark);
-
-    // Apply theme class to body
-    document.body.classList.remove('theme-light', 'theme-dark');
-    if (settings.theme !== 'system') {
-      document.body.classList.add(`theme-${settings.theme}`);
-    }
+    style.textContent = getThemeCss(settings.theme as Theme) + globalStyles;
   }, [settings.theme]);
 
   // Update language on change
@@ -263,7 +259,7 @@ export const Options = () => {
         {/* Status Badge */}
         {status !== 'idle' && (
           <div
-            className={`status-badge ${isConnected ? 'connected' : isError ? 'error' : ''}`}
+            className={`status-badge ${isConnected ? 'connected' : isError ? 'error' : isLoading ? 'testing' : ''}`}
           >
             <span className="status-dot" />
             {isConnected ? t('options.status_connected') : isError ? t('options.status_error') : t('options.status_checking')}

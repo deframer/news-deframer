@@ -1,32 +1,5 @@
 import { useTranslation } from 'react-i18next';
 
-const metaDataCss = `
-  .meta-data {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 12px;
-    font-size: 0.85em;
-    color: var(--secondary-text);
-    margin-top: 0.5em;
-    margin-bottom: 2em;
-    line-height: 1;
-  }
-  .meta-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-  }
-  .meta-icon {
-    width: 14px;
-    height: 14px;
-    stroke: currentColor;
-    stroke-width: 2;
-    fill: none;
-  }
-`;
-
 interface MetaDataProps {
   pubDate?: string | Date;
   author?: string;
@@ -61,7 +34,6 @@ export const MetaData = ({ pubDate, author, category }: MetaDataProps) => {
 
   return (
     <>
-      <style>{metaDataCss}</style>
       <div className="meta-data">
         {timeAgo && (
           <div className="meta-item">

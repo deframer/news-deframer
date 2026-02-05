@@ -10,6 +10,7 @@ import { AnalyzedItem, NewsDeframerClient } from './client';
 import { Spinner } from './components/Spinner';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
+import { ndfStyles } from './styles';
 import { classifyUrl, PageType } from './utils/url-classifier';
 
 const App = ({ theme }: { theme: string }) => {
@@ -117,7 +118,7 @@ const App = ({ theme }: { theme: string }) => {
       // data is AnalyzedItem
       return (
         <>
-          <style>{getThemeCss(theme as Theme)}</style>
+          <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
           <ArticlePage item={data as AnalyzedItem} />
         </>
       );
@@ -125,7 +126,7 @@ const App = ({ theme }: { theme: string }) => {
       // data is AnalyzedItem[]
       return (
         <>
-          <style>{getThemeCss(theme as Theme)}</style>
+          <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
           <PortalPage items={data as AnalyzedItem[]} domain={currentDomain || ''} />
         </>
       );

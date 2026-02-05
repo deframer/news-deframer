@@ -19,7 +19,7 @@ export const cssVariables = {
     --accent-text: #ffffff;
     --rating-bg: #e9ecef;
     --success-color: #198754;
-    --warning-color: #ffc107;
+    --warning-color: #f57c00;
     --danger-color: #b02a37;
     --tooltip-bg: rgba(0,0,0,0.85);
     --tooltip-text: #ffffff;
