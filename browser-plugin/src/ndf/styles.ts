@@ -123,12 +123,6 @@ h1 { margin: 0; font-size: 1.5em; }
 }
 
 /* RatingBarOverlay.tsx */
-.bar-container {
-  background-color: var(--rating-bg);
-  height: 30px;
-  width: 100%;
-  position: relative; /* For overlay and tooltip */
-}
 .bar {
   height: 100%;
   transition: width 0.3s ease;
@@ -149,14 +143,14 @@ h1 { margin: 0; font-size: 1.5em; }
 .bar-container .tooltip-text {
   visibility: hidden;
   opacity: 0;
-  width: 250px;
+  width: 100%;
   background-color: var(--tooltip-bg);
   color: var(--tooltip-text);
   text-align: left;
   border-radius: 6px;
   padding: 10px;
   position: absolute;
-  z-index: 1;
+  z-index: 100;
   top: 100%;
   left: 50%;
   transform: translateX(-50%);
@@ -172,8 +166,8 @@ h1 { margin: 0; font-size: 1.5em; }
 
 /* ArticleTile.tsx */
 .tile-link { text-decoration: none; color: inherit; display: block; height: 100%; }
-.tile { background-color: var(--card-bg); border-radius: 8px; box-shadow: var(--card-shadow); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; height: 100%; position: relative; display: flex; flex-direction: column; }
-.tile:hover { transform: translateY(-5px); box-shadow: var(--card-shadow-hover); }
+.tile { background-color: var(--card-bg); border-radius: 8px; box-shadow: var(--card-shadow); transition: transform 0.2s, box-shadow 0.2s; height: 100%; position: relative; display: flex; flex-direction: column; }
+.tile:hover { transform: translateY(-5px); box-shadow: var(--card-shadow-hover); z-index: 10; }
 .image-container { position: relative; }
 .image-container img { width: 100%; height: auto; display: block; }
 .content { padding: 15px; flex: 1; }
@@ -292,7 +286,6 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   height: 30px;
   width: 100%;
   position: relative;
-  overflow: hidden;
 }
 .bar {
   height: 100%;
