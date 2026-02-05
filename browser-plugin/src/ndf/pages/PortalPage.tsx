@@ -13,9 +13,10 @@ import { TabTrend } from '../components/TabTrend';
 interface PortalPageProps {
   items: AnalyzedItem[];
   domain: string;
+  availableDomains: string[];
 }
 
-export const PortalPage = ({ items, domain }: PortalPageProps) => {
+export const PortalPage = ({ items, domain, availableDomains }: PortalPageProps) => {
   const { t } = useTranslation();
   const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
   const [activeTab, setActiveTab] = useState<'portal' | 'trends'>('portal');
@@ -53,7 +54,7 @@ export const PortalPage = ({ items, domain }: PortalPageProps) => {
           </button>
         </div>
 
-        {activeTab === 'portal' ? <TabPortal items={items} /> : <TabTrend domain={domain} />}
+        {activeTab === 'portal' ? <TabPortal items={items} /> : <TabTrend domain={domain} availableDomains={availableDomains} />}
 
         <div className={`footer-container ${activeTab}`}>
           <Footer />

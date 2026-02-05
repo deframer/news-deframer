@@ -19,6 +19,7 @@ const App = ({ theme }: { theme: string }) => {
     AnalyzedItem | AnalyzedItem[] | null
   >(null);
   const [currentDomain, setCurrentDomain] = useState<string | null>(null);
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,6 +49,7 @@ const App = ({ theme }: { theme: string }) => {
 
         if (type === PageType.PORTAL) {
           const allDomains = await client.getDomains();
+          setAvailableDomains(allDomains);
           const siteHost = window.location.host;
           const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
 
@@ -127,7 +129,7 @@ const App = ({ theme }: { theme: string }) => {
       return (
         <>
           <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
-          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain || ''} />
+          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain || ''} availableDomains={availableDomains} />
         </>
       );
     default:

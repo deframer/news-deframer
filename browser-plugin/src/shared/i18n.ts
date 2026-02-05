@@ -28,9 +28,9 @@ const resources = {
         frequency_label: 'Frequency',
         lifecycle_aria_label: '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}',
         compare: {
-          our_topics: 'Our Topics',
-          their_topics: 'Their Topics',
-          shared: 'Shared',
+          trending_on: 'Trending {{domain}}',
+          their_topics: 'Trending',
+          shared: 'Shared Trends',
         },
         time_ranges: {
           last_24h: '24h',
@@ -123,9 +123,9 @@ const resources = {
         frequency_label: 'Häufigkeit',
         lifecycle_aria_label: '{{date}}: Häufigkeit {{frequency}}, Geschwindigkeit {{velocity}}',
         compare: {
-          our_topics: 'Unsere Themen',
-          their_topics: 'Deren Themen',
-          shared: 'Gemeinsam',
+          trending_on: 'Trends auf {{domain}}',
+          their_topics: 'Trends auf',
+          shared: 'Gemeinsame Trends',
         },
         time_ranges: {
           last_24h: '24h',

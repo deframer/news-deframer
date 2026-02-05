@@ -14,9 +14,10 @@ interface TrendCompareProps {
   compareDomain: string | null;
   availableDomains: DomainOption[];
   onSelectDomain: (domain: string) => void;
+  domain: string;
 }
 
-export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains, onSelectDomain }: TrendCompareProps) => {
+export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains, onSelectDomain, domain }: TrendCompareProps) => {
   const { t } = useTranslation();
 
   // If comparing, use the comparison data. If not, uniqueA is just the base list (top 10)
@@ -59,7 +60,7 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">
           <div className="col-header unique-a">
-            {t('trends.compare.our_topics', 'Our Topics')}
+            {t('trends.compare.trending_on', { domain })}
           </div>
           {compareDomain ? renderList(uniqueA, 'score_a') : renderBaseList(baseItems)}
         </div>
@@ -67,7 +68,7 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
         {/* Column B: Blindspots (Unique to Compare Domain) */}
         <div className="compare-col">
           <div className="col-header unique-b">
-            <span style={{ marginRight: '5px' }}>{t('trends.compare.their_topics', 'Their Topics')}</span>
+            <span style={{ marginRight: '5px' }}>{t('trends.compare.their_topics', 'Trending')}</span>
             <select
               className="header-select"
               value={compareDomain || ""}

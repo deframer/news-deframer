@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
 import { Footer } from './Footer';
@@ -25,17 +24,15 @@ export interface TrendItem {
   outlierRatio: number;
 }
 
-export const TabTrend = ({ domain }: { domain: string }) => {
+export const TabTrend = ({ domain, availableDomains }: { domain: string; availableDomains: string[] }) => {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
   const [items, setItems] = useState<TrendItem[]>([]);
   const [compareItems, setCompareItems] = useState<TrendComparisonMetric[]>([]);
 
-  // Use getDomain to normalize the passed domain for the exclusion list (which contains root domains)
-  const rootDomainForFilter = getDomain(domain) || domain;
-  const availableDomains = TrendRepo.getAvailableDomains(rootDomainForFilter).filter(d => d.id !== rootDomainForFilter);
-  const [compareDomain, setCompareDomain] = useState<string | null>(availableDomains[0]?.id || null);
+  const domainOptions = availableDomains.filter(d => d !== domain).map(d => ({ id: d, name: d }));
+  const [compareDomain, setCompareDomain] = useState<string | null>(domainOptions[0]?.id || null);
 
   const currentDays = TIME_RANGES.find(r => r.id === timeRange)?.days || 7;
   log.info(`trend analysis - current domain: ${domain}, days: ${currentDays}`);
@@ -112,8 +109,9 @@ export const TabTrend = ({ domain }: { domain: string }) => {
             items={compareItems}
             baseItems={items}
             compareDomain={compareDomain}
-            availableDomains={availableDomains}
+            availableDomains={domainOptions}
             onSelectDomain={setCompareDomain}
+            domain={domain}
           />
         )}
 
