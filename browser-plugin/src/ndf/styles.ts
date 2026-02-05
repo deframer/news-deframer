@@ -196,6 +196,14 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+.spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 
 /* TrendContext.tsx */
 .trend-context {
@@ -605,6 +613,32 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 }
 .word-cloud-text:hover {
   transform: scale(1.1);
+}
+.trend-details-container {
+  margin-top: 20px;
+  animation: fadeIn 0.3s ease;
+  border-top: 1px solid var(--border-color);
+  padding-top: 15px;
+}
+.sub-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+.sub-tab-btn {
+  background: none;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 0.9em;
+  color: var(--secondary-text);
+  border-bottom: 2px solid transparent;
+}
+.sub-tab-btn.active {
+  color: var(--primary-color);
+  border-bottom-color: var(--primary-color);
+  font-weight: 600;
 }
 
 /* TabTrend.tsx */

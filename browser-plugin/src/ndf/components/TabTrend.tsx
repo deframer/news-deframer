@@ -8,7 +8,6 @@ import { TrendCompare } from './TrendCompare';
 import { TrendLifecycle } from './TrendLifecycle';
 import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
 import { TrendTagCloud } from './TrendTagCloud';
-import { TrendTagCloudOld } from './TrendTagCloudOld';
 
 const TIME_RANGES = [
   { id: '24h', days: 1, label: 'trends.time_ranges.last_24h' },
@@ -28,7 +27,7 @@ export interface TrendItem {
 
 export const TabTrend = ({ domain }: { domain: string }) => {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<'cloud' | 'cloud_old' | 'compare' | 'lifecycle'>('cloud');
+  const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
   const [items, setItems] = useState<TrendItem[]>([]);
   const [compareItems, setCompareItems] = useState<TrendComparisonMetric[]>([]);
@@ -74,12 +73,6 @@ export const TabTrend = ({ domain }: { domain: string }) => {
             {t('trends.cloud', 'Cloud')}
           </button>
           <button
-            className={`nav-tab ${viewMode === 'cloud_old' ? 'active' : ''}`}
-            onClick={() => setViewMode('cloud_old')}
-          >
-            Old
-          </button>
-          <button
             className={`nav-tab ${viewMode === 'compare' ? 'active' : ''}`}
             onClick={() => setViewMode('compare')}
           >
@@ -112,8 +105,7 @@ export const TabTrend = ({ domain }: { domain: string }) => {
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'cloud' && <TrendTagCloud items={items} />}
-        {viewMode === 'cloud_old' && <TrendTagCloudOld items={items} days={currentDays} domain={domain} />}
+        {viewMode === 'cloud' && <TrendTagCloud items={items} domain={domain} days={currentDays} />}
 
         {viewMode === 'compare' && (
           <TrendCompare

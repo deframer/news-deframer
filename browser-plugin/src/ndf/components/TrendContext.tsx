@@ -10,7 +10,7 @@ interface TrendContextProps {
   domain?: string;
 }
 
-export const TrendContext = ({ topic, className, days, domain }: TrendContextProps) => {
+export const TrendContextChart = ({ topic, className, days, domain }: TrendContextProps) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<TrendContextMetric[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +27,11 @@ export const TrendContext = ({ topic, className, days, domain }: TrendContextPro
     return () => { mounted = false; };
   }, [topic, days, domain]);
 
-  if (loading) return <div className={`trend-context ${className || ''}`}>{t('trends.loading_context', 'Loading context...')}</div>;
+  if (loading) return (
+    <div className={`trend-context ${className || ''}`} style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="spinner-small" />
+    </div>
+  );
   if (items.length === 0) return null;
 
   return (

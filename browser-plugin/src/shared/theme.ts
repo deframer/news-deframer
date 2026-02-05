@@ -71,6 +71,7 @@ export const globalStyles = `
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     min-height: 100vh;
     width: 100%;
+    overflow-y: scroll;
   }
 `;
 
