@@ -6,8 +6,7 @@ import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { TrendItem } from './TabTrend';
-import { TrendContextChart } from './TrendContext';
-import { TrendLifecycleChart } from './TrendLifecycleChart';
+import { TrendDetails } from './TrendDetails';
 
 
 // https://visx.airbnb.tech/wordcloud
@@ -98,7 +97,6 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
 export const TrendTagCloud = ({ items, domain, days }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'lifecycle' | 'context'>('context');
   const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendItem } | null>(null);
 
   const words = useMemo(() => {
@@ -157,24 +155,7 @@ export const TrendTagCloud = ({ items, domain, days }: TrendTagCloudProps) => {
         </ParentSize>
       </div>
       {selectedTerm && (
-        <div className="trend-details-container">
-          <div className="sub-tabs">
-            <button
-              className={`sub-tab-btn ${activeTab === 'context' ? 'active' : ''}`}
-              onClick={() => setActiveTab('context')}
-            >
-              {t('trends.context', 'Context')}
-            </button>
-            <button
-              className={`sub-tab-btn ${activeTab === 'lifecycle' ? 'active' : ''}`}
-              onClick={() => setActiveTab('lifecycle')}
-            >
-              {t('trends.lifecycle', 'Lifecycle')}
-            </button>
-          </div>
-          {activeTab === 'context' && <TrendContextChart topic={selectedTerm} days={days} domain={domain} />}
-          {activeTab === 'lifecycle' && <TrendLifecycleChart domain={domain} days={days} term={selectedTerm} />}
-        </div>
+        <TrendDetails term={selectedTerm} domain={domain} days={days} />
       )}
     </>
   );

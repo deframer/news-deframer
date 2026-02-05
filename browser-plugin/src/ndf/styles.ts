@@ -620,6 +620,11 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   border-top: 1px solid var(--border-color);
   padding-top: 15px;
 }
+.trend-details-container.no-border {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
 .sub-tabs {
   display: flex;
   justify-content: center;

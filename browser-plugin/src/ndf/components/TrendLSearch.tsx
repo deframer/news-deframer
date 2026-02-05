@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TrendLifecycleChart } from './TrendLifecycleChart';
+import { TrendDetails } from './TrendDetails';
 
 interface TrendLSearchProps {
   domain: string;
@@ -34,7 +34,7 @@ export const TrendLSearch = ({ domain, days }: TrendLSearchProps) => {
         </button>
       </div>
 
-      {activeTerm && <TrendLifecycleChart domain={domain} days={days} term={activeTerm} />}
+      {activeTerm && <TrendDetails domain={domain} days={days} term={activeTerm} showBorder={false} />}
     </div>
   );
 };
