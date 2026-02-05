@@ -6,6 +6,8 @@ import { TrendContextMetric, TrendRepo } from './TrendRepo';
 interface TrendContextProps {
   topic: string;
   className?: string;
+  days?: number;
+  domain?: string;
 }
 
 const contextCss = `
@@ -89,7 +91,7 @@ const contextCss = `
   }
 `;
 
-export const TrendContext = ({ topic, className }: TrendContextProps) => {
+export const TrendContext = ({ topic, className, days, domain }: TrendContextProps) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<TrendContextMetric[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,14 +99,14 @@ export const TrendContext = ({ topic, className }: TrendContextProps) => {
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    TrendRepo.getTrendContext(topic).then((data) => {
+    TrendRepo.getTrendContext(topic, domain, days).then((data) => {
       if (mounted) {
         setItems(data);
         setLoading(false);
       }
     });
     return () => { mounted = false; };
-  }, [topic]);
+  }, [topic, days, domain]);
 
   if (loading) return <div className={`trend-context ${className || ''}`}>{t('trends.loading_context', 'Loading context...')}</div>;
   if (items.length === 0) return null;

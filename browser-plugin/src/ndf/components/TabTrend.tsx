@@ -3,12 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
-import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
 import { Footer } from './Footer';
-import { TrendItem, TrendTop } from './TrendTop';
 import { TrendCompare } from './TrendCompare';
-import { TrendTopTagCloud } from './TrendTopTagCloud';
 import { TrendLifecycle } from './TrendLifecycle';
+import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
+import { TrendTopTagCloud } from './TrendTopTagCloud';
 
 const tabTrendCss = `
   .trend-container {
@@ -134,30 +133,40 @@ const tabTrendCss = `
 `;
 
 const TIME_RANGES = [
-  { id: '24h', label: 'Last 24h' },
-  { id: '7d', label: 'Last 7 days' },
-  { id: '30d', label: 'Last 30 days' },
-  { id: '90d', label: 'Last 90 days' },
-  { id: '365d', label: 'Last 365 days' },
+  { id: '24h', days: 1, label: 'trends.time_ranges.last_24h' },
+  { id: '7d', days: 7, label: 'trends.time_ranges.last_7d' },
+  { id: '30d', days: 30, label: 'trends.time_ranges.last_30d' },
+  { id: '90d', days: 90, label: 'trends.time_ranges.last_90d' },
+  { id: '365d', days: 365, label: 'trends.time_ranges.last_365d' },
 ];
 
-export const TabTrend = () => {
+export interface TrendItem {
+  word: string;
+  rank: number;
+  count: number;
+  utility: number;
+  outlierRatio: number;
+}
+
+export const TabTrend = ({ domain }: { domain: string }) => {
   const { t } = useTranslation();
-  const [viewMode, setViewMode] = useState<'list' | 'cloud' | 'compare' | 'lifecycle'>('list');
+  const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
   const [items, setItems] = useState<TrendItem[]>([]);
   const [compareItems, setCompareItems] = useState<TrendComparisonMetric[]>([]);
 
-  const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
-  const availableDomains = TrendRepo.getAvailableDomains().filter(d => d.id !== rootDomain);
+  // Use getDomain to normalize the passed domain for the exclusion list (which contains root domains)
+  const rootDomainForFilter = getDomain(domain) || domain;
+  const availableDomains = TrendRepo.getAvailableDomains(rootDomainForFilter).filter(d => d.id !== rootDomainForFilter);
   const [compareDomain, setCompareDomain] = useState<string | null>(availableDomains[0]?.id || null);
 
-  log.info(`trend analysis - current domain: ${rootDomain}, range: ${timeRange}`);
+  const currentDays = TIME_RANGES.find(r => r.id === timeRange)?.days || 7;
+  log.info(`trend analysis - current domain: ${domain}, days: ${currentDays}`);
 
   useEffect(() => {
     const fetchData = async () => {
       // Always fetch base trends so we have them for the "Our Topics" column in compare mode
-      const data = await TrendRepo.getTrends(rootDomain /*, timeRange */);
+      const data = await TrendRepo.getTrends(domain, currentDays);
       const mappedItems: TrendItem[] = data.map((d, index) => ({
         word: d.trend_topic,
         rank: index + 1,
@@ -168,12 +177,12 @@ export const TabTrend = () => {
       setItems(mappedItems);
 
       if (viewMode === 'compare' && compareDomain) {
-        const data = await TrendRepo.getTrendComparison(rootDomain, compareDomain, timeRange);
+        const data = await TrendRepo.getTrendComparison(domain, compareDomain, currentDays);
         setCompareItems(data);
       }
     };
     fetchData();
-  }, [rootDomain, timeRange, viewMode, compareDomain]);
+  }, [domain, timeRange, viewMode, compareDomain, currentDays]);
 
   return (
     <div className="trend-container">
@@ -186,12 +195,6 @@ export const TabTrend = () => {
       <div className="trend-header">
         {/* 1. Main Navigation Tabs */}
         <div className="nav-tabs">
-          <button
-            className={`nav-tab ${viewMode === 'list' ? 'active' : ''}`}
-            onClick={() => setViewMode('list')}
-          >
-            {t('trends.list', 'List')}
-          </button>
           <button
             className={`nav-tab ${viewMode === 'cloud' ? 'active' : ''}`}
             onClick={() => setViewMode('cloud')}
@@ -222,7 +225,7 @@ export const TabTrend = () => {
                 className={`time-btn ${timeRange === range.id ? 'active' : ''}`}
                 onClick={() => setTimeRange(range.id)}
               >
-                {range.id}
+                {t(range.label)}
               </button>
             ))}
           </div>
@@ -231,22 +234,19 @@ export const TabTrend = () => {
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'list' && <TrendTop items={items} />}
-
-        {viewMode === 'cloud' && <TrendTopTagCloud items={items} />}
+        {viewMode === 'cloud' && <TrendTopTagCloud items={items} days={currentDays} domain={domain} />}
 
         {viewMode === 'compare' && (
           <TrendCompare
             items={compareItems}
             baseItems={items}
-            currentDomain={rootDomain}
             compareDomain={compareDomain}
             availableDomains={availableDomains}
             onSelectDomain={setCompareDomain}
           />
         )}
 
-        {viewMode === 'lifecycle' && <TrendLifecycle domain={rootDomain} timeRange={timeRange} />}
+        {viewMode === 'lifecycle' && <TrendLifecycle domain={domain} days={currentDays} />}
 
         <div className="trend-footer">
           <Footer />

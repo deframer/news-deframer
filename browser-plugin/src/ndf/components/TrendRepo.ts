@@ -1,3 +1,5 @@
+import log from '../../shared/logger';
+
 export interface TrendMetric {
   trend_topic: string;
   frequency: number;
@@ -106,7 +108,8 @@ export class TrendRepo {
    * Fetches trend metrics.
    * Currently returns static data from the dummy JSON.
    */
-  static async getTrends(domain?: string): Promise<TrendMetric[]> {
+  static async getTrends(domain?: string, days?: number): Promise<TrendMetric[]> {
+    log.debug(`TrendRepo.getTrends called with domain=${domain}, days=${days}`);
     // Simulate a small network delay
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -118,7 +121,8 @@ export class TrendRepo {
   /**
    * Fetches context words (verbs/adjectives) for a specific trend topic.
    */
-  static async getTrendContext(topic: string, domain?: string): Promise<TrendContextMetric[]> {
+  static async getTrendContext(topic: string, domain?: string, days?: number): Promise<TrendContextMetric[]> {
+    log.debug(`TrendRepo.getTrendContext called with topic=${topic}, domain=${domain}, days=${days}`);
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(STATIC_CONTEXT_DATA);
@@ -129,7 +133,8 @@ export class TrendRepo {
   /**
    * Fetches comparison data between two domains.
    */
-  static async getTrendComparison(domainA: string, domainB: string, timeRange?: string): Promise<TrendComparisonMetric[]> {
+  static async getTrendComparison(domainA: string, domainB: string, days?: number): Promise<TrendComparisonMetric[]> {
+    log.debug(`TrendRepo.getTrendComparison called with domainA=${domainA}, domainB=${domainB}, days=${days}`);
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(STATIC_COMPARISON_DATA);
@@ -140,14 +145,16 @@ export class TrendRepo {
   /**
    * Returns list of available domains for comparison.
    */
-  static getAvailableDomains() {
+  static getAvailableDomains(currentDomain?: string) {
+    log.debug(`TrendRepo.getAvailableDomains called with currentDomain=${currentDomain}`);
     return AVAILABLE_DOMAINS;
   }
 
   /**
    * Fetches lifecycle metrics for a specific term.
    */
-  static async getTrendLifecycle(term: string, domain: string, timeRange?: string): Promise<TrendLifecycleMetric[]> {
+  static async getTrendLifecycle(term: string, domain: string, days?: number): Promise<TrendLifecycleMetric[]> {
+    log.debug(`TrendRepo.getTrendLifecycle called with term=${term}, domain=${domain}, days=${days}`);
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(STATIC_LIFECYCLE_DATA);

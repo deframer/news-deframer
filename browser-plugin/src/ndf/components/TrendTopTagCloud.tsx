@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { TrendItem } from './TrendTop';
+
+import { TrendItem } from './TabTrend';
 import { TrendContext } from './TrendContext';
 
 // https://visx.airbnb.tech/wordcloud
 
 interface TrendTopTagCloudProps {
   items: TrendItem[];
+  days: number;
+  domain: string;
 }
 
 const cloudCss = `
@@ -72,7 +75,7 @@ const cloudCss = `
   }
 `;
 
-export const TrendTopTagCloud = ({ items }: TrendTopTagCloudProps) => {
+export const TrendTopTagCloud = ({ items, days, domain }: TrendTopTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   if (items.length === 0) return null;
@@ -115,7 +118,7 @@ export const TrendTopTagCloud = ({ items }: TrendTopTagCloudProps) => {
 
         {selectedTopic && (
           <div className="cloud-context-container">
-            <TrendContext topic={selectedTopic} className="embedded-context" />
+            <TrendContext topic={selectedTopic} className="embedded-context" days={days} domain={domain} />
           </div>
         )}
       </div>

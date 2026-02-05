@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { TrendLifecycleMetric, TrendRepo } from './TrendRepo';
 
 interface TrendLifecycleProps {
   domain: string;
-  timeRange: string;
+  days: number;
 }
 
 const lifecycleCss = `
@@ -143,7 +144,7 @@ const lifecycleCss = `
   }
 `;
 
-export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
+export const TrendLifecycle = ({ domain, days }: TrendLifecycleProps) => {
   const { t } = useTranslation();
   const [term, setTerm] = useState('');
   const [data, setData] = useState<TrendLifecycleMetric[]>([]);
@@ -152,7 +153,7 @@ export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
   const handleSearch = async () => {
     if (!term.trim()) return;
     setLoading(true);
-    const result = await TrendRepo.getTrendLifecycle(term, domain, timeRange);
+    const result = await TrendRepo.getTrendLifecycle(term, domain, days);
     // Sort by date ascending for the chart
     const sorted = [...result].sort((a, b) => new Date(a.time_slice).getTime() - new Date(b.time_slice).getTime());
     setData(sorted);
@@ -185,7 +186,7 @@ export const TrendLifecycle = ({ domain, timeRange }: TrendLifecycleProps) => {
             const dateLabel = new Date(item.time_slice).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
             const textShadow = '0 0 3px rgba(0,0,0,0.7)';
-            let style: React.CSSProperties = { height: `${heightPercent}%` };
+            const style: React.CSSProperties = { height: `${heightPercent}%` };
             let icon = null;
             let barClass = 'chart-bar';
             // Unified label style: below the bar with a -45 degree angle

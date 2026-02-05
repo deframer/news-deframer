@@ -17,6 +17,7 @@ const App = ({ theme }: { theme: string }) => {
   const [data, setData] = useState<
     AnalyzedItem | AnalyzedItem[] | null
   >(null);
+  const [currentDomain, setCurrentDomain] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,6 +62,7 @@ const App = ({ theme }: { theme: string }) => {
 
           if (authorizedDomain) {
             // Fetch the content using the authorized domain from the list.
+            setCurrentDomain(authorizedDomain);
             const items = await client.getSite(authorizedDomain);
             if (items.length > 0) {
               setData(items);
@@ -124,7 +126,7 @@ const App = ({ theme }: { theme: string }) => {
       return (
         <>
           <style>{getThemeCss(theme as Theme)}</style>
-          <PortalPage items={data as AnalyzedItem[]} />
+          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain || ''} />
         </>
       );
     default:

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
+
+import { TrendItem } from './TabTrend';
 import { TrendComparisonMetric } from './TrendRepo';
-import { TrendItem } from './TrendTop';
 
 interface DomainOption {
   id: string;
@@ -10,7 +11,6 @@ interface DomainOption {
 interface TrendCompareProps {
   items: TrendComparisonMetric[];
   baseItems: TrendItem[];
-  currentDomain: string;
   compareDomain: string | null;
   availableDomains: DomainOption[];
   onSelectDomain: (domain: string) => void;
@@ -87,7 +87,7 @@ const compareCss = `
   }
 `;
 
-export const TrendCompare = ({ items, baseItems, currentDomain, compareDomain, availableDomains, onSelectDomain }: TrendCompareProps) => {
+export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains, onSelectDomain }: TrendCompareProps) => {
   const { t } = useTranslation();
 
   // If comparing, use the comparison data. If not, uniqueA is just the base list (top 10)
