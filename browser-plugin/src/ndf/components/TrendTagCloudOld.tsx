@@ -6,13 +6,13 @@ import { TrendContext } from './TrendContext';
 
 // https://visx.airbnb.tech/wordcloud
 
-interface TrendTopTagCloudProps {
+interface TrendTagCloudOldProps {
   items: TrendItem[];
   days: number;
   domain: string;
 }
 
-export const TrendTopTagCloud = ({ items, days, domain }: TrendTopTagCloudProps) => {
+export const TrendTagCloudOld = ({ items, days, domain }: TrendTagCloudOldProps) => {
   const { t } = useTranslation();
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   if (items.length === 0) return null;

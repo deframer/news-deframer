@@ -46,6 +46,10 @@
     "webpack-dev-server": "^5.0.2"
   },
   "dependencies": {
+    "@visx/responsive": "^4.0.1-alpha.0",
+    "@visx/scale": "^4.0.1-alpha.0",
+    "@visx/text": "^4.0.1-alpha.0",
+    "@visx/wordcloud": "^4.0.1-alpha.0",
     "i18next": "^25.8.0",
     "i18next-browser-languagedetector": "^8.2.0",
     "loglevel": "^1.9.2",
