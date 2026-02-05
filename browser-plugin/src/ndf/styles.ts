@@ -32,13 +32,12 @@ h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
 .btn-primary:hover { background-color: var(--accent-hover); }
 
 @media (min-width: 800px) {
-  :host { padding: 2em 0; }
   .page-header { border-radius: 12px 12px 0 0; }
-  .article-container { margin: 0 auto; border-radius: 12px; box-shadow: var(--card-shadow); }
+  .article-container { margin: 2em auto; border-radius: 12px; box-shadow: var(--card-shadow); }
 }
 
 @media (max-width: 799px) {
-  :host { padding-top: 55px; padding-bottom: 80px; }
+  .article-container { padding-top: 55px; padding-bottom: 80px; }
   .page-header { position: fixed; top: 0; left: 0; width: 100%; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
   .action-buttons { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); margin-top: 0; box-sizing: border-box; }
 }
@@ -97,13 +96,14 @@ h1 { margin: 0; font-size: 1.5em; }
 .tab-btn.active { border-bottom-color: var(--btn-bg); opacity: 1; font-weight: 600; }
 
 @media (max-width: 799px) {
-  .portal-container { padding: 1em; padding-top: 125px; }
-  .header { position: fixed; top: 0; left: 0; width: 100%; z-index: 1000; margin-bottom: 0; justify-content: space-between; padding: 10px 1em; height: 60px; }
-  .tabs { position: fixed; top: 60px; left: 0; width: 100%; z-index: 999; background-color: var(--bg-color); margin-bottom: 0; }
+  .portal-container { padding: 0 1em 1em; }
+  .header { position: sticky; top: 0; z-index: 1000; margin-bottom: 0; justify-content: space-between; padding: 10px 1em; height: 60px; margin-left: -1em; margin-right: -1em; width: calc(100% + 2em); }
+  .tabs { position: sticky; top: 60px; z-index: 999; background-color: var(--bg-color); margin-bottom: 0; margin-left: -1em; margin-right: -1em; width: calc(100% + 2em); }
   .title-desktop { display: none; }
   .title-mobile { display: inline; }
-  #btn-hide { position: static; transform: none; }
+  #btn-hide { right: 1em; }
   .footer-container.trends { display: none; }
+  .grid { margin-top: 20px; }
 }
 
 /* Footer.tsx */
@@ -608,8 +608,13 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .trend-footer { display: none; }
 @media (max-width: 799px) {
   .trend-container {
-    height: calc(100vh - 160px);
+    height: auto;
     min-height: 0;
+    display: block;
+  }
+  .trend-content {
+    overflow-y: visible;
+    flex: none;
   }
   .trend-footer { display: block; margin-top: 20px; }
 }
@@ -620,6 +625,13 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
   z-index: 5;
   position: relative;
+}
+@media (max-width: 799px) {
+  .trend-header {
+    position: sticky;
+    top: 105px;
+    z-index: 900;
+  }
 }
 
 /* 1. Top Navigation Tabs */
