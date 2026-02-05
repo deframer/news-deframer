@@ -3,6 +3,7 @@ const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const packageJson = require('./package.json');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
@@ -27,7 +28,7 @@ module.exports = {
             },
             {
                 test: /\.css$/i,
-                use: ['style-loader', 'css-loader'],
+                use: [MiniCssExtractPlugin.loader, 'css-loader'],
             },
         ],
     },
@@ -71,6 +72,9 @@ module.exports = {
             template: 'src/host/ui/index.html',
             filename: 'options.html',
             chunks: ['options'],
+        }),
+        new MiniCssExtractPlugin({
+            filename: '[name].css',
         }),
     ].filter(Boolean),
     performance: {
