@@ -14,20 +14,20 @@ export const cssVariables = {
     --btn-text: #333333;
     --btn-border: #dddddd;
     --btn-hover-bg: #f8f9fa;
-    --accent-color: #007bff;
-    --accent-hover: #0069d9;
+    --accent-color: #0056b3;
+    --accent-hover: #004494;
     --accent-text: #ffffff;
     --rating-bg: #e9ecef;
     --success-color: #198754;
-    --warning-color: #f57c00;
+    --warning-color: #ffc107;
     --danger-color: #b02a37;
     --tooltip-bg: rgba(0,0,0,0.85);
     --tooltip-text: #ffffff;
     --bg-color-secondary: #f7f8fa;
     --hover-bg: rgba(0,0,0,0.05);
     --badge-bg: #e9ecef;
-    --primary-color: #007bff;
-    --primary-color-dark: #0069d9;
+    --primary-color: #0056b3;
+    --primary-color-dark: #004494;
   `,
   dark: `
     --bg-color: #18191a;
@@ -44,7 +44,7 @@ export const cssVariables = {
     --btn-hover-bg: #4e4f50;
     --accent-color: #2d88ff;
     --accent-hover: #4599ff;
-     --accent-text: #ffffff;
+     --accent-text: #000000;
      --rating-bg: #3a3b3c;
      --success-color: #4caf50;
      --warning-color: #ffca28;

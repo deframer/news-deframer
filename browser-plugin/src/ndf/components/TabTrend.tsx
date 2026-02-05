@@ -64,10 +64,6 @@ export const TabTrend = ({ domain }: { domain: string }) => {
 
   return (
     <div className="trend-container">
-      <div style={{ padding: '8px', textAlign: 'center', fontSize: '0.85em', color: 'var(--secondary-text)', background: 'var(--bg-color-secondary, #f5f5f5)' }}>
-        This is dummy data
-      </div>
-
       <div className="trend-header">
         {/* 1. Main Navigation Tabs */}
         <div className="nav-tabs">
@@ -116,7 +112,7 @@ export const TabTrend = ({ domain }: { domain: string }) => {
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'cloud' && <TrendTagCloud />}
+        {viewMode === 'cloud' && <TrendTagCloud items={items} />}
         {viewMode === 'cloud_old' && <TrendTagCloudOld items={items} days={currentDays} domain={domain} />}
 
         {viewMode === 'compare' && (

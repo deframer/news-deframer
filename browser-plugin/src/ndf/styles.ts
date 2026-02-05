@@ -598,6 +598,15 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   opacity: 1;
 }
 
+/* TrendTagCloud.tsx (Visx) */
+.word-cloud-text {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+.word-cloud-text:hover {
+  transform: scale(1.1);
+}
+
 /* TabTrend.tsx */
 .trend-container {
   display: flex;
