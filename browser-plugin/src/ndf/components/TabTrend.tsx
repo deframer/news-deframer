@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import log from '../../shared/logger';
 import { Footer } from './Footer';
 import { TrendCompare } from './TrendCompare';
-import { TrendLifecycle } from './TrendLifecycle';
+import { TrendLSearch } from './TrendLSearch';
 import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
 import { TrendTagCloud } from './TrendTagCloud';
 
@@ -79,7 +79,7 @@ export const TabTrend = ({ domain, availableDomains }: { domain: string; availab
             className={`nav-tab ${viewMode === 'lifecycle' ? 'active' : ''}`}
             onClick={() => setViewMode('lifecycle')}
           >
-            {t('trends.lifecycle', 'Lifecycle')}
+            {t('trends.search', 'Search')}
           </button>
         </div>
 
@@ -115,7 +115,7 @@ export const TabTrend = ({ domain, availableDomains }: { domain: string; availab
           />
         )}
 
-        {viewMode === 'lifecycle' && <TrendLifecycle domain={domain} days={currentDays} />}
+        {viewMode === 'lifecycle' && <TrendLSearch domain={domain} days={currentDays} />}
 
         <div className="trend-footer">
           <Footer />

@@ -46,7 +46,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   if (data.length === 0) {
     return (
       <div style={{ textAlign: 'center', color: 'var(--secondary-text)', marginTop: '2em' }}>
-        {t('trends.lifecycle_no_data', 'No data to display. Try searching for "trump".')}
+        {t('trends.search_no_data', 'No data to display. Try searching for "trump".')}
       </div>
     );
   }
@@ -86,7 +86,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
             className="chart-bar-wrapper"
             tabIndex={0}
             role="img"
-            aria-label={t('trends.lifecycle_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
+            aria-label={t('trends.search_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
               date: dateLabel,
               frequency: item.frequency,
               velocity: (item.velocity > 0 ? '+' : '') + item.velocity
