@@ -675,6 +675,10 @@ func (m *MockRepo) GetLifecycleByDomain(term string, domain string, language str
 	return nil, nil
 }
 
+func (m *MockRepo) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
+	return nil, nil
+}
+
 func captureOutput(f func()) string {
 	old := os.Stdout
 	r, w, _ := os.Pipe()

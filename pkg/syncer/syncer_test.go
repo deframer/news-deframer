@@ -27,6 +27,7 @@ type mockRepo struct {
 	getTopTrendByDomainFunc  func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
 	getContextByDomainFunc   func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
 	getLifecycleByDomainFunc func(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error)
+	getDomainComparisonFunc  func(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
 }
 
 // Implement database.Repository interface stubs
@@ -97,6 +98,13 @@ func (m *mockRepo) GetContextByDomain(term string, domain string, language strin
 func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
 	if m.getLifecycleByDomainFunc != nil {
 		return m.getLifecycleByDomainFunc(term, domain, language, daysInPast)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
+	if m.getDomainComparisonFunc != nil {
+		return m.getDomainComparisonFunc(domainA, domainB, language, daysInPast, utilityThreshold, outlierRatioThreshold, limit)
 	}
 	return nil, nil
 }

@@ -27,6 +27,13 @@ var contextByDomainQuery string
 //go:embed sql/statement/lifecycle_by_domain.sql
 var lifecycleByDomainQuery string
 
+//go:embed sql/statement/compare_domains.sql
+var compareDomainsQuery string
+
+const DomainComparisonUtilityThreshold = 1.0
+const DomainComparisonOutlierRatioThreshold = 1.5
+const DomainComparisonLimit = 10
+
 type TrendMetric struct {
 	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
 	Frequency    int64     `gorm:"column:frequency" json:"frequency"`
@@ -44,6 +51,14 @@ type Lifecycle struct {
 	TimeSlice time.Time `gorm:"column:time_slice" json:"time_slice"`
 	Frequency int64     `gorm:"column:frequency" json:"frequency"`
 	Velocity  int64     `gorm:"column:velocity" json:"velocity"`
+}
+
+type DomainComparison struct {
+	Classification string  `gorm:"column:classification" json:"classification"`
+	RankGroup      int     `gorm:"column:rank_group" json:"rank_group"`
+	TrendTopic     string  `gorm:"column:trend_topic" json:"trend_topic"`
+	ScoreA         float64 `gorm:"column:score_a" json:"score_a"`
+	ScoreB         float64 `gorm:"column:score_b" json:"score_b"`
 }
 
 type Repository interface {
@@ -77,6 +92,7 @@ type Repository interface {
 	GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error)
 	GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error)
 	GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error)
+	GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
 }
 
 type repository struct {
@@ -636,6 +652,30 @@ func (r *repository) GetLifecycleByDomain(term string, domain string, language s
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error) {
+	var comparisons []DomainComparison
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(compareDomainsQuery,
+		sql.Named("domain_a", domainA),
+		sql.Named("domain_b", domainB),
+		sql.Named("language", language),
+		sql.Named("days_in_past", daysInPast),
+		sql.Named("utility_threshold", utilityThreshold),
+		sql.Named("outlier_ratio_threshold", outlierRatioThreshold),
+		sql.Named("limit", limit),
+	).Scan(&comparisons).Error; err != nil {
+		return nil, err
+	}
+	return comparisons, nil
 }
 
 // FindItemsByRootDomain retrieves the most recent items from all feeds belonging to the given root domain.

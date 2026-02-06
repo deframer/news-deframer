@@ -6,8 +6,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
-import { DomainEntry, NewsDeframerClient } from '../client';
-import { TrendItem } from './TabTrend';
+import { DomainEntry, NewsDeframerClient, TrendMetric } from '../client';
 import { TrendDetails } from './TrendDetails';
 
 
@@ -21,10 +20,10 @@ interface TrendTagCloudProps {
 const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onHover }: {
   width: number;
   height: number;
-  words: { text: string; value: number; original: TrendItem }[];
+  words: { text: string; value: number; original: TrendMetric & { rank: number } }[];
   selectedTerm: string | null;
   onSelect: (term: string | null) => void;
-  onHover: (data: { x: number; y: number; item: TrendItem } | null) => void;
+  onHover: (data: { x: number; y: number; item: TrendMetric & { rank: number } } | null) => void;
 }) => {
   const fontScale = useMemo(() => {
     if (words.length === 0) {
@@ -99,8 +98,8 @@ TrendWordCloud.displayName = 'TrendWordCloud';
 export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendItem } | null>(null);
-  const [items, setItems] = useState<TrendItem[]>([]);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendMetric & { rank: number } } | null>(null);
+  const [items, setItems] = useState<TrendMetric[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -110,14 +109,7 @@ export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
         const settings = await getSettings();
         const client = new NewsDeframerClient(settings);
         const data = await client.getTopTrendByDomain(domain.domain, domain.language, days);
-        const mappedItems: TrendItem[] = data.map((d, index) => ({
-          word: d.trend_topic,
-          rank: index + 1,
-          count: d.frequency,
-          utility: d.utility,
-          outlierRatio: d.outlier_ratio
-        }));
-        setItems(mappedItems);
+        setItems(data);
       } finally {
         setLoading(false);
       }
@@ -126,10 +118,10 @@ export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
   }, [domain, days]);
 
   const words = useMemo(() => {
-    return items.map((i) => ({
-      text: i.word,
-      value: i.outlierRatio,
-      original: i,
+    return items.map((i, index) => ({
+      text: i.trend_topic,
+      value: i.outlier_ratio,
+      original: { ...i, rank: index + 1 },
     })).sort((a, b) => b.value - a.value);
   }, [items]);
 
@@ -161,8 +153,8 @@ export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
           }}
         >
           {t('trends.rank', 'Rank')}: {tooltip.item.rank}<br/>
-          {t('trends.trend', 'Trend')}: {tooltip.item.outlierRatio.toFixed(2)}x<br/>
-          {t('trends.vol', 'Vol')}: {tooltip.item.count}
+          {t('trends.trend', 'Trend')}: {tooltip.item.outlier_ratio.toFixed(2)}x<br/>
+          {t('trends.vol', 'Vol')}: {tooltip.item.frequency}
         </div>
       )}
     </>

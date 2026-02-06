@@ -1,12 +1,12 @@
--- Force DuckDB execution
-SET duckdb.force_execution = true;
-
+WITH settings AS (
+    SELECT set_config('duckdb.force_execution', 'true', true)
+),
 /*
    STEP 1: Prepare Domain A (e.g., Spiegel)
    - Filter for NOUNS (Triggers)
    - Deduplicate: Keep only the peak day for each word
 */
-WITH domain_a_unique AS (
+domain_a_unique AS (
     SELECT
         stem,
         outlier_ratio,
@@ -18,12 +18,12 @@ WITH domain_a_unique AS (
             utility,
             ROW_NUMBER() OVER (PARTITION BY stem ORDER BY outlier_ratio DESC) as rn
         FROM view_trend_metrics_by_domain
-        WHERE root_domain = 'spiegel.de'
-          AND "language" = 'de'
+        WHERE root_domain = CAST(@domain_a AS text)
+          AND "language" = CAST(@language AS text)
           AND stem_type = 'NOUN'          -- <--- Thesis: Focus on Triggers/Topics [1][2]
-          AND time_slice >= NOW() - INTERVAL '7 DAYS'
-          AND utility >= 1
-          AND outlier_ratio > 1.5
+          AND time_slice >= NOW() - (CAST(@days_in_past AS INTEGER) * INTERVAL '1 DAY')
+          AND utility >= CAST(@utility_threshold AS float)
+          AND outlier_ratio >= CAST(@outlier_ratio_threshold AS float)
     )
     WHERE rn = 1 -- Keep only the strongest signal per word
 ),
@@ -44,12 +44,12 @@ domain_b_unique AS (
             utility,
             ROW_NUMBER() OVER (PARTITION BY stem ORDER BY outlier_ratio DESC) as rn
         FROM view_trend_metrics_by_domain
-        WHERE root_domain = 'tagesschau.de'
-          AND "language" = 'de'
+        WHERE root_domain = CAST(@domain_b AS text)
+          AND "language" = CAST(@language AS text)
           AND stem_type = 'NOUN'
-          AND time_slice >= NOW() - INTERVAL '7 DAYS'
-          AND utility >= 1
-          AND outlier_ratio > 1.5
+          AND time_slice >= NOW() - (CAST(@days_in_past AS INTEGER) * INTERVAL '1 DAY')
+          AND utility >= CAST(@utility_threshold AS float)
+          AND outlier_ratio >= CAST(@outlier_ratio_threshold AS float)
     )
     WHERE rn = 1
 ),
@@ -75,7 +75,7 @@ all_joined AS (
 
 /*
    STEP 4: Rank within Groups
-   - Shows the top 5 shared topics, top 5 unique to A, top 5 unique to B
+   - Shows the top n shared topics, top n unique to A, top n unique to B
 */
 ranked_trends AS (
     SELECT
@@ -100,5 +100,5 @@ SELECT
     ROUND(score_a::numeric, 2) as score_a,
     ROUND(score_b::numeric, 2) as score_b
 FROM ranked_trends
-WHERE rank_group <= 5
+WHERE rank_group <= CAST(@limit AS INTEGER)
 ORDER BY classification, rank_group;

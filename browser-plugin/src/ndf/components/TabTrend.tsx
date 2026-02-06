@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import log from '../../shared/logger';
 import { DomainEntry } from '../client';
 import { Footer } from './Footer';
 import { TrendCompare } from './TrendCompare';
-import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
 import { TrendSearch } from './TrendSearch';
 import { TrendTagCloud } from './TrendTagCloud';
 
@@ -17,36 +16,16 @@ const TIME_RANGES = [
   { id: '365d', days: 365, label: 'trends.time_ranges.last_365d' },
 ];
 
-export interface TrendItem {
-  word: string;
-  rank: number;
-  count: number;
-  utility: number;
-  outlierRatio: number;
-}
-
 export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain: DomainEntry; availableDomains: DomainEntry[]; searchEngineUrl: string }) => {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
-  const [compareItems, setCompareItems] = useState<TrendComparisonMetric[]>([]);
 
   const domainOptions = availableDomains.filter(d => d.domain !== domain.domain && d.language === domain.language).map(d => ({ id: d.domain, name: d.domain }));
   const [compareDomain, setCompareDomain] = useState<string | null>(domainOptions[0]?.id || null);
 
   const currentDays = TIME_RANGES.find(r => r.id === timeRange)?.days || 7;
   log.info(`trend analysis - current domain: ${domain.domain}, days: ${currentDays}`);
-
-  useEffect(() => {
-    const fetchData = async () => {
-
-      if (viewMode === 'compare' && compareDomain) {
-        const data = await TrendRepo.getTrendComparison(domain.domain, compareDomain, currentDays);
-        setCompareItems(data);
-      }
-    };
-    fetchData();
-  }, [domain, timeRange, viewMode, compareDomain, currentDays]);
 
   return (
     <div className="trend-container">
@@ -96,7 +75,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
 
         {viewMode === 'compare' && (
           <TrendCompare
-            items={compareItems}
+            days={currentDays}
             baseItems={[]}
             compareDomain={compareDomain}
             availableDomains={domainOptions}

@@ -27,6 +27,14 @@ export interface Lifecycle {
   velocity: number;
 }
 
+export interface DomainComparison {
+  classification: 'BLINDSPOT_A' | 'BLINDSPOT_B' | 'INTERSECT';
+  rank_group: number;
+  trend_topic: string;
+  score_a: number;
+  score_b: number;
+}
+
 export interface ThinkResult {
   title_original?: string;
   description_original?: string;
@@ -170,6 +178,17 @@ export class NewsDeframerClient {
       days: daysInPast.toString(),
     };
     const result = await this.proxyRequest<Lifecycle[]>('/api/trends/lifecyclebydomain', params);
+    return result ?? [];
+  }
+
+  async getDomainComparison(domainA: string, domainB: string, language: string, daysInPast: number): Promise<DomainComparison[]> {
+    const params: Record<string, string> = {
+      domain_a: domainA,
+      domain_b: domainB,
+      lang: language,
+      days: daysInPast.toString(),
+    };
+    const result = await this.proxyRequest<DomainComparison[]>('/api/trends/comparedomains', params);
     return result ?? [];
   }
 }
