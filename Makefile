@@ -70,6 +70,8 @@ lint:
 	govulncheck ./...
 	gofmt -l .
 
+check: test lint
+
 tidy:
 	go mod tidy
 
