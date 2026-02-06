@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DomainEntry } from '../client';
 import { TrendContextMetric, TrendRepo } from './TrendRepo';
 
 interface TrendContextProps {
   topic: string;
   className?: string;
   days?: number;
-  domain?: string;
+  domain?: DomainEntry;
 }
 
 export const TrendContextChart = ({ topic, className, days, domain }: TrendContextProps) => {
@@ -18,7 +19,7 @@ export const TrendContextChart = ({ topic, className, days, domain }: TrendConte
   useEffect(() => {
     let mounted = true;
     setLoading(true);
-    TrendRepo.getTrendContext(topic, domain, days).then((data) => {
+    TrendRepo.getTrendContext(topic, domain?.domain, days).then((data) => {
       if (mounted) {
         setItems(data);
         setLoading(false);

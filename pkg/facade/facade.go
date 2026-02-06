@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
@@ -31,11 +32,16 @@ type AnalyzedItem struct {
 	PubDate      time.Time              `json:"pubDate"`
 }
 
+type DomainEntry struct {
+	Domain   string `json:"domain"`
+	Language string `json:"language"`
+}
+
 type Facade interface {
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
 	GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error)
 	GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error)
-	GetRootDomains(ctx context.Context) ([]string, error)
+	GetRootDomains(ctx context.Context) ([]DomainEntry, error)
 }
 
 type facade struct {
@@ -143,27 +149,39 @@ func (f *facade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedI
 	return &item, nil
 }
 
-func (f *facade) GetRootDomains(ctx context.Context) ([]string, error) {
+func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 	feeds, err := f.repo.GetAllFeeds(false)
 	if err != nil {
 		return nil, err
 	}
 
-	domainMap := make(map[string]bool)
+	entryMap := make(map[string]DomainEntry)
 	for _, feed := range feeds {
 		if !feed.Enabled {
 			continue
 		}
 		if feed.RootDomain != nil && *feed.RootDomain != "" {
-			domainMap[*feed.RootDomain] = true
+			lang := ""
+			if feed.Language != nil {
+				lang = *feed.Language
+			}
+			key := *feed.RootDomain + "|" + lang
+			entryMap[key] = DomainEntry{Domain: *feed.RootDomain, Language: lang}
 		}
 	}
 
-	domains := make([]string, 0, len(domainMap))
-	for d := range domainMap {
-		domains = append(domains, d)
+	domains := make([]DomainEntry, 0, len(entryMap))
+	for _, entry := range entryMap {
+		domains = append(domains, entry)
 	}
-	sort.Strings(domains)
+	sort.Slice(domains, func(i, j int) bool {
+		d1 := strings.ToLower(domains[i].Domain)
+		d2 := strings.ToLower(domains[j].Domain)
+		if d1 == d2 {
+			return domains[i].Language < domains[j].Language
+		}
+		return d1 < d2
+	})
 
 	return domains, nil
 }

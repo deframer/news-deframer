@@ -5,15 +5,15 @@ import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
-import { AnalyzedItem } from '../client';
+import { AnalyzedItem, DomainEntry } from '../client';
 import { Footer } from '../components/Footer';
 import { TabPortal } from '../components/TabPortal';
 import { TabTrend } from '../components/TabTrend';
 
 interface PortalPageProps {
   items: AnalyzedItem[];
-  domain: string;
-  availableDomains: string[];
+  domain: DomainEntry;
+  availableDomains: DomainEntry[];
   searchEngineUrl: string;
 }
 

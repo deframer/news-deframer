@@ -384,22 +384,27 @@ func TestGetRootDomains(t *testing.T) {
 		domainA := "a.com"
 		domainB := "b.com"
 		domainC := "c.com"
+		langEn := "en"
+		langDe := "de"
 
 		feeds := []database.Feed{
 			{
 				Base:       database.Base{},
 				Enabled:    true,
 				RootDomain: &domainB, // b.com
+				Language:   &langEn,
 			},
 			{
 				Base:       database.Base{},
 				Enabled:    true,
 				RootDomain: &domainA, // a.com
+				Language:   &langDe,
 			},
 			{
 				Base:       database.Base{},
 				Enabled:    true,
 				RootDomain: &domainB, // Duplicate b.com
+				Language:   &langEn,
 			},
 			{
 				Base:       database.Base{},
@@ -423,7 +428,10 @@ func TestGetRootDomains(t *testing.T) {
 		f := New(ctx, nil, mockR)
 		domains, err := f.GetRootDomains(ctx)
 		assert.NoError(t, err)
-		assert.Equal(t, []string{"a.com", "b.com"}, domains)
+		assert.Equal(t, []DomainEntry{
+			{Domain: "a.com", Language: "de"},
+			{Domain: "b.com", Language: "en"},
+		}, domains)
 	})
 
 	t.Run("RepoError", func(t *testing.T) {

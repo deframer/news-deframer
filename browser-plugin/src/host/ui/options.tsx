@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
+import { DomainEntry } from '../../ndf/client';
 import { classifyUrl, PageType } from '../../ndf/utils/url-classifier';
 import { invalidateDomainCache } from '../../shared/domain-cache';
 import log from '../../shared/logger';
@@ -32,7 +33,7 @@ export const Options = () => {
   });
   const [status, setStatus] = useState<Status>('idle');
   const [loaded, setLoaded] = useState(false);
-  const [domains, setDomains] = useState<string[]>([]);
+  const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [lang, setLang] = useState<string>('default');
 
   // Load settings on mount (only from chrome.storage, no network calls)
@@ -73,7 +74,7 @@ export const Options = () => {
   }, [settings, loaded]);
 
   // Save immediately and refresh tab when specific user interactions require it
-  const saveAndRefresh = async (newSettings: Settings, checkDomain = true, overrideDomains?: string[], skipScripting = false) => {
+  const saveAndRefresh = async (newSettings: Settings, checkDomain = true, overrideDomains?: DomainEntry[], skipScripting = false) => {
     await chrome.storage.local.set(newSettings);
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -106,7 +107,7 @@ export const Options = () => {
         } else {
           const siteHost = url.host;
           const rootDomain = getDomain(siteHost.replace(/:\d+$/, ''));
-          if (useDomains.includes(siteHost) || (rootDomain && useDomains.includes(rootDomain))) {
+          if (useDomains.some(d => d.domain === siteHost || (rootDomain && d.domain === rootDomain))) {
             chrome.tabs.reload(tab.id);
           }
         }
@@ -151,7 +152,7 @@ export const Options = () => {
 
   const testConnection = async (currentSettings: Settings) => {
     setStatus('loading');
-    let loadedDomains: string[] = [];
+    let loadedDomains: DomainEntry[] = [];
     try {
       const headers: HeadersInit = {};
       if (currentSettings.username && currentSettings.password) {
@@ -189,10 +190,10 @@ export const Options = () => {
               // ignore
             }
           }
-          const domainList = Array.isArray(data) ? data as string[] : (data as Record<string, unknown>)?.domains || (data as Record<string, unknown>)?.data;
+          const domainList = Array.isArray(data) ? data as DomainEntry[] : (data as Record<string, unknown>)?.domains || (data as Record<string, unknown>)?.data;
           if (Array.isArray(domainList)) {
-            loadedDomains = domainList;
-            setDomains(domainList);
+            loadedDomains = domainList as DomainEntry[];
+            setDomains(loadedDomains);
           }
         }
         return { connected: true, domains: loadedDomains };
@@ -238,7 +239,7 @@ export const Options = () => {
         const url = new URL(tab.url);
         const siteHost = url.host;
         const rootDomain = getDomain(siteHost.replace(/:\d+$/, ''));
-        if (domains.includes(siteHost) || (rootDomain && domains.includes(rootDomain))) {
+        if (domains.some(d => d.domain === siteHost || (rootDomain && d.domain === rootDomain))) {
           chrome.tabs.reload(tab.id);
         }
       }

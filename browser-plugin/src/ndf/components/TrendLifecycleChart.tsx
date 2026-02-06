@@ -1,10 +1,11 @@
 import { CSSProperties, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DomainEntry } from '../client';
 import { TrendLifecycleMetric, TrendRepo } from './TrendRepo';
 
 interface TrendLifecycleChartProps {
-  domain: string;
+  domain: DomainEntry;
   days: number;
   term: string;
 }
@@ -19,7 +20,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
       if (!term) return;
       setLoading(true);
       try {
-        const result = await TrendRepo.getTrendLifecycle(term, domain, days);
+        const result = await TrendRepo.getTrendLifecycle(term, domain.domain, days);
         // Sort by date ascending for the chart
         const sorted = [...result].sort((a, b) => new Date(a.time_slice).getTime() - new Date(b.time_slice).getTime());
         setData(sorted);

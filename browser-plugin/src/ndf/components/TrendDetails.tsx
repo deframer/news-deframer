@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DomainEntry } from '../client';
 import { TrendContextChart } from './TrendContext';
 import { TrendLifecycleChart } from './TrendLifecycleChart';
 
 interface TrendDetailsProps {
   term: string;
-  domain: string;
+  domain: DomainEntry;
   days: number;
   showBorder?: boolean;
 }

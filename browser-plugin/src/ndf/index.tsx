@@ -6,7 +6,7 @@ import i18n from '../shared/i18n';
 import log from '../shared/logger';
 import { getSettings, Settings } from '../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../shared/theme';
-import { AnalyzedItem, NewsDeframerClient } from './client';
+import { AnalyzedItem, DomainEntry, NewsDeframerClient } from './client';
 import { Spinner } from './components/Spinner';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
@@ -18,8 +18,8 @@ const App = ({ theme }: { theme: string }) => {
   const [data, setData] = useState<
     AnalyzedItem | AnalyzedItem[] | null
   >(null);
-  const [currentDomain, setCurrentDomain] = useState<string | null>(null);
-  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [currentDomain, setCurrentDomain] = useState<DomainEntry | null>(null);
+  const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
   const [searchEngineUrl, setSearchEngineUrl] = useState<string>('https://search.brave.com');
   const [error, setError] = useState<string | null>(null);
 
@@ -71,30 +71,34 @@ const App = ({ theme }: { theme: string }) => {
 
           // Check if the site's full host or root domain is registered in the backend.
           //log.debug(`Checking domain authorization for siteHost="${siteHost}", rootDomain="${rootDomain}", allDomains=[${allDomains.join(', ')}]`);
-          let authorizedDomain: string | null = null;
+          let authorizedDomain: DomainEntry | null = null;
 
-          if (allDomains.includes(siteHost)) {
-            authorizedDomain = siteHost;
-          } else if (rootDomain && allDomains.includes(rootDomain)) {
-            authorizedDomain = rootDomain;
+          const exactMatch = allDomains.find(d => d.domain === siteHost);
+          if (exactMatch) {
+            authorizedDomain = exactMatch;
+          } else if (rootDomain) {
+            const found = allDomains.find(d => d.domain === rootDomain);
+            if (found) {
+              authorizedDomain = found;
+            }
           }
 
           if (authorizedDomain) {
             // Fetch the content using the authorized domain from the list.
             setCurrentDomain(authorizedDomain);
-            const items = await client.getSite(authorizedDomain);
+            const items = await client.getSite(authorizedDomain.domain);
             if (items.length > 0) {
               setData(items);
             } else {
               // This can happen if the authorized domain has no items.
-              log.error(`Attempted to get site data for authorized domain "${authorizedDomain}", but received no items.`);
-              throw new Error(`No items found for this portal (${authorizedDomain}).`);
+              log.error(`Attempted to get site data for authorized domain "${authorizedDomain.domain}", but received no items.`);
+              throw new Error(`No items found for this portal (${authorizedDomain.domain}).`);
             }
           } else {
             // If neither the full host nor root domain is in the list, the site is not supported.
             const checkedDomains = [siteHost];
             if (rootDomain) checkedDomains.push(rootDomain);
-            log.error(`Domain authorization failed: checked [${checkedDomains.join(', ')}] but none found in allDomains=[${allDomains.join(', ')}]`);
+            log.error(`Domain authorization failed: checked [${checkedDomains.join(', ')}] but none found in allDomains=[${allDomains.map(d => d.domain).join(', ')}]`);
             throw new Error(`Domain "${checkedDomains.join('" or "')}" is not configured in the Deframer backend.`);
           }
         } else if (type === PageType.ARTICLE) {
@@ -145,7 +149,7 @@ const App = ({ theme }: { theme: string }) => {
       return (
         <>
           <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
-          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain || ''} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />
+          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain!} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />
         </>
       );
     default:

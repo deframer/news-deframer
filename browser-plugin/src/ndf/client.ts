@@ -3,6 +3,11 @@ import { Settings } from '../shared/settings';
 
 // --- Type Definitions based on Go backend models ---
 
+export interface DomainEntry {
+  domain: string;
+  language: string;
+}
+
 export interface ThinkResult {
   title_original?: string;
   description_original?: string;
@@ -83,14 +88,14 @@ export class NewsDeframerClient {
     throw new Error('Extension context missing: Cannot proxy request');
   }
 
-  async getDomains(): Promise<string[]> {
+  async getDomains(): Promise<DomainEntry[]> {
     const cached = await getCachedDomains();
     if (cached) {
       return cached;
     }
 
     try {
-      const result = await this.proxyRequest<string[]>('/api/domains', {});
+      const result = await this.proxyRequest<DomainEntry[]>('/api/domains', {});
       const domains = result ?? [];
 
       if (domains.length > 0) {

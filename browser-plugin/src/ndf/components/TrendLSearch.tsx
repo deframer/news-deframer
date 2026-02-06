@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DomainEntry } from '../client';
 import { TrendDetails } from './TrendDetails';
 
 interface TrendLSearchProps {
-  domain: string;
+  domain: DomainEntry;
   days: number;
 }
 

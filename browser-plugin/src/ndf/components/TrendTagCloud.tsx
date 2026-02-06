@@ -5,6 +5,7 @@ import { Wordcloud } from '@visx/wordcloud';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DomainEntry } from '../client';
 import { TrendItem } from './TabTrend';
 import { TrendDetails } from './TrendDetails';
 
@@ -13,7 +14,7 @@ import { TrendDetails } from './TrendDetails';
 
 interface TrendTagCloudProps {
   items: TrendItem[];
-  domain: string;
+  domain: DomainEntry;
   days: number;
 }
 

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
+import { DomainEntry } from '../client';
 import { TrendItem } from './TabTrend';
 import { TrendComparisonMetric } from './TrendRepo';
 
@@ -14,7 +15,7 @@ interface TrendCompareProps {
   compareDomain: string | null;
   availableDomains: DomainOption[];
   onSelectDomain: (domain: string) => void;
-  domain: string;
+  domain: DomainEntry;
   searchEngineUrl: string;
 }
 
@@ -65,11 +66,11 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
                 ? `${item.score_a} / ${item.score_b}`
                 : item[scoreKey]}
             </span>
-            {scoreKey === 'score_a' && <OpenIcon onClick={() => handleSearch(item.trend_topic, domain)} term={item.trend_topic} domain={domain} />}
+            {scoreKey === 'score_a' && <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />}
             {scoreKey === 'score_b' && compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} term={item.trend_topic} domain={compareDomain} />}
             {scoreKey === 'both' && (
               <>
-                <OpenIcon onClick={() => handleSearch(item.trend_topic, domain)} term={item.trend_topic} domain={domain} />
+                <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />
                 {compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} term={item.trend_topic} domain={compareDomain} />}
               </>
             )}
@@ -89,7 +90,7 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
             <span className="topic-score">
               {item.outlierRatio.toFixed(1)}x
             </span>
-            <OpenIcon onClick={() => handleSearch(item.word, domain)} term={item.word} domain={domain} />
+            <OpenIcon onClick={() => handleSearch(item.word, domain.domain)} term={item.word} domain={domain.domain} />
           </div>
         </li>
       ))}
@@ -102,7 +103,7 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">
           <div className="col-header unique-a">
-            {t('trends.compare.trending_on', { domain })}
+            {t('trends.compare.trending_on', { domain: domain.domain })}
           </div>
           {compareDomain ? renderList(uniqueA, 'score_a') : renderBaseList(baseItems)}
         </div>
