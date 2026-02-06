@@ -4,13 +4,14 @@ import (
 	"embed"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-//go:embed sql/*.sql
+//go:embed sql
 var migrationFS embed.FS
 
 // Connects to the database and runs the migration
@@ -80,7 +81,7 @@ func Migrate(db *gorm.DB, forced bool) error {
 }
 
 func migrateViews(db *gorm.DB) error {
-	entries, err := migrationFS.ReadDir("sql")
+	entries, err := migrationFS.ReadDir("sql/views")
 	if err != nil {
 		return fmt.Errorf("failed to read migration directory: %w", err)
 	}
@@ -93,7 +94,10 @@ func migrateViews(db *gorm.DB) error {
 		if entry.IsDir() {
 			continue
 		}
-		content, err := migrationFS.ReadFile("sql/" + entry.Name())
+		if !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		content, err := migrationFS.ReadFile("sql/views/" + entry.Name())
 		if err != nil {
 			return fmt.Errorf("failed to read migration file %s: %w", entry.Name(), err)
 		}
