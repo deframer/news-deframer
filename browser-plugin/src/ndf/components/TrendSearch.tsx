@@ -4,12 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { DomainEntry } from '../client';
 import { TrendDetails } from './TrendDetails';
 
-interface TrendLSearchProps {
+interface TrendSearchProps {
   domain: DomainEntry;
   days: number;
 }
 
-export const TrendLSearch = ({ domain, days }: TrendLSearchProps) => {
+export const TrendSearch = ({ domain, days }: TrendSearchProps) => {
   const { t } = useTranslation();
   const [term, setTerm] = useState('');
   const [activeTerm, setActiveTerm] = useState('');

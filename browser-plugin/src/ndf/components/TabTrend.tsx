@@ -5,8 +5,8 @@ import log from '../../shared/logger';
 import { DomainEntry } from '../client';
 import { Footer } from './Footer';
 import { TrendCompare } from './TrendCompare';
-import { TrendLSearch } from './TrendLSearch';
 import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
+import { TrendSearch } from './TrendSearch';
 import { TrendTagCloud } from './TrendTagCloud';
 
 const TIME_RANGES = [
@@ -117,7 +117,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
           />
         )}
 
-        {viewMode === 'lifecycle' && <TrendLSearch domain={domain} days={currentDays} />}
+        {viewMode === 'lifecycle' && <TrendSearch domain={domain} days={currentDays} />}
 
         <div className="trend-footer">
           <Footer />
