@@ -20,12 +20,13 @@ import (
 )
 
 type mockRepo struct {
-	enqueueSyncCalled       bool
-	lastId                  uuid.UUID
-	removeSyncCalled        bool
-	upsertItemFunc          func(item *database.Item) error
-	getTopTrendByDomainFunc func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
-	getContextByDomainFunc  func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
+	enqueueSyncCalled        bool
+	lastId                   uuid.UUID
+	removeSyncCalled         bool
+	upsertItemFunc           func(item *database.Item) error
+	getTopTrendByDomainFunc  func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
+	getContextByDomainFunc   func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
+	getLifecycleByDomainFunc func(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error)
 }
 
 // Implement database.Repository interface stubs
@@ -89,6 +90,13 @@ func (m *mockRepo) GetTopTrendByDomain(domain string, language string, daysInPas
 func (m *mockRepo) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
 	if m.getContextByDomainFunc != nil {
 		return m.getContextByDomainFunc(term, domain, language, daysInPast)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
+	if m.getLifecycleByDomainFunc != nil {
+		return m.getLifecycleByDomainFunc(term, domain, language, daysInPast)
 	}
 	return nil, nil
 }

@@ -21,6 +21,12 @@ export interface TrendContext {
   frequency: number;
 }
 
+export interface Lifecycle {
+  time_slice: string;
+  frequency: number;
+  velocity: number;
+}
+
 export interface ThinkResult {
   title_original?: string;
   description_original?: string;
@@ -153,6 +159,17 @@ export class NewsDeframerClient {
       days: daysInPast.toString(),
     };
     const result = await this.proxyRequest<TrendContext[]>('/api/trends/contextbydomain', params);
+    return result ?? [];
+  }
+
+  async getLifecycleByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<Lifecycle[]> {
+    const params: Record<string, string> = {
+      term,
+      domain,
+      lang: language,
+      days: daysInPast.toString(),
+    };
+    const result = await this.proxyRequest<Lifecycle[]>('/api/trends/lifecyclebydomain', params);
     return result ?? [];
   }
 }

@@ -1470,3 +1470,26 @@ func TestGetContextByDomain(t *testing.T) {
 		assert.Nil(t, contexts)
 	})
 }
+
+func TestGetLifecycleByDomain(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, lifecycleByDomainQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		items, err := repo.GetLifecycleByDomain("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), "en", 7)
+		assert.NoError(t, err)
+		assert.Nil(t, items)
+	})
+}

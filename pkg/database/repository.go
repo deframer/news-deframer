@@ -24,6 +24,9 @@ var topTrendByDomainQuery string
 //go:embed sql/statement/context_by_domain.sql
 var contextByDomainQuery string
 
+//go:embed sql/statement/lifecycle_by_domain.sql
+var lifecycleByDomainQuery string
+
 type TrendMetric struct {
 	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
 	Frequency    int64     `gorm:"column:frequency" json:"frequency"`
@@ -35,6 +38,12 @@ type TrendMetric struct {
 type TrendContext struct {
 	Context   string `gorm:"column:context_word" json:"context"`
 	Frequency int64  `gorm:"column:frequency" json:"frequency"`
+}
+
+type Lifecycle struct {
+	TimeSlice time.Time `gorm:"column:time_slice" json:"time_slice"`
+	Frequency int64     `gorm:"column:frequency" json:"frequency"`
+	Velocity  int64     `gorm:"column:velocity" json:"velocity"`
 }
 
 type Repository interface {
@@ -67,6 +76,7 @@ type Repository interface {
 	CreateFeedSchedule(feedID uuid.UUID) error
 	GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error)
 	GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error)
+	GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error)
 }
 
 type repository struct {
@@ -605,6 +615,27 @@ func (r *repository) GetContextByDomain(term string, domain string, language str
 		return nil, err
 	}
 	return contexts, nil
+}
+
+func (r *repository) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error) {
+	var items []Lifecycle
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(lifecycleByDomainQuery,
+		sql.Named("term", term),
+		sql.Named("domain", domain),
+		sql.Named("language", language),
+		sql.Named("days_in_past", daysInPast),
+	).Scan(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 // FindItemsByRootDomain retrieves the most recent items from all feeds belonging to the given root domain.

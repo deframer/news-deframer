@@ -53,6 +53,7 @@ type mockRepo struct {
 	findItemsByRootDomain        func(rootDomain string, limit int) ([]database.Item, error)
 	getTopTrendByDomain          func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
 	getContextByDomain           func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
+	getLifecycleByDomain         func(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error)
 }
 
 func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
@@ -211,6 +212,13 @@ func (m *mockRepo) GetTopTrendByDomain(domain string, language string, daysInPas
 func (m *mockRepo) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
 	if m.getContextByDomain != nil {
 		return m.getContextByDomain(term, domain, language, daysInPast)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
+	if m.getLifecycleByDomain != nil {
+		return m.getLifecycleByDomain(term, domain, language, daysInPast)
 	}
 	return nil, nil
 }
@@ -461,5 +469,42 @@ func TestGetRootDomains(t *testing.T) {
 		domains, err := f.GetRootDomains(ctx)
 		assert.Error(t, err)
 		assert.Nil(t, domains)
+	})
+}
+
+func TestGetLifecycleByDomain(t *testing.T) {
+	ctx := context.Background()
+	term := "test-term"
+	domain := "example.com"
+	language := "en"
+	days := 30
+
+	t.Run("Success", func(t *testing.T) {
+		expected := []database.Lifecycle{{Frequency: 100, Velocity: 50}}
+		mockR := &mockRepo{
+			getLifecycleByDomain: func(argTerm string, argDomain string, argLang string, argDays int) ([]database.Lifecycle, error) {
+				assert.Equal(t, term, argTerm)
+				assert.Equal(t, domain, argDomain)
+				assert.Equal(t, language, argLang)
+				assert.Equal(t, days, argDays)
+				return expected, nil
+			},
+		}
+		f := New(ctx, nil, mockR)
+		res, err := f.GetLifecycleByDomain(ctx, term, domain, language, days)
+		assert.NoError(t, err)
+		assert.Equal(t, expected, res)
+	})
+
+	t.Run("RepoError", func(t *testing.T) {
+		mockR := &mockRepo{
+			getLifecycleByDomain: func(argTerm string, argDomain string, argLang string, argDays int) ([]database.Lifecycle, error) {
+				return nil, assert.AnError
+			},
+		}
+		f := New(ctx, nil, mockR)
+		res, err := f.GetLifecycleByDomain(ctx, term, domain, language, days)
+		assert.Error(t, err)
+		assert.Nil(t, res)
 	})
 }

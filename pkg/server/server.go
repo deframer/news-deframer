@@ -65,6 +65,7 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.Handle("/api/domains", s.basicAuthMiddleware(s.handleDomains))
 	mux.Handle("/api/trends/topbydomain", s.basicAuthMiddleware(s.handleTopTrendsByDomain))
 	mux.Handle("/api/trends/contextbydomain", s.basicAuthMiddleware(s.handleContextByDomain))
+	mux.Handle("/api/trends/lifecyclebydomain", s.basicAuthMiddleware(s.handleLifecycleByDomain))
 
 	// Chain middlewares: etag -> cache-control -> mux
 	var handler http.Handler = mux
@@ -238,6 +239,48 @@ func (s *Server) handleContextByDomain(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(contexts); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleLifecycleByDomain(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleLifecycleByDomain", "url", r.URL.String())
+	q := r.URL.Query()
+
+	term := q.Get("term")
+	if term == "" {
+		term = q.Get("t")
+	}
+
+	domain := q.Get("domain")
+	if domain == "" {
+		domain = q.Get("d")
+	}
+
+	lang := q.Get("lang")
+	if lang == "" {
+		lang = q.Get("l")
+	}
+
+	if term == "" || domain == "" || lang == "" {
+		http.Error(w, "missing term, domain or lang", http.StatusBadRequest)
+		return
+	}
+
+	days := 7
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	lifecycles, err := s.facade.GetLifecycleByDomain(r.Context(), term, domain, lang, days)
+	if err != nil {
+		s.logger.Error("failed to get lifecycle by domain", "error", err)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(lifecycles); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }

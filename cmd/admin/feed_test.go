@@ -671,6 +671,10 @@ func (m *MockRepo) GetContextByDomain(term string, domain string, language strin
 	return nil, nil
 }
 
+func (m *MockRepo) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
+	return nil, nil
+}
+
 func captureOutput(f func()) string {
 	old := os.Stdout
 	r, w, _ := os.Pipe()

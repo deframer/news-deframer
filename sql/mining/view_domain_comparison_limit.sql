@@ -1,84 +1,104 @@
 -- Force DuckDB execution
 SET duckdb.force_execution = true;
 
-WITH domain_a AS (
-    SELECT stem, outlier_ratio
-    FROM view_trend_metrics_by_domain
-    WHERE root_domain = 'spiegel.de'       -- Source A
-      AND "language" = 'de'             -- Mandatory Language Filter
-      --AND time_slice = DATE_TRUNC('day', NOW())
-      AND time_slice >= NOW() - INTERVAL '7 DAYS'
-      AND outlier_ratio > 1.5           -- Threshold for "Trending"
+/*
+   STEP 1: Prepare Domain A (e.g., Spiegel)
+   - Filter for NOUNS (Triggers)
+   - Deduplicate: Keep only the peak day for each word
+*/
+WITH domain_a_unique AS (
+    SELECT
+        stem,
+        outlier_ratio,
+        utility
+    FROM (
+        SELECT
+            stem,
+            outlier_ratio,
+            utility,
+            ROW_NUMBER() OVER (PARTITION BY stem ORDER BY outlier_ratio DESC) as rn
+        FROM view_trend_metrics_by_domain
+        WHERE root_domain = 'spiegel.de'
+          AND "language" = 'de'
+          AND stem_type = 'NOUN'          -- <--- Thesis: Focus on Triggers/Topics [1][2]
+          AND time_slice >= NOW() - INTERVAL '7 DAYS'
+          AND utility >= 1
+          AND outlier_ratio > 1.5
+    )
+    WHERE rn = 1 -- Keep only the strongest signal per word
 ),
-domain_b AS (
-    SELECT stem, outlier_ratio
-    FROM view_trend_metrics_by_domain
-    WHERE root_domain = 'tagesschau.de'   -- Source B
-      AND "language" = 'de'
-      --AND time_slice = DATE_TRUNC('day', NOW())
-      AND time_slice >= NOW() - INTERVAL '7 DAYS'
-      AND outlier_ratio > 1.5
+
+/*
+   STEP 2: Prepare Domain B (e.g., Tagesschau)
+   - Same cleaning logic
+*/
+domain_b_unique AS (
+    SELECT
+        stem,
+        outlier_ratio,
+        utility
+    FROM (
+        SELECT
+            stem,
+            outlier_ratio,
+            utility,
+            ROW_NUMBER() OVER (PARTITION BY stem ORDER BY outlier_ratio DESC) as rn
+        FROM view_trend_metrics_by_domain
+        WHERE root_domain = 'tagesschau.de'
+          AND "language" = 'de'
+          AND stem_type = 'NOUN'
+          AND time_slice >= NOW() - INTERVAL '7 DAYS'
+          AND utility >= 1
+          AND outlier_ratio > 1.5
+    )
+    WHERE rn = 1
 ),
+
+/*
+   STEP 3: Combine & Classify
+   - INTERSECT: Both are talking about it
+   - BLINDSPOT: Only one is talking about it
+*/
 all_joined AS (
-    -- Combine and Classify
     SELECT
         COALESCE(a.stem, b.stem) as trend_topic,
         COALESCE(a.outlier_ratio, 0) as score_a,
         COALESCE(b.outlier_ratio, 0) as score_b,
         CASE
             WHEN a.stem IS NOT NULL AND b.stem IS NOT NULL THEN 'INTERSECT'
-            WHEN a.stem IS NOT NULL AND b.stem IS NULL THEN 'BLINDSPOT_A'
-            WHEN a.stem IS NULL AND b.stem IS NOT NULL THEN 'BLINDSPOT_B'
+            WHEN a.stem IS NOT NULL AND b.stem IS NULL THEN 'BLINDSPOT_A' -- Unique to A
+            WHEN a.stem IS NULL AND b.stem IS NOT NULL THEN 'BLINDSPOT_B' -- Unique to B
         END as classification
-    FROM domain_a a
-    FULL OUTER JOIN domain_b b ON a.stem = b.stem
+    FROM domain_a_unique a
+    FULL OUTER JOIN domain_b_unique b ON a.stem = b.stem
 ),
+
+/*
+   STEP 4: Rank within Groups
+   - Shows the top 5 shared topics, top 5 unique to A, top 5 unique to B
+*/
 ranked_trends AS (
-    -- Rank them 1-N within their specific group
     SELECT
         *,
         ROW_NUMBER() OVER (
             PARTITION BY classification
             ORDER BY
-                -- Dynamic ordering based on the group
+                -- Dynamic ordering: Prioritize the relevant score for the group
                 CASE
-                    WHEN classification = 'INTERSECT' THEN (score_a + score_b) -- Strongest combined
-                    WHEN classification = 'BLINDSPOT_A' THEN score_a           -- Strongest in A
-                    WHEN classification = 'BLINDSPOT_B' THEN score_b           -- Strongest in B
+                    WHEN classification = 'INTERSECT' THEN (score_a + score_b) -- Combined heat
+                    WHEN classification = 'BLINDSPOT_A' THEN score_a           -- A's heat
+                    WHEN classification = 'BLINDSPOT_B' THEN score_b           -- B's heat
                 END DESC
         ) as rank_group
     FROM all_joined
 )
--- Final Filter: Only keep the Top 5 for each group
+
 SELECT
     classification,
     rank_group,
     trend_topic,
-    ROUND(score_a::numeric, 2) as score_a,
-    ROUND(score_b::numeric, 2) as score_b
+    ROUND(score_a::numeric, 2) as score_spiegel,
+    ROUND(score_b::numeric, 2) as score_tagesschau
 FROM ranked_trends
 WHERE rank_group <= 5
 ORDER BY classification, rank_group;
-
--- TODO this is broken -it duplicates elements
-
-/*
- classification | rank_group |  trend_topic  | score_a | score_b
-----------------+------------+---------------+---------+---------
- BLINDSPOT_A    |          1 | foo           |       5 |       0
- BLINDSPOT_A    |          2 | bar           |       5 |       0
- BLINDSPOT_A    |          3 | sprechen      |       3 |       0
- BLINDSPOT_A    |          4 | berlin        |       2 |       0
- BLINDSPOT_A    |          5 | borg          |       2 |       0
- BLINDSPOT_B    |          1 | grenzübergang |       0 |       7
- BLINDSPOT_B    |          2 | rafah         |       0 |       6
- BLINDSPOT_B    |          3 | gazastreifen  |       0 |       5
- BLINDSPOT_B    |          4 | gespräch      |       0 |       5
- BLINDSPOT_B    |          5 | merz          |       0 |       4
- INTERSECT      |          1 | deutschland   |       6 |    6.18
- INTERSECT      |          2 | deutschland   |       6 |     3.6
- INTERSECT      |          3 | deutschland   |       6 |       3
- INTERSECT      |          4 | mensch        |       3 |     4.5
- INTERSECT      |          5 | mensch        |       3 |    2.55
-(15 rows)
-*/
