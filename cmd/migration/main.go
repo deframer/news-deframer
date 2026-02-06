@@ -15,6 +15,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// force this
+	cfg.LogLevel = "debug"
+	cfg.LogDatabase = true
+
 	// Print the DSN as requested
 	slog.Info("Running migrations", "dsn", cfg.DSN)
 

@@ -1,4 +1,5 @@
-CREATE OR REPLACE VIEW view_trend_metrics_by_domain AS
+DROP VIEW IF EXISTS view_trend_metrics_by_domain CASCADE;
+CREATE VIEW view_trend_metrics_by_domain AS
 WITH raw_unrolled AS (
     -- 1. Unnest stems and include ROOT_DOMAIN
     SELECT item_id, feed_id, pub_date, "language", root_domain, unnest(noun_stems) as stem, 'NOUN' as stem_type

@@ -1,4 +1,5 @@
-CREATE OR REPLACE VIEW view_trend_metrics AS
+DROP VIEW IF EXISTS view_trend_metrics CASCADE;
+CREATE VIEW view_trend_metrics AS
 WITH raw_unrolled AS (
     -- 1. Unnest stems and include LANGUAGE
     SELECT item_id, feed_id, pub_date, "language", unnest(noun_stems) as stem, 'NOUN' as stem_type
