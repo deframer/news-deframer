@@ -667,6 +667,10 @@ func (m *MockRepo) GetTopTrendByDomain(domain string, language string, daysInPas
 	return nil, nil
 }
 
+func (m *MockRepo) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
+	return nil, nil
+}
+
 func captureOutput(f func()) string {
 	old := os.Stdout
 	r, w, _ := os.Pipe()

@@ -1,12 +1,6 @@
 import log from '../../shared/logger';
-
-export interface TrendMetric {
-  trend_topic: string;
-  frequency: number;
-  utility: number;
-  outlier_ratio: number;
-  time_slice: string;
-}
+import { getSettings } from '../../shared/settings';
+import { NewsDeframerClient } from '../client';
 
 export interface TrendContextMetric {
   context_word: string;
@@ -27,39 +21,6 @@ export interface TrendLifecycleMetric {
   frequency: number;
   velocity: number;
 }
-
-const STATIC_TREND_DATA: TrendMetric[] = [
-  { trend_topic: 'berlin', frequency: 3, utility: 1, outlier_ratio: 2.333333333333333, time_slice: '2026-01-30 00:00:00+00' },
-  { trend_topic: 'deutschland', frequency: 3, utility: 1, outlier_ratio: 2.1, time_slice: '2026-01-30 00:00:00+00' },
-  { trend_topic: 'karin', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-29 00:00:00+00' },
-  { trend_topic: 'hamburg', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-30 00:00:00+00' },
-  { trend_topic: 'syrer', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
-  { trend_topic: 'prien', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-29 00:00:00+00' },
-  { trend_topic: 'köln', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
-  { trend_topic: 'peter', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-29 00:00:00+00' },
-  { trend_topic: 'live', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
-  { trend_topic: 'regierung', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-02-03 00:00:00+00' },
-  { trend_topic: 'gericht', frequency: 2, utility: 1, outlier_ratio: 2, time_slice: '2026-01-31 00:00:00+00' },
-  { trend_topic: 'merz', frequency: 2, utility: 1, outlier_ratio: 1.75, time_slice: '2026-01-30 00:00:00+00' },
-  { trend_topic: 'land', frequency: 2, utility: 1, outlier_ratio: 1.7142857142857142, time_slice: '2026-02-03 00:00:00+00' },
-  { trend_topic: 'nius', frequency: 3, utility: 1, outlier_ratio: 1.6153846153846154, time_slice: '2026-02-02 00:00:00+00' },
-  { trend_topic: 'frau', frequency: 2, utility: 1, outlier_ratio: 1.6, time_slice: '2026-02-02 00:00:00+00' },
-  { trend_topic: 'friedrich', frequency: 2, utility: 1, outlier_ratio: 1.5555555555555554, time_slice: '2026-01-30 00:00:00+00' },
-  { trend_topic: 'cdu', frequency: 2, utility: 1, outlier_ratio: 1.5555555555555554, time_slice: '2026-01-31 00:00:00+00' }
-];
-
-const STATIC_CONTEXT_DATA: TrendContextMetric[] = [
-  { context_word: 'anlaufen', frequency: 1, type: 'VERB' },
-  { context_word: 'besänftigen', frequency: 1, type: 'VERB' },
-  { context_word: 'einmischen', frequency: 1, type: 'VERB' },
-  { context_word: 'engagieren', frequency: 1, type: 'VERB' },
-  { context_word: 'fernbleiben', frequency: 1, type: 'VERB' },
-  { context_word: 'funktionieren', frequency: 1, type: 'VERB' },
-  { context_word: 'jagen', frequency: 1, type: 'VERB' },
-  { context_word: 'lehnen', frequency: 1, type: 'VERB' },
-  { context_word: 'mitproduzieren', frequency: 1, type: 'VERB' },
-  { context_word: 'nehmen', frequency: 1, type: 'VERB' },
-];
 
 const STATIC_COMPARISON_DATA: TrendComparisonMetric[] = [
   { classification: 'BLINDSPOT_A', rank_group: 1, trend_topic: 'hans', score_a: 5, score_b: 0 },
@@ -105,29 +66,26 @@ const STATIC_LIFECYCLE_DATA: TrendLifecycleMetric[] = [
 
 export class TrendRepo {
   /**
-   * Fetches trend metrics.
-   * Currently returns static data from the dummy JSON.
-   */
-  static async getTrends(domain?: string, days?: number): Promise<TrendMetric[]> {
-    log.debug(`TrendRepo.getTrends called with domain=${domain}, days=${days}`);
-    // Simulate a small network delay
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(STATIC_TREND_DATA);
-      }, 300);
-    });
-  }
-
-  /**
    * Fetches context words (verbs/adjectives) for a specific trend topic.
    */
   static async getTrendContext(topic: string, domain?: string, days?: number): Promise<TrendContextMetric[]> {
     log.debug(`TrendRepo.getTrendContext called with topic=${topic}, domain=${domain}, days=${days}`);
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(STATIC_CONTEXT_DATA);
-      }, 300);
-    });
+    if (!domain) return [];
+
+    const settings = await getSettings();
+    const client = new NewsDeframerClient(settings);
+
+    // Resolve language for the domain
+    const domains = await client.getDomains();
+    const domainEntry = domains.find((d) => d.domain === domain);
+    const lang = domainEntry?.language || 'de';
+
+    const data = await client.getContextByDomain(topic, domain, lang, days || 7);
+    return data.map((d) => ({
+      context_word: d.context,
+      frequency: d.frequency,
+      type: 'WORD', // API does not return type currently
+    }));
   }
 
   /**

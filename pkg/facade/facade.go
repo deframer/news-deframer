@@ -42,6 +42,8 @@ type Facade interface {
 	GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error)
 	GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error)
 	GetRootDomains(ctx context.Context) ([]DomainEntry, error)
+	GetTopTrendByDomain(ctx context.Context, domain string, language string, daysInPast int) ([]database.TrendMetric, error)
+	GetContextByDomain(ctx context.Context, term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
 }
 
 type facade struct {
@@ -184,4 +186,12 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 	})
 
 	return domains, nil
+}
+
+func (f *facade) GetTopTrendByDomain(ctx context.Context, domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
+	return f.repo.GetTopTrendByDomain(domain, language, daysInPast)
+}
+
+func (f *facade) GetContextByDomain(ctx context.Context, term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
+	return f.repo.GetContextByDomain(term, domain, language, daysInPast)
 }

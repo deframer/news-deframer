@@ -1,22 +1,36 @@
----Query: "How is [Noun] being described?" This query finds the Adjectives/Verbs that appear most frequently in the same articles as your target Noun.
+/*
+   QUERY: Combined Trend Narrative (Action + Quality)
+   concatenates Verbs and Adjectives to form a unified context string.
+*/
 
--- "Show me the context (Verbs/Adjectives) for the trend 'bitcoin'"
--- "How is 'bitcoin' being described in English news?"
 SET duckdb.force_execution = true;
 
-WITH trend_context AS (
+WITH trend_components AS (
     SELECT
-        unnest(verb_stems) as context_word,
-        'VERB' as type
+        -- 1. The Trigger
+        'trump' as trigger,
+
+        -- 2. Unroll arrays (DuckDB zips these lists, padding shorter ones with NULL)
+        unnest(verb_stems) as action,
+        unnest(adjective_stems) as quality
+
     FROM public.trends
-    WHERE 'trump' = ANY(noun_stems)      -- The Trend Trigger
-    --WHERE 'trump' = ANY(noun_stems)      -- The Trend Trigger
-    --  AND "language" = 'en'
-      AND "language" = 'de'
-      --AND pub_date >= NOW() - INTERVAL '7 DAYS'
+    WHERE 'trump' = ANY(noun_stems)
+      AND "language" = 'en'
+      AND pub_date >= NOW() - INTERVAL '24 HOURS'
 )
-SELECT context_word, count(*) as frequency
-FROM trend_context
+SELECT
+    -- 3. Concat with ' ' separator.
+    -- If action is NULL, result is "quality".
+    -- If quality is NULL, result is "action".
+    CONCAT_WS(' ', action, quality) as context,
+
+    count(*) as frequency
+FROM trend_components
+WHERE (action IS NOT NULL OR quality IS NOT NULL)  -- Remove rows where both are empty
+  -- FILTER HERE: Remove self-references to clean up the narrative
+  AND quality != 'trump'
+  AND action != 'trump'
 GROUP BY 1
-ORDER BY 2 DESC, 1
-LIMIT 10;
+ORDER BY 2 DESC
+LIMIT 20;

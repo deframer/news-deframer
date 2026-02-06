@@ -2,10 +2,11 @@ import { ParentSize } from '@visx/responsive';
 import { scaleLog } from '@visx/scale';
 import { Text } from '@visx/text';
 import { Wordcloud } from '@visx/wordcloud';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { DomainEntry } from '../client';
+import { getSettings } from '../../shared/settings';
+import { DomainEntry, NewsDeframerClient } from '../client';
 import { TrendItem } from './TabTrend';
 import { TrendDetails } from './TrendDetails';
 
@@ -13,7 +14,6 @@ import { TrendDetails } from './TrendDetails';
 // https://visx.airbnb.tech/wordcloud
 
 interface TrendTagCloudProps {
-  items: TrendItem[];
   domain: DomainEntry;
   days: number;
 }
@@ -96,10 +96,34 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
 });
 TrendWordCloud.displayName = 'TrendWordCloud';
 
-export const TrendTagCloud = ({ items, domain, days }: TrendTagCloudProps) => {
+export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendItem } | null>(null);
+  const [items, setItems] = useState<TrendItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const settings = await getSettings();
+        const client = new NewsDeframerClient(settings);
+        const data = await client.getTopTrendByDomain(domain.domain, domain.language, days);
+        const mappedItems: TrendItem[] = data.map((d, index) => ({
+          word: d.trend_topic,
+          rank: index + 1,
+          count: d.frequency,
+          utility: d.utility,
+          outlierRatio: d.outlier_ratio
+        }));
+        setItems(mappedItems);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [domain, days]);
 
   const words = useMemo(() => {
     return items.map((i) => ({
@@ -143,6 +167,12 @@ export const TrendTagCloud = ({ items, domain, days }: TrendTagCloudProps) => {
       )}
     </>
   ), [words, selectedTerm, tooltip, t]);
+
+  if (loading) {
+    return <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="spinner-small" />
+    </div>;
+  }
 
   if (items.length === 0) return null;
 

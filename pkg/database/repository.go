@@ -21,12 +21,20 @@ import (
 //go:embed sql/statement/top_trend_by_domain.sql
 var topTrendByDomainQuery string
 
+//go:embed sql/statement/context_by_domain.sql
+var contextByDomainQuery string
+
 type TrendMetric struct {
 	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
 	Frequency    int64     `gorm:"column:frequency" json:"frequency"`
 	Utility      int64     `gorm:"column:utility" json:"utility"`
 	OutlierRatio float64   `gorm:"column:outlier_ratio" json:"outlier_ratio"`
 	TimeSlice    time.Time `gorm:"column:time_slice" json:"time_slice"`
+}
+
+type TrendContext struct {
+	Context   string `gorm:"column:context_word" json:"context"`
+	Frequency int64  `gorm:"column:frequency" json:"frequency"`
 }
 
 type Repository interface {
@@ -58,6 +66,7 @@ type Repository interface {
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
 	CreateFeedSchedule(feedID uuid.UUID) error
 	GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error)
+	GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error)
 }
 
 type repository struct {
@@ -575,6 +584,27 @@ func (r *repository) GetTopTrendByDomain(domain string, language string, daysInP
 		return nil, err
 	}
 	return metrics, nil
+}
+
+func (r *repository) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error) {
+	var contexts []TrendContext
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(contextByDomainQuery,
+		sql.Named("term", term),
+		sql.Named("domain", domain),
+		sql.Named("language", language),
+		sql.Named("days_in_past", daysInPast),
+	).Scan(&contexts).Error; err != nil {
+		return nil, err
+	}
+	return contexts, nil
 }
 
 // FindItemsByRootDomain retrieves the most recent items from all feeds belonging to the given root domain.

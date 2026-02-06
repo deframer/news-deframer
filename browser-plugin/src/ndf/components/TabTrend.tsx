@@ -29,7 +29,6 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
-  const [items, setItems] = useState<TrendItem[]>([]);
   const [compareItems, setCompareItems] = useState<TrendComparisonMetric[]>([]);
 
   const domainOptions = availableDomains.filter(d => d.domain !== domain.domain && d.language === domain.language).map(d => ({ id: d.domain, name: d.domain }));
@@ -40,16 +39,6 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
 
   useEffect(() => {
     const fetchData = async () => {
-      // Always fetch base trends so we have them for the "Our Topics" column in compare mode
-      const data = await TrendRepo.getTrends(domain.domain, currentDays);
-      const mappedItems: TrendItem[] = data.map((d, index) => ({
-        word: d.trend_topic,
-        rank: index + 1,
-        count: d.frequency,
-        utility: d.utility,
-        outlierRatio: d.outlier_ratio
-      }));
-      setItems(mappedItems);
 
       if (viewMode === 'compare' && compareDomain) {
         const data = await TrendRepo.getTrendComparison(domain.domain, compareDomain, currentDays);
@@ -103,12 +92,12 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'cloud' && <TrendTagCloud items={items} domain={domain} days={currentDays} />}
+        {viewMode === 'cloud' && <TrendTagCloud domain={domain} days={currentDays} />}
 
         {viewMode === 'compare' && (
           <TrendCompare
             items={compareItems}
-            baseItems={items}
+            baseItems={[]}
             compareDomain={compareDomain}
             availableDomains={domainOptions}
             onSelectDomain={setCompareDomain}

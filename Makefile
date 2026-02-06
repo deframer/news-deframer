@@ -7,6 +7,8 @@ DOCKER_COMPOSE_FILE ?= docker-compose.yml
 COMPOSE_ENV_FILE ?= .env-compose
 DOCKER_ENV_FLAG := $(if $(wildcard $(COMPOSE_ENV_FILE)),--env-file $(COMPOSE_ENV_FILE),--env-file /dev/null)
 
+DB_IMAGE := pgduckdb/pgduckdb:18-main
+
 ifneq ("$(wildcard .env)","")
   #$(info using .env file)
   include .env
@@ -96,3 +98,15 @@ migration: build
 worker: build
 	./bin/admin feed sync-all
 	./bin/worker
+
+SQL_DIR := sql
+
+$(SQL_DIR)/%.sql: FORCE
+	docker run --rm -i --network host \
+		-v "$(CURDIR):/workspace" \
+		-w /workspace \
+		$(DB_IMAGE) \
+		psql "postgres://$${DB_USER}:$${DB_PASSWORD}@$${DB_HOST}:$${DB_PORT}/$${DB_NAME}" \
+		-f $@
+
+FORCE:

@@ -25,6 +25,7 @@ type mockRepo struct {
 	removeSyncCalled        bool
 	upsertItemFunc          func(item *database.Item) error
 	getTopTrendByDomainFunc func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
+	getContextByDomainFunc  func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
 }
 
 // Implement database.Repository interface stubs
@@ -81,6 +82,13 @@ func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]databa
 func (m *mockRepo) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
 	if m.getTopTrendByDomainFunc != nil {
 		return m.getTopTrendByDomainFunc(domain, language, daysInPast)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
+	if m.getContextByDomainFunc != nil {
+		return m.getContextByDomainFunc(term, domain, language, daysInPast)
 	}
 	return nil, nil
 }

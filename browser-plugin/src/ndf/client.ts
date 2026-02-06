@@ -8,6 +8,19 @@ export interface DomainEntry {
   language: string;
 }
 
+export interface TrendMetric {
+  trend_topic: string;
+  frequency: number;
+  utility: number;
+  outlier_ratio: number;
+  time_slice: string;
+}
+
+export interface TrendContext {
+  context: string;
+  frequency: number;
+}
+
 export interface ThinkResult {
   title_original?: string;
   description_original?: string;
@@ -119,6 +132,27 @@ export class NewsDeframerClient {
       params.max_score = maxScore.toString();
     }
     const result = await this.proxyRequest<AnalyzedItem[]>('/api/site', params);
+    return result ?? [];
+  }
+
+  async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
+    const params: Record<string, string> = {
+      domain,
+      lang: language,
+      days: daysInPast.toString(),
+    };
+    const result = await this.proxyRequest<TrendMetric[]>('/api/trends/topbydomain', params);
+    return result ?? [];
+  }
+
+  async getContextByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<TrendContext[]> {
+    const params: Record<string, string> = {
+      term,
+      domain,
+      lang: language,
+      days: daysInPast.toString(),
+    };
+    const result = await this.proxyRequest<TrendContext[]>('/api/trends/contextbydomain', params);
     return result ?? [];
   }
 }
