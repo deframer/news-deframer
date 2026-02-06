@@ -14,7 +14,6 @@ import {
 } from '../../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../../shared/theme';
 import { ProxyResponse } from '../../shared/types';
-import { Footer } from './Footer';
 import { ToggleSwitch } from './ToggleSwitch';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -29,7 +28,8 @@ export const Options = () => {
     password: '',
     enabled: false,
     theme: 'system',
-  });
+    searchEngineUrl: 'https://search.brave.com',
+  } as any);
   const [status, setStatus] = useState<Status>('idle');
   const [loaded, setLoaded] = useState(false);
   const [domains, setDomains] = useState<string[]>([]);
@@ -41,6 +41,10 @@ export const Options = () => {
     // Load settings AND language
     Promise.all([getSettings(), chrome.storage.local.get('ndf_language')]).then(([loadedSettings, storageResult]) => {
       log.debug('Settings loaded:', loadedSettings);
+      // Default searchEngineUrl if missing
+      if (!(loadedSettings as any).searchEngineUrl) {
+        (loadedSettings as any).searchEngineUrl = 'https://search.brave.com';
+      }
       setSettings(loadedSettings);
       const storage = storageResult as { ndf_language?: string };
       setLang(storage.ndf_language || 'default');
@@ -268,70 +272,90 @@ export const Options = () => {
       </div>
 
       <div className="content-grid">
-        <div className={`card ${!settings.enabled ? 'disabled' : ''}`}>
-          <h3 className="section-title">
-            {t('options.section_connection')}
-          </h3>
+        <div className="settings-column">
+          <div className={`card ${!settings.enabled ? 'disabled' : ''}`}>
+            <h3 className="section-title">
+              {t('options.section_connection')}
+            </h3>
 
-        <div className="form-group">
-          <label className="input-label">
-            {t('options.label_server_url')}
-          </label>
-          <input
-            type="text"
-            className="text-input"
-            value={settings.backendUrl}
-            onChange={(e) =>
-              setSettings({ ...settings, backendUrl: e.target.value })
-            }
-            disabled={!settings.enabled}
-            placeholder="http://localhost:8080"
-          />
-        </div>
+            <div className="form-group">
+              <label className="input-label">
+                {t('options.label_server_url')}
+              </label>
+              <input
+                type="text"
+                className="text-input"
+                value={settings.backendUrl}
+                onChange={(e) =>
+                  setSettings({ ...settings, backendUrl: e.target.value })
+                }
+                disabled={!settings.enabled}
+                placeholder="http://localhost:8080"
+              />
+            </div>
 
-          <div className="form-group">
-          <label className="input-label">
-            {t('options.label_username')}{' '}
-            <span className="optional-text">
-              {t('options.label_optional')}
-            </span>
-          </label>
-          <input
-            type="text"
-            className="text-input"
-            value={settings.username}
-            onChange={(e) =>
-              setSettings({ ...settings, username: e.target.value })
-            }
-            disabled={!settings.enabled}
-          />
-        </div>
+            <div className="form-group">
+              <label className="input-label">
+                {t('options.label_username')}{' '}
+                <span className="optional-text">
+                  {t('options.label_optional')}
+                </span>
+              </label>
+              <input
+                type="text"
+                className="text-input"
+                value={settings.username}
+                onChange={(e) =>
+                  setSettings({ ...settings, username: e.target.value })
+                }
+                disabled={!settings.enabled}
+              />
+            </div>
 
-        <div className="form-group-last">
-          <label className="input-label">
-            {t('options.label_password')}{' '}
-            <span className="optional-text">
-              {t('options.label_optional')}
-            </span>
-          </label>
-          <input
-            type="password"
-            className="text-input"
-            value={settings.password}
-            onChange={(e) =>
-              setSettings({ ...settings, password: e.target.value })
-            }
-            disabled={!settings.enabled}
-          />
-        </div>
+            <div className="form-group-last">
+              <label className="input-label">
+                {t('options.label_password')}{' '}
+                <span className="optional-text">
+                  {t('options.label_optional')}
+                </span>
+              </label>
+              <input
+                type="password"
+                className="text-input"
+                value={settings.password}
+                onChange={(e) =>
+                  setSettings({ ...settings, password: e.target.value })
+                }
+                disabled={!settings.enabled}
+              />
+            </div>
 
-          <button
-            className="action-button"
-            onClick={handleTestClick}
-            disabled={!settings.enabled || isLoading}
-          >
-            {isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}
-          </button>
+            <button
+              className="action-button"
+              onClick={handleTestClick}
+              disabled={!settings.enabled || isLoading}
+            >
+              {isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}
+            </button>
+          </div>
+
+          {/* Search Engine Settings */}
+          <div className={`card ${!settings.enabled ? 'disabled' : ''}`}>
+            <div className="form-group-last">
+              <label className="input-label">
+                {t('options.label_search_engine')}
+              </label>
+              <input
+                type="text"
+                className="text-input"
+                value={(settings as any).searchEngineUrl}
+                onChange={(e) =>
+                  setSettings({ ...settings, searchEngineUrl: e.target.value } as any)
+                }
+                disabled={!settings.enabled}
+              />
+            </div>
+          </div>
         </div>
 
         <div className="settings-column">
@@ -384,9 +408,23 @@ export const Options = () => {
               onChange={handleEnableToggle}
             />
           </div>
+
+          {/* Project Link */}
+          <div className="card">
+            <h3 className="section-title">
+              {t('options.section_project')}
+            </h3>
+            <a
+              href="https://deframer.github.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 500 }}
+            >
+              {t('footer.github_link')}
+            </a>
+          </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };
