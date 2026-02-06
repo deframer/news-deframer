@@ -403,106 +403,53 @@ func TestItemHashKey(t *testing.T) {
 	tests := []struct {
 		name      string
 		item1     *gofeed.Item
-		type1     HashType
 		item2     *gofeed.Item
-		type2     HashType
 		wantErr   bool
 		wantEqual bool
 	}{
 		{
 			name:      "Stability",
 			item1:     &gofeed.Item{GUID: "test-guid", Title: "Test Title", Link: "http://example.com", PublishedParsed: &now},
-			type1:     HashTypeDefault,
 			item2:     &gofeed.Item{GUID: "test-guid", Title: "Test Title", Link: "http://example.com", PublishedParsed: &now},
-			type2:     HashTypeDefault,
 			wantEqual: true,
 		},
 		{
 			name:      "Priority GUID",
 			item1:     &gofeed.Item{GUID: "id1", Link: "http://link1", Title: "Title1"},
-			type1:     HashTypeDefault,
 			item2:     &gofeed.Item{GUID: "id1", Link: "http://link2", Title: "Title2"},
-			type2:     HashTypeDefault,
 			wantEqual: true,
 		},
 		{
 			name:      "Priority Link",
 			item1:     &gofeed.Item{GUID: "", Link: "http://link1", Title: "Title1"},
-			type1:     HashTypeDefault,
 			item2:     &gofeed.Item{GUID: "", Link: "http://link1", Title: "Title2"},
-			type2:     HashTypeDefault,
 			wantEqual: true,
 		},
 		{
 			name:      "Whitespace Handling",
 			item1:     &gofeed.Item{GUID: " id1 ", Link: " http://link1 ", Title: "Title1"},
-			type1:     HashTypeDefault,
 			item2:     &gofeed.Item{GUID: "id1", Link: "http://link1", Title: "Title1"},
-			type2:     HashTypeDefault,
 			wantEqual: true,
 		},
 		{
 			name:  "Valid Item (Link only)",
 			item1: &gofeed.Item{Title: "Some Title", Link: "http://example.com"},
-			type1: HashTypeDefault,
 		},
 		{
 			name:    "Empty Seed Error",
 			item1:   &gofeed.Item{},
-			type1:   HashTypeDefault,
 			wantErr: true,
 		},
 		{
 			name:    "Empty Link Error",
 			item1:   &gofeed.Item{Title: "Title", GUID: "GUID"},
-			type1:   HashTypeDefault,
 			wantErr: true,
-		},
-		{
-			name:      "Content Change",
-			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
-			type1:     HashTypeVersioned,
-			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc B", Link: "http://example.com"},
-			type2:     HashTypeVersioned,
-			wantEqual: false,
-		},
-		{
-			name:      "Title Change",
-			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
-			type1:     HashTypeVersioned,
-			item2:     &gofeed.Item{GUID: "id1", Title: "Title B", Description: "Desc A", Link: "http://example.com"},
-			type2:     HashTypeVersioned,
-			wantEqual: false,
-		},
-		{
-			name:      "Same Content",
-			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
-			type1:     HashTypeVersioned,
-			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
-			type2:     HashTypeVersioned,
-			wantEqual: true,
-		},
-		{
-			name:      "Whitespace Content",
-			item1:     &gofeed.Item{GUID: "id1", Title: " Title A ", Description: " Desc A ", Link: "http://example.com"},
-			type1:     HashTypeVersioned,
-			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
-			type2:     HashTypeVersioned,
-			wantEqual: true,
-		},
-		{
-			name:      "Stable vs Versioned",
-			item1:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
-			type1:     HashTypeDefault,
-			item2:     &gofeed.Item{GUID: "id1", Title: "Title A", Description: "Desc A", Link: "http://example.com"},
-			type2:     HashTypeVersioned,
-			wantEqual: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			k1, err1 := ItemHashKey(tt.item1, tt.type1)
+			k1, err1 := ItemHashKey(tt.item1)
 			if tt.wantErr {
 				assert.Error(t, err1)
 				if err1 != nil {
@@ -513,7 +460,7 @@ func TestItemHashKey(t *testing.T) {
 			assert.NoError(t, err1)
 
 			if tt.item2 != nil {
-				k2, err2 := ItemHashKey(tt.item2, tt.type2)
+				k2, err2 := ItemHashKey(tt.item2)
 				assert.NoError(t, err2)
 
 				if tt.wantEqual {

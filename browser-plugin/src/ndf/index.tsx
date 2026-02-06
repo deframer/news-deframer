@@ -10,6 +10,7 @@ import { AnalyzedItem, NewsDeframerClient } from './client';
 import { Spinner } from './components/Spinner';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
+import { ndfStyles } from './styles';
 import { classifyUrl, PageType } from './utils/url-classifier';
 
 const App = ({ theme }: { theme: string }) => {
@@ -17,7 +18,22 @@ const App = ({ theme }: { theme: string }) => {
   const [data, setData] = useState<
     AnalyzedItem | AnalyzedItem[] | null
   >(null);
+  const [currentDomain, setCurrentDomain] = useState<string | null>(null);
+  const [availableDomains, setAvailableDomains] = useState<string[]>([]);
+  const [searchEngineUrl, setSearchEngineUrl] = useState<string>('https://search.brave.com');
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && changes.searchEngineUrl) {
+        setSearchEngineUrl(changes.searchEngineUrl.newValue);
+      }
+    };
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, []);
 
   useEffect(() => {
     // Inject global styles into the Light DOM to fix body margin and background "frame"
@@ -40,12 +56,16 @@ const App = ({ theme }: { theme: string }) => {
       try {
         // We don't need to check settings here, start() already did.
         const settings = await getSettings();
+        if (settings.searchEngineUrl) {
+          setSearchEngineUrl(settings.searchEngineUrl);
+        }
         const client = new NewsDeframerClient(settings);
         const type = classifyUrl(new URL(window.location.href));
         setPageType(type);
 
         if (type === PageType.PORTAL) {
           const allDomains = await client.getDomains();
+          setAvailableDomains(allDomains);
           const siteHost = window.location.host;
           const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
 
@@ -61,6 +81,7 @@ const App = ({ theme }: { theme: string }) => {
 
           if (authorizedDomain) {
             // Fetch the content using the authorized domain from the list.
+            setCurrentDomain(authorizedDomain);
             const items = await client.getSite(authorizedDomain);
             if (items.length > 0) {
               setData(items);
@@ -115,7 +136,7 @@ const App = ({ theme }: { theme: string }) => {
       // data is AnalyzedItem
       return (
         <>
-          <style>{getThemeCss(theme as Theme)}</style>
+          <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
           <ArticlePage item={data as AnalyzedItem} />
         </>
       );
@@ -123,8 +144,8 @@ const App = ({ theme }: { theme: string }) => {
       // data is AnalyzedItem[]
       return (
         <>
-          <style>{getThemeCss(theme as Theme)}</style>
-          <PortalPage items={data as AnalyzedItem[]} />
+          <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
+          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain || ''} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />
         </>
       );
     default:

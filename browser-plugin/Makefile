@@ -35,6 +35,8 @@ test:
 lint:
 	npm run lint
 
+check: test lint
+
 lint-fix:
 	npm run lint -- --fix
 

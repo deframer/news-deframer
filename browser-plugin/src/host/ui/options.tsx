@@ -12,9 +12,8 @@ import {
   getSettings,
   Settings,
 } from '../../shared/settings';
-import { getThemeCss } from '../../shared/theme';
+import { getThemeCss, globalStyles, Theme } from '../../shared/theme';
 import { ProxyResponse } from '../../shared/types';
-import { Footer } from './Footer';
 import { ToggleSwitch } from './ToggleSwitch';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -29,10 +28,10 @@ export const Options = () => {
     password: '',
     enabled: false,
     theme: 'system',
+    searchEngineUrl: 'https://search.brave.com',
   });
   const [status, setStatus] = useState<Status>('idle');
   const [loaded, setLoaded] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [domains, setDomains] = useState<string[]>([]);
   const [lang, setLang] = useState<string>('default');
 
@@ -117,23 +116,15 @@ export const Options = () => {
 
   // Update theme on change
   useEffect(() => {
-    let dark: boolean;
-    if (settings.theme === 'system') {
-      dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } else {
-      dark = settings.theme === 'dark';
-    }
-    setIsDark(dark);
-
-    // Inject theme styles
-    const styleId = 'theme-styles';
+    // Inject shared theme styles
+    const styleId = 'ndf-theme-styles';
     let style = document.getElementById(styleId);
     if (!style) {
       style = document.createElement('style');
       style.id = styleId;
       document.head.appendChild(style);
     }
-    style.textContent = getThemeCss(settings.theme);
+    style.textContent = getThemeCss(settings.theme as Theme) + globalStyles;
   }, [settings.theme]);
 
   // Update language on change
@@ -260,240 +251,121 @@ export const Options = () => {
   const isConnected = status === 'success';
   const isError = status === 'error';
   const isLoading = status === 'loading';
+  const isSearchUrlValid = settings.searchEngineUrl?.startsWith('https://');
 
   return (
-    <div
-      style={{
-        padding: '24px',
-        width: '780px', // Force width to be wide
-        margin: '0 auto',
-        color: 'var(--text-color)', // Font is now inherited from body
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
-          borderBottom: '1px solid var(--border-color)',
-          paddingBottom: '16px',
-        }}
-      >
-        <h2 style={{ margin: 0, fontSize: '20px' }}>News Deframer</h2>
+    <div className="options-container">
+      <div className="header">
+        <h2>News Deframer</h2>
         {/* Status Badge */}
         {status !== 'idle' && (
           <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              fontSize: '12px',
-              fontWeight: 600,
-              color: isConnected
-                ? 'var(--success-color)'
-                : isError
-                ? 'var(--danger-color)'
-                : 'var(--secondary-text)',
-              backgroundColor: 'var(--bg-color)', // Simple bg for now
-              border: `1px solid ${
-                isConnected
-                  ? 'var(--success-color)'
-                  : isError
-                  ? 'var(--danger-color)'
-                  : 'var(--border-color)'
-              }`,
-              padding: '4px 8px',
-              borderRadius: '12px',
-              boxShadow: isDark && (isConnected || isError) ? `0 0 8px ${
-                isConnected ? 'var(--success-color)' : 'var(--danger-color)'
-              }` : 'none',
-            }}
+            className={`status-badge ${isConnected ? 'connected' : isError ? 'error' : isLoading ? 'testing' : ''}`}
           >
-            <span
-              style={{
-                display: 'block',
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: 'currentColor',
-                marginRight: '6px',
-              }}
-            />
+            <span className="status-dot" />
             {isConnected ? t('options.status_connected') : isError ? t('options.status_error') : t('options.status_checking')}
           </div>
         )}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start', marginBottom: '24px' }}>
-        <div
-          style={{
-            backgroundColor: 'var(--card-bg)',
-            border: '1px solid var(--border-color)',
-            borderRadius: '8px',
-            padding: '16px',
-            boxShadow: 'var(--card-shadow)',
-            opacity: settings.enabled ? 1 : 0.6,
-            transition: 'opacity 0.2s',
-            pointerEvents: settings.enabled ? 'auto' : 'none',
-          }}
-        >
-          <h3
-            style={{
-              marginTop: 0,
-              marginBottom: '16px',
-              fontSize: '14px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              color: 'var(--secondary-text)',
-            }}
-          >
-            {t('options.section_connection')}
-          </h3>
+      <div className="content-grid">
+        <div className="settings-column">
+          <div className={`card ${!settings.enabled ? 'disabled' : ''}`}>
+            <h3 className="section-title">
+              {t('options.section_connection')}
+            </h3>
 
-        <div style={{ marginBottom: '16px' }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '14px',
-              fontWeight: 500,
-            }}
-          >
-            {t('options.label_server_url')}
-          </label>
-          <input
-            type="text"
-            value={settings.backendUrl}
-            onChange={(e) =>
-              setSettings({ ...settings, backendUrl: e.target.value })
-            }
-            disabled={!settings.enabled}
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '6px',
-              border: '1px solid var(--btn-border)',
-              fontSize: '14px',
-              backgroundColor: settings.enabled ? 'var(--bg-color)' : 'var(--rating-bg)',
-              color: 'var(--text-color)',
-            }}
-            placeholder="http://localhost:8080"
-          />
-        </div>
+            <div className="form-group">
+              <label className="input-label">
+                {t('options.label_server_url')}
+              </label>
+              <input
+                type="text"
+                className="text-input"
+                value={settings.backendUrl}
+                onChange={(e) =>
+                  setSettings({ ...settings, backendUrl: e.target.value })
+                }
+                disabled={!settings.enabled}
+                placeholder="http://localhost:8080"
+              />
+            </div>
 
-          <div style={{ marginBottom: '16px' }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '14px',
-              fontWeight: 500,
-            }}
-          >
-            {t('options.label_username')}{' '}
-            <span style={{ fontWeight: 400, color: 'var(--secondary-text)' }}>
-              {t('options.label_optional')}
-            </span>
-          </label>
-          <input
-            type="text"
-            value={settings.username}
-            onChange={(e) =>
-              setSettings({ ...settings, username: e.target.value })
-            }
-            disabled={!settings.enabled}
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '6px',
-              border: '1px solid var(--btn-border)',
-              fontSize: '14px',
-              backgroundColor: settings.enabled ? 'var(--bg-color)' : 'var(--rating-bg)',
-              color: 'var(--text-color)',
-            }}
-          />
-        </div>
+            <div className="form-group">
+              <label className="input-label">
+                {t('options.label_username')}{' '}
+                <span className="optional-text">
+                  {t('options.label_optional')}
+                </span>
+              </label>
+              <input
+                type="text"
+                className="text-input"
+                value={settings.username}
+                onChange={(e) =>
+                  setSettings({ ...settings, username: e.target.value })
+                }
+                disabled={!settings.enabled}
+              />
+            </div>
 
-        <div style={{ marginBottom: '20px' }}>
-          <label
-            style={{
-              display: 'block',
-              marginBottom: '6px',
-              fontSize: '14px',
-              fontWeight: 500,
-            }}
-          >
-            {t('options.label_password')}{' '}
-            <span style={{ fontWeight: 400, color: 'var(--secondary-text)' }}>
-              {t('options.label_optional')}
-            </span>
-          </label>
-          <input
-            type="password"
-            value={settings.password}
-            onChange={(e) =>
-              setSettings({ ...settings, password: e.target.value })
-            }
-            disabled={!settings.enabled}
-            style={{
-              width: '100%',
-              padding: '10px',
-              borderRadius: '6px',
-              border: '1px solid var(--btn-border)',
-              fontSize: '14px',
-              backgroundColor: settings.enabled ? 'var(--bg-color)' : 'var(--rating-bg)',
-              color: 'var(--text-color)',
-            }}
-          />
-        </div>
+            <div className="form-group-last">
+              <label className="input-label">
+                {t('options.label_password')}{' '}
+                <span className="optional-text">
+                  {t('options.label_optional')}
+                </span>
+              </label>
+              <input
+                type="password"
+                className="text-input"
+                value={settings.password}
+                onChange={(e) =>
+                  setSettings({ ...settings, password: e.target.value })
+                }
+                disabled={!settings.enabled}
+              />
+            </div>
 
-          <button
-            onClick={handleTestClick}
-            disabled={!settings.enabled || isLoading}
-            style={{
-              width: '100%',
-              padding: '10px',
-              backgroundColor: settings.enabled ? 'var(--btn-bg)' : 'var(--rating-bg)',
-              border: '1px solid var(--btn-border)',
-              borderRadius: '6px',
-              cursor: !settings.enabled || isLoading ? 'not-allowed' : 'pointer',
-              fontSize: '14px',
-              fontWeight: 500,
-              color: settings.enabled ? 'var(--btn-text)' : 'var(--secondary-text)',
-              transition: 'background-color 0.2s, color 0.2s',
-            }}
-          >
-            {isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}
-          </button>
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Language Selection */}
-          <div
-            style={{
-              backgroundColor: 'var(--card-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              padding: '16px',
-              boxShadow: 'var(--card-shadow)',
-            }}
-          >
-            <h3
-              style={{
-                marginTop: 0,
-                marginBottom: '16px',
-                fontSize: '14px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--secondary-text)',
-              }}
+            <button
+              className="action-button"
+              onClick={handleTestClick}
+              disabled={!settings.enabled || isLoading}
             >
+              {isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}
+            </button>
+          </div>
+
+          {/* Search Engine Settings */}
+          <div className={`card ${!settings.enabled ? 'disabled' : ''}`}>
+            <div className="form-group-last">
+              <label className="input-label">
+                {t('options.label_search_engine')}
+              </label>
+              <input
+                type="text"
+                className={`text-input ${!isSearchUrlValid ? 'error' : ''}`}
+                value={settings.searchEngineUrl || ''}
+                onChange={(e) =>
+                  setSettings({ ...settings, searchEngineUrl: e.target.value })
+                }
+                disabled={!settings.enabled}
+              />
+              {!isSearchUrlValid && <div className="input-error-message">{t('options.error_https_only')}</div>}
+            </div>
+          </div>
+        </div>
+
+        <div className="settings-column">
+          {/* Language Selection */}
+          <div className="card">
+            <h3 className="section-title">
               {t('options.language_label')}
             </h3>
             <select
+              className="select-input"
               value={lang}
               onChange={(e) => handleLangChange(e.target.value)}
-              style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid var(--btn-border)', fontSize: '14px', backgroundColor: 'var(--bg-color)', color: 'var(--text-color)' }}
             >
               <option value="default">{t('options.default')}</option>
               <option value="en">English</option>
@@ -502,52 +374,20 @@ export const Options = () => {
           </div>
 
           {/* Theme Selection */}
-          <div
-            style={{
-              backgroundColor: 'var(--card-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              padding: '16px',
-              boxShadow: 'var(--card-shadow)',
-            }}
-          >
-            <h3
-              style={{
-                marginTop: 0,
-                marginBottom: '16px',
-                fontSize: '14px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--secondary-text)',
-              }}
-            >
+          <div className="card">
+            <h3 className="section-title">
               {t('options.theme_label')}
             </h3>
-            <div style={{ display: 'flex', border: '1px solid var(--border-color)', borderRadius: '6px', overflow: 'hidden' }}>
+            <div className="theme-toggle-group">
                {(['light', 'dark', 'system'] as const).map((themeMode) => (
                  <button
                    key={themeMode}
+                   className={`theme-button ${settings.theme === themeMode ? 'active' : ''}`}
                     onClick={() => {
                       const newSettings = { ...settings, theme: themeMode };
                       setSettings(newSettings);
                       saveAndRefresh(newSettings);
                     }}
-                   style={{
-                    flex: 1,
-                    padding: '8px 16px',
-                    border: 'none',
-                    borderRight: themeMode !== 'system' ? '1px solid var(--border-color)' : 'none',
-                    backgroundColor:
-                      settings.theme === themeMode ? 'var(--accent-color)' : 'var(--btn-bg)',
-                    color:
-                      settings.theme === themeMode
-                        ? 'var(--accent-text)'
-                        : 'var(--text-color)',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    transition: 'background-color 0.2s',
-                  }}
                 >
                   {themeMode === 'system' ? t('options.default') : t(`options.theme_${themeMode}`)}
                 </button>
@@ -555,25 +395,8 @@ export const Options = () => {
             </div>
           </div>
           {/* General Settings */}
-          <div
-            style={{
-              backgroundColor: 'var(--card-bg)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '8px',
-              padding: '16px',
-              boxShadow: 'var(--card-shadow)',
-            }}
-          >
-             <h3
-              style={{
-                marginTop: 0,
-                marginBottom: '16px',
-                fontSize: '14px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                color: 'var(--secondary-text)',
-              }}
-            >
+          <div className="card">
+             <h3 className="section-title">
               {t('options.section_general')}
             </h3>
             <ToggleSwitch
@@ -583,9 +406,23 @@ export const Options = () => {
               onChange={handleEnableToggle}
             />
           </div>
+
+          {/* Project Link */}
+          <div className="card">
+            <h3 className="section-title">
+              {t('options.section_project')}
+            </h3>
+            <a
+              href="https://deframer.github.io/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: 'var(--accent-color)', textDecoration: 'none', fontWeight: 500 }}
+            >
+              {t('footer.github_link')}
+            </a>
+          </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

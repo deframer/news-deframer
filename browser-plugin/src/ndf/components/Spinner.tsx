@@ -23,14 +23,6 @@ export const Spinner = () => {
         height: '100vh',
       }}
     >
-      <style>
-        {`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}
-      </style>
       <img
         src={encodedSvg}
         alt="Loading..."

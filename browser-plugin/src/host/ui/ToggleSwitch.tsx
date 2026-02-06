@@ -23,20 +23,9 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
 
   return (
     <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        opacity: disabled ? 0.6 : 1,
-        cursor: disabled ? 'not-allowed' : 'default',
-      }}
+      className={`toggle-container ${disabled ? 'disabled' : ''}`}
     >
-      <label htmlFor={id} style={{
-        fontSize: '14px',
-        fontWeight: 500,
-        color: 'var(--text-color)',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}>
+      <label htmlFor={id} className="toggle-label">
         {label}
       </label>
       <button
@@ -45,31 +34,9 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         aria-checked={checked}
         onClick={handleToggle}
         disabled={disabled}
-        style={{
-          position: 'relative',
-          display: 'inline-block',
-          width: '44px',
-          height: '24px',
-          backgroundColor: checked ? 'var(--accent-color)' : 'var(--rating-bg)',
-          borderRadius: '34px',
-          border: '1px solid var(--btn-border)',
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          transition: 'background-color 0.2s',
-        }}
+        className="toggle-switch"
       >
-        <span
-          style={{
-            position: 'absolute',
-            top: '2px',
-            left: checked ? '22px' : '2px',
-            width: '20px',
-            height: '20px',
-            borderRadius: '50%',
-            backgroundColor: 'white',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-            transition: 'left 0.2s',
-          }}
-        />
+        <span className="toggle-knob" />
       </button>
     </div>
   );

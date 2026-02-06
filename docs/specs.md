@@ -199,7 +199,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - `id`: UUID (PK)
 - `created_at`: Timestamp (Default: `now()`)
 - `updated_at`: Timestamp (Default: `now()`)
-- `hash`: String (64 chars, SHA256 of URL).
+- `hash`: String (64 chars, SHA256 of GUID - to make it equal length).
 - `feed_id`: UUID (**Indexed**, FK to Feeds).
 - `url`: String (**Indexed**).
 - `analyzer_result`: JSONB (The processed AI content, **NOT NULL**).
