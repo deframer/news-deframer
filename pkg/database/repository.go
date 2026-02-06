@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -15,6 +17,17 @@ import (
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
+
+//go:embed sql/statement/top_trend_by_domain.sql
+var topTrendByDomainQuery string
+
+type TrendMetric struct {
+	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
+	Frequency    int64     `gorm:"column:frequency" json:"frequency"`
+	Utility      int64     `gorm:"column:utility" json:"utility"`
+	OutlierRatio float64   `gorm:"column:outlier_ratio" json:"outlier_ratio"`
+	TimeSlice    time.Time `gorm:"column:time_slice" json:"time_slice"`
+}
 
 type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
@@ -44,6 +57,7 @@ type Repository interface {
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
 	CreateFeedSchedule(feedID uuid.UUID) error
+	GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error)
 }
 
 type repository struct {
@@ -541,6 +555,26 @@ func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error) {
+	var metrics []TrendMetric
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(topTrendByDomainQuery,
+		sql.Named("language", language),
+		sql.Named("domain", domain),
+		sql.Named("days_in_past", daysInPast),
+	).Scan(&metrics).Error; err != nil {
+		return nil, err
+	}
+	return metrics, nil
 }
 
 // FindItemsByRootDomain retrieves the most recent items from all feeds belonging to the given root domain.

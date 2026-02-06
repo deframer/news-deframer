@@ -51,6 +51,7 @@ type mockRepo struct {
 	findCachedFeedById           func(feedID uuid.UUID) (*database.CachedFeed, error)
 	findFeedScheduleById         func(feedID uuid.UUID) (*database.FeedSchedule, error)
 	findItemsByRootDomain        func(rootDomain string, limit int) ([]database.Item, error)
+	getTopTrendByDomain          func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
 }
 
 func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
@@ -195,6 +196,13 @@ func (m *mockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
 func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
 	if m.findItemsByRootDomain != nil {
 		return m.findItemsByRootDomain(rootDomain, limit)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
+	if m.getTopTrendByDomain != nil {
+		return m.getTopTrendByDomain(domain, language, daysInPast)
 	}
 	return nil, nil
 }

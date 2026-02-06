@@ -20,10 +20,11 @@ import (
 )
 
 type mockRepo struct {
-	enqueueSyncCalled bool
-	lastId            uuid.UUID
-	removeSyncCalled  bool
-	upsertItemFunc    func(item *database.Item) error
+	enqueueSyncCalled       bool
+	lastId                  uuid.UUID
+	removeSyncCalled        bool
+	upsertItemFunc          func(item *database.Item) error
+	getTopTrendByDomainFunc func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
 }
 
 // Implement database.Repository interface stubs
@@ -74,6 +75,13 @@ func (m *mockRepo) CreateFeedSchedule(feedID uuid.UUID) error {
 	return nil
 }
 func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]database.Item, error) {
+	return nil, nil
+}
+
+func (m *mockRepo) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
+	if m.getTopTrendByDomainFunc != nil {
+		return m.getTopTrendByDomainFunc(domain, language, daysInPast)
+	}
 	return nil, nil
 }
 

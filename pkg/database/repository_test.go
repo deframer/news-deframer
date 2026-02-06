@@ -1421,3 +1421,29 @@ func TestFindFeedScheduleById(t *testing.T) {
 		assert.Nil(t, found)
 	})
 }
+
+func TestGetTopTrendByDomain(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, topTrendByDomainQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		// This verifies that the query splitting (SET ...; SELECT ...) works correctly
+		// and that the query is syntactically correct for the DB.
+		// It does not verify the data logic as seeding the view is complex.
+		metrics, err := repo.GetTopTrendByDomain("invalid.com"+uuid.NewString(), "en", 7)
+		assert.NoError(t, err)
+		assert.Nil(t, metrics)
+	})
+}
