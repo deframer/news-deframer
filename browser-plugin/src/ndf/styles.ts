@@ -375,6 +375,49 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   font-weight: bold;
   max-width: 100%;
 }
+.open-icon-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+.open-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--secondary-text);
+  transition: color 0.2s;
+}
+.open-icon-btn:hover {
+  color: var(--primary-color);
+}
+.icon-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  background-color: var(--tooltip-bg, rgba(0,0,0,0.8));
+  color: var(--tooltip-text, #fff);
+  text-align: center;
+  border-radius: 6px;
+  padding: 6px 10px;
+  position: absolute;
+  z-index: 100;
+  bottom: 100%;
+  right: 0;
+  margin-bottom: 6px;
+  font-size: 0.85em;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  font-weight: normal;
+}
+.open-icon-wrapper:hover .icon-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
 
 /* TrendLifecycle.tsx */
 .lifecycle-controls {

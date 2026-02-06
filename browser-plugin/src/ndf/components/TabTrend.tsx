@@ -24,7 +24,7 @@ export interface TrendItem {
   outlierRatio: number;
 }
 
-export const TabTrend = ({ domain, availableDomains }: { domain: string; availableDomains: string[] }) => {
+export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain: string; availableDomains: string[]; searchEngineUrl: string }) => {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
@@ -112,6 +112,7 @@ export const TabTrend = ({ domain, availableDomains }: { domain: string; availab
             availableDomains={domainOptions}
             onSelectDomain={setCompareDomain}
             domain={domain}
+            searchEngineUrl={searchEngineUrl}
           />
         )}
 

@@ -6,6 +6,7 @@ export interface Settings {
   password?: string;
   enabled: boolean;
   theme: Theme;
+  searchEngineUrl?: string;
 }
 
 export const DEFAULT_BACKEND_URL = 'http://localhost:8080';
@@ -19,6 +20,7 @@ export const getSettings = (): Promise<Settings> => {
         password: '',
         enabled: false,
         theme: 'system',
+        searchEngineUrl: 'https://search.brave.com',
       },
       (items: Settings) => {
         resolve(items);

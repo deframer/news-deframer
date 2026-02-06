@@ -3,9 +3,14 @@
   box-sizing: border-box;
 }
 
+body {
+  overflow-y: scroll;
+  overflow-x: hidden;
+}
+
 .options-container {
   padding: 16px;
-  width: 780px;
+  width: 760px;
   margin: 0 auto;
   color: var(--text-color);
 }
@@ -126,6 +131,16 @@
 
 .text-input:enabled {
   background-color: var(--bg-color);
+}
+
+.text-input.error {
+  border-color: var(--danger-color);
+}
+
+.input-error-message {
+  color: var(--danger-color);
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 .action-button {

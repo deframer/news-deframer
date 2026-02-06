@@ -18,13 +18,11 @@ import { ToggleSwitch } from './ToggleSwitch';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
-type SettingsWithSearch = Settings & { searchEngineUrl: string };
-
 // This file is the component, index.tsx is the entry point
 
 export const Options = () => {
   const { t, i18n } = useTranslation();
-  const [settings, setSettings] = useState<SettingsWithSearch>({
+  const [settings, setSettings] = useState<Settings>({
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
     password: '',
@@ -43,12 +41,7 @@ export const Options = () => {
     // Load settings AND language
     Promise.all([getSettings(), chrome.storage.local.get('ndf_language')]).then(([loadedSettings, storageResult]) => {
       log.debug('Settings loaded:', loadedSettings);
-      const settingsWithSearch = loadedSettings as SettingsWithSearch;
-      // Default searchEngineUrl if missing
-      if (!settingsWithSearch.searchEngineUrl) {
-        settingsWithSearch.searchEngineUrl = 'https://search.brave.com';
-      }
-      setSettings(settingsWithSearch);
+      setSettings(loadedSettings);
       const storage = storageResult as { ndf_language?: string };
       setLang(storage.ndf_language || 'default');
       setLoaded(true);
@@ -258,6 +251,7 @@ export const Options = () => {
   const isConnected = status === 'success';
   const isError = status === 'error';
   const isLoading = status === 'loading';
+  const isSearchUrlValid = settings.searchEngineUrl?.startsWith('https://');
 
   return (
     <div className="options-container">
@@ -350,13 +344,14 @@ export const Options = () => {
               </label>
               <input
                 type="text"
-                className="text-input"
-                value={settings.searchEngineUrl}
+                className={`text-input ${!isSearchUrlValid ? 'error' : ''}`}
+                value={settings.searchEngineUrl || ''}
                 onChange={(e) =>
                   setSettings({ ...settings, searchEngineUrl: e.target.value })
                 }
                 disabled={!settings.enabled}
               />
+              {!isSearchUrlValid && <div className="input-error-message">{t('options.error_https_only')}</div>}
             </div>
           </div>
         </div>
