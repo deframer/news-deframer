@@ -1,17 +1,18 @@
 import { CSSProperties, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TrendLifecycleMetric, TrendRepo } from './TrendRepo';
+import { getSettings } from '../../shared/settings';
+import { DomainEntry, Lifecycle, NewsDeframerClient } from '../client';
 
 interface TrendLifecycleChartProps {
-  domain: string;
+  domain: DomainEntry;
   days: number;
   term: string;
 }
 
 export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartProps) => {
   const { t } = useTranslation();
-  const [data, setData] = useState<TrendLifecycleMetric[]>([]);
+  const [data, setData] = useState<Lifecycle[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -19,7 +20,9 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
       if (!term) return;
       setLoading(true);
       try {
-        const result = await TrendRepo.getTrendLifecycle(term, domain, days);
+        const settings = await getSettings();
+        const client = new NewsDeframerClient(settings);
+        const result = await client.getLifecycleByDomain(term, domain.domain, domain.language, days);
         // Sort by date ascending for the chart
         const sorted = [...result].sort((a, b) => new Date(a.time_slice).getTime() - new Date(b.time_slice).getTime());
         setData(sorted);

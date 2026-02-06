@@ -663,6 +663,22 @@ func (m *MockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]databa
 	return nil, nil
 }
 
+func (m *MockRepo) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
+	return nil, nil
+}
+
+func (m *MockRepo) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
+	return nil, nil
+}
+
+func (m *MockRepo) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
+	return nil, nil
+}
+
+func (m *MockRepo) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
+	return nil, nil
+}
+
 func captureOutput(f func()) string {
 	old := os.Stdout
 	r, w, _ := os.Pipe()

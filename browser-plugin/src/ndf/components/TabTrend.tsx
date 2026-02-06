@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import log from '../../shared/logger';
+import { DomainEntry } from '../client';
 import { Footer } from './Footer';
 import { TrendCompare } from './TrendCompare';
-import { TrendLSearch } from './TrendLSearch';
-import { TrendComparisonMetric, TrendRepo } from './TrendRepo';
+import { TrendSearch } from './TrendSearch';
 import { TrendTagCloud } from './TrendTagCloud';
 
 const TIME_RANGES = [
@@ -16,47 +16,16 @@ const TIME_RANGES = [
   { id: '365d', days: 365, label: 'trends.time_ranges.last_365d' },
 ];
 
-export interface TrendItem {
-  word: string;
-  rank: number;
-  count: number;
-  utility: number;
-  outlierRatio: number;
-}
-
-export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain: string; availableDomains: string[]; searchEngineUrl: string }) => {
+export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain: DomainEntry; availableDomains: DomainEntry[]; searchEngineUrl: string }) => {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
-  const [items, setItems] = useState<TrendItem[]>([]);
-  const [compareItems, setCompareItems] = useState<TrendComparisonMetric[]>([]);
 
-  const domainOptions = availableDomains.filter(d => d !== domain).map(d => ({ id: d, name: d }));
+  const domainOptions = availableDomains.filter(d => d.domain !== domain.domain && d.language === domain.language).map(d => ({ id: d.domain, name: d.domain }));
   const [compareDomain, setCompareDomain] = useState<string | null>(domainOptions[0]?.id || null);
 
   const currentDays = TIME_RANGES.find(r => r.id === timeRange)?.days || 7;
-  log.info(`trend analysis - current domain: ${domain}, days: ${currentDays}`);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      // Always fetch base trends so we have them for the "Our Topics" column in compare mode
-      const data = await TrendRepo.getTrends(domain, currentDays);
-      const mappedItems: TrendItem[] = data.map((d, index) => ({
-        word: d.trend_topic,
-        rank: index + 1,
-        count: d.frequency,
-        utility: d.utility,
-        outlierRatio: d.outlier_ratio
-      }));
-      setItems(mappedItems);
-
-      if (viewMode === 'compare' && compareDomain) {
-        const data = await TrendRepo.getTrendComparison(domain, compareDomain, currentDays);
-        setCompareItems(data);
-      }
-    };
-    fetchData();
-  }, [domain, timeRange, viewMode, compareDomain, currentDays]);
+  log.info(`trend analysis - current domain: ${domain.domain}, days: ${currentDays}`);
 
   return (
     <div className="trend-container">
@@ -102,12 +71,12 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'cloud' && <TrendTagCloud items={items} domain={domain} days={currentDays} />}
+        {viewMode === 'cloud' && <TrendTagCloud domain={domain} days={currentDays} />}
 
         {viewMode === 'compare' && (
           <TrendCompare
-            items={compareItems}
-            baseItems={items}
+            days={currentDays}
+            baseItems={[]}
             compareDomain={compareDomain}
             availableDomains={domainOptions}
             onSelectDomain={setCompareDomain}
@@ -116,7 +85,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
           />
         )}
 
-        {viewMode === 'lifecycle' && <TrendLSearch domain={domain} days={currentDays} />}
+        {viewMode === 'lifecycle' && <TrendSearch domain={domain} days={currentDays} />}
 
         <div className="trend-footer">
           <Footer />

@@ -1,29 +1,38 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TrendContextMetric, TrendRepo } from './TrendRepo';
+import { getSettings } from '../../shared/settings';
+import { DomainEntry, NewsDeframerClient, TrendContext } from '../client';
 
 interface TrendContextProps {
   topic: string;
   className?: string;
   days?: number;
-  domain?: string;
+  domain?: DomainEntry;
 }
 
 export const TrendContextChart = ({ topic, className, days, domain }: TrendContextProps) => {
   const { t } = useTranslation();
-  const [items, setItems] = useState<TrendContextMetric[]>([]);
+  const [items, setItems] = useState<TrendContext[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
-    TrendRepo.getTrendContext(topic, domain, days).then((data) => {
-      if (mounted) {
-        setItems(data);
-        setLoading(false);
+    const fetchData = async () => {
+      if (!domain) return;
+      setLoading(true);
+      try {
+        const settings = await getSettings();
+        const client = new NewsDeframerClient(settings);
+        const data = await client.getContextByDomain(topic, domain.domain, domain.language, days || 7);
+        if (mounted) {
+          setItems(data);
+        }
+      } finally {
+        if (mounted) setLoading(false);
       }
-    });
+    };
+    fetchData();
     return () => { mounted = false; };
   }, [topic, days, domain]);
 
@@ -41,10 +50,10 @@ export const TrendContextChart = ({ topic, className, days, domain }: TrendConte
       </div>
       <div className="context-list">
         {items.map((item) => (
-          <span key={item.context_word} className="context-chip">
-            {item.context_word}
+          <span key={item.context} className="context-chip">
+            {item.context}
             <div className="chip-tooltip">
-              {item.type} - {t('trends.frequency_label', 'Frequency')}: {item.frequency}
+              {t('trends.frequency_label', 'Frequency')}: {item.frequency}
             </div>
           </span>
         ))}

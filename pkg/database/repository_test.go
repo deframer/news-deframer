@@ -1421,3 +1421,233 @@ func TestFindFeedScheduleById(t *testing.T) {
 		assert.Nil(t, found)
 	})
 }
+
+func TestGetTopTrendByDomain(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, topTrendByDomainQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		// This verifies that the query splitting (SET ...; SELECT ...) works correctly
+		// and that the query is syntactically correct for the DB.
+		// It does not verify the data logic as seeding the view is complex.
+		metrics, err := repo.GetTopTrendByDomain("invalid.com"+uuid.NewString(), "en", 7)
+		assert.NoError(t, err)
+		assert.Nil(t, metrics)
+	})
+}
+
+func TestGetContextByDomain(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, contextByDomainQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		contexts, err := repo.GetContextByDomain("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), "en", 7)
+		assert.NoError(t, err)
+		assert.Nil(t, contexts)
+	})
+}
+
+func TestGetLifecycleByDomain(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, lifecycleByDomainQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		items, err := repo.GetLifecycleByDomain("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), "en", 7)
+		assert.NoError(t, err)
+		assert.Nil(t, items)
+	})
+}
+
+func TestGetDomainComparison(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, compareDomainsQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		comparisons, err := repo.GetDomainComparison("domainA.com", "domainB.com", "en", 7, 1.0, 1.5, DomainComparisonLimit)
+		assert.NoError(t, err)
+		assert.Nil(t, comparisons)
+	})
+}
+
+func TestEnqueueMine(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("CreateMiningSchedule", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://mine.test", Enabled: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		err := repo.EnqueueMine(feed.ID, 0)
+		assert.NoError(t, err)
+
+		var schedule FeedSchedule
+		assert.NoError(t, tx.Where("id = ?", feed.ID).First(&schedule).Error)
+		assert.NotNil(t, schedule.NextMiningAt)
+	})
+}
+
+func TestRemoveMine(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("RemoveExisting", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://remove-mine.test", Enabled: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+		now := time.Now()
+		assert.NoError(t, tx.Create(&FeedSchedule{ID: feed.ID, NextMiningAt: &now}).Error)
+
+		assert.NoError(t, repo.RemoveMine(feed.ID))
+		var s FeedSchedule
+		assert.NoError(t, tx.First(&s, feed.ID).Error)
+		assert.Nil(t, s.NextMiningAt)
+	})
+}
+
+func TestPurgeFeedById(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("HardDeleteAllRelated", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://purge.test", Enabled: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		// Add related data
+		assert.NoError(t, tx.Create(&FeedSchedule{ID: feed.ID}).Error)
+		xml := "content"
+		assert.NoError(t, tx.Create(&CachedFeed{ID: feed.ID, XMLContent: &xml}).Error)
+		item := Item{ID: uuid.New(), FeedID: feed.ID, Hash: "h1", URL: "u1", Content: "c1"}
+		assert.NoError(t, tx.Create(&item).Error)
+		assert.NoError(t, tx.Create(&Trend{ItemID: item.ID, FeedID: feed.ID, RootDomain: "d", Language: "en"}).Error)
+
+		// Purge
+		assert.NoError(t, repo.PurgeFeedById(feed.ID))
+
+		// Verify all gone
+		var count int64
+		tx.Unscoped().Model(&Feed{}).Where("id = ?", feed.ID).Count(&count)
+		assert.Equal(t, int64(0), count)
+		tx.Model(&FeedSchedule{}).Where("id = ?", feed.ID).Count(&count)
+		assert.Equal(t, int64(0), count)
+		tx.Model(&CachedFeed{}).Where("id = ?", feed.ID).Count(&count)
+		assert.Equal(t, int64(0), count)
+		tx.Model(&Item{}).Where("feed_id = ?", feed.ID).Count(&count)
+		assert.Equal(t, int64(0), count)
+		tx.Model(&Trend{}).Where("feed_id = ?", feed.ID).Count(&count)
+		assert.Equal(t, int64(0), count)
+	})
+}
+
+func TestCreateFeedSchedule(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("CreateIfMissing", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		id := uuid.New()
+		// Create parent feed first to satisfy FK constraint
+		feed := Feed{Base: Base{ID: id}, URL: "http://test-schedule-missing-" + id.String()}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		assert.NoError(t, repo.CreateFeedSchedule(id))
+
+		var s FeedSchedule
+		assert.NoError(t, tx.First(&s, id).Error)
+		assert.Equal(t, id, s.ID)
+	})
+
+	t.Run("DoNotOverwriteExisting", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		id := uuid.New()
+		// Create parent feed first to satisfy FK constraint
+		feed := Feed{Base: Base{ID: id}, URL: "http://test-schedule-exists-" + id.String()}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		now := time.Now().Add(-time.Hour)
+		assert.NoError(t, tx.Create(&FeedSchedule{ID: id, NextThinkerAt: &now}).Error)
+
+		assert.NoError(t, repo.CreateFeedSchedule(id))
+
+		var s FeedSchedule
+		if assert.NoError(t, tx.First(&s, id).Error) && assert.NotNil(t, s.NextThinkerAt) {
+			assert.WithinDuration(t, now, *s.NextThinkerAt, time.Second)
+		}
+	})
+}

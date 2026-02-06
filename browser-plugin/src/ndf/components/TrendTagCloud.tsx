@@ -2,28 +2,28 @@ import { ParentSize } from '@visx/responsive';
 import { scaleLog } from '@visx/scale';
 import { Text } from '@visx/text';
 import { Wordcloud } from '@visx/wordcloud';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TrendItem } from './TabTrend';
+import { getSettings } from '../../shared/settings';
+import { DomainEntry, NewsDeframerClient, TrendMetric } from '../client';
 import { TrendDetails } from './TrendDetails';
 
 
 // https://visx.airbnb.tech/wordcloud
 
 interface TrendTagCloudProps {
-  items: TrendItem[];
-  domain: string;
+  domain: DomainEntry;
   days: number;
 }
 
 const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onHover }: {
   width: number;
   height: number;
-  words: { text: string; value: number; original: TrendItem }[];
+  words: { text: string; value: number; original: TrendMetric & { rank: number } }[];
   selectedTerm: string | null;
   onSelect: (term: string | null) => void;
-  onHover: (data: { x: number; y: number; item: TrendItem } | null) => void;
+  onHover: (data: { x: number; y: number; item: TrendMetric & { rank: number } } | null) => void;
 }) => {
   const fontScale = useMemo(() => {
     if (words.length === 0) {
@@ -95,16 +95,33 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
 });
 TrendWordCloud.displayName = 'TrendWordCloud';
 
-export const TrendTagCloud = ({ items, domain, days }: TrendTagCloudProps) => {
+export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendItem } | null>(null);
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendMetric & { rank: number } } | null>(null);
+  const [items, setItems] = useState<TrendMetric[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const settings = await getSettings();
+        const client = new NewsDeframerClient(settings);
+        const data = await client.getTopTrendByDomain(domain.domain, domain.language, days);
+        setItems(data);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [domain, days]);
 
   const words = useMemo(() => {
-    return items.map((i) => ({
-      text: i.word,
-      value: i.outlierRatio,
-      original: i,
+    return items.map((i, index) => ({
+      text: i.trend_topic,
+      value: i.outlier_ratio,
+      original: { ...i, rank: index + 1 },
     })).sort((a, b) => b.value - a.value);
   }, [items]);
 
@@ -136,12 +153,18 @@ export const TrendTagCloud = ({ items, domain, days }: TrendTagCloudProps) => {
           }}
         >
           {t('trends.rank', 'Rank')}: {tooltip.item.rank}<br/>
-          {t('trends.trend', 'Trend')}: {tooltip.item.outlierRatio.toFixed(2)}x<br/>
-          {t('trends.vol', 'Vol')}: {tooltip.item.count}
+          {t('trends.trend', 'Trend')}: {tooltip.item.outlier_ratio.toFixed(2)}x<br/>
+          {t('trends.vol', 'Vol')}: {tooltip.item.frequency}
         </div>
       )}
     </>
   ), [words, selectedTerm, tooltip, t]);
+
+  if (loading) {
+    return <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="spinner-small" />
+    </div>;
+  }
 
   if (items.length === 0) return null;
 

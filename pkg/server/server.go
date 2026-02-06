@@ -12,7 +12,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -64,6 +63,10 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.Handle("/api/item", s.basicAuthMiddleware(s.handleItem))
 	mux.Handle("/api/site", s.basicAuthMiddleware(s.handleSite))
 	mux.Handle("/api/domains", s.basicAuthMiddleware(s.handleDomains))
+	mux.Handle("/api/trends/topbydomain", s.basicAuthMiddleware(s.handleTopTrendsByDomain))
+	mux.Handle("/api/trends/contextbydomain", s.basicAuthMiddleware(s.handleContextByDomain))
+	mux.Handle("/api/trends/lifecyclebydomain", s.basicAuthMiddleware(s.handleLifecycleByDomain))
+	mux.Handle("/api/trends/comparedomains", s.basicAuthMiddleware(s.handleDomainComparison))
 
 	// Chain middlewares: etag -> cache-control -> mux
 	var handler http.Handler = mux
@@ -158,6 +161,169 @@ func (s *Server) Stop(ctx context.Context) error {
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 	s.logger.Debug("ping")
 	if _, err := w.Write([]byte("pong")); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleTopTrendsByDomain(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleTopTrendsByDomain", "url", r.URL.String())
+	q := r.URL.Query()
+
+	domain := q.Get("domain")
+	if domain == "" {
+		domain = q.Get("d")
+	}
+
+	lang := q.Get("lang")
+	if lang == "" {
+		lang = q.Get("l")
+	}
+
+	if domain == "" || lang == "" {
+		http.Error(w, "missing domain or lang", http.StatusBadRequest)
+		return
+	}
+
+	days := 7
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	trends, err := s.facade.GetTopTrendByDomain(r.Context(), domain, lang, days)
+	if err != nil {
+		s.logger.Error("failed to get top trends", "error", err)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(trends); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleContextByDomain(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleContextByDomain", "url", r.URL.String())
+	q := r.URL.Query()
+
+	term := q.Get("term")
+	if term == "" {
+		term = q.Get("t")
+	}
+
+	domain := q.Get("domain")
+	if domain == "" {
+		domain = q.Get("d")
+	}
+
+	lang := q.Get("lang")
+	if lang == "" {
+		lang = q.Get("l")
+	}
+
+	if term == "" || domain == "" || lang == "" {
+		http.Error(w, "missing term, domain or lang", http.StatusBadRequest)
+		return
+	}
+
+	days := 7
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	contexts, err := s.facade.GetContextByDomain(r.Context(), term, domain, lang, days)
+	if err != nil {
+		s.logger.Error("failed to get context by domain", "error", err)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(contexts); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleLifecycleByDomain(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleLifecycleByDomain", "url", r.URL.String())
+	q := r.URL.Query()
+
+	term := q.Get("term")
+	if term == "" {
+		term = q.Get("t")
+	}
+
+	domain := q.Get("domain")
+	if domain == "" {
+		domain = q.Get("d")
+	}
+
+	lang := q.Get("lang")
+	if lang == "" {
+		lang = q.Get("l")
+	}
+
+	if term == "" || domain == "" || lang == "" {
+		http.Error(w, "missing term, domain or lang", http.StatusBadRequest)
+		return
+	}
+
+	days := 7
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	lifecycles, err := s.facade.GetLifecycleByDomain(r.Context(), term, domain, lang, days)
+	if err != nil {
+		s.logger.Error("failed to get lifecycle by domain", "error", err)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(lifecycles); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleDomainComparison(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleDomainComparison", "url", r.URL.String())
+	q := r.URL.Query()
+
+	domainA := q.Get("domain_a")
+	if domainA == "" {
+		domainA = q.Get("da")
+	}
+
+	domainB := q.Get("domain_b")
+	if domainB == "" {
+		domainB = q.Get("db")
+	}
+
+	lang := q.Get("lang")
+	if lang == "" {
+		lang = q.Get("l")
+	}
+
+	if domainA == "" || domainB == "" || lang == "" {
+		http.Error(w, "missing domain_a, domain_b or lang", http.StatusBadRequest)
+		return
+	}
+
+	days := 7
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	comparisons, err := s.facade.GetDomainComparison(r.Context(), domainA, domainB, lang, days)
+	if err != nil {
+		s.logger.Error("failed to get domain comparison", "error", err)
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(comparisons); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }
@@ -291,8 +457,6 @@ func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
-
-	sort.Strings(domains)
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(domains); err != nil {

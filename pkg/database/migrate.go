@@ -1,12 +1,18 @@
 package database
 
 import (
+	"embed"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
+
+//go:embed sql
+var migrationFS embed.FS
 
 // Connects to the database and runs the migration
 func RunMigrations(cfg *config.Config, forced bool) error {
@@ -66,50 +72,39 @@ func Migrate(db *gorm.DB, forced bool) error {
 		END IF;
 	END $$;`)
 
+	// Run embedded SQL files
+	if err := migrateViews(db); err != nil {
+		return err
+	}
+
 	return nil
-	// Seed Dummy Data
-	// return seed(db)
 }
 
-// func seed(db *gorm.DB) error {
-// 	var count int64
-// 	if err := db.Model(&Feed{}).Count(&count).Error; err != nil {
-// 		return err
-// 	}
+func migrateViews(db *gorm.DB) error {
+	entries, err := migrationFS.ReadDir("sql/views")
+	if err != nil {
+		return fmt.Errorf("failed to read migration directory: %w", err)
+	}
 
-// 	if count > 0 {
-// 		return nil
-// 	}
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Name() < entries[j].Name()
+	})
 
-// 	slog.Info("Seeding dummy feeds...")
-// 	idWordPressInternal := uuid.New()
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		if !strings.HasSuffix(entry.Name(), ".sql") {
+			continue
+		}
+		content, err := migrationFS.ReadFile("sql/views/" + entry.Name())
+		if err != nil {
+			return fmt.Errorf("failed to read migration file %s: %w", entry.Name(), err)
+		}
+		if err := db.Exec(string(content)).Error; err != nil {
+			return fmt.Errorf("failed to execute migration file %s: %w", entry.Name(), err)
+		}
+	}
 
-// 	feeds := []Feed{
-// 		{Base: Base{ID: idWordPressInternal}, URL: "http://wordpress/feed", Enabled: true, EnforceFeedDomain: true, Polling: true},
-// 	}
-
-// 	if err := db.Create(&feeds).Error; err != nil {
-// 		return err
-// 	}
-
-// 	// Seed FeedSchedules
-// 	var schedules []FeedSchedule
-// 	now := time.Now()
-// 	for _, f := range feeds {
-// 		fs := FeedSchedule{
-// 			ID: f.ID,
-// 		}
-
-// 		// limit to the internal wordpress for debugging
-// 		if f.ID != idWordPressInternal {
-// 			continue
-// 		}
-
-// 		if f.Enabled && f.Polling && !f.DeletedAt.Valid {
-// 			fs.NextRunAt = &now
-// 		}
-// 		schedules = append(schedules, fs)
-// 	}
-
-// 	return db.Create(&schedules).Error
-// }
+	return nil
+}

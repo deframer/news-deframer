@@ -1,6 +1,8 @@
 package database
 
 import (
+	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -15,6 +17,49 @@ import (
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
+
+//go:embed sql/statement/top_trend_by_domain.sql
+var topTrendByDomainQuery string
+
+//go:embed sql/statement/context_by_domain.sql
+var contextByDomainQuery string
+
+//go:embed sql/statement/lifecycle_by_domain.sql
+var lifecycleByDomainQuery string
+
+//go:embed sql/statement/compare_domains.sql
+var compareDomainsQuery string
+
+const DomainComparisonUtilityThreshold = 1.0
+const DomainComparisonOutlierRatioThreshold = 1.5
+const DomainComparisonLimit = 10
+
+type TrendMetric struct {
+	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
+	Frequency    int64     `gorm:"column:frequency" json:"frequency"`
+	Utility      int64     `gorm:"column:utility" json:"utility"`
+	OutlierRatio float64   `gorm:"column:outlier_ratio" json:"outlier_ratio"`
+	TimeSlice    time.Time `gorm:"column:time_slice" json:"time_slice"`
+}
+
+type TrendContext struct {
+	Context   string `gorm:"column:context_word" json:"context"`
+	Frequency int64  `gorm:"column:frequency" json:"frequency"`
+}
+
+type Lifecycle struct {
+	TimeSlice time.Time `gorm:"column:time_slice" json:"time_slice"`
+	Frequency int64     `gorm:"column:frequency" json:"frequency"`
+	Velocity  int64     `gorm:"column:velocity" json:"velocity"`
+}
+
+type DomainComparison struct {
+	Classification string  `gorm:"column:classification" json:"classification"`
+	RankGroup      int     `gorm:"column:rank_group" json:"rank_group"`
+	TrendTopic     string  `gorm:"column:trend_topic" json:"trend_topic"`
+	ScoreA         float64 `gorm:"column:score_a" json:"score_a"`
+	ScoreB         float64 `gorm:"column:score_b" json:"score_b"`
+}
 
 type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
@@ -44,6 +89,10 @@ type Repository interface {
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
 	CreateFeedSchedule(feedID uuid.UUID) error
+	GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error)
+	GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error)
+	GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error)
+	GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
 }
 
 type repository struct {
@@ -541,6 +590,92 @@ func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error) {
+	var metrics []TrendMetric
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(topTrendByDomainQuery,
+		sql.Named("language", language),
+		sql.Named("domain", domain),
+		sql.Named("days_in_past", daysInPast),
+	).Scan(&metrics).Error; err != nil {
+		return nil, err
+	}
+	return metrics, nil
+}
+
+func (r *repository) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error) {
+	var contexts []TrendContext
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(contextByDomainQuery,
+		sql.Named("term", term),
+		sql.Named("domain", domain),
+		sql.Named("language", language),
+		sql.Named("days_in_past", daysInPast),
+	).Scan(&contexts).Error; err != nil {
+		return nil, err
+	}
+	return contexts, nil
+}
+
+func (r *repository) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error) {
+	var items []Lifecycle
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(lifecycleByDomainQuery,
+		sql.Named("term", term),
+		sql.Named("domain", domain),
+		sql.Named("language", language),
+		sql.Named("days_in_past", daysInPast),
+	).Scan(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *repository) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error) {
+	var comparisons []DomainComparison
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(compareDomainsQuery,
+		sql.Named("domain_a", domainA),
+		sql.Named("domain_b", domainB),
+		sql.Named("language", language),
+		sql.Named("days_in_past", daysInPast),
+		sql.Named("utility_threshold", utilityThreshold),
+		sql.Named("outlier_ratio_threshold", outlierRatioThreshold),
+		sql.Named("limit", limit),
+	).Scan(&comparisons).Error; err != nil {
+		return nil, err
+	}
+	return comparisons, nil
 }
 
 // FindItemsByRootDomain retrieves the most recent items from all feeds belonging to the given root domain.

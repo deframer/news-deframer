@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { TrendItem } from './TabTrend';
-import { TrendComparisonMetric } from './TrendRepo';
+import { getSettings } from '../../shared/settings';
+import { DomainComparison, DomainEntry, NewsDeframerClient, TrendMetric } from '../client';
 
 interface DomainOption {
   id: string;
@@ -9,12 +10,12 @@ interface DomainOption {
 }
 
 interface TrendCompareProps {
-  items: TrendComparisonMetric[];
-  baseItems: TrendItem[];
+  days: number;
+  baseItems: TrendMetric[];
   compareDomain: string | null;
   availableDomains: DomainOption[];
   onSelectDomain: (domain: string) => void;
-  domain: string;
+  domain: DomainEntry;
   searchEngineUrl: string;
 }
 
@@ -40,8 +41,29 @@ const OpenIcon = ({ onClick, term, domain }: { onClick: () => void; term: string
   </div>
 );
 
-export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains, onSelectDomain, domain, searchEngineUrl }: TrendCompareProps) => {
+export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSelectDomain, domain, searchEngineUrl, days }: TrendCompareProps) => {
   const { t } = useTranslation();
+  const [items, setItems] = useState<DomainComparison[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!compareDomain) return;
+      setLoading(true);
+      try {
+        const settings = await getSettings();
+        const client = new NewsDeframerClient(settings);
+        const data = await client.getDomainComparison(domain.domain, compareDomain, domain.language, days);
+        setItems(data);
+      } catch (error) {
+        console.error('Failed to fetch trend comparison', error);
+        setItems([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [domain, compareDomain, days]);
 
   const handleSearch = (term: string, searchDomain: string) => {
     const query = encodeURIComponent(`${term} site:${searchDomain}`);
@@ -54,7 +76,7 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
   const intersect = compareDomain ? items.filter(i => i.classification === 'INTERSECT') : [];
   const uniqueB = compareDomain ? items.filter(i => i.classification === 'BLINDSPOT_B') : [];
 
-  const renderList = (list: TrendComparisonMetric[], scoreKey: 'score_a' | 'score_b' | 'both') => (
+  const renderList = (list: DomainComparison[], scoreKey: 'score_a' | 'score_b' | 'both') => (
     <ul className="compare-list">
       {list.map((item, idx) => (
         <li key={`${item.trend_topic}-${idx}`} className="compare-item">
@@ -65,11 +87,11 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
                 ? `${item.score_a} / ${item.score_b}`
                 : item[scoreKey]}
             </span>
-            {scoreKey === 'score_a' && <OpenIcon onClick={() => handleSearch(item.trend_topic, domain)} term={item.trend_topic} domain={domain} />}
+            {scoreKey === 'score_a' && <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />}
             {scoreKey === 'score_b' && compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} term={item.trend_topic} domain={compareDomain} />}
             {scoreKey === 'both' && (
               <>
-                <OpenIcon onClick={() => handleSearch(item.trend_topic, domain)} term={item.trend_topic} domain={domain} />
+                <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />
                 {compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} term={item.trend_topic} domain={compareDomain} />}
               </>
             )}
@@ -80,21 +102,27 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
     </ul>
   );
 
-  const renderBaseList = (list: TrendItem[]) => (
+  const renderBaseList = (list: TrendMetric[]) => (
     <ul className="compare-list">
       {list.slice(0, 10).map((item) => (
-        <li key={item.word} className="compare-item">
-          <span className="topic-name">{item.word}</span>
+        <li key={item.trend_topic} className="compare-item">
+          <span className="topic-name">{item.trend_topic}</span>
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <span className="topic-score">
-              {item.outlierRatio.toFixed(1)}x
+              {item.outlier_ratio.toFixed(1)}x
             </span>
-            <OpenIcon onClick={() => handleSearch(item.word, domain)} term={item.word} domain={domain} />
+            <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />
           </div>
         </li>
       ))}
     </ul>
   );
+
+  if (loading) {
+    return <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="spinner-small" />
+    </div>;
+  }
 
   return (
     <>
@@ -102,7 +130,7 @@ export const TrendCompare = ({ items, baseItems, compareDomain, availableDomains
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">
           <div className="col-header unique-a">
-            {t('trends.compare.trending_on', { domain })}
+            {t('trends.compare.trending_on', { domain: domain.domain })}
           </div>
           {compareDomain ? renderList(uniqueA, 'score_a') : renderBaseList(baseItems)}
         </div>
