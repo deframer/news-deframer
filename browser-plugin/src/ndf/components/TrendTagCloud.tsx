@@ -71,7 +71,7 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
       random={fixedRandom}
     >
       {(cloudWords) =>
-        cloudWords.map((w, i) => (
+        cloudWords.map((w) => (
           <g key={w.text} transform={`translate(${w.x}, ${w.y}) rotate(${w.rotate})`}>
             <Text
               className="word-cloud-text"
@@ -93,6 +93,7 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
     </Wordcloud>
   );
 });
+TrendWordCloud.displayName = 'TrendWordCloud';
 
 export const TrendTagCloud = ({ items, domain, days }: TrendTagCloudProps) => {
   const { t } = useTranslation();

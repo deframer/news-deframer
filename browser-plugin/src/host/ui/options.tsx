@@ -18,18 +18,20 @@ import { ToggleSwitch } from './ToggleSwitch';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
 
+type SettingsWithSearch = Settings & { searchEngineUrl: string };
+
 // This file is the component, index.tsx is the entry point
 
 export const Options = () => {
   const { t, i18n } = useTranslation();
-  const [settings, setSettings] = useState<Settings>({
+  const [settings, setSettings] = useState<SettingsWithSearch>({
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
     password: '',
     enabled: false,
     theme: 'system',
     searchEngineUrl: 'https://search.brave.com',
-  } as any);
+  });
   const [status, setStatus] = useState<Status>('idle');
   const [loaded, setLoaded] = useState(false);
   const [domains, setDomains] = useState<string[]>([]);
@@ -41,11 +43,12 @@ export const Options = () => {
     // Load settings AND language
     Promise.all([getSettings(), chrome.storage.local.get('ndf_language')]).then(([loadedSettings, storageResult]) => {
       log.debug('Settings loaded:', loadedSettings);
+      const settingsWithSearch = loadedSettings as SettingsWithSearch;
       // Default searchEngineUrl if missing
-      if (!(loadedSettings as any).searchEngineUrl) {
-        (loadedSettings as any).searchEngineUrl = 'https://search.brave.com';
+      if (!settingsWithSearch.searchEngineUrl) {
+        settingsWithSearch.searchEngineUrl = 'https://search.brave.com';
       }
-      setSettings(loadedSettings);
+      setSettings(settingsWithSearch);
       const storage = storageResult as { ndf_language?: string };
       setLang(storage.ndf_language || 'default');
       setLoaded(true);
@@ -348,9 +351,9 @@ export const Options = () => {
               <input
                 type="text"
                 className="text-input"
-                value={(settings as any).searchEngineUrl}
+                value={settings.searchEngineUrl}
                 onChange={(e) =>
-                  setSettings({ ...settings, searchEngineUrl: e.target.value } as any)
+                  setSettings({ ...settings, searchEngineUrl: e.target.value })
                 }
                 disabled={!settings.enabled}
               />
