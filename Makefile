@@ -90,6 +90,9 @@ service-cached: build
 service: build
 	./bin/service --disable-etag
 
+migration: build
+	./bin/migration
+
 worker: build
 	./bin/admin feed sync-all
 	./bin/worker
