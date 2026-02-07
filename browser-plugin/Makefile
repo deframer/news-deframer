@@ -40,6 +40,8 @@ check: test lint
 lint-fix:
 	npm run lint -- --fix
 
+fix: lint-fix
+
 icons: $(ICON_PNGS)
 
 $(ICONS_DIR)/icon%.png: $(ICON_SVG)

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 
 import { AnalyzedItem } from '../client';
+import { stripHtml } from '../utils/html-utils';
 import { MetaData } from './MetaData';
 import { RatingBarOverlay } from './RatingBarOverlay';
 
@@ -10,8 +11,8 @@ interface ArticleTileProps {
 
 export const ArticleTile = ({ item }: ArticleTileProps) => {
   const { t } = useTranslation();
-  const title = item.title_corrected || item.title_original || t('article.no_title', 'No Title');
-  const description = item.description_corrected || item.description_original || t('article.no_description', 'No Description');
+  const title = item.title_corrected || stripHtml(item.title_original) || t('article.no_title', 'No Title');
+  const description = item.description_corrected || stripHtml(item.description_original) || t('article.no_description', 'No Description');
   const imageUrl = item.media?.medium === 'image' ? item.media.url : '';
 
   return (
