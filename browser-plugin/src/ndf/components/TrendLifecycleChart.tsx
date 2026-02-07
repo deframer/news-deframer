@@ -48,8 +48,8 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
 
   if (data.length === 0) {
     return (
-      <div style={{ textAlign: 'center', color: 'var(--secondary-text)', marginTop: '2em' }}>
-        {t('trends.search_no_data', 'No data to display. Try searching for "trump".')}
+      <div className="chart-container" style={{ alignItems: 'center', justifyContent: 'center', color: 'var(--secondary-text)' }}>
+        {t('trends.lifecycle_no_data', 'No lifecycle data available for this topic.')}
       </div>
     );
   }
