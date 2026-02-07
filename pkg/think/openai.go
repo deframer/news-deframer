@@ -172,29 +172,3 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 
 	return &result, nil
 }
-
-// Models
-
-/*
-M1 16gb / RTX 3060 (16GB)
-
-Since you have about 10-12GB of usable memory for the model (leaving room for the OS), you should look for GGUF versions (Quantization) in LM Studio, specifically Q4_K_M or Q5_K_M.
-
-1. Qwen 2.5 14B (Instruct)
-Why: Currently the "king" of mid-sized models. It follows complex formatting instructions (like strict JSON) better than almost any other model in this weight class.
-Fit: You need the Q4_K_M quantization (approx. 9GB). It will fill your RTX 3060 nicely but run very efficiently.
-
-2. Llama 3.1 8B (Instruct)
-Why: The industry standard for speed and reliability. It is very strict with instructions and rarely breaks JSON formatting.
-Fit: You can run higher precision versions like Q6_K or Q8_0 (8-9GB) easily on both machines for maximum smarts without speed loss.
-
-3. Mistral NeMo 12B (Instruct)
-Why: A collaboration between NVIDIA and Mistral designed specifically to fit on cards like the RTX 3060. It has a larger context window and excellent logical reasoning for analyzing text bias.
-Fit: Use Q4_K_M or Q5_K_M (approx. 8-9GB).
-
-4. Gemma 2 9B (Instruct)
-Why: Google’s open model. It punches way above its weight class in reasoning and nuance, which is crucial for determining "framing" and "bias" scores.
-
-Fit: Fits comfortably at Q5_K_M or Q6_K (approx. 7-8GB).
-Recommendation: Start with Qwen 2.5 14B for the best intelligence, or Llama 3.1 8B for the fastest reliable speed.
-*/
