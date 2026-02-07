@@ -41,7 +41,11 @@ export const TrendContextChart = ({ topic, className, days, domain }: TrendConte
       <div className="spinner-small" />
     </div>
   );
-  if (items.length === 0) return null;
+  if (items.length === 0) return (
+    <div className={`trend-context ${className || ''}`} style={{ minHeight: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--secondary-text)' }}>
+      {t('trends.context_no_data', 'No context data available for this topic.')}
+    </div>
+  );
 
   return (
     <div className={`trend-context ${className || ''}`}>

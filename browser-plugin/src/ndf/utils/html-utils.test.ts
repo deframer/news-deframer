@@ -5,6 +5,10 @@ describe('stripHtml', () => {
     expect(stripHtml('')).toBe('');
   });
 
+  it('should return undefined for undefined input', () => {
+    expect(stripHtml(undefined)).toBeUndefined();
+  });
+
   it('should return original string if no html tags are present', () => {
     const text = 'Just some plain text';
     expect(stripHtml(text)).toBe(text);
@@ -34,6 +38,18 @@ describe('stripHtml', () => {
     // i have no idea if we should do this or keep this
     // this is content from upstream
     const input = '&lt;i&gt;content&lt;/i&gt;';
-    expect(stripHtml(input)).toBe('<i>content</i>');
+    expect(stripHtml(input)).toBe('content');
+  });
+
+  it('should handle escaped img tags with attributes', () => {
+    const input = '&lt;img src="http://example.com/image.jpg" alt="test"&gt;&lt;br&gt;Neutral text content';
+    const expected = 'Neutral text content';
+    expect(stripHtml(input)).toBe(expected);
+  });
+
+  it('should handle attributes escaped in utf', () => {
+    const input = '\u003Cimg src="http://example.com/image.jpg"\u003E\u003Cbr\u003ENeutral text content';
+    const expected = 'Neutral text content';
+    expect(stripHtml(input)).toBe(expected);
   });
 });

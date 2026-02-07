@@ -34,3 +34,9 @@
 - **Network**:
   - **External URL**: `http://localhost:8001` (Accessible by Developer).
 
+## 1.4 history4feed
+
+- Historic RSS Feeds
+- <https://www.youtube.com/watch?v=z1ATbiecbg4>
+- <https://github.com/muchdogesec/history4feed>
+

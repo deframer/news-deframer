@@ -15,6 +15,7 @@ import { TrendDetails } from './TrendDetails';
 interface TrendTagCloudProps {
   domain: DomainEntry;
   days: number;
+  searchEngineUrl: string;
 }
 
 const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onHover }: {
@@ -95,12 +96,19 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
 });
 TrendWordCloud.displayName = 'TrendWordCloud';
 
-export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
+export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendMetric & { rank: number } } | null>(null);
   const [items, setItems] = useState<TrendMetric[]>([]);
   const [loading, setLoading] = useState(false);
+
+  const handleSearch = () => {
+    if (!selectedTerm) return;
+    const query = encodeURIComponent(`${selectedTerm} site:${domain.domain}`);
+    const baseUrl = searchEngineUrl.replace(/\/$/, '');
+    window.open(`${baseUrl}/search?q=${query}`, '_blank');
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -166,7 +174,13 @@ export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
     </div>;
   }
 
-  if (items.length === 0) return null;
+  if (items.length === 0) {
+    return (
+      <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--secondary-text)' }}>
+        {t('trends.no_data', 'No trending topics found for this period.')}
+      </div>
+    );
+  }
 
   return (
     <>
@@ -174,6 +188,34 @@ export const TrendTagCloud = ({ domain, days }: TrendTagCloudProps) => {
         className="tag-cloud"
         style={{ width: '100%', height: selectedTerm ? '250px' : '400px', position: 'relative' }}
       >
+        {selectedTerm && (
+          <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
+            <button
+              onClick={handleSearch}
+              className="open-icon-btn"
+              type="button"
+              title={`${selectedTerm} • ${domain.domain}`}
+              style={{
+                background: 'var(--bg-color, #fff)',
+                border: '1px solid var(--border-color, #ccc)',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                padding: '5px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--text-color)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+            </button>
+          </div>
+        )}
         <ParentSize>
           {renderCloud}
         </ParentSize>
