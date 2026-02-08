@@ -251,17 +251,19 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 		wg.Wait()
 	}
 
+	total := len(pendingItems)
 	count = 0
 	for _, item := range items {
 		if s.ctx.Err() != nil {
 			// context might be canceled
 			// we have processed x items - so report a 0,nil that
-			// don't create a result in postgres - the next tick will pick it up
+			// don't create a result in feed_schedules table - the next tick will pick it up
 			return 0, nil
 		}
 		if errorCount, ok := pendingItems[item.Hash]; ok {
-			s.processItem(feed, item.Hash, item.Item, language, errorCount)
 			count++
+			s.logger.Debug("processItem", "feed", feed.ID, "hash", item.Hash, "progress", fmt.Sprintf("%d/%d", count, total))
+			s.processItem(feed, item.Hash, item.Item, language, errorCount)
 		}
 	}
 
@@ -341,8 +343,6 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		ThinkRating:     thinkRating,
 		Categories:      s.feeds.ExtractCategories(item),
 	}
-
-	s.logger.Debug("processItem", "feed", feed.ID, "hash", hash)
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
 		s.logger.Error("failed to create item", "error", err, "hash", hash)
