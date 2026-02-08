@@ -28,6 +28,7 @@ var (
 	categories     []string
 	noRootDomain   bool
 	purgeFeed      bool
+	portalUrl      string
 	repo           database.Repository
 	feedSyncer     *syncer.Syncer
 )
@@ -61,6 +62,7 @@ func init() {
 	addCmd.Flags().StringVar(&language, "language", "", "Set a two-letter ISO 639-1 language code for the feed")
 	addCmd.Flags().StringSliceVar(&categories, "categories", []string{}, "Set a comma-separated list of categories for the feed")
 	addCmd.Flags().BoolVar(&noRootDomain, "no-root-domain", false, "Do not automatically populate root_domain")
+	addCmd.Flags().StringVar(&portalUrl, "portal-url", "", "Set the portal URL for the feed")
 	deleteCmd.Flags().BoolVar(&purgeFeed, "purge", false, "Purge the feed and all related data")
 	listCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output as JSON")
 	listCmd.Flags().BoolVar(&showDeleted, "deleted", false, "Show deleted feeds")
@@ -94,7 +96,7 @@ var addCmd = &cobra.Command{
 	Short: "Add a new feed URL",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		addFeed(args[0], feedEnabled, polling, mining, noRootDomain, language, resolveItemUrl, categories)
+		addFeed(args[0], feedEnabled, polling, mining, noRootDomain, language, resolveItemUrl, categories, portalUrl)
 	},
 }
 
@@ -258,7 +260,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCategories\tID\tURL\tRootDomain\tEnforceDomain\tSync Status\tMining Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCategories\tID\tURL\tRootDomain\tPortalUrl\tEnforceDomain\tSync Status\tMining Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -293,6 +295,11 @@ func listFeeds(asJson bool, showDeleted bool) {
 			rootDomain = *f.RootDomain
 		}
 
+		portalUrl := "-"
+		if f.PortalUrl != nil {
+			portalUrl = *f.PortalUrl
+		}
+
 		language := "-"
 		if f.Language != nil {
 			language = *f.Language
@@ -303,7 +310,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 			categories = strings.Join(f.Categories, ",")
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, categories, f.ID, f.URL, rootDomain, f.EnforceFeedDomain, syncState, miningState); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, categories, f.ID, f.URL, rootDomain, portalUrl, f.EnforceFeedDomain, syncState, miningState); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
@@ -314,7 +321,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 }
 
-func addFeed(feedUrl string, enabled bool, polling bool, mining bool, noRootDomain bool, language string, resolveItemUrl bool, categories []string) {
+func addFeed(feedUrl string, enabled bool, polling bool, mining bool, noRootDomain bool, language string, resolveItemUrl bool, categories []string, portalUrl string) {
 	u, err := parseAndNormalizeURL(feedUrl)
 
 	if err != nil {
@@ -344,9 +351,15 @@ func addFeed(feedUrl string, enabled bool, polling bool, mining bool, noRootDoma
 		languagePtr = &language
 	}
 
+	var portalUrlPtr *string
+	if portalUrl != "" {
+		portalUrlPtr = &portalUrl
+	}
+
 	newFeed := &database.Feed{
 		URL:               u.String(),
 		RootDomain:        rootDomain,
+		PortalUrl:         portalUrlPtr,
 		Enabled:           enabled,
 		EnforceFeedDomain: DefaultFeedEnforceDomain,
 		Polling:           polling,
@@ -375,6 +388,9 @@ func addFeed(feedUrl string, enabled bool, polling bool, mining bool, noRootDoma
 	output := fmt.Sprintf("Added feed for url=%s with id=%s enabled=%v polling=%v mining=%v root_domain=%s", feedUrl, newFeed.ID, newFeed.Enabled, newFeed.Polling, newFeed.Mining, rootDomainStr)
 	if newFeed.Language != nil {
 		output += fmt.Sprintf(" language=%s", *newFeed.Language)
+	}
+	if newFeed.PortalUrl != nil {
+		output += fmt.Sprintf(" portal_url=%s", *newFeed.PortalUrl)
 	}
 	if newFeed.ResolveItemUrl {
 		output += fmt.Sprintf(" resolve_item_url=%v", newFeed.ResolveItemUrl)

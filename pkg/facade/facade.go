@@ -33,8 +33,9 @@ type AnalyzedItem struct {
 }
 
 type DomainEntry struct {
-	Domain   string `json:"domain"`
-	Language string `json:"language"`
+	Domain    string  `json:"domain"`
+	Language  string  `json:"language"`
+	PortalUrl *string `json:"portal_url,omitempty"`
 }
 
 type Facade interface {
@@ -170,7 +171,15 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 				lang = *feed.Language
 			}
 			key := *feed.RootDomain + "|" + lang
-			entryMap[key] = DomainEntry{Domain: *feed.RootDomain, Language: lang}
+
+			var portalUrl *string
+			if existing, ok := entryMap[key]; ok {
+				portalUrl = existing.PortalUrl
+			}
+			if feed.PortalUrl != nil {
+				portalUrl = feed.PortalUrl
+			}
+			entryMap[key] = DomainEntry{Domain: *feed.RootDomain, Language: lang, PortalUrl: portalUrl}
 		}
 	}
 

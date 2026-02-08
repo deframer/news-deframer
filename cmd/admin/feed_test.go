@@ -77,7 +77,7 @@ func TestFeedCommands(t *testing.T) {
 
 	// 1. Create Feed
 	out := captureOutput(func() {
-		addFeed(testURL, true, false, false, false, "", false, []string{})
+		addFeed(testURL, true, false, false, false, "", false, []string{}, "")
 	})
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)
@@ -196,7 +196,7 @@ func TestFeedCommands(t *testing.T) {
 	// 14. Test Enable with Polling triggers Sync
 	testURL2 := "http://example.com/rss2"
 	captureOutput(func() {
-		addFeed(testURL2, false, true, false, false, "", false, []string{}) // Add disabled feed with polling=true
+		addFeed(testURL2, false, true, false, false, "", false, []string{}, "") // Add disabled feed with polling=true
 	})
 
 	out = captureOutput(func() {
@@ -217,7 +217,7 @@ func TestFeedCommands(t *testing.T) {
 	// 15. Test --no-root-domain
 	testURL3 := "http://no-root.com/rss"
 	captureOutput(func() {
-		addFeed(testURL3, true, false, false, true, "", false, []string{})
+		addFeed(testURL3, true, false, false, true, "", false, []string{}, "")
 	})
 
 	out = captureOutput(func() {
@@ -238,7 +238,7 @@ func TestFeedCommands(t *testing.T) {
 	// 16. Test Root Domain Extraction (Subdomain)
 	testURL4 := "http://blog.example.co.uk/rss"
 	captureOutput(func() {
-		addFeed(testURL4, true, false, false, false, "", false, []string{})
+		addFeed(testURL4, true, false, false, false, "", false, []string{}, "")
 	})
 
 	out = captureOutput(func() {
@@ -260,7 +260,7 @@ func TestFeedCommands(t *testing.T) {
 	// 17. Test Language Commands
 	testURL5 := "http://example.com/rss5"
 	captureOutput(func() {
-		addFeed(testURL5, true, false, false, false, "en", false, []string{})
+		addFeed(testURL5, true, false, false, false, "en", false, []string{}, "")
 	})
 
 	out = captureOutput(func() {
@@ -335,7 +335,7 @@ func TestFeedCommands(t *testing.T) {
 	// 18. Test ResolveItemUrl Commands
 	testURL6 := "http://example.com/rss6"
 	captureOutput(func() {
-		addFeed(testURL6, true, false, false, false, "", true, []string{})
+		addFeed(testURL6, true, false, false, false, "", true, []string{}, "")
 	})
 
 	out = captureOutput(func() {
@@ -375,7 +375,7 @@ func TestFeedCommands(t *testing.T) {
 	// 19. Test Mining Commands
 	testURL7 := "http://example.com/rss7"
 	captureOutput(func() {
-		addFeed(testURL7, true, false, true, false, "", false, []string{})
+		addFeed(testURL7, true, false, true, false, "", false, []string{}, "")
 	})
 
 	out = captureOutput(func() {
@@ -429,7 +429,7 @@ func TestFeedCommands(t *testing.T) {
 	// Add another feed that is enabled but not for mining
 	testURL8 := "http://example.com/rss8"
 	captureOutput(func() {
-		addFeed(testURL8, true, false, false, false, "", false, []string{})
+		addFeed(testURL8, true, false, false, false, "", false, []string{}, "")
 	})
 
 	out = captureOutput(func() {
@@ -441,7 +441,7 @@ func TestFeedCommands(t *testing.T) {
 	// 21. Test sync on non-polling feed
 	testURL9 := "http://example.com/rss9"
 	captureOutput(func() {
-		addFeed(testURL9, true, false, false, false, "", false, []string{}) // Polling is false
+		addFeed(testURL9, true, false, false, false, "", false, []string{}, "") // Polling is false
 	})
 
 	out = captureOutput(func() {
@@ -470,7 +470,7 @@ func TestFeedCommands(t *testing.T) {
 	// 22. Test mine on non-mining feed
 	testURL10 := "http://example.com/rss10"
 	captureOutput(func() {
-		addFeed(testURL10, true, false, false, false, "", false, []string{}) // Mining is false
+		addFeed(testURL10, true, false, false, false, "", false, []string{}, "") // Mining is false
 	})
 
 	out = captureOutput(func() {
