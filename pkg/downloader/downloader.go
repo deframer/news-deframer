@@ -14,13 +14,27 @@ import (
 	"github.com/deframer/news-deframer/pkg/config"
 )
 
-const userAgent = "Mozilla/5.0 (compatible; Deframer/1.0; +https://github.com/deframer/news-deframer)"
+// fake a real chrome browser
+
+// https://github.com/brave/brave-browser/wiki/User-Agents
+const defaultUserAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36"
+const defaultSec_CH_CA = `"Chromium";v="136", "Brave";v="136", "Not.A/Brand";v="99"`
+const defaultPriority = "priority: u=0, i"
+
+type DownloaderOpts struct {
+	UserAgent string
+	Sec_CH_UA string
+	Priority  string
+}
 
 type downloader struct {
-	ctx    context.Context
-	cfg    *config.Config
-	logger *slog.Logger
-	client *http.Client
+	ctx       context.Context
+	cfg       *config.Config
+	logger    *slog.Logger
+	client    *http.Client
+	userAgent string
+	sec_CH_UA string
+	priority  string
 }
 
 type Downloader interface {
@@ -29,7 +43,7 @@ type Downloader interface {
 }
 
 // NewDownloader initializes a new downloader
-func NewDownloader(ctx context.Context, cfg *config.Config) Downloader {
+func NewDownloader(ctx context.Context, cfg *config.Config, opts ...DownloaderOpts) Downloader {
 	// Custom transport to allow more idle connections per host
 	transport := &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -45,6 +59,21 @@ func NewDownloader(ctx context.Context, cfg *config.Config) Downloader {
 		MaxIdleConnsPerHost:   20, // Optimized for concurrent feed item resolution
 	}
 
+	userAgent := defaultUserAgent
+	if len(opts) > 0 && opts[0].UserAgent != "" {
+		userAgent = opts[0].UserAgent
+	}
+
+	sec_CH_CA := defaultSec_CH_CA
+	if len(opts) > 0 && opts[0].Sec_CH_UA != "" {
+		sec_CH_CA = opts[0].Sec_CH_UA
+	}
+
+	priority := defaultPriority
+	if len(opts) > 0 && opts[0].Priority != "" {
+		priority = opts[0].Priority
+	}
+
 	return &downloader{
 		ctx:    ctx,
 		cfg:    cfg,
@@ -53,6 +82,9 @@ func NewDownloader(ctx context.Context, cfg *config.Config) Downloader {
 			Timeout:   15 * time.Second,
 			Transport: transport,
 		},
+		userAgent: userAgent,
+		sec_CH_UA: sec_CH_CA,
+		priority:  priority,
 	}
 }
 
@@ -71,7 +103,9 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request for URL %q: %w", feed.String(), err)
 		}
-		req.Header.Set("User-Agent", userAgent)
+		req.Header.Set("User-Agent", d.userAgent)
+		req.Header.Set("Sec-CH-UA", d.sec_CH_UA)
+		req.Header.Set("Priority", d.priority)
 
 		resp, err := d.client.Do(req)
 		if err != nil {
@@ -98,7 +132,7 @@ func (d *downloader) ResolveRedirect(ctx context.Context, targetURL string) (str
 	}
 
 	// Mimic a browser to avoid some anti-bot protections
-	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("User-Agent", d.userAgent)
 
 	resp, err := d.client.Do(req)
 	if err != nil {
