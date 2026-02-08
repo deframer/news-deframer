@@ -60,32 +60,36 @@ const App = ({ theme }: { theme: string }) => {
           setSearchEngineUrl(settings.searchEngineUrl);
         }
         const client = new NewsDeframerClient(settings);
-        const type = classifyUrl(new URL(window.location.href));
+        const allDomains = await client.getDomains();
+        setAvailableDomains(allDomains);
+
+        const siteHost = window.location.host;
+        const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
+
+        // Check if the site's full host or root domain is registered in the backend.
+        let authorizedDomain: DomainEntry | null = null;
+
+        const exactMatch = allDomains.find((d) => d.domain === siteHost);
+        if (exactMatch) {
+          authorizedDomain = exactMatch;
+        } else if (rootDomain) {
+          const found = allDomains.find((d) => d.domain === rootDomain);
+          if (found) {
+            authorizedDomain = found;
+          }
+        }
+
+        if (authorizedDomain) {
+          setCurrentDomain(authorizedDomain);
+        }
+
+        const type = classifyUrl(new URL(window.location.href), authorizedDomain?.portal_url);
         setPageType(type);
 
         if (type === PageType.PORTAL) {
-          const allDomains = await client.getDomains();
-          setAvailableDomains(allDomains);
-          const siteHost = window.location.host;
-          const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
-
-          // Check if the site's full host or root domain is registered in the backend.
-          //log.debug(`Checking domain authorization for siteHost="${siteHost}", rootDomain="${rootDomain}", allDomains=[${allDomains.join(', ')}]`);
-          let authorizedDomain: DomainEntry | null = null;
-
-          const exactMatch = allDomains.find(d => d.domain === siteHost);
-          if (exactMatch) {
-            authorizedDomain = exactMatch;
-          } else if (rootDomain) {
-            const found = allDomains.find(d => d.domain === rootDomain);
-            if (found) {
-              authorizedDomain = found;
-            }
-          }
 
           if (authorizedDomain) {
             // Fetch the content using the authorized domain from the list.
-            setCurrentDomain(authorizedDomain);
             const items = await client.getSite(authorizedDomain.domain);
             if (items.length > 0) {
               setData(items);

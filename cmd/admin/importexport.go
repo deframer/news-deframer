@@ -48,6 +48,7 @@ type ImportFeed struct {
 	Language          *string  `json:"language,omitempty"`
 	Categories        []string `json:"categories,omitempty"`
 	RootDomain        *string  `json:"root_domain,omitempty"`
+	PortalUrl         *string  `json:"portal_url,omitempty"`
 	Enabled           *bool    `json:"enabled,omitempty"`
 	EnforceFeedDomain *bool    `json:"enforce_feed_domain,omitempty"`
 	Polling           *bool    `json:"polling,omitempty"`
@@ -189,6 +190,7 @@ func createNewFeed(u *url.URL, f ImportFeed) *database.Feed {
 	return &database.Feed{
 		URL:               u.String(),
 		RootDomain:        rootDomain,
+		PortalUrl:         f.PortalUrl,
 		Language:          f.Language,
 		Categories:        f.Categories,
 		Enabled:           enabled,
@@ -206,6 +208,9 @@ func updateExistingFeed(existing *database.Feed, f ImportFeed) {
 	existing.Categories = f.Categories
 	if f.RootDomain != nil {
 		existing.RootDomain = f.RootDomain
+	}
+	if f.PortalUrl != nil {
+		existing.PortalUrl = f.PortalUrl
 	}
 	if f.Enabled != nil {
 		existing.Enabled = *f.Enabled
@@ -238,6 +243,7 @@ func exportFeeds() {
 			Language:          f.Language,
 			Categories:        f.Categories,
 			RootDomain:        f.RootDomain,
+			PortalUrl:         f.PortalUrl,
 			Enabled:           &f.Enabled,
 			EnforceFeedDomain: &f.EnforceFeedDomain,
 			Polling:           &f.Polling,
