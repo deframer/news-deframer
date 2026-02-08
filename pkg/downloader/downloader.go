@@ -88,7 +88,7 @@ func NewDownloader(ctx context.Context, cfg *config.Config, opts ...DownloaderOp
 	}
 }
 
-// DownloadRSSFeed downloads from http/https/file URLs
+// DownloadRSSFeed downloads from http/https URLs
 func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.ReadCloser, error) {
 	if feed == nil {
 		return nil, errors.New("feed cannot be nil")
@@ -103,6 +103,8 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 		if err != nil {
 			return nil, fmt.Errorf("failed to create request for URL %q: %w", feed.String(), err)
 		}
+
+		// Mimic a browser to avoid some anti-bot protections
 		req.Header.Set("User-Agent", d.userAgent)
 		req.Header.Set("Sec-CH-UA", d.sec_CH_UA)
 		req.Header.Set("Priority", d.priority)
@@ -133,6 +135,8 @@ func (d *downloader) ResolveRedirect(ctx context.Context, targetURL string) (str
 
 	// Mimic a browser to avoid some anti-bot protections
 	req.Header.Set("User-Agent", d.userAgent)
+	req.Header.Set("Sec-CH-UA", d.sec_CH_UA)
+	req.Header.Set("Priority", d.priority)
 
 	resp, err := d.client.Do(req)
 	if err != nil {
