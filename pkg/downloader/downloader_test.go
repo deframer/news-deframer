@@ -142,9 +142,12 @@ func TestResolveRedirect_Concurrent(t *testing.T) {
 }
 
 func TestDownloadRSSFeed_WashingtonPost(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping integration test in short mode")
-	}
+	// if testing.Short() {
+	// 	t.Skip("Skipping integration test in short mode")
+	// }
+
+	// they are "special" so they need an "official" user agent
+	t.Skip()
 
 	ctx := context.Background()
 	d := NewDownloader(ctx, nil)
