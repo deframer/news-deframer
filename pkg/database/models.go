@@ -31,6 +31,7 @@ type Feed struct {
 	Base
 	URL               string        `gorm:"index"`                 // we can't enforce uniqueness here (because of the soft deletes)
 	RootDomain        *string       `gorm:"index"`                 // example.com
+	PortalUrl         *string       `gorm:"type:text"`             // web.foo.bar/whatever
 	Language          *string       `gorm:"type:char(2)"`          // ISO 639-1 language code
 	EnforceFeedDomain bool          `gorm:"not null;default:true"` // item url must be from our URL
 	Enabled           bool          `gorm:"not null;default:false;index"`
