@@ -392,6 +392,32 @@ func TestExtractMediaContent(t *testing.T) {
 			},
 		},
 		{
+			name: "Specific Media Content Tag",
+			item: &gofeed.Item{
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"content": {{
+							Name: "content",
+							Attrs: map[string]string{
+								"url":        "https://bar/foo.jpg",
+								"type":       "image/jpeg",
+								"expression": "full",
+								"width":      "931",
+								"height":     "523",
+							},
+						}},
+					},
+				},
+			},
+			expected: &database.MediaContent{
+				URL:    "https://bar/foo.jpg",
+				Type:   "image/jpeg",
+				Medium: "image",
+				Width:  931,
+				Height: 523,
+			},
+		},
+		{
 			name: "Fallback to Thumbnail",
 			item: &gofeed.Item{
 				Extensions: map[string]map[string][]ext.Extension{

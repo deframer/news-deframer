@@ -531,6 +531,14 @@ func (s *Syncer) extractMediaContent(item *gofeed.Item) (*database.MediaContent,
 		Medium: contentExt.Attrs["medium"],
 	}
 
+	if mc.Medium == "" {
+		if strings.HasPrefix(mc.Type, "image/") {
+			mc.Medium = "image"
+		} else if strings.HasPrefix(mc.Type, "video/") {
+			mc.Medium = "video"
+		}
+	}
+
 	// Dimensions
 	w, _ := strconv.Atoi(contentExt.Attrs["width"])
 	h, _ := strconv.Atoi(contentExt.Attrs["height"])
