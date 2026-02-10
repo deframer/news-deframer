@@ -26,7 +26,7 @@ const App = ({ theme }: { theme: string }) => {
   useEffect(() => {
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
       if (areaName === 'local' && changes.searchEngineUrl) {
-        setSearchEngineUrl(changes.searchEngineUrl.newValue);
+        setSearchEngineUrl(String(changes.searchEngineUrl.newValue));
       }
     };
     chrome.storage.onChanged.addListener(handleStorageChange);
@@ -67,36 +67,36 @@ const App = ({ theme }: { theme: string }) => {
         const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
 
         // Check if the site's full host or root domain is registered in the backend.
-        let authorizedDomain: DomainEntry | null = null;
+        let matchedDomain: DomainEntry | null = null;
 
         const exactMatch = allDomains.find((d) => d.domain === siteHost);
         if (exactMatch) {
-          authorizedDomain = exactMatch;
+          matchedDomain = exactMatch;
         } else if (rootDomain) {
           const found = allDomains.find((d) => d.domain === rootDomain);
           if (found) {
-            authorizedDomain = found;
+            matchedDomain = found;
           }
         }
 
-        if (authorizedDomain) {
-          setCurrentDomain(authorizedDomain);
+        if (matchedDomain) {
+          setCurrentDomain(matchedDomain);
         }
 
-        const type = classifyUrl(new URL(window.location.href), authorizedDomain?.portal_url);
+        const type = classifyUrl(new URL(window.location.href), matchedDomain?.portal_url);
         setPageType(type);
 
         if (type === PageType.PORTAL) {
 
-          if (authorizedDomain) {
-            // Fetch the content using the authorized domain from the list.
-            const items = await client.getSite(authorizedDomain.domain);
+          if (matchedDomain) {
+            // Fetch the content using the matched domain from the list.
+            const items = await client.getSite(matchedDomain.domain);
             if (items.length > 0) {
               setData(items);
             } else {
-              // This can happen if the authorized domain has no items.
-              log.error(`Attempted to get site data for authorized domain "${authorizedDomain.domain}", but received no items.`);
-              throw new Error(`No items found for this portal (${authorizedDomain.domain}).`);
+              // This can happen if the matched domain has no items.
+              log.error(`Attempted to get site data for matched domain "${matchedDomain.domain}", but received no items.`);
+              throw new Error(`No items found for this portal (${matchedDomain.domain}).`);
             }
           } else {
             // If neither the full host nor root domain is in the list, the site is not supported.
