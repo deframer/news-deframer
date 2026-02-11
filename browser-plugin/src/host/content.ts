@@ -18,14 +18,18 @@ async function startNdf() {
     return;
   }
 
+  // Install guard immediately to block popups, even before we know if we are enabled.
+  // If we are disabled, we will reload the page without the guard.
+  const guard = installPreemptiveDomGuard({ allowedIds: ['ndf-root', 'ndf-global-styles'] });
+
   const enabled = await readEnabledFlag();
   if (!enabled) {
-    log.debug('NDF is disabled by user settings.');
+    log.debug('NDF is disabled by user settings. Reloading without guard.');
+    guard?.release();
+    sessionStorage.setItem('__ndf-bypass', 'true');
+    window.location.reload();
     return;
   }
-
-  // Install guard only when enabled so hostile scripts never execute while we fetch settings.
-  const guard = installPreemptiveDomGuard({ allowedIds: ['ndf-root', 'ndf-global-styles'] });
 
   const settings = await getSettings();
 
