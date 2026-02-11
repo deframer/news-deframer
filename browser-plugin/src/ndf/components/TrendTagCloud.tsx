@@ -76,14 +76,14 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
           <g key={w.text} transform={`translate(${w.x}, ${w.y}) rotate(${w.rotate})`}>
             <Text
               className="word-cloud-text"
-              fill={selectedTerm === w.text ? 'var(--accent-color)' : getColor(w.text)}
+              fill={selectedTerm === w.text ? 'var(--accent-color)' : getColor(w.text || '')}
               textAnchor={'middle'}
               fontSize={w.size}
               fontWeight={selectedTerm === w.text ? 'bold' : 'normal'}
               textDecoration={selectedTerm === w.text ? 'underline' : 'none'}
               fontFamily={w.font}
-              onClick={() => onSelect(w.text)}
-              onMouseEnter={() => onHover({ x: w.x || 0, y: w.y || 0, item: w.original })}
+              onClick={() => onSelect(w.text || null)}
+              onMouseEnter={() => onHover({ x: w.x || 0, y: w.y || 0, item: (w as unknown as { original: TrendMetric & { rank: number } }).original })}
               onMouseLeave={() => onHover(null)}
             >
               {w.text}

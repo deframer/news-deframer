@@ -81,9 +81,11 @@ export const installPreemptiveDomGuard = (opts?: { allowedIds?: string[] }) => {
   const originalAlert = window.alert;
   const originalConfirm = window.confirm;
   const originalPrompt = window.prompt;
+  const originalPrint = window.print;
   window.alert = () => undefined;
   window.confirm = () => true;
   window.prompt = () => '';
+  window.print = () => undefined;
 
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -97,17 +99,23 @@ export const installPreemptiveDomGuard = (opts?: { allowedIds?: string[] }) => {
 
       mutation.addedNodes.forEach((node) => {
         if (shouldKeepNode(node, { allowedIds })) {
+          if (node instanceof Element) {
+            // If a kept element (like body) is re-added, strip its attributes immediately
+            resetElementAttributes(node);
+          }
+          // Recursively clean children of kept containers (body/head)
+          // to ensure no hostile nodes sneak in via a replaced container.
+          if (node === document.body || node === document.head) {
+            Array.from(node.childNodes).forEach((child) => {
+              if (!shouldKeepNode(child, { allowedIds })) {
+                child.parentNode?.removeChild(child);
+              }
+            });
+          }
           return;
         }
 
-        if (
-          node instanceof HTMLElement &&
-          ['SCRIPT', 'IFRAME', 'OBJECT', 'EMBED', 'LINK'].includes(node.tagName)
-        ) {
-          node.parentNode?.removeChild(node);
-          return;
-        }
-
+        // Remove anything else
         node.parentNode?.removeChild(node);
       });
     });
@@ -115,7 +123,8 @@ export const installPreemptiveDomGuard = (opts?: { allowedIds?: string[] }) => {
     purgeOverlayElements();
   });
 
-  observer.observe(document.documentElement, {
+  // Observe the entire document to catch root element replacements
+  observer.observe(document, {
     childList: true,
     subtree: true,
     attributes: true,
@@ -130,6 +139,7 @@ export const installPreemptiveDomGuard = (opts?: { allowedIds?: string[] }) => {
       window.alert = originalAlert;
       window.confirm = originalConfirm;
       window.prompt = originalPrompt;
+      window.print = originalPrint;
     },
   } satisfies PreemptGuard;
 };
