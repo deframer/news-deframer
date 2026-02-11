@@ -3,8 +3,12 @@ import { ProxyResponse } from '../shared/types';
 
 log.info('Background script running');
 
-
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+  if (request.type === 'SET_BYPASS') {
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (request.type === 'PROXY_REQ') {
     const { url, headers, timeout = 5000 } = request;
     log.info(`Proxying request to ${url} with timeout ${timeout}ms`);

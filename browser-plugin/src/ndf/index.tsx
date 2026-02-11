@@ -8,6 +8,7 @@ import { getSettings, Settings } from '../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../shared/theme';
 import { AnalyzedItem, DomainEntry, NewsDeframerClient } from './client';
 import { Spinner } from './components/Spinner';
+import { purgeOverlayElements, resetElementAttributes, shouldKeepNode } from './domGuard';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
 import { ndfStyles } from './styles';
@@ -130,7 +131,9 @@ const App = ({ theme }: { theme: string }) => {
   if (error) {
     // If there was an error, bypass and reload to see the original page.
     sessionStorage.setItem('__ndf-bypass', 'true');
-    window.location.reload();
+    chrome.runtime.sendMessage({ type: 'SET_BYPASS', value: true }, () => {
+      window.location.reload();
+    });
     return null; // Render nothing while we reload
   }
 
@@ -193,17 +196,11 @@ export const start = async (providedSettings?: Settings) => {
     const type = classifyUrl(new URL(window.location.href));
     if (type === PageType.PORTAL || type === PageType.ARTICLE) {
       log.debug(`Page detected as ${type}.`);
-      // window.stop(); // this causes issues
+      // window.stop(); // we rely on the DOM guard instead
 
-      // Manual DOM reset. document.open() is unreliable in content scripts
-      // and can cause "Cannot read properties of null" errors.
       const html = document.documentElement;
       if (html) {
-        // 1. Remove all attributes from <html> (fixes anti-flicker hiding)
-        while (html.attributes.length > 0) {
-          html.removeAttribute(html.attributes[0].name);
-        }
-        // 2. Clear content
+        resetElementAttributes(html);
         const domain = getDomain(window.location.hostname) || window.location.hostname;
         html.innerHTML = `<head><title>NDF • ${domain}</title></head><body></body>`;
       }
@@ -218,14 +215,26 @@ export const start = async (providedSettings?: Settings) => {
           document.appendChild(body);
         }
       }
+      resetElementAttributes(body);
 
       const rootEl = document.createElement('div');
       rootEl.id = 'ndf-root';
       body.appendChild(rootEl);
 
-      // MutationObserver to prevent original page content from appearing
+      // Watch for any Light DOM changes. If a late script tries to add
+      // elements or attributes, we remove them so the old page never returns.
       const observer = new MutationObserver((mutations) => {
+        let needsCleanup = false;
+
         mutations.forEach((mutation) => {
+          if (
+            mutation.type === 'attributes' &&
+            (mutation.target === html || mutation.target === document.body)
+          ) {
+            needsCleanup = true;
+            return;
+          }
+
           // If the mutation happens inside our root or styles, ignore it
           if (rootEl.contains(mutation.target)) return;
           if (
@@ -236,34 +245,31 @@ export const start = async (providedSettings?: Settings) => {
 
           mutation.addedNodes.forEach((node) => {
             // Allow our critical elements
-            if (
-              node === rootEl ||
-              node === document.head ||
-              node === document.body ||
-              node.nodeName === 'TITLE'
-            ) {
+            if (shouldKeepNode(node, { rootEl })) {
               return;
             }
 
-            // Allow our global styles
             if (
-              node instanceof Element &&
-              node.id === 'ndf-global-styles'
+              node.parentNode &&
+              !(node instanceof Element &&
+              (node.id === 'ndf-root' || node.id === 'ndf-global-styles'))
             ) {
-              return;
-            }
-
-            // Remove anything else (original page content streaming in)
-            if (node.parentNode) {
               node.parentNode.removeChild(node);
             }
           });
         });
+
+        if (needsCleanup) {
+          resetElementAttributes(html);
+          resetElementAttributes(document.body);
+          purgeOverlayElements();
+        }
       });
 
       observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
+        attributes: true,
       });
 
       const shadowRoot = rootEl.attachShadow({ mode: 'open' });
