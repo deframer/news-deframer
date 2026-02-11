@@ -35,4 +35,16 @@ describe('URL Classifier', () => {
     const url = new URL('https://www.example.com/index.html');
     expect(classifyUrl(url)).toBe(PageType.ARTICLE);
   });
+
+  test('should classify specific portal url as PORTAL', () => {
+    const url = new URL('https://www.example.com/news');
+    const portalUrl = 'example.com/news';
+    expect(classifyUrl(url, portalUrl)).toBe(PageType.PORTAL);
+  });
+
+  test('should classify subpath of portal url as ARTICLE', () => {
+    const url = new URL('https://www.example.com/news/article-123');
+    const portalUrl = 'example.com/news';
+    expect(classifyUrl(url, portalUrl)).toBe(PageType.ARTICLE);
+  });
 });

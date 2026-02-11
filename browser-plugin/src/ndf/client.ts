@@ -6,6 +6,7 @@ import { Settings } from '../shared/settings';
 export interface DomainEntry {
   domain: string;
   language: string;
+  portal_url?: string;
 }
 
 export interface TrendMetric {

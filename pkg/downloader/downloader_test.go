@@ -140,3 +140,27 @@ func TestResolveRedirect_Concurrent(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestDownloadRSSFeed_WashingtonPost(t *testing.T) {
+	// if testing.Short() {
+	// 	t.Skip("Skipping integration test in short mode")
+	// }
+
+	// they are "special" so they need an "official" user agent
+	t.Skip()
+
+	ctx := context.Background()
+	d := NewDownloader(ctx, nil)
+
+	u, err := url.Parse("https://www.washingtonpost.com/arcio/rss/")
+	assert.NoError(t, err)
+
+	rc, err := d.DownloadRSSFeed(ctx, u)
+	assert.NoError(t, err)
+	if rc != nil {
+		defer func() { _ = rc.Close() }()
+		content, err := io.ReadAll(rc)
+		assert.NoError(t, err)
+		assert.NotEmpty(t, content)
+	}
+}

@@ -8,6 +8,7 @@ import { getSettings, Settings } from '../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../shared/theme';
 import { AnalyzedItem, DomainEntry, NewsDeframerClient } from './client';
 import { Spinner } from './components/Spinner';
+import { purgeOverlayElements, resetElementAttributes, shouldKeepNode } from './domGuard';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
 import { ndfStyles } from './styles';
@@ -26,7 +27,7 @@ const App = ({ theme }: { theme: string }) => {
   useEffect(() => {
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
       if (areaName === 'local' && changes.searchEngineUrl) {
-        setSearchEngineUrl(changes.searchEngineUrl.newValue);
+        setSearchEngineUrl(String(changes.searchEngineUrl.newValue));
       }
     };
     chrome.storage.onChanged.addListener(handleStorageChange);
@@ -60,39 +61,43 @@ const App = ({ theme }: { theme: string }) => {
           setSearchEngineUrl(settings.searchEngineUrl);
         }
         const client = new NewsDeframerClient(settings);
-        const type = classifyUrl(new URL(window.location.href));
+        const allDomains = await client.getDomains();
+        setAvailableDomains(allDomains);
+
+        const siteHost = window.location.host;
+        const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
+
+        // Check if the site's full host or root domain is registered in the backend.
+        let matchedDomain: DomainEntry | null = null;
+
+        const exactMatch = allDomains.find((d) => d.domain === siteHost);
+        if (exactMatch) {
+          matchedDomain = exactMatch;
+        } else if (rootDomain) {
+          const found = allDomains.find((d) => d.domain === rootDomain);
+          if (found) {
+            matchedDomain = found;
+          }
+        }
+
+        if (matchedDomain) {
+          setCurrentDomain(matchedDomain);
+        }
+
+        const type = classifyUrl(new URL(window.location.href), matchedDomain?.portal_url);
         setPageType(type);
 
         if (type === PageType.PORTAL) {
-          const allDomains = await client.getDomains();
-          setAvailableDomains(allDomains);
-          const siteHost = window.location.host;
-          const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
 
-          // Check if the site's full host or root domain is registered in the backend.
-          //log.debug(`Checking domain authorization for siteHost="${siteHost}", rootDomain="${rootDomain}", allDomains=[${allDomains.join(', ')}]`);
-          let authorizedDomain: DomainEntry | null = null;
-
-          const exactMatch = allDomains.find(d => d.domain === siteHost);
-          if (exactMatch) {
-            authorizedDomain = exactMatch;
-          } else if (rootDomain) {
-            const found = allDomains.find(d => d.domain === rootDomain);
-            if (found) {
-              authorizedDomain = found;
-            }
-          }
-
-          if (authorizedDomain) {
-            // Fetch the content using the authorized domain from the list.
-            setCurrentDomain(authorizedDomain);
-            const items = await client.getSite(authorizedDomain.domain);
+          if (matchedDomain) {
+            // Fetch the content using the matched domain from the list.
+            const items = await client.getSite(matchedDomain.domain);
             if (items.length > 0) {
               setData(items);
             } else {
-              // This can happen if the authorized domain has no items.
-              log.error(`Attempted to get site data for authorized domain "${authorizedDomain.domain}", but received no items.`);
-              throw new Error(`No items found for this portal (${authorizedDomain.domain}).`);
+              // This can happen if the matched domain has no items.
+              log.error(`Attempted to get site data for matched domain "${matchedDomain.domain}", but received no items.`);
+              throw new Error(`No items found for this portal (${matchedDomain.domain}).`);
             }
           } else {
             // If neither the full host nor root domain is in the list, the site is not supported.
@@ -126,7 +131,9 @@ const App = ({ theme }: { theme: string }) => {
   if (error) {
     // If there was an error, bypass and reload to see the original page.
     sessionStorage.setItem('__ndf-bypass', 'true');
-    window.location.reload();
+    chrome.runtime.sendMessage({ type: 'SET_BYPASS', value: true }, () => {
+      window.location.reload();
+    });
     return null; // Render nothing while we reload
   }
 
@@ -189,17 +196,11 @@ export const start = async (providedSettings?: Settings) => {
     const type = classifyUrl(new URL(window.location.href));
     if (type === PageType.PORTAL || type === PageType.ARTICLE) {
       log.debug(`Page detected as ${type}.`);
-      // window.stop(); // this causes issues
+      // window.stop(); // we rely on the DOM guard instead
 
-      // Manual DOM reset. document.open() is unreliable in content scripts
-      // and can cause "Cannot read properties of null" errors.
       const html = document.documentElement;
       if (html) {
-        // 1. Remove all attributes from <html> (fixes anti-flicker hiding)
-        while (html.attributes.length > 0) {
-          html.removeAttribute(html.attributes[0].name);
-        }
-        // 2. Clear content
+        resetElementAttributes(html);
         const domain = getDomain(window.location.hostname) || window.location.hostname;
         html.innerHTML = `<head><title>NDF • ${domain}</title></head><body></body>`;
       }
@@ -214,14 +215,26 @@ export const start = async (providedSettings?: Settings) => {
           document.appendChild(body);
         }
       }
+      resetElementAttributes(body);
 
       const rootEl = document.createElement('div');
       rootEl.id = 'ndf-root';
       body.appendChild(rootEl);
 
-      // MutationObserver to prevent original page content from appearing
+      // Watch for any Light DOM changes. If a late script tries to add
+      // elements or attributes, we remove them so the old page never returns.
       const observer = new MutationObserver((mutations) => {
+        let needsCleanup = false;
+
         mutations.forEach((mutation) => {
+          if (
+            mutation.type === 'attributes' &&
+            (mutation.target === html || mutation.target === document.body)
+          ) {
+            needsCleanup = true;
+            return;
+          }
+
           // If the mutation happens inside our root or styles, ignore it
           if (rootEl.contains(mutation.target)) return;
           if (
@@ -232,34 +245,31 @@ export const start = async (providedSettings?: Settings) => {
 
           mutation.addedNodes.forEach((node) => {
             // Allow our critical elements
-            if (
-              node === rootEl ||
-              node === document.head ||
-              node === document.body ||
-              node.nodeName === 'TITLE'
-            ) {
+            if (shouldKeepNode(node, { rootEl })) {
               return;
             }
 
-            // Allow our global styles
             if (
-              node instanceof Element &&
-              node.id === 'ndf-global-styles'
+              node.parentNode &&
+              !(node instanceof Element &&
+              (node.id === 'ndf-root' || node.id === 'ndf-global-styles'))
             ) {
-              return;
-            }
-
-            // Remove anything else (original page content streaming in)
-            if (node.parentNode) {
               node.parentNode.removeChild(node);
             }
           });
         });
+
+        if (needsCleanup) {
+          resetElementAttributes(html);
+          resetElementAttributes(document.body);
+          purgeOverlayElements();
+        }
       });
 
       observer.observe(document.documentElement, {
         childList: true,
         subtree: true,
+        attributes: true,
       });
 
       const shadowRoot = rootEl.attachShadow({ mode: 'open' });
