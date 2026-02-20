@@ -5,10 +5,12 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"html"
 	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -22,7 +24,8 @@ func main() {
 	jsonLog := flag.Bool("json-log", false, "Enable JSON logging")
 	disableETag := flag.Bool("disable-etag", false, "Disable ETag caching")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		// #nosec G705: usage string is escaped before printing
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", html.EscapeString(filepath.Base(os.Args[0])))
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -39,6 +42,7 @@ func main() {
 
 	var lvl slog.Level
 	if err := lvl.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
+		slog.Warn("Invalid log level, defaulting to info", "level", cfg.LogLevel, "error", err)
 		lvl = slog.LevelInfo
 	}
 

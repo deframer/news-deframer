@@ -53,7 +53,7 @@ func (t *LLMType) UnmarshalText(text []byte) error {
 }
 
 type Config struct {
-	// HTT Port
+	// HTTP Port
 	Port string `env:"PORT" envDefault:"8080"`
 
 	// Gorm DNS

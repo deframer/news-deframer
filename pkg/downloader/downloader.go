@@ -109,6 +109,7 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 		req.Header.Set("Sec-CH-UA", d.sec_CH_UA)
 		req.Header.Set("Priority", d.priority)
 
+		// #nosec G704 -- feed URL is an explicit user-configured target.
 		resp, err := d.client.Do(req)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch URL %q: %w", feed.String(), err)
@@ -138,6 +139,7 @@ func (d *downloader) ResolveRedirect(ctx context.Context, targetURL string) (str
 	req.Header.Set("Sec-CH-UA", d.sec_CH_UA)
 	req.Header.Set("Priority", d.priority)
 
+	// #nosec G704 -- redirect resolution intentionally requests caller-provided URL.
 	resp, err := d.client.Do(req)
 	if err != nil {
 		return targetURL, err
