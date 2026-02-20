@@ -6,7 +6,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -376,9 +378,31 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/xml")
-	if _, err := w.Write([]byte(xmlData)); err != nil {
+	if err := validateXML(xmlData); err != nil {
+		s.logger.Error("invalid xml payload", "error", err)
+		http.Error(w, "invalid feed", http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; script-src 'none'; style-src 'self' 'unsafe-inline'; img-src data:")
+
+	// #nosec G705: xmlData is validated by validateXML and served with strict headers
+	if _, err := io.WriteString(w, xmlData); err != nil {
 		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func validateXML(xmlData string) error {
+	decoder := xml.NewDecoder(strings.NewReader(xmlData))
+	for {
+		if _, err := decoder.Token(); err != nil {
+			if err == io.EOF {
+				return nil
+			}
+			return err
+		}
 	}
 }
 

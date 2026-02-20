@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"html"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -17,7 +18,8 @@ import (
 func main() {
 	jsonLog := flag.Bool("json-log", false, "Enable JSON logging")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		// #nosec G705: usage string is escaped before printing
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", html.EscapeString(os.Args[0]))
 		flag.PrintDefaults()
 	}
 	flag.Parse()
