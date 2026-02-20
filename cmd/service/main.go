@@ -39,6 +39,7 @@ func main() {
 
 	var lvl slog.Level
 	if err := lvl.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
+		slog.Warn("Invalid log level, defaulting to info", "level", cfg.LogLevel, "error", err)
 		lvl = slog.LevelInfo
 	}
 
