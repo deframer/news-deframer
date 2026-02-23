@@ -18,7 +18,7 @@
     "@eslint/js": "^9.39.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
-    "@types/chrome": "^0.1.36",
+    "@types/chrome": "^0.1.37",
     "@types/jest": "^30.0.0",
     "@types/loglevel": "^1.6.3",
     "@types/node": "^25.3.0",
