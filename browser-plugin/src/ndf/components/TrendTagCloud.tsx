@@ -18,6 +18,8 @@ interface TrendTagCloudProps {
   searchEngineUrl: string;
 }
 
+const BULLET_DELIMITER = '•';
+
 const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onHover }: {
   width: number;
   height: number;
@@ -194,7 +196,7 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudPr
               onClick={handleSearch}
               className="open-icon-btn"
               type="button"
-              title={`${selectedTerm} • ${domain.domain}`}
+              title={`${selectedTerm} ${BULLET_DELIMITER} ${domain.domain}`}
               style={{
                 background: 'var(--bg-color, #fff)',
                 border: '1px solid var(--border-color, #ccc)',

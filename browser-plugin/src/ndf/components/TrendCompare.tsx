@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -19,7 +19,9 @@ interface TrendCompareProps {
   searchEngineUrl: string;
 }
 
-const OpenIcon = ({ onClick, term, domain }: { onClick: () => void; term: string; domain: string }) => (
+const BULLET_DELIMITER = '•';
+
+const OpenIcon = ({ onClick, tooltip }: { onClick: () => void; tooltip: ReactNode }) => (
   <div className="open-icon-wrapper">
     <button
       onClick={(e) => {
@@ -35,9 +37,7 @@ const OpenIcon = ({ onClick, term, domain }: { onClick: () => void; term: string
         <line x1="10" y1="14" x2="21" y2="3"></line>
       </svg>
     </button>
-    <div className="icon-tooltip">
-      {term} <span style={{ opacity: 0.6, margin: '0 2px' }}>•</span> {domain}
-    </div>
+    <div className="icon-tooltip">{tooltip}</div>
   </div>
 );
 
@@ -87,12 +87,12 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
                 ? `${item.score_a} / ${item.score_b}`
                 : item[scoreKey]}
             </span>
-            {scoreKey === 'score_a' && <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />}
-            {scoreKey === 'score_b' && compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} term={item.trend_topic} domain={compareDomain} />}
+            {scoreKey === 'score_a' && <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {domain.domain}</>} />}
+            {scoreKey === 'score_b' && compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {compareDomain}</>} />}
             {scoreKey === 'both' && (
               <>
-                <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />
-                {compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} term={item.trend_topic} domain={compareDomain} />}
+                <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {domain.domain}</>} />
+                {compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {compareDomain}</>} />}
               </>
             )}
           </div>
@@ -111,7 +111,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
             <span className="topic-score">
               {item.outlier_ratio.toFixed(1)}x
             </span>
-            <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} term={item.trend_topic} domain={domain.domain} />
+            <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {domain.domain}</>} />
           </div>
         </li>
       ))}
@@ -129,16 +129,35 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
       <div className="compare-grid">
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">
-          <div className="col-header unique-a">
-            {t('trends.compare.trending_on', { domain: domain.domain })}
+          <div
+            className="col-header unique-a"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '40px',
+              paddingBottom: 0
+            }}
+          >
+            <span>{t('trends.compare.trending_on', { domain: domain.domain })}</span>
           </div>
           {compareDomain ? renderList(uniqueA, 'score_a') : renderBaseList(baseItems)}
         </div>
 
         {/* Column B: Blindspots (Unique to Compare Domain) */}
         <div className="compare-col">
-          <div className="col-header unique-b">
-            <span style={{ marginRight: '5px' }}>{t('trends.compare.their_topics', 'Trending')}</span>
+          <div
+            className="col-header unique-b"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              height: '40px',
+              paddingBottom: 0
+            }}
+          >
+            <span>{t('trends.compare.their_topics', 'Trending')}</span>
             <select
               className="header-select"
               value={compareDomain || ""}
@@ -148,14 +167,26 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
                 <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
+            {compareDomain && (
+              <OpenIcon onClick={() => window.open(`https://${compareDomain}`, '_blank')} tooltip={compareDomain} />
+            )}
           </div>
           {renderList(uniqueB, 'score_b')}
         </div>
 
         {/* Column Intersect: Shared */}
         <div className="compare-col">
-          <div className="col-header intersect">
-            {t('trends.compare.shared', 'Shared')}
+          <div
+            className="col-header intersect"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '40px',
+              paddingBottom: 0
+            }}
+          >
+            <span>{t('trends.compare.shared', 'Shared')}</span>
           </div>
           {renderList(intersect, 'both')}
         </div>
