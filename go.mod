@@ -3,7 +3,7 @@ module github.com/deframer/news-deframer
 go 1.26.0
 
 require (
-	github.com/caarlos0/env/v11 v11.3.1
+	github.com/caarlos0/env/v11 v11.4.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.11.2
@@ -11,8 +11,8 @@ require (
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/net v0.50.0
-	google.golang.org/genai v1.47.0
+	golang.org/x/net v0.51.0
+	google.golang.org/genai v1.48.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
