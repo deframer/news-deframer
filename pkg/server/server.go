@@ -511,7 +511,7 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 
 	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
 	term := q.Get("term")
-	dateRaw, err := parseOptionalDateParam(q.Get("date"))
+	date, err := parseOptionalDateParam(q.Get("date"))
 	if err != nil {
 		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
 		return
@@ -527,12 +527,12 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, dateRaw, days)
+	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, date, days)
 	if err != nil || len(articles) == 0 {
 		if err != nil {
 			s.logger.Error("GetArticlesByTrend failed", "error", err)
 		} else {
-			s.logger.Debug("no trend articles found", "root", rootDomain, "term", term, "date", dateRaw, "days", days)
+			s.logger.Debug("no trend articles found", "root", rootDomain, "term", term, "date", formatOptionalDate(date), "days", days)
 		}
 		http.Error(w, "not found", http.StatusNotFound)
 		return
@@ -544,14 +544,23 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func parseOptionalDateParam(raw string) (string, error) {
+func parseOptionalDateParam(raw string) (*time.Time, error) {
 	if raw == "" {
-		return "", nil
+		return nil, nil
 	}
-	if _, err := time.Parse("2006-01-02", raw); err != nil {
-		return "", err
+	parsed, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		return nil, err
 	}
-	return raw, nil
+	normalized := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
+	return &normalized, nil
+}
+
+func formatOptionalDate(date *time.Time) string {
+	if date == nil || date.IsZero() {
+		return ""
+	}
+	return date.Format("2006-01-02")
 }
 
 func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {

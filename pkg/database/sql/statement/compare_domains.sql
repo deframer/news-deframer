@@ -22,11 +22,11 @@ domain_a_unique AS (
           AND "language" = CAST(@language AS text)
           AND stem_type = 'NOUN'          -- <--- Thesis: Focus on Triggers/Topics [1][2]
           AND time_slice >= COALESCE(
-                CAST(NULLIF(@date, '') AS DATE)::timestamp - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
+                CAST(@date AS timestamp) - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
                 NOW() - (CAST(@days AS INTEGER) * INTERVAL '1 DAY')
           )
           AND time_slice < COALESCE(
-                CAST(NULLIF(@date, '') AS DATE)::timestamp + INTERVAL '1 DAY',
+                CAST(@date AS timestamp) + INTERVAL '1 DAY',
                 NOW()
           )
           AND utility >= CAST(@utility_threshold AS float)
@@ -55,11 +55,11 @@ domain_b_unique AS (
           AND "language" = CAST(@language AS text)
           AND stem_type = 'NOUN'
           AND time_slice >= COALESCE(
-                CAST(NULLIF(@date, '') AS DATE)::timestamp - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
+                CAST(@date AS timestamp) - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
                 NOW() - (CAST(@days AS INTEGER) * INTERVAL '1 DAY')
           )
           AND time_slice < COALESCE(
-                CAST(NULLIF(@date, '') AS DATE)::timestamp + INTERVAL '1 DAY',
+                CAST(@date AS timestamp) + INTERVAL '1 DAY',
                 NOW()
           )
           AND utility >= CAST(@utility_threshold AS float)

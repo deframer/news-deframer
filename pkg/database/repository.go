@@ -99,11 +99,11 @@ type Repository interface {
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
 	CreateFeedSchedule(feedID uuid.UUID) error
-	GetTopTrendByDomain(domain string, language string, date string, days int) ([]TrendMetric, error)
-	GetContextByDomain(term string, domain string, language string, date string, days int) ([]TrendContext, error)
-	GetLifecycleByDomain(term string, domain string, language string, date string, days int) ([]Lifecycle, error)
-	GetDomainComparison(domainA string, domainB string, language string, date string, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
-	GetArticlesByTrend(term string, domain string, date string, days int) ([]AnalyzedArticle, error)
+	GetTopTrendByDomain(domain string, language string, date *time.Time, days int) ([]TrendMetric, error)
+	GetContextByDomain(term string, domain string, language string, date *time.Time, days int) ([]TrendContext, error)
+	GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]Lifecycle, error)
+	GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
+	GetArticlesByTrend(term string, domain string, date *time.Time, days int) ([]AnalyzedArticle, error)
 }
 
 type repository struct {
@@ -613,14 +613,21 @@ func normalizeDays(days int, max int) int {
 	return days
 }
 
-func (r *repository) GetTopTrendByDomain(domain string, language string, date string, days int) ([]TrendMetric, error) {
+func normalizeDateParam(date *time.Time) interface{} {
+	if date == nil || date.IsZero() {
+		return nil
+	}
+	return time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func (r *repository) GetTopTrendByDomain(domain string, language string, date *time.Time, days int) ([]TrendMetric, error) {
 	var metrics []TrendMetric
 	days = normalizeDays(days, 365)
 
 	if err := r.db.Raw(topTrendByDomainQuery,
 		sql.Named("language", language),
 		sql.Named("domain", domain),
-		sql.Named("date", date),
+		sql.Named("date", normalizeDateParam(date)),
 		sql.Named("days", days),
 	).Scan(&metrics).Error; err != nil {
 		return nil, err
@@ -628,7 +635,7 @@ func (r *repository) GetTopTrendByDomain(domain string, language string, date st
 	return metrics, nil
 }
 
-func (r *repository) GetContextByDomain(term string, domain string, language string, date string, days int) ([]TrendContext, error) {
+func (r *repository) GetContextByDomain(term string, domain string, language string, date *time.Time, days int) ([]TrendContext, error) {
 	var contexts []TrendContext
 	days = normalizeDays(days, 365)
 
@@ -636,7 +643,7 @@ func (r *repository) GetContextByDomain(term string, domain string, language str
 		sql.Named("term", term),
 		sql.Named("domain", domain),
 		sql.Named("language", language),
-		sql.Named("date", date),
+		sql.Named("date", normalizeDateParam(date)),
 		sql.Named("days", days),
 	).Scan(&contexts).Error; err != nil {
 		return nil, err
@@ -644,7 +651,7 @@ func (r *repository) GetContextByDomain(term string, domain string, language str
 	return contexts, nil
 }
 
-func (r *repository) GetLifecycleByDomain(term string, domain string, language string, date string, days int) ([]Lifecycle, error) {
+func (r *repository) GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]Lifecycle, error) {
 	var items []Lifecycle
 	days = normalizeDays(days, 365)
 
@@ -652,7 +659,7 @@ func (r *repository) GetLifecycleByDomain(term string, domain string, language s
 		sql.Named("term", term),
 		sql.Named("domain", domain),
 		sql.Named("language", language),
-		sql.Named("date", date),
+		sql.Named("date", normalizeDateParam(date)),
 		sql.Named("days", days),
 	).Scan(&items).Error; err != nil {
 		return nil, err
@@ -660,7 +667,7 @@ func (r *repository) GetLifecycleByDomain(term string, domain string, language s
 	return items, nil
 }
 
-func (r *repository) GetDomainComparison(domainA string, domainB string, language string, date string, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error) {
+func (r *repository) GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error) {
 	var comparisons []DomainComparison
 	days = normalizeDays(days, 365)
 
@@ -668,7 +675,7 @@ func (r *repository) GetDomainComparison(domainA string, domainB string, languag
 		sql.Named("domain_a", domainA),
 		sql.Named("domain_b", domainB),
 		sql.Named("language", language),
-		sql.Named("date", date),
+		sql.Named("date", normalizeDateParam(date)),
 		sql.Named("days", days),
 		sql.Named("utility_threshold", utilityThreshold),
 		sql.Named("outlier_ratio_threshold", outlierRatioThreshold),
@@ -701,14 +708,14 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 	return items, nil
 }
 
-func (r *repository) GetArticlesByTrend(term string, domain string, date string, days int) ([]AnalyzedArticle, error) {
+func (r *repository) GetArticlesByTrend(term string, domain string, date *time.Time, days int) ([]AnalyzedArticle, error) {
 	var items []AnalyzedArticle
 	days = normalizeDays(days, 365)
 
 	if err := r.db.Raw(articlesByTrendQuery,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
-		sql.Named("date", date),
+		sql.Named("date", normalizeDateParam(date)),
 		sql.Named("days", days),
 	).Scan(&items).Error; err != nil {
 		return nil, err

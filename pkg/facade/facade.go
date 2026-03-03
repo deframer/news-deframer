@@ -43,11 +43,11 @@ type Facade interface {
 	GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error)
 	GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error)
 	GetRootDomains(ctx context.Context) ([]DomainEntry, error)
-	GetTopTrendByDomain(ctx context.Context, domain string, language string, date string, days int) ([]database.TrendMetric, error)
-	GetContextByDomain(ctx context.Context, term string, domain string, language string, date string, days int) ([]database.TrendContext, error)
-	GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, date string, days int) ([]database.Lifecycle, error)
-	GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, date string, days int) ([]database.DomainComparison, error)
-	GetArticlesByTrend(ctx context.Context, term string, domain string, date string, days int) ([]database.AnalyzedArticle, error)
+	GetTopTrendByDomain(ctx context.Context, domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
+	GetContextByDomain(ctx context.Context, term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
+	GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
+	GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, date *time.Time, days int) ([]database.DomainComparison, error)
+	GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error)
 }
 
 type facade struct {
@@ -200,22 +200,22 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 	return domains, nil
 }
 
-func (f *facade) GetTopTrendByDomain(ctx context.Context, domain string, language string, date string, days int) ([]database.TrendMetric, error) {
+func (f *facade) GetTopTrendByDomain(ctx context.Context, domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error) {
 	return f.repo.GetTopTrendByDomain(domain, language, date, days)
 }
 
-func (f *facade) GetContextByDomain(ctx context.Context, term string, domain string, language string, date string, days int) ([]database.TrendContext, error) {
+func (f *facade) GetContextByDomain(ctx context.Context, term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error) {
 	return f.repo.GetContextByDomain(term, domain, language, date, days)
 }
 
-func (f *facade) GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, date string, days int) ([]database.Lifecycle, error) {
+func (f *facade) GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error) {
 	return f.repo.GetLifecycleByDomain(term, domain, language, date, days)
 }
 
-func (f *facade) GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, date string, days int) ([]database.DomainComparison, error) {
+func (f *facade) GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, date *time.Time, days int) ([]database.DomainComparison, error) {
 	return f.repo.GetDomainComparison(domainA, domainB, language, date, days, database.DomainComparisonUtilityThreshold, database.DomainComparisonOutlierRatioThreshold, database.DomainComparisonLimit)
 }
 
-func (f *facade) GetArticlesByTrend(ctx context.Context, term string, domain string, date string, days int) ([]database.AnalyzedArticle, error) {
+func (f *facade) GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
 	return f.repo.GetArticlesByTrend(term, domain, date, days)
 }

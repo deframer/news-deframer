@@ -28,11 +28,11 @@ domain_actions AS (
       AND "language" = CAST(@language AS text)
       AND root_domain = CAST(@domain AS text)
       AND pub_date >= COALESCE(
-            CAST(NULLIF(@date, '') AS DATE)::timestamp - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
+            CAST(@date AS timestamp) - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
             NOW() - (CAST(@days AS INTEGER) * INTERVAL '1 DAY')
       )
       AND pub_date < COALESCE(
-            CAST(NULLIF(@date, '') AS DATE)::timestamp + INTERVAL '1 DAY',
+            CAST(@date AS timestamp) + INTERVAL '1 DAY',
             NOW()
       )
 )

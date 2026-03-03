@@ -9,11 +9,11 @@ WHERE
     LOWER(CAST(@term AS text)) = ANY(t.noun_stems)
     AND t.root_domain = @domain
     AND t.pub_date >= COALESCE(
-        CAST(NULLIF(@date, '') AS DATE)::timestamp - ((GREATEST(CAST(@days AS INTEGER), 1) - 1) * INTERVAL '1 DAY'),
+        CAST(@date AS timestamp) - ((GREATEST(CAST(@days AS INTEGER), 1) - 1) * INTERVAL '1 DAY'),
         NOW() - (GREATEST(CAST(@days AS INTEGER), 1) * INTERVAL '1 DAY')
     )
     AND t.pub_date < COALESCE(
-        CAST(NULLIF(@date, '') AS DATE)::timestamp + INTERVAL '1 DAY',
+        CAST(@date AS timestamp) + INTERVAL '1 DAY',
         NOW()
     )
 ORDER BY
