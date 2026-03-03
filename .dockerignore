@@ -1,11 +1,26 @@
-# Ignore everything by default
-*
+# Ignore build artifacts
+bin/
+dist/
+coverage*
+*.out
 
-# Keep Go module files
-!go.mod
-!go.sum
+# Ignore VCS and editor files
+.git/
+.gitignore
+.idea/
+.vscode/
+*.swp
 
-# Keep source code directories
-!cmd/
-!pkg/
-!internal/
+# Ignore local env files
+.env
+.env.*
+
+# Ignore logs
+*.log
+# Ignore extra local directories
+browser-plugin/
+docker/
+docks/
+infra-env/
+sql/
+test-env/
