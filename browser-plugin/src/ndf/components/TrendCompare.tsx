@@ -115,6 +115,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
           </div>
         </li>
       ))}
+      {list.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>{t('trends.none', 'None')}</li>}
     </ul>
   );
 
