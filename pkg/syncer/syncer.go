@@ -125,10 +125,11 @@ func (s *Syncer) pollThinkerFixerMode() {
 		}
 
 		if s.fixNextThinkerBatch() {
-			s.logger.Info("A thinker-fixer batch was reserved")
+			s.logger.Info("A thinker-fixer batch was rechecked")
+			continue
 		}
 
-		s.logger.Info("Think-fixer sleeping", "duration", config.IdleSleepTime)
+		s.logger.Info("Think-fixer sleeping...", "duration", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():
