@@ -635,6 +635,10 @@ func (m *MockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]databa
 	return nil, nil
 }
 
+func (m *MockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+	return nil, nil
+}
+
 func (m *MockRepo) UpsertCachedFeed(cachedFeed *database.CachedFeed) error {
 	return nil
 }

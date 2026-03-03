@@ -30,6 +30,9 @@ const promptScope = "deframer"
 const customPrefix = "deframer"
 const customNamespace = "https://github.com/deframer/news-deframer/"
 const maxThinkRetries = 3
+const thinkFixerBatchSize = 15
+const thinkFixerLookback = 30 * 24 * time.Hour
+const thinkFixerStopThreshold = maxThinkRetries
 
 type Mode string
 
@@ -121,6 +124,10 @@ func (s *Syncer) pollThinkerFixerMode() {
 			return
 		}
 
+		if s.fixNextThinkerBatch() {
+			s.logger.Info("A thinker-fixer batch was reserved")
+		}
+
 		s.logger.Info("Think-fixer sleeping", "duration", config.IdleSleepTime)
 
 		select {
@@ -130,6 +137,22 @@ func (s *Syncer) pollThinkerFixerMode() {
 		case <-time.After(config.IdleSleepTime):
 		}
 	}
+}
+
+func (s *Syncer) fixNextThinkerBatch() bool {
+	s.logger.Info("fixNextThinkerBatch")
+	since := time.Now().Add(-thinkFixerLookback)
+	items, err := s.repo.BeginThinkFixerBatch(thinkFixerBatchSize, since, thinkFixerStopThreshold, config.DefaultLockDuration)
+	if err != nil {
+		s.logger.Error("Failed to query thinker-fixer candidates", "error", err)
+		return false
+	}
+	if len(items) == 0 {
+		return false
+	}
+
+	s.logger.Info("Think-fixer candidates fetched", "count", len(items))
+	return true
 }
 
 // syncNextScheduledFeed return true if this has updated entries
