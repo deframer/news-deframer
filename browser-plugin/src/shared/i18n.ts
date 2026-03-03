@@ -36,6 +36,7 @@ const resources = {
           trending_on: 'Trending {{domain}}',
           their_topics: 'Trending',
           shared: 'Shared Trends',
+          no_domains: 'There are no domains available for the selected language "{{language}}".',
         },
         time_ranges: {
           last_24h: '24h',
@@ -139,6 +140,7 @@ const resources = {
           trending_on: 'Trends auf {{domain}}',
           their_topics: 'Trends auf',
           shared: 'Gemeinsame Trends',
+          no_domains: 'Für die gewählte Sprache "{{language}}" sind keine Webseiten für einen Vergleich verfügbar.',
         },
         time_ranges: {
           last_24h: '24h',

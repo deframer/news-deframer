@@ -125,6 +125,14 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     </div>;
   }
 
+  if (availableDomains.length === 0) {
+    return (
+      <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--secondary-text)', textAlign: 'center', padding: '20px' }}>
+        {t('trends.compare.no_domains', 'There are no domains available for the selected language "{{language}}".', { language: domain.language })}
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="compare-grid">
