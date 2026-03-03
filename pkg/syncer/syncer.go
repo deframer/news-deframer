@@ -441,7 +441,7 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 	feeds.SetExtension(parsedItem, customPrefix, "description_original", parsedItem.Description)
 
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) || s.ctx.Err() != nil {
 			s.logger.Debug("context canceled", logKeys...)
 			return nil, err
 		}
