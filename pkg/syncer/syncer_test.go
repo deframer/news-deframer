@@ -68,7 +68,7 @@ func (m *mockRepo) UpsertItem(item *database.Item) error {
 func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]database.Item, error) {
 	return nil, nil
 }
-func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
 	return nil, nil
 }
 func (m *mockRepo) UpsertCachedFeed(cachedFeed *database.CachedFeed) error { return nil }

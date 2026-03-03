@@ -94,7 +94,7 @@ type Repository interface {
 	EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval time.Duration) error
 	GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
 	GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item, error)
-	BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, lockDuration time.Duration) ([]Item, error)
+	BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
 	UpsertItem(item *Item) error
 	UpsertCachedFeed(cachedFeed *CachedFeed) error
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
@@ -502,7 +502,7 @@ func (r *repository) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item
 	return items, nil
 }
 
-func (r *repository) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, lockDuration time.Duration) ([]Item, error) {
+func (r *repository) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error) {
 	var items []Item
 
 	if limit <= 0 {
@@ -520,6 +520,7 @@ func (r *repository) BeginThinkFixerBatch(limit int, since time.Time, minErrorCo
 			Where("feeds.polling = ?", true).
 			Where("items.created_at >= ?", since).
 			Where("items.think_error_count >= ?", minErrorCount).
+			Where("items.think_error_count <= ?", maxErrorCount).
 			Where("items.updated_at <= ?", lockBefore).
 			Order("items.created_at ASC").
 			Limit(limit).

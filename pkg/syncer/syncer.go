@@ -32,7 +32,7 @@ const customNamespace = "https://github.com/deframer/news-deframer/"
 const maxThinkRetries = 3
 const thinkFixerBatchSize = 15
 const thinkFixerLookback = 30 * 24 * time.Hour
-const thinkFixerStopThreshold = maxThinkRetries * 2 // thinker-fixer allows a higher retry ceiling
+const thinkFixerStopThreshold = maxThinkRetries
 
 type Mode string
 
@@ -143,7 +143,8 @@ func (s *Syncer) pollThinkerFixerMode() {
 func (s *Syncer) fixNextThinkerBatch() bool {
 	s.logger.Info("fixNextThinkerBatch")
 	since := time.Now().Add(-thinkFixerLookback)
-	items, err := s.repo.BeginThinkFixerBatch(thinkFixerBatchSize, since, thinkFixerStopThreshold, config.DefaultLockDuration)
+	maxErrorCount := thinkFixerStopThreshold * 2
+	items, err := s.repo.BeginThinkFixerBatch(thinkFixerBatchSize, since, thinkFixerStopThreshold, maxErrorCount, config.DefaultLockDuration)
 	if err != nil {
 		s.logger.Error("Failed to query thinker-fixer candidates", "error", err)
 		return false

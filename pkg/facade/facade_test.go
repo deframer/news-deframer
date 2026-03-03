@@ -47,7 +47,7 @@ type mockRepo struct {
 	getPendingItems              func(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
 	upsertItem                   func(item *database.Item) error
 	getItemsByHashes             func(feedID uuid.UUID, hashes []string) ([]database.Item, error)
-	beginThinkFixerBatch         func(limit int, since time.Time, minErrorCount int, lockDuration time.Duration) ([]database.Item, error)
+	beginThinkFixerBatch         func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
 	upsertCachedFeed             func(cachedFeed *database.CachedFeed) error
 	findCachedFeedById           func(feedID uuid.UUID) (*database.CachedFeed, error)
 	findFeedScheduleById         func(feedID uuid.UUID) (*database.FeedSchedule, error)
@@ -182,9 +182,9 @@ func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]databa
 	return nil, nil
 }
 
-func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
 	if m.beginThinkFixerBatch != nil {
-		return m.beginThinkFixerBatch(limit, since, minErrorCount, lockDuration)
+		return m.beginThinkFixerBatch(limit, since, minErrorCount, maxErrorCount, lockDuration)
 	}
 	return nil, nil
 }
