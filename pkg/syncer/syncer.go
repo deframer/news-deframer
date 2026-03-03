@@ -129,7 +129,7 @@ func (s *Syncer) pollThinkerFixerMode() {
 			continue
 		}
 
-		s.logger.Info("Think-fixer sleeping", "duration", config.IdleSleepTime)
+		s.logger.Info("Think-fixer sleeping...", "duration", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():
