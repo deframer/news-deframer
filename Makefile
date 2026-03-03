@@ -18,7 +18,7 @@ endif
 .PHONY: all build clean test help coverage lint tidy
 .PHONY: start stop down logs zap
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
-.PHONY: docker-all add-feeds service worker
+.PHONY: docker-all add-feeds service worker think-fixer
 
 all: build
 
@@ -98,6 +98,9 @@ migration: build
 worker: build
 	./bin/admin feed sync-all
 	./bin/worker
+
+think-fixer: build
+	./bin/worker --mode think-fixer
 
 SQL_DIR := sql
 

@@ -68,6 +68,9 @@ func (m *mockRepo) UpsertItem(item *database.Item) error {
 func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]database.Item, error) {
 	return nil, nil
 }
+func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+	return nil, nil
+}
 func (m *mockRepo) UpsertCachedFeed(cachedFeed *database.CachedFeed) error { return nil }
 func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, error) {
 	return nil, nil
@@ -161,7 +164,7 @@ func TestPoll(t *testing.T) {
 
 	s, err := New(ctx, cfg, repo)
 	assert.NoError(t, err)
-	s.Poll()
+	s.Poll(ModeWorker)
 }
 
 func TestStopPolling(t *testing.T) {

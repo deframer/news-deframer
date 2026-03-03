@@ -49,6 +49,23 @@ services:
       - LLM_API_KEY=${LLM_API_KEY:-}
       - LLM_BASE_URL=${LLM_BASE_URL:-}
 
+  # Think-fixer mode (disabled by default)
+  # thinker-fixer:
+  #   image: ghcr.io/deframer/news-deframer/worker:latest
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
+  #     - LOG_DATABASE=${LOG_DATABASE:-false}
+  #     - LOG_LEVEL=${LOG_LEVEL:-info}
+  #     - LLM_TYPE=${LLM_TYPE:-}
+  #     - LLM_MODEL=${LLM_MODEL:-}
+  #     - LLM_API_KEY=${LLM_API_KEY:-}
+  #     - LLM_BASE_URL=${LLM_BASE_URL:-}
+  #   command: ["--mode", "think-fixer"]
+
   miner:
     image:  ghcr.io/deframer/news-deframer-mining/miner:latest
     restart: unless-stopped
