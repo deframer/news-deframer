@@ -46,7 +46,7 @@ GET /rss?url=${ENCODED_URL}
     -   **Not Found / Empty**: Return `404 Not Found`.
 4.  **Header Logic**: The HTTP `Last-Modified` header and the RSS `<lastBuildDate>` are derived strictly from `cached_feeds.updated_at`.
 
-#### B. The JSON Lookup
+#### B. JSON Endpoints
 ```bash
 GET /api/item?url=${ARTICLE_URL}&max_score=0.5
 ```
@@ -68,6 +68,30 @@ GET /api/site?root=${ROOT_DOMAIN}
 - **Status Codes**:
     - `200 OK`: Returns JSON object.
     - `404 Not Found`: Domain unknown.
+
+```bash
+GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
+```
+**Behavior**:
+- Used to get a list of articles with the selected trend term for the given period.
+- **Temporal Parameters**:
+    - `date` is optional (`YYYY-MM-DD`).
+    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
+    - `days` (optional, default `1`) defines window size.
+    - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
+    - Without `date`: effective window is `[NOW() - days, NOW())`.
+- **Status Codes**:
+    - `200 OK`: Returns JSON object/array.
+    - `404 Not Found`: Domain or term unknown.
+
+#### C. Temporal Query Convention (Planned Refactor)
+
+For trend-oriented endpoints currently using `daysInPast`, we will move to a unified temporal contract:
+
+- `date` (optional): anchor day in `YYYY-MM-DD`.
+- `days` (optional, default `1`): window size in days ending at the anchor day.
+- If `date` is not provided, the SQL layer uses `NOW()` as anchor (rolling window semantics).
+- This change is a specification update first; implementation across all handlers/repository methods is pending.
 
 ---
 

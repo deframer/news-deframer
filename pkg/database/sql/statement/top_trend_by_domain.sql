@@ -53,7 +53,14 @@ ranked_trends AS (
     WHERE "language" = CAST(@language AS text)
       AND root_domain = CAST(@domain AS text)
       AND stem_type = 'NOUN'
-      AND time_slice >= NOW() - (CAST(@days_in_past AS INTEGER) * INTERVAL '1 DAY')
+      AND time_slice >= COALESCE(
+            CAST(@date AS timestamp) - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
+            NOW() - (CAST(@days AS INTEGER) * INTERVAL '1 DAY')
+      )
+      AND time_slice < COALESCE(
+            CAST(@date AS timestamp) + INTERVAL '1 DAY',
+            NOW()
+      )
       -- Note: Utility threshold might need to be lower for a single domain
       -- (e.g. > 1 means it appeared in at least 2 different RSS feeds on that site)
       AND utility >= 1

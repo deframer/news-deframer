@@ -115,6 +115,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
           </div>
         </li>
       ))}
+      {list.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>{t('trends.none', 'None')}</li>}
     </ul>
   );
 
@@ -122,6 +123,14 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     return <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="spinner-small" />
     </div>;
+  }
+
+  if (availableDomains.length === 0) {
+    return (
+      <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--secondary-text)', textAlign: 'center', padding: '20px' }}>
+        {t('trends.compare.no_domains', 'There are no domains available for the selected language "{{language}}".', { language: domain.language })}
+      </div>
+    );
   }
 
   return (

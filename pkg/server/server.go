@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/deframer/news-deframer/pkg/facade"
 )
 
@@ -64,6 +65,7 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.Handle("/rss", s.basicAuthMiddleware(s.handleRSSProxy))
 	mux.Handle("/api/item", s.basicAuthMiddleware(s.handleItem))
 	mux.Handle("/api/site", s.basicAuthMiddleware(s.handleSite))
+	mux.Handle("/api/articles", s.basicAuthMiddleware(s.handleArticles))
 	mux.Handle("/api/domains", s.basicAuthMiddleware(s.handleDomains))
 	mux.Handle("/api/trends/topbydomain", s.basicAuthMiddleware(s.handleTopTrendsByDomain))
 	mux.Handle("/api/trends/contextbydomain", s.basicAuthMiddleware(s.handleContextByDomain))
@@ -186,12 +188,18 @@ func (s *Server) handleTopTrendsByDomain(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	trends, err := s.facade.GetTopTrendByDomain(r.Context(), domain, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	trends, err := s.facade.GetTopTrendByDomain(r.Context(), domain, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get top trends", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -228,12 +236,18 @@ func (s *Server) handleContextByDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	contexts, err := s.facade.GetContextByDomain(r.Context(), term, domain, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	contexts, err := s.facade.GetContextByDomain(r.Context(), term, domain, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get context by domain", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -270,12 +284,18 @@ func (s *Server) handleLifecycleByDomain(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	lifecycles, err := s.facade.GetLifecycleByDomain(r.Context(), term, domain, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	lifecycles, err := s.facade.GetLifecycleByDomain(r.Context(), term, domain, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get lifecycle by domain", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -312,12 +332,18 @@ func (s *Server) handleDomainComparison(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	comparisons, err := s.facade.GetDomainComparison(r.Context(), domainA, domainB, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	comparisons, err := s.facade.GetDomainComparison(r.Context(), domainA, domainB, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get domain comparison", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -435,6 +461,12 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if item.ThinkResult == (database.ThinkResult{}) {
+		// error happened or we are not there yet with the thinking
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(item); err != nil {
 		s.logger.Error("failed to write response", "error", err)
@@ -471,6 +503,64 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(items); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
+}
+
+func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleArticles", "url", r.URL.String())
+	q := r.URL.Query()
+
+	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
+	term := q.Get("term")
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	days := 1
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	if rootDomain == "" || term == "" {
+		http.Error(w, "missing root or term", http.StatusBadRequest)
+		return
+	}
+
+	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, date, days)
+	if err != nil || len(articles) == 0 {
+		if err != nil {
+			s.logger.Error("GetArticlesByTrend failed", "error", err)
+		} else {
+			s.logger.Debug("no trend articles found", "root", rootDomain, "term", term, "date", formatOptionalDate(date), "days", days)
+		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(articles); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func parseOptionalDateParam(raw string) (*time.Time, error) {
+	if raw == "" {
+		return nil, nil
+	}
+	parsed, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		return nil, err
+	}
+	normalized := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
+	return &normalized, nil
+}
+
+func formatOptionalDate(date *time.Time) string {
+	if date == nil || date.IsZero() {
+		return ""
+	}
+	return date.Format("2006-01-02")
 }
 
 func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {

@@ -1442,7 +1442,7 @@ func TestGetTopTrendByDomain(t *testing.T) {
 		// This verifies that the query splitting (SET ...; SELECT ...) works correctly
 		// and that the query is syntactically correct for the DB.
 		// It does not verify the data logic as seeding the view is complex.
-		metrics, err := repo.GetTopTrendByDomain("invalid.com"+uuid.NewString(), "en", 7)
+		metrics, err := repo.GetTopTrendByDomain("invalid.com"+uuid.NewString(), "en", nil, 7)
 		assert.NoError(t, err)
 		assert.Nil(t, metrics)
 	})
@@ -1465,7 +1465,7 @@ func TestGetContextByDomain(t *testing.T) {
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
 
-		contexts, err := repo.GetContextByDomain("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), "en", 7)
+		contexts, err := repo.GetContextByDomain("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), "en", nil, 7)
 		assert.NoError(t, err)
 		assert.Nil(t, contexts)
 	})
@@ -1488,7 +1488,7 @@ func TestGetLifecycleByDomain(t *testing.T) {
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
 
-		items, err := repo.GetLifecycleByDomain("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), "en", 7)
+		items, err := repo.GetLifecycleByDomain("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), "en", nil, 7)
 		assert.NoError(t, err)
 		assert.Nil(t, items)
 	})
@@ -1511,9 +1511,33 @@ func TestGetDomainComparison(t *testing.T) {
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
 
-		comparisons, err := repo.GetDomainComparison("domainA.com", "domainB.com", "en", 7, 1.0, 1.5, DomainComparisonLimit)
+		comparisons, err := repo.GetDomainComparison("domainA.com", "domainB.com", "en", nil, 7, 1.0, 1.5, DomainComparisonLimit)
 		assert.NoError(t, err)
 		assert.Nil(t, comparisons)
+	})
+}
+
+func TestGetArticlesByTrend(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, articlesByTrendQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+		date := time.Date(2026, time.March, 3, 0, 0, 0, 0, time.UTC)
+
+		items, err := repo.GetArticlesByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), &date, 0)
+		assert.NoError(t, err)
+		assert.Nil(t, items)
 	})
 }
 

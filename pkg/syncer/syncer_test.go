@@ -24,10 +24,11 @@ type mockRepo struct {
 	lastId                   uuid.UUID
 	removeSyncCalled         bool
 	upsertItemFunc           func(item *database.Item) error
-	getTopTrendByDomainFunc  func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
-	getContextByDomainFunc   func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
-	getLifecycleByDomainFunc func(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error)
-	getDomainComparisonFunc  func(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
+	getTopTrendByDomainFunc  func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
+	getContextByDomainFunc   func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
+	getLifecycleByDomainFunc func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
+	getDomainComparisonFunc  func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
+	getArticlesByTrendFunc   func(term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error)
 }
 
 // Implement database.Repository interface stubs
@@ -81,30 +82,37 @@ func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]databa
 	return nil, nil
 }
 
-func (m *mockRepo) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
+func (m *mockRepo) GetTopTrendByDomain(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error) {
 	if m.getTopTrendByDomainFunc != nil {
-		return m.getTopTrendByDomainFunc(domain, language, daysInPast)
+		return m.getTopTrendByDomainFunc(domain, language, date, days)
 	}
 	return nil, nil
 }
 
-func (m *mockRepo) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
+func (m *mockRepo) GetContextByDomain(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error) {
 	if m.getContextByDomainFunc != nil {
-		return m.getContextByDomainFunc(term, domain, language, daysInPast)
+		return m.getContextByDomainFunc(term, domain, language, date, days)
 	}
 	return nil, nil
 }
 
-func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
+func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error) {
 	if m.getLifecycleByDomainFunc != nil {
-		return m.getLifecycleByDomainFunc(term, domain, language, daysInPast)
+		return m.getLifecycleByDomainFunc(term, domain, language, date, days)
 	}
 	return nil, nil
 }
 
-func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
+func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
 	if m.getDomainComparisonFunc != nil {
-		return m.getDomainComparisonFunc(domainA, domainB, language, daysInPast, utilityThreshold, outlierRatioThreshold, limit)
+		return m.getDomainComparisonFunc(domainA, domainB, language, date, days, utilityThreshold, outlierRatioThreshold, limit)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetArticlesByTrend(term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
+	if m.getArticlesByTrendFunc != nil {
+		return m.getArticlesByTrendFunc(term, domain, date, days)
 	}
 	return nil, nil
 }

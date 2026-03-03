@@ -51,10 +51,20 @@ type mockRepo struct {
 	findCachedFeedById           func(feedID uuid.UUID) (*database.CachedFeed, error)
 	findFeedScheduleById         func(feedID uuid.UUID) (*database.FeedSchedule, error)
 	findItemsByRootDomain        func(rootDomain string, limit int) ([]database.Item, error)
-	getTopTrendByDomain          func(domain string, language string, daysInPast int) ([]database.TrendMetric, error)
-	getContextByDomain           func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
-	getLifecycleByDomain         func(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error)
-	getDomainComparison          func(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
+	getTopTrendByDomain          func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
+	getContextByDomain           func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
+	getLifecycleByDomain         func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
+	getDomainComparison          func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
+	getArticlesByTrend           func(term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error)
+}
+
+func mustParseTestDate(raw string) *time.Time {
+	parsed, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		panic(err)
+	}
+	normalized := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
+	return &normalized
 }
 
 func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
@@ -203,30 +213,37 @@ func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]databa
 	return nil, nil
 }
 
-func (m *mockRepo) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
+func (m *mockRepo) GetTopTrendByDomain(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error) {
 	if m.getTopTrendByDomain != nil {
-		return m.getTopTrendByDomain(domain, language, daysInPast)
+		return m.getTopTrendByDomain(domain, language, date, days)
 	}
 	return nil, nil
 }
 
-func (m *mockRepo) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
+func (m *mockRepo) GetContextByDomain(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error) {
 	if m.getContextByDomain != nil {
-		return m.getContextByDomain(term, domain, language, daysInPast)
+		return m.getContextByDomain(term, domain, language, date, days)
 	}
 	return nil, nil
 }
 
-func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
+func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error) {
 	if m.getLifecycleByDomain != nil {
-		return m.getLifecycleByDomain(term, domain, language, daysInPast)
+		return m.getLifecycleByDomain(term, domain, language, date, days)
 	}
 	return nil, nil
 }
 
-func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
+func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
 	if m.getDomainComparison != nil {
-		return m.getDomainComparison(domainA, domainB, language, daysInPast, utilityThreshold, outlierRatioThreshold, limit)
+		return m.getDomainComparison(domainA, domainB, language, date, days, utilityThreshold, outlierRatioThreshold, limit)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetArticlesByTrend(term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
+	if m.getArticlesByTrend != nil {
+		return m.getArticlesByTrend(term, domain, date, days)
 	}
 	return nil, nil
 }
@@ -486,31 +503,33 @@ func TestGetTopTrendByDomain(t *testing.T) {
 	ctx := context.Background()
 	domain := "example.com"
 	lang := "en"
+	date := mustParseTestDate("2026-03-03")
 	days := 7
 
 	t.Run("Success", func(t *testing.T) {
 		expected := []database.TrendMetric{{TrendTopic: "topic1", Frequency: 10}}
 		mockR := &mockRepo{
-			getTopTrendByDomain: func(d, l string, days int) ([]database.TrendMetric, error) {
+			getTopTrendByDomain: func(d, l string, dt *time.Time, days int) ([]database.TrendMetric, error) {
 				assert.Equal(t, domain, d)
 				assert.Equal(t, lang, l)
+				assert.Equal(t, date, dt)
 				return expected, nil
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetTopTrendByDomain(ctx, domain, lang, days)
+		res, err := f.GetTopTrendByDomain(ctx, domain, lang, date, days)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, res)
 	})
 
 	t.Run("RepoError", func(t *testing.T) {
 		mockR := &mockRepo{
-			getTopTrendByDomain: func(d, l string, days int) ([]database.TrendMetric, error) {
+			getTopTrendByDomain: func(d, l string, dt *time.Time, days int) ([]database.TrendMetric, error) {
 				return nil, assert.AnError
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetTopTrendByDomain(ctx, domain, lang, days)
+		res, err := f.GetTopTrendByDomain(ctx, domain, lang, date, days)
 		assert.Error(t, err)
 		assert.Nil(t, res)
 	})
@@ -521,19 +540,21 @@ func TestGetContextByDomain(t *testing.T) {
 	term := "test"
 	domain := "example.com"
 	lang := "en"
+	date := mustParseTestDate("2026-03-03")
 	days := 7
 
 	t.Run("Success", func(t *testing.T) {
 		expected := []database.TrendContext{{Context: "ctx1", Frequency: 5}}
 		mockR := &mockRepo{
-			getContextByDomain: func(tm, d, l string, days int) ([]database.TrendContext, error) {
+			getContextByDomain: func(tm, d, l string, dt *time.Time, days int) ([]database.TrendContext, error) {
 				assert.Equal(t, term, tm)
 				assert.Equal(t, domain, d)
+				assert.Equal(t, date, dt)
 				return expected, nil
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetContextByDomain(ctx, term, domain, lang, days)
+		res, err := f.GetContextByDomain(ctx, term, domain, lang, date, days)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, res)
 	})
@@ -544,33 +565,35 @@ func TestGetLifecycleByDomain(t *testing.T) {
 	term := "test-term"
 	domain := "example.com"
 	language := "en"
+	date := mustParseTestDate("2026-03-03")
 	days := 30
 
 	t.Run("Success", func(t *testing.T) {
 		expected := []database.Lifecycle{{Frequency: 100, Velocity: 50}}
 		mockR := &mockRepo{
-			getLifecycleByDomain: func(argTerm string, argDomain string, argLang string, argDays int) ([]database.Lifecycle, error) {
+			getLifecycleByDomain: func(argTerm string, argDomain string, argLang string, argDate *time.Time, argDays int) ([]database.Lifecycle, error) {
 				assert.Equal(t, term, argTerm)
 				assert.Equal(t, domain, argDomain)
 				assert.Equal(t, language, argLang)
+				assert.Equal(t, date, argDate)
 				assert.Equal(t, days, argDays)
 				return expected, nil
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetLifecycleByDomain(ctx, term, domain, language, days)
+		res, err := f.GetLifecycleByDomain(ctx, term, domain, language, date, days)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, res)
 	})
 
 	t.Run("RepoError", func(t *testing.T) {
 		mockR := &mockRepo{
-			getLifecycleByDomain: func(argTerm string, argDomain string, argLang string, argDays int) ([]database.Lifecycle, error) {
+			getLifecycleByDomain: func(argTerm string, argDomain string, argLang string, argDate *time.Time, argDays int) ([]database.Lifecycle, error) {
 				return nil, assert.AnError
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetLifecycleByDomain(ctx, term, domain, language, days)
+		res, err := f.GetLifecycleByDomain(ctx, term, domain, language, date, days)
 		assert.Error(t, err)
 		assert.Nil(t, res)
 	})
@@ -581,15 +604,17 @@ func TestGetDomainComparison(t *testing.T) {
 	domainA := "a.com"
 	domainB := "b.com"
 	lang := "en"
+	date := mustParseTestDate("2026-03-03")
 	days := 7
 
 	t.Run("Success", func(t *testing.T) {
 		expected := []database.DomainComparison{{TrendTopic: "topic1"}}
 		mockR := &mockRepo{
-			getDomainComparison: func(dA, dB, l string, d int, ut, ort float64, lim int) ([]database.DomainComparison, error) {
+			getDomainComparison: func(dA, dB, l string, dt *time.Time, d int, ut, ort float64, lim int) ([]database.DomainComparison, error) {
 				assert.Equal(t, domainA, dA)
 				assert.Equal(t, domainB, dB)
 				assert.Equal(t, lang, l)
+				assert.Equal(t, date, dt)
 				assert.Equal(t, days, d)
 				assert.Equal(t, database.DomainComparisonUtilityThreshold, ut)
 				assert.Equal(t, database.DomainComparisonOutlierRatioThreshold, ort)
@@ -598,19 +623,78 @@ func TestGetDomainComparison(t *testing.T) {
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetDomainComparison(ctx, domainA, domainB, lang, days)
+		res, err := f.GetDomainComparison(ctx, domainA, domainB, lang, date, days)
 		assert.NoError(t, err)
 		assert.Equal(t, expected, res)
 	})
 
 	t.Run("RepoError", func(t *testing.T) {
 		mockR := &mockRepo{
-			getDomainComparison: func(dA, dB, l string, d int, ut, ort float64, lim int) ([]database.DomainComparison, error) {
+			getDomainComparison: func(dA, dB, l string, dt *time.Time, d int, ut, ort float64, lim int) ([]database.DomainComparison, error) {
 				return nil, assert.AnError
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetDomainComparison(ctx, domainA, domainB, lang, days)
+		res, err := f.GetDomainComparison(ctx, domainA, domainB, lang, date, days)
+		assert.Error(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestGetArticlesByTrend(t *testing.T) {
+	ctx := context.Background()
+	term := "test-term"
+	domain := "example.com"
+	date := mustParseTestDate("2026-03-03")
+	days := 0
+
+	t.Run("Success", func(t *testing.T) {
+		title1 := "Corrected Title 1"
+		rating1 := 0.5
+		expectedItems := []database.AnalyzedArticle{{
+			URL:    "http://example.com/1",
+			Title:  &title1,
+			Rating: &rating1,
+		}, {
+			URL:    "http://example.com/2",
+			Title:  nil,
+			Rating: nil,
+		}}
+
+		mockR := &mockRepo{
+			getArticlesByTrend: func(argTerm string, argDomain string, argDate *time.Time, argDays int) ([]database.AnalyzedArticle, error) {
+				assert.Equal(t, term, argTerm)
+				assert.Equal(t, domain, argDomain)
+				assert.Equal(t, date, argDate)
+				assert.Equal(t, days, argDays)
+				return expectedItems, nil
+			},
+		}
+		f := New(ctx, nil, mockR)
+
+		items, err := f.GetArticlesByTrend(ctx, term, domain, date, days)
+		assert.NoError(t, err)
+		assert.Len(t, items, 2)
+		assert.Equal(t, "http://example.com/1", items[0].URL)
+		if assert.NotNil(t, items[0].Title) {
+			assert.Equal(t, "Corrected Title 1", *items[0].Title)
+		}
+		if assert.NotNil(t, items[0].Rating) {
+			assert.Equal(t, 0.5, *items[0].Rating)
+		}
+		assert.Equal(t, "http://example.com/2", items[1].URL)
+		assert.Nil(t, items[1].Title)
+		assert.Nil(t, items[1].Rating)
+	})
+
+	t.Run("RepoError", func(t *testing.T) {
+		mockR := &mockRepo{
+			getArticlesByTrend: func(argTerm string, argDomain string, argDate *time.Time, argDays int) ([]database.AnalyzedArticle, error) {
+				return nil, assert.AnError
+			},
+		}
+		f := New(ctx, nil, mockR)
+		res, err := f.GetArticlesByTrend(ctx, term, domain, date, days)
 		assert.Error(t, err)
 		assert.Nil(t, res)
 	})
