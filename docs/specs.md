@@ -76,9 +76,10 @@ GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
 - Used to get a list of articles with the selected trend term for the given period.
 - **Temporal Parameters**:
     - `date` is optional (`YYYY-MM-DD`).
-    - Default `date` is today (`CURRENT_DATE`). If `date` is omitted, SQL uses `NOW()` / `CURRENT_DATE` as the reference day.
-    - `days` (optional, default `1`) is a window size ending at `date` (or ending today if `date` is omitted).
-    - Effective time window: from `date - (days - 1)` (inclusive) to `date + 1 day` (exclusive).
+    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
+    - `days` (optional, default `1`) defines window size.
+    - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
+    - Without `date`: effective window is `[NOW() - days, NOW())`.
 - **Status Codes**:
     - `200 OK`: Returns JSON object/array.
     - `404 Not Found`: Domain or term unknown.
@@ -89,7 +90,7 @@ For trend-oriented endpoints currently using `daysInPast`, we will move to a uni
 
 - `date` (optional): anchor day in `YYYY-MM-DD`.
 - `days` (optional, default `1`): window size in days ending at the anchor day.
-- If `date` is not provided, the SQL layer uses today (`NOW()` / `CURRENT_DATE`) as anchor.
+- If `date` is not provided, the SQL layer uses `NOW()` as anchor (rolling window semantics).
 - This change is a specification update first; implementation across all handlers/repository methods is pending.
 
 ---

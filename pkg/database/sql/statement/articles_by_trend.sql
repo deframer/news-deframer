@@ -10,11 +10,14 @@ WITH ranked_articles AS (
     WHERE
         @term = ANY(t.noun_stems)
         AND t.root_domain = @domain
-        AND t.pub_date >= (
-            COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp
-            - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY')
-        )
-        AND t.pub_date < (COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp + INTERVAL '1 DAY')
+    AND t.pub_date >= COALESCE(
+        CAST(NULLIF(@date, '') AS DATE)::timestamp - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY'),
+        NOW() - (CAST(@days AS INTEGER) * INTERVAL '1 DAY')
+    )
+    AND t.pub_date < COALESCE(
+        CAST(NULLIF(@date, '') AS DATE)::timestamp + INTERVAL '1 DAY',
+        NOW()
+    )
         AND i.think_result IS NOT NULL
         AND i.think_error IS NULL
         AND i.think_error_count = 0
