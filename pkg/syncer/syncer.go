@@ -31,10 +31,17 @@ const customPrefix = "deframer"
 const customNamespace = "https://github.com/deframer/news-deframer/"
 const maxThinkRetries = 3
 
+type Mode string
+
+const (
+	ModeWorker     Mode = "worker"
+	ModeThinkFixer Mode = "think-fixer"
+)
+
 type FeedSyncer interface {
 	SyncFeed(id uuid.UUID) error
 	StopPolling(id uuid.UUID) error
-	Poll()
+	Poll(mode Mode)
 }
 
 type Syncer struct {
@@ -72,9 +79,19 @@ func (s *Syncer) StopPolling(id uuid.UUID) error {
 	return s.repo.RemoveSync(id)
 }
 
-func (s *Syncer) Poll() {
-	s.logger.Info("Starting poller")
+func (s *Syncer) Poll(mode Mode) {
+	s.logger.Info("Starting poller", "mode", mode)
+	if mode == ModeThinkFixer {
+		s.pollThinkerFixerMode()
+		return
+	}
+	if mode != ModeWorker {
+		s.logger.Warn("Unknown mode, defaulting to worker", "mode", mode)
+	}
+	s.pollWorkerMode()
+}
 
+func (s *Syncer) pollWorkerMode() {
 	for {
 		if s.ctx.Err() != nil {
 			s.logger.Info("Stopping poller")
@@ -87,6 +104,24 @@ func (s *Syncer) Poll() {
 		}
 
 		s.logger.Info("Sleeping...", "duration", config.IdleSleepTime)
+
+		select {
+		case <-s.ctx.Done():
+			s.logger.Info("Stopping poller")
+			return
+		case <-time.After(config.IdleSleepTime):
+		}
+	}
+}
+
+func (s *Syncer) pollThinkerFixerMode() {
+	for {
+		if s.ctx.Err() != nil {
+			s.logger.Info("Stopping poller")
+			return
+		}
+
+		s.logger.Info("Think-fixer sleeping", "duration", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():

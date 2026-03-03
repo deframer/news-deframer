@@ -15,14 +15,39 @@ import (
 	"github.com/deframer/news-deframer/pkg/syncer"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	jsonLog := flag.Bool("json-log", false, "Enable JSON logging")
+	mode := flag.String("mode", string(syncer.ModeWorker), "Run mode: worker or think-fixer")
+	about := flag.Bool("about", false, "Show build and mode information")
 	flag.Usage = func() {
 		// #nosec G705: usage string is escaped before printing
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", html.EscapeString(os.Args[0]))
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	if *about {
+		fmt.Printf("news-deframer worker\n")
+		fmt.Printf("version: %s\n", version)
+		fmt.Printf("commit: %s\n", commit)
+		fmt.Printf("date: %s\n", date)
+		fmt.Printf("modes: %s, %s\n", syncer.ModeWorker, syncer.ModeThinkFixer)
+		return
+	}
+
+	selectedMode := syncer.Mode(*mode)
+	switch selectedMode {
+	case syncer.ModeWorker, syncer.ModeThinkFixer:
+	default:
+		fmt.Fprintf(os.Stderr, "Invalid mode: %s (expected %s or %s)\n", *mode, syncer.ModeWorker, syncer.ModeThinkFixer)
+		os.Exit(2)
+	}
 
 	cfg, err := config.Load()
 	if err != nil {
@@ -70,6 +95,6 @@ func main() {
 	}
 
 	// start syncer poll
-	s.Poll()
+	s.Poll(selectedMode)
 	slog.Info("Shutting down...")
 }

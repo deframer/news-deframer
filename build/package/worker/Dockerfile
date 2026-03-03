@@ -26,4 +26,5 @@ COPY --from=builder /out/admin /usr/bin/admin
 
 USER nonroot:nonroot
 
-ENTRYPOINT ["worker"]
+ENTRYPOINT ["/usr/bin/worker"]
+CMD ["--mode", "worker"]

@@ -161,7 +161,7 @@ func TestPoll(t *testing.T) {
 
 	s, err := New(ctx, cfg, repo)
 	assert.NoError(t, err)
-	s.Poll()
+	s.Poll(ModeWorker)
 }
 
 func TestStopPolling(t *testing.T) {
