@@ -69,6 +69,15 @@ GET /api/site?root=${ROOT_DOMAIN}
     - `200 OK`: Returns JSON object.
     - `404 Not Found`: Domain unknown.
 
+```bash
+GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}
+```
+**Behavior**:
+- Used to get a list of articles with the selected trend term for the given period.
+- **Status Codes**:
+    - `200 OK`: Returns JSON object/array.
+    - `404 Not Found`: Domain or term unknown.
+
 ---
 
 ## 3. The Background Worker

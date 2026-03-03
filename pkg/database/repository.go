@@ -30,6 +30,9 @@ var lifecycleByDomainQuery string
 //go:embed sql/statement/compare_domains.sql
 var compareDomainsQuery string
 
+//go:embed sql/statement/articles_by_trend.sql
+var articlesByTrendQuery string
+
 const DomainComparisonUtilityThreshold = 1.0
 const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
@@ -93,6 +96,7 @@ type Repository interface {
 	GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error)
 	GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error)
 	GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
+	GetArticlesByTrend(term string, domain string, daysInPast int) ([]Item, error)
 }
 
 type repository struct {
@@ -695,6 +699,26 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 		Order("unique_items.pub_date DESC").
 		Limit(limit).
 		Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *repository) GetArticlesByTrend(term string, domain string, daysInPast int) ([]Item, error) {
+	var items []Item
+
+	if daysInPast < 1 {
+		daysInPast = 1
+	}
+	if daysInPast > 365 {
+		daysInPast = 365
+	}
+
+	if err := r.db.Raw(articlesByTrendQuery,
+		sql.Named("term", term),
+		sql.Named("domain", domain),
+		sql.Named("days_in_past", daysInPast),
+	).Scan(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil

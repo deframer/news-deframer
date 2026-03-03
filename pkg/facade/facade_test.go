@@ -55,6 +55,7 @@ type mockRepo struct {
 	getContextByDomain           func(term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
 	getLifecycleByDomain         func(term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error)
 	getDomainComparison          func(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
+	getArticlesByTrend           func(term string, domain string, daysInPast int) ([]database.Item, error)
 }
 
 func (m *mockRepo) FindFeedByUrl(u *url.URL) (*database.Feed, error) {
@@ -227,6 +228,13 @@ func (m *mockRepo) GetLifecycleByDomain(term string, domain string, language str
 func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error) {
 	if m.getDomainComparison != nil {
 		return m.getDomainComparison(domainA, domainB, language, daysInPast, utilityThreshold, outlierRatioThreshold, limit)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetArticlesByTrend(term string, domain string, daysInPast int) ([]database.Item, error) {
+	if m.getArticlesByTrend != nil {
+		return m.getArticlesByTrend(term, domain, daysInPast)
 	}
 	return nil, nil
 }
@@ -611,6 +619,78 @@ func TestGetDomainComparison(t *testing.T) {
 		}
 		f := New(ctx, nil, mockR)
 		res, err := f.GetDomainComparison(ctx, domainA, domainB, lang, days)
+		assert.Error(t, err)
+		assert.Nil(t, res)
+	})
+}
+
+func TestGetArticlesByTrend(t *testing.T) {
+	ctx := context.Background()
+	term := "test-term"
+	domain := "example.com"
+	days := 7
+
+	t.Run("Success", func(t *testing.T) {
+		now := time.Now()
+		expectedItems := []database.Item{
+			{
+				Hash: "hash1",
+				URL:  "http://example.com/1",
+				ThinkResult: &database.ThinkResult{
+					TitleCorrected: "Corrected Title 1",
+				},
+				MediaContent: &database.MediaContent{
+					URL: "http://example.com/img1.jpg",
+				},
+				ThinkRating: 0.5,
+				PubDate:     now,
+			},
+			{
+				Hash:    "hash2",
+				URL:     "http://example.com/2",
+				PubDate: now.Add(-1 * time.Hour),
+			},
+		}
+
+		mockR := &mockRepo{
+			getArticlesByTrend: func(argTerm string, argDomain string, argDays int) ([]database.Item, error) {
+				assert.Equal(t, term, argTerm)
+				assert.Equal(t, domain, argDomain)
+				assert.Equal(t, days, argDays)
+				return expectedItems, nil
+			},
+		}
+		f := New(ctx, nil, mockR)
+
+		items, err := f.GetArticlesByTrend(ctx, term, domain, days)
+		assert.NoError(t, err)
+		assert.Len(t, items, 2)
+
+		// Verify Item 1
+		assert.Equal(t, "hash1", items[0].Hash)
+		assert.Equal(t, "http://example.com/1", items[0].URL)
+		assert.Equal(t, "Corrected Title 1", items[0].TitleCorrected)
+		assert.Equal(t, "http://example.com/img1.jpg", items[0].MediaContent.URL)
+		assert.Equal(t, 0.5, items[0].ThinkRating)
+		assert.Equal(t, now, items[0].PubDate)
+
+		// Verify Item 2
+		assert.Equal(t, "hash2", items[1].Hash)
+		assert.Equal(t, "http://example.com/2", items[1].URL)
+		assert.Empty(t, items[1].TitleCorrected)
+		assert.Nil(t, items[1].MediaContent)
+		assert.Equal(t, 0.0, items[1].ThinkRating)
+		assert.Equal(t, now.Add(-1*time.Hour), items[1].PubDate)
+	})
+
+	t.Run("RepoError", func(t *testing.T) {
+		mockR := &mockRepo{
+			getArticlesByTrend: func(argTerm string, argDomain string, argDays int) ([]database.Item, error) {
+				return nil, assert.AnError
+			},
+		}
+		f := New(ctx, nil, mockR)
+		res, err := f.GetArticlesByTrend(ctx, term, domain, days)
 		assert.Error(t, err)
 		assert.Nil(t, res)
 	})

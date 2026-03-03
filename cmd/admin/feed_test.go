@@ -679,6 +679,10 @@ func (m *MockRepo) GetDomainComparison(domainA string, domainB string, language 
 	return nil, nil
 }
 
+func (m *MockRepo) GetArticlesByTrend(term string, domain string, daysInPast int) ([]database.Item, error) {
+	return nil, nil
+}
+
 func captureOutput(f func()) string {
 	old := os.Stdout
 	r, w, _ := os.Pipe()
