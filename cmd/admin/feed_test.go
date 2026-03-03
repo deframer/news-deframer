@@ -679,7 +679,7 @@ func (m *MockRepo) GetDomainComparison(domainA string, domainB string, language 
 	return nil, nil
 }
 
-func (m *MockRepo) GetArticlesByTrend(term string, domain string, daysInPast int) ([]database.Item, error) {
+func (m *MockRepo) GetArticlesByTrend(term string, domain string, date time.Time) ([]database.AnalyzedArticle, error) {
 	return nil, nil
 }
 

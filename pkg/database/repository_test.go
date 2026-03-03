@@ -1517,6 +1517,29 @@ func TestGetDomainComparison(t *testing.T) {
 	})
 }
 
+func TestGetArticlesByTrend(t *testing.T) {
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	baseRepo, err := NewRepository(cfg)
+	assert.NoError(t, err)
+	baseDB := baseRepo.(*repository).db
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, articlesByTrendQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		items, err := repo.GetArticlesByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), time.Date(2026, 3, 3, 0, 0, 0, 0, time.UTC))
+		assert.NoError(t, err)
+		assert.Nil(t, items)
+	})
+}
+
 func TestEnqueueMine(t *testing.T) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)

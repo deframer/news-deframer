@@ -64,6 +64,7 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.Handle("/rss", s.basicAuthMiddleware(s.handleRSSProxy))
 	mux.Handle("/api/item", s.basicAuthMiddleware(s.handleItem))
 	mux.Handle("/api/site", s.basicAuthMiddleware(s.handleSite))
+	mux.Handle("/api/articles", s.basicAuthMiddleware(s.handleArticles))
 	mux.Handle("/api/domains", s.basicAuthMiddleware(s.handleDomains))
 	mux.Handle("/api/trends/topbydomain", s.basicAuthMiddleware(s.handleTopTrendsByDomain))
 	mux.Handle("/api/trends/contextbydomain", s.basicAuthMiddleware(s.handleContextByDomain))
@@ -469,6 +470,49 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleArticles", "url", r.URL.String())
+	q := r.URL.Query()
+
+	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
+	term := q.Get("term")
+	dateRaw := q.Get("date")
+
+	if rootDomain == "" || term == "" || dateRaw == "" {
+		http.Error(w, "missing root, term or date", http.StatusBadRequest)
+		return
+	}
+
+	parsedDate, err := time.Parse("2006-01-02", dateRaw)
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+	requestedDay := parsedDate.UTC().Truncate(24 * time.Hour)
+	if requestedDay.After(today) {
+		http.Error(w, "date cannot be in the future", http.StatusBadRequest)
+		return
+	}
+
+	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, requestedDay)
+	if err != nil || len(articles) == 0 {
+		if err != nil {
+			s.logger.Error("GetArticlesByTrend failed", "error", err)
+		} else {
+			s.logger.Debug("no trend articles found", "root", rootDomain, "term", term, "date", dateRaw)
+		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(articles); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }

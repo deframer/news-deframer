@@ -47,7 +47,7 @@ type Facade interface {
 	GetContextByDomain(ctx context.Context, term string, domain string, language string, daysInPast int) ([]database.TrendContext, error)
 	GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error)
 	GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, daysInPast int) ([]database.DomainComparison, error)
-	GetArticlesByTrend(ctx context.Context, term string, domain string, daysInPast int) ([]AnalyzedItem, error)
+	GetArticlesByTrend(ctx context.Context, term string, domain string, date time.Time) ([]database.AnalyzedArticle, error)
 }
 
 type facade struct {
@@ -216,25 +216,6 @@ func (f *facade) GetDomainComparison(ctx context.Context, domainA string, domain
 	return f.repo.GetDomainComparison(domainA, domainB, language, daysInPast, database.DomainComparisonUtilityThreshold, database.DomainComparisonOutlierRatioThreshold, database.DomainComparisonLimit)
 }
 
-func (f *facade) GetArticlesByTrend(ctx context.Context, term string, domain string, daysInPast int) ([]AnalyzedItem, error) {
-	dbItems, err := f.repo.GetArticlesByTrend(term, domain, daysInPast)
-	if err != nil {
-		return nil, err
-	}
-
-	items := make([]AnalyzedItem, 0, len(dbItems))
-	for _, dbItem := range dbItems {
-		item := AnalyzedItem{
-			Hash:         dbItem.Hash,
-			URL:          dbItem.URL,
-			MediaContent: dbItem.MediaContent,
-			ThinkRating:  dbItem.ThinkRating,
-			PubDate:      dbItem.PubDate,
-		}
-		if dbItem.ThinkResult != nil {
-			item.ThinkResult = *dbItem.ThinkResult
-		}
-		items = append(items, item)
-	}
-	return items, nil
+func (f *facade) GetArticlesByTrend(ctx context.Context, term string, domain string, date time.Time) ([]database.AnalyzedArticle, error) {
+	return f.repo.GetArticlesByTrend(term, domain, date)
 }

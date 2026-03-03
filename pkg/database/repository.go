@@ -64,6 +64,12 @@ type DomainComparison struct {
 	ScoreB         float64 `gorm:"column:score_b" json:"score_b"`
 }
 
+type AnalyzedArticle struct {
+	URL    string  `gorm:"column:url" json:"url"`
+	Title  string  `gorm:"column:title" json:"title"`
+	Rating float64 `gorm:"column:rating" json:"rating"`
+}
+
 type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
 	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
@@ -96,7 +102,7 @@ type Repository interface {
 	GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error)
 	GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error)
 	GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
-	GetArticlesByTrend(term string, domain string, daysInPast int) ([]Item, error)
+	GetArticlesByTrend(term string, domain string, date time.Time) ([]AnalyzedArticle, error)
 }
 
 type repository struct {
@@ -704,20 +710,13 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 	return items, nil
 }
 
-func (r *repository) GetArticlesByTrend(term string, domain string, daysInPast int) ([]Item, error) {
-	var items []Item
-
-	if daysInPast < 1 {
-		daysInPast = 1
-	}
-	if daysInPast > 365 {
-		daysInPast = 365
-	}
+func (r *repository) GetArticlesByTrend(term string, domain string, date time.Time) ([]AnalyzedArticle, error) {
+	var items []AnalyzedArticle
 
 	if err := r.db.Raw(articlesByTrendQuery,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
-		sql.Named("days_in_past", daysInPast),
+		sql.Named("date", date.UTC().Format("2006-01-02")),
 	).Scan(&items).Error; err != nil {
 		return nil, err
 	}
