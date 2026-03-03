@@ -65,9 +65,10 @@ type DomainComparison struct {
 }
 
 type AnalyzedArticle struct {
-	URL    string  `gorm:"column:url" json:"url"`
-	Title  string  `gorm:"column:title" json:"title"`
-	Rating float64 `gorm:"column:rating" json:"rating"`
+	URL     string    `gorm:"column:url" json:"url"`
+	Title   *string   `gorm:"column:title" json:"title,omitempty"`
+	Rating  *float64  `gorm:"column:rating" json:"rating,omitempty"`
+	PubDate time.Time `gorm:"column:pub_date" json:"pub_date"`
 }
 
 type Repository interface {
@@ -98,11 +99,11 @@ type Repository interface {
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
 	CreateFeedSchedule(feedID uuid.UUID) error
-	GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error)
-	GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error)
-	GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error)
-	GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
-	GetArticlesByTrend(term string, domain string, date time.Time) ([]AnalyzedArticle, error)
+	GetTopTrendByDomain(domain string, language string, date string, days int) ([]TrendMetric, error)
+	GetContextByDomain(term string, domain string, language string, date string, days int) ([]TrendContext, error)
+	GetLifecycleByDomain(term string, domain string, language string, date string, days int) ([]Lifecycle, error)
+	GetDomainComparison(domainA string, domainB string, language string, date string, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
+	GetArticlesByTrend(term string, domain string, date string, days int) ([]AnalyzedArticle, error)
 }
 
 type repository struct {
@@ -602,83 +603,73 @@ func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {
 	return items, nil
 }
 
-func (r *repository) GetTopTrendByDomain(domain string, language string, daysInPast int) ([]TrendMetric, error) {
-	var metrics []TrendMetric
+func normalizeDays(days int, max int) int {
+	if days < 1 {
+		return 1
+	}
+	if days > max {
+		return max
+	}
+	return days
+}
 
-	if daysInPast < 1 {
-		daysInPast = 1
-	}
-	if daysInPast > 365 {
-		daysInPast = 365
-	}
+func (r *repository) GetTopTrendByDomain(domain string, language string, date string, days int) ([]TrendMetric, error) {
+	var metrics []TrendMetric
+	days = normalizeDays(days, 365)
 
 	if err := r.db.Raw(topTrendByDomainQuery,
 		sql.Named("language", language),
 		sql.Named("domain", domain),
-		sql.Named("days_in_past", daysInPast),
+		sql.Named("date", date),
+		sql.Named("days", days),
 	).Scan(&metrics).Error; err != nil {
 		return nil, err
 	}
 	return metrics, nil
 }
 
-func (r *repository) GetContextByDomain(term string, domain string, language string, daysInPast int) ([]TrendContext, error) {
+func (r *repository) GetContextByDomain(term string, domain string, language string, date string, days int) ([]TrendContext, error) {
 	var contexts []TrendContext
-
-	if daysInPast < 1 {
-		daysInPast = 1
-	}
-	if daysInPast > 365 {
-		daysInPast = 365
-	}
+	days = normalizeDays(days, 365)
 
 	if err := r.db.Raw(contextByDomainQuery,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
 		sql.Named("language", language),
-		sql.Named("days_in_past", daysInPast),
+		sql.Named("date", date),
+		sql.Named("days", days),
 	).Scan(&contexts).Error; err != nil {
 		return nil, err
 	}
 	return contexts, nil
 }
 
-func (r *repository) GetLifecycleByDomain(term string, domain string, language string, daysInPast int) ([]Lifecycle, error) {
+func (r *repository) GetLifecycleByDomain(term string, domain string, language string, date string, days int) ([]Lifecycle, error) {
 	var items []Lifecycle
-
-	if daysInPast < 1 {
-		daysInPast = 1
-	}
-	if daysInPast > 365 {
-		daysInPast = 365
-	}
+	days = normalizeDays(days, 365)
 
 	if err := r.db.Raw(lifecycleByDomainQuery,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
 		sql.Named("language", language),
-		sql.Named("days_in_past", daysInPast),
+		sql.Named("date", date),
+		sql.Named("days", days),
 	).Scan(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
 }
 
-func (r *repository) GetDomainComparison(domainA string, domainB string, language string, daysInPast int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error) {
+func (r *repository) GetDomainComparison(domainA string, domainB string, language string, date string, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error) {
 	var comparisons []DomainComparison
-
-	if daysInPast < 1 {
-		daysInPast = 1
-	}
-	if daysInPast > 365 {
-		daysInPast = 365
-	}
+	days = normalizeDays(days, 365)
 
 	if err := r.db.Raw(compareDomainsQuery,
 		sql.Named("domain_a", domainA),
 		sql.Named("domain_b", domainB),
 		sql.Named("language", language),
-		sql.Named("days_in_past", daysInPast),
+		sql.Named("date", date),
+		sql.Named("days", days),
 		sql.Named("utility_threshold", utilityThreshold),
 		sql.Named("outlier_ratio_threshold", outlierRatioThreshold),
 		sql.Named("limit", limit),
@@ -710,13 +701,15 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 	return items, nil
 }
 
-func (r *repository) GetArticlesByTrend(term string, domain string, date time.Time) ([]AnalyzedArticle, error) {
+func (r *repository) GetArticlesByTrend(term string, domain string, date string, days int) ([]AnalyzedArticle, error) {
 	var items []AnalyzedArticle
+	days = normalizeDays(days, 365)
 
 	if err := r.db.Raw(articlesByTrendQuery,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
-		sql.Named("date", date.UTC().Format("2006-01-02")),
+		sql.Named("date", date),
+		sql.Named("days", days),
 	).Scan(&items).Error; err != nil {
 		return nil, err
 	}

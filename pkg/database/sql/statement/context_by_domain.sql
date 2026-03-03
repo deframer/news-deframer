@@ -27,7 +27,11 @@ domain_actions AS (
 
       AND "language" = CAST(@language AS text)
       AND root_domain = CAST(@domain AS text)
-      AND pub_date >= NOW() - (CAST(@days_in_past AS INTEGER) * INTERVAL '1 DAY')
+      AND pub_date >= (
+            COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp
+            - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY')
+      )
+      AND pub_date < (COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp + INTERVAL '1 DAY')
 )
 SELECT
     -- 3. The Action

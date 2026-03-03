@@ -187,12 +187,18 @@ func (s *Server) handleTopTrendsByDomain(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	trends, err := s.facade.GetTopTrendByDomain(r.Context(), domain, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	trends, err := s.facade.GetTopTrendByDomain(r.Context(), domain, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get top trends", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -229,12 +235,18 @@ func (s *Server) handleContextByDomain(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	contexts, err := s.facade.GetContextByDomain(r.Context(), term, domain, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	contexts, err := s.facade.GetContextByDomain(r.Context(), term, domain, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get context by domain", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -271,12 +283,18 @@ func (s *Server) handleLifecycleByDomain(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	lifecycles, err := s.facade.GetLifecycleByDomain(r.Context(), term, domain, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	lifecycles, err := s.facade.GetLifecycleByDomain(r.Context(), term, domain, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get lifecycle by domain", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -313,12 +331,18 @@ func (s *Server) handleDomainComparison(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	days := 7
+	days := 1
 	if v, err := strconv.Atoi(q.Get("days")); err == nil {
 		days = v
 	}
 
-	comparisons, err := s.facade.GetDomainComparison(r.Context(), domainA, domainB, lang, days)
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	comparisons, err := s.facade.GetDomainComparison(r.Context(), domainA, domainB, lang, date, days)
 	if err != nil {
 		s.logger.Error("failed to get domain comparison", "error", err)
 		http.Error(w, "not found", http.StatusNotFound)
@@ -480,32 +504,28 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 
 	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
 	term := q.Get("term")
-	dateRaw := q.Get("date")
-
-	if rootDomain == "" || term == "" || dateRaw == "" {
-		http.Error(w, "missing root, term or date", http.StatusBadRequest)
-		return
-	}
-
-	parsedDate, err := time.Parse("2006-01-02", dateRaw)
+	dateRaw, err := parseOptionalDateParam(q.Get("date"))
 	if err != nil {
 		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
 		return
 	}
 
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-	requestedDay := parsedDate.UTC().Truncate(24 * time.Hour)
-	if requestedDay.After(today) {
-		http.Error(w, "date cannot be in the future", http.StatusBadRequest)
+	days := 1
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	if rootDomain == "" || term == "" {
+		http.Error(w, "missing root or term", http.StatusBadRequest)
 		return
 	}
 
-	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, requestedDay)
+	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, dateRaw, days)
 	if err != nil || len(articles) == 0 {
 		if err != nil {
 			s.logger.Error("GetArticlesByTrend failed", "error", err)
 		} else {
-			s.logger.Debug("no trend articles found", "root", rootDomain, "term", term, "date", dateRaw)
+			s.logger.Debug("no trend articles found", "root", rootDomain, "term", term, "date", dateRaw, "days", days)
 		}
 		http.Error(w, "not found", http.StatusNotFound)
 		return
@@ -515,6 +535,16 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(articles); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
+}
+
+func parseOptionalDateParam(raw string) (string, error) {
+	if raw == "" {
+		return "", nil
+	}
+	if _, err := time.Parse("2006-01-02", raw); err != nil {
+		return "", err
+	}
+	return raw, nil
 }
 
 func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {

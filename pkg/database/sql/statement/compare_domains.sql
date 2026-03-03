@@ -21,7 +21,11 @@ domain_a_unique AS (
         WHERE root_domain = CAST(@domain_a AS text)
           AND "language" = CAST(@language AS text)
           AND stem_type = 'NOUN'          -- <--- Thesis: Focus on Triggers/Topics [1][2]
-          AND time_slice >= NOW() - (CAST(@days_in_past AS INTEGER) * INTERVAL '1 DAY')
+          AND time_slice >= (
+                COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp
+                - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY')
+          )
+          AND time_slice < (COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp + INTERVAL '1 DAY')
           AND utility >= CAST(@utility_threshold AS float)
           AND outlier_ratio >= CAST(@outlier_ratio_threshold AS float)
     )
@@ -47,7 +51,11 @@ domain_b_unique AS (
         WHERE root_domain = CAST(@domain_b AS text)
           AND "language" = CAST(@language AS text)
           AND stem_type = 'NOUN'
-          AND time_slice >= NOW() - (CAST(@days_in_past AS INTEGER) * INTERVAL '1 DAY')
+          AND time_slice >= (
+                COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp
+                - ((CAST(@days AS INTEGER) - 1) * INTERVAL '1 DAY')
+          )
+          AND time_slice < (COALESCE(CAST(NULLIF(@date, '') AS DATE), CURRENT_DATE)::timestamp + INTERVAL '1 DAY')
           AND utility >= CAST(@utility_threshold AS float)
           AND outlier_ratio >= CAST(@outlier_ratio_threshold AS float)
     )

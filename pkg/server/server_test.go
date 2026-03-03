@@ -16,7 +16,7 @@ import (
 )
 
 type mockFacade struct {
-	getArticlesByTrend func(ctx context.Context, term string, domain string, date time.Time) ([]database.AnalyzedArticle, error)
+	getArticlesByTrend func(ctx context.Context, term string, domain string, date string, days int) ([]database.AnalyzedArticle, error)
 }
 
 func (m *mockFacade) GetRssProxyFeed(ctx context.Context, filter *facade.RSSProxyFilter) (string, error) {
@@ -35,25 +35,25 @@ func (m *mockFacade) GetRootDomains(ctx context.Context) ([]facade.DomainEntry, 
 	return nil, nil
 }
 
-func (m *mockFacade) GetTopTrendByDomain(ctx context.Context, domain string, language string, daysInPast int) ([]database.TrendMetric, error) {
+func (m *mockFacade) GetTopTrendByDomain(ctx context.Context, domain string, language string, date string, days int) ([]database.TrendMetric, error) {
 	return nil, nil
 }
 
-func (m *mockFacade) GetContextByDomain(ctx context.Context, term string, domain string, language string, daysInPast int) ([]database.TrendContext, error) {
+func (m *mockFacade) GetContextByDomain(ctx context.Context, term string, domain string, language string, date string, days int) ([]database.TrendContext, error) {
 	return nil, nil
 }
 
-func (m *mockFacade) GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, daysInPast int) ([]database.Lifecycle, error) {
+func (m *mockFacade) GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, date string, days int) ([]database.Lifecycle, error) {
 	return nil, nil
 }
 
-func (m *mockFacade) GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, daysInPast int) ([]database.DomainComparison, error) {
+func (m *mockFacade) GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, date string, days int) ([]database.DomainComparison, error) {
 	return nil, nil
 }
 
-func (m *mockFacade) GetArticlesByTrend(ctx context.Context, term string, domain string, date time.Time) ([]database.AnalyzedArticle, error) {
+func (m *mockFacade) GetArticlesByTrend(ctx context.Context, term string, domain string, date string, days int) ([]database.AnalyzedArticle, error) {
 	if m.getArticlesByTrend != nil {
-		return m.getArticlesByTrend(ctx, term, domain, date)
+		return m.getArticlesByTrend(ctx, term, domain, date, days)
 	}
 	return nil, nil
 }
@@ -63,12 +63,15 @@ func TestHandleArticles(t *testing.T) {
 	today := time.Now().UTC().Format("2006-01-02")
 
 	t.Run("success", func(t *testing.T) {
+		title := "T"
+		rating := 0.2
 		mockF := &mockFacade{
-			getArticlesByTrend: func(ctx context.Context, term string, domain string, date time.Time) ([]database.AnalyzedArticle, error) {
+			getArticlesByTrend: func(ctx context.Context, term string, domain string, date string, days int) ([]database.AnalyzedArticle, error) {
 				assert.Equal(t, "ai", term)
 				assert.Equal(t, "example.com", domain)
-				assert.Equal(t, today, date.Format("2006-01-02"))
-				return []database.AnalyzedArticle{{URL: "https://example.com/a", Rating: 0.2, Title: "T"}}, nil
+				assert.Equal(t, today, date)
+				assert.Equal(t, 1, days)
+				return []database.AnalyzedArticle{{URL: "https://example.com/a", Rating: &rating, Title: &title}}, nil
 			},
 		}
 
@@ -84,7 +87,7 @@ func TestHandleArticles(t *testing.T) {
 
 	t.Run("missing params", func(t *testing.T) {
 		s := New(ctx, &config.Config{DisableETag: true}, &mockFacade{})
-		req := httptest.NewRequest(http.MethodGet, "/api/articles?root=example.com&term=ai", nil)
+		req := httptest.NewRequest(http.MethodGet, "/api/articles?root=example.com", nil)
 		rr := httptest.NewRecorder()
 
 		s.httpServer.Handler.ServeHTTP(rr, req)
@@ -104,7 +107,7 @@ func TestHandleArticles(t *testing.T) {
 
 	t.Run("facade error", func(t *testing.T) {
 		mockF := &mockFacade{
-			getArticlesByTrend: func(ctx context.Context, term string, domain string, date time.Time) ([]database.AnalyzedArticle, error) {
+			getArticlesByTrend: func(ctx context.Context, term string, domain string, date string, days int) ([]database.AnalyzedArticle, error) {
 				return nil, errors.New("boom")
 			},
 		}
