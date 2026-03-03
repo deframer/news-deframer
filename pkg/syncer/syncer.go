@@ -32,7 +32,7 @@ const customNamespace = "https://github.com/deframer/news-deframer/"
 const maxThinkRetries = 3
 const thinkFixerBatchSize = 15
 const thinkFixerLookback = 30 * 24 * time.Hour
-const thinkFixerStopThreshold = maxThinkRetries
+const thinkFixerStopThreshold = maxThinkRetries * 2 // thinker-fixer allows a higher retry ceiling
 
 type Mode string
 
@@ -139,6 +139,7 @@ func (s *Syncer) pollThinkerFixerMode() {
 	}
 }
 
+// fixNextThinkerBatch return true if this has updated entries
 func (s *Syncer) fixNextThinkerBatch() bool {
 	s.logger.Info("fixNextThinkerBatch")
 	since := time.Now().Add(-thinkFixerLookback)
@@ -152,6 +153,11 @@ func (s *Syncer) fixNextThinkerBatch() bool {
 	}
 
 	s.logger.Info("Think-fixer candidates fetched", "count", len(items))
+	for i := range items {
+		current := i + 1
+		s.logger.Debug("processThinkerItem", "item_id", items[i].ID, "feed_id", items[i].FeedID, "progress", fmt.Sprintf("%d/%d", current, len(items)))
+		s.processThinkerItem(&items[i])
+	}
 	return true
 }
 
@@ -329,62 +335,14 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 }
 
 func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item, language string, currentErrorCount int) {
-	req := think.Request{
-		Title:       text.StripHTML(item.Title),
-		Description: text.StripHTML(item.Description),
-	}
-	res, err := s.think.Run(promptScope, language, req)
-
-	var thinkError *string
-	var mediaContent *database.MediaContent
-	var thinkRating float64
-	nextErrorCount := currentErrorCount
-
-	// put it in the item as "deframer:title_original"
-	// we technically don't need it here - but helps decoupling the trend miner loop
-	// usually we don't persist the xml with the "deframer:..." this is an exception here
-	// so that we don't technically need a thinker result
-	feeds.SetExtension(item, customPrefix, "title_original", item.Title)
-	feeds.SetExtension(item, customPrefix, "description_original", item.Description)
-
+	result, err := s.thinkRenderAndExtract(item, language, currentErrorCount, "hash", hash, "item_url", item.Link)
 	if err != nil {
-		if errors.Is(err, context.Canceled) {
-			// worker is shutting down don't store this as an error
-			s.logger.Debug("context canceled", "hash", hash)
-			return
-		}
-		s.logger.Error("analysis failed", "error", err, "hash", hash, "item_url", item.Link)
-		errStr := err.Error()
-		thinkError = &errStr
-		nextErrorCount++
-	} else {
-		err = s.updateContent(item, res)
-		if err != nil {
-			s.logger.Error("update content failed", "error", err)
-			return
-		}
-		mediaContent, err = s.extractMediaContent(item)
-		if err != nil {
-			s.logger.Error("extract media content failed", "error", err)
-		}
-		if res != nil {
-			thinkRating = res.Overall
-		}
-
-		applyFancyRatingText(item, res, thinkRating, language)
-		// Success reset error count (optional, but good practice if we allow re-processing of succeeded items later)
-		nextErrorCount = 0
-	}
-
-	content, err := s.feeds.RenderItem(s.ctx, item)
-	if err != nil {
-		s.logger.Error("failed to render item", "error", err, "hash", hash)
 		return
 	}
 
 	pubDate := time.Now()
-	if item.PublishedParsed != nil {
-		pubDate = *item.PublishedParsed
+	if result.pubDate != nil {
+		pubDate = *result.pubDate
 	}
 
 	dbItem := &database.Item{
@@ -392,14 +350,14 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		FeedID:          feed.ID,
 		URL:             netutil.NormalizeURL(item.Link),
 		Language:        &language,
-		Content:         content,
+		Content:         result.content,
 		PubDate:         pubDate,
-		ThinkResult:     res,
-		MediaContent:    mediaContent,
-		ThinkError:      thinkError,
-		ThinkErrorCount: nextErrorCount,
-		ThinkRating:     thinkRating,
-		Categories:      s.feeds.ExtractCategories(item),
+		ThinkResult:     result.thinkResult,
+		MediaContent:    result.mediaContent,
+		ThinkError:      result.thinkError,
+		ThinkErrorCount: result.nextErrorCount,
+		ThinkRating:     result.thinkRating,
+		Categories:      result.categories,
 	}
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
@@ -410,6 +368,140 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	if err := s.repo.EnqueueSync(feed.ID, config.IdleSleepTime); err != nil {
 		s.logger.Error("failed to extend the lock duration item", "error", err, "hash", hash)
 	}
+}
+
+func (s *Syncer) processThinkerItem(dbItem *database.Item) {
+	if dbItem == nil {
+		return
+	}
+
+	parsedItem, err := s.parseItemFromContent(dbItem.Content)
+	if err != nil {
+		s.logger.Error("Failed to parse item content", "error", err, "item_id", dbItem.ID)
+		return
+	}
+
+	language := "en"
+	if dbItem.Language != nil && *dbItem.Language != "" {
+		language = *dbItem.Language
+	}
+
+	result, err := s.thinkRenderAndExtract(parsedItem, language, dbItem.ThinkErrorCount, "item_id", dbItem.ID, "item_url", parsedItem.Link)
+	if err != nil {
+		return
+	}
+
+	if result.pubDate != nil {
+		dbItem.PubDate = *result.pubDate
+	}
+
+	dbItem.Content = result.content
+	dbItem.ThinkResult = result.thinkResult
+	dbItem.MediaContent = result.mediaContent
+	dbItem.ThinkError = result.thinkError
+	dbItem.ThinkErrorCount = result.nextErrorCount
+	dbItem.ThinkRating = result.thinkRating
+	dbItem.Categories = result.categories
+
+	if err := s.repo.UpsertItem(dbItem); err != nil {
+		s.logger.Error("failed to update item", "error", err, "item_id", dbItem.ID)
+	}
+}
+
+type thinkerOutcome struct {
+	content        string
+	thinkResult    *database.ThinkResult
+	mediaContent   *database.MediaContent
+	thinkError     *string
+	nextErrorCount int
+	thinkRating    float64
+	categories     []string
+	pubDate        *time.Time
+}
+
+func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string, currentErrorCount int, logKeys ...any) (*thinkerOutcome, error) {
+	if parsedItem == nil {
+		return nil, fmt.Errorf("parsed item is nil")
+	}
+
+	req := think.Request{
+		Title:       text.StripHTML(parsedItem.Title),
+		Description: text.StripHTML(parsedItem.Description),
+	}
+	res, err := s.think.Run(promptScope, language, req)
+
+	var thinkError *string
+	var mediaContent *database.MediaContent
+	var thinkRating float64
+	nextErrorCount := currentErrorCount
+
+	feeds.SetExtension(parsedItem, customPrefix, "title_original", parsedItem.Title)
+	feeds.SetExtension(parsedItem, customPrefix, "description_original", parsedItem.Description)
+
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			s.logger.Debug("context canceled", logKeys...)
+			return nil, err
+		}
+		args := append([]any{"error", err}, logKeys...)
+		s.logger.Error("analysis failed", args...)
+		errStr := err.Error()
+		thinkError = &errStr
+		nextErrorCount++
+	} else {
+		err = s.updateContent(parsedItem, res)
+		if err != nil {
+			args := append([]any{"error", err}, logKeys...)
+			s.logger.Error("update content failed", args...)
+			return nil, err
+		}
+		mediaContent, err = s.extractMediaContent(parsedItem)
+		if err != nil {
+			args := append([]any{"error", err}, logKeys...)
+			s.logger.Error("extract media content failed", args...)
+		}
+		if res != nil {
+			thinkRating = res.Overall
+		}
+
+		applyFancyRatingText(parsedItem, res, thinkRating, language)
+		nextErrorCount = 0
+	}
+
+	content, err := s.feeds.RenderItem(s.ctx, parsedItem)
+	if err != nil {
+		args := append([]any{"error", err}, logKeys...)
+		s.logger.Error("failed to render item", args...)
+		return nil, err
+	}
+
+	var pubDate *time.Time
+	if parsedItem.PublishedParsed != nil {
+		pubDate = parsedItem.PublishedParsed
+	}
+
+	return &thinkerOutcome{
+		content:        content,
+		thinkResult:    res,
+		mediaContent:   mediaContent,
+		thinkError:     thinkError,
+		nextErrorCount: nextErrorCount,
+		thinkRating:    thinkRating,
+		categories:     s.feeds.ExtractCategories(parsedItem),
+		pubDate:        pubDate,
+	}, nil
+}
+
+func (s *Syncer) parseItemFromContent(content string) (*gofeed.Item, error) {
+	wrapped := `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>` + content + `</channel></rss>`
+	pf, err := gofeed.NewParser().Parse(strings.NewReader(wrapped))
+	if err != nil {
+		return nil, err
+	}
+	if len(pf.Items) == 0 {
+		return nil, fmt.Errorf("no items found in content")
+	}
+	return pf.Items[0], nil
 }
 
 func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) error {
