@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+
 import { DomainEntry } from '../client';
 
 interface ArticleListProps {
