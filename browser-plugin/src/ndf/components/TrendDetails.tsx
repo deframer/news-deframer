@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DomainEntry } from '../client';
@@ -11,11 +11,12 @@ interface TrendDetailsProps {
   domain: DomainEntry;
   days: number;
   showBorder?: boolean;
+  activeTab: 'lifecycle' | 'context' | 'articles';
+  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles'>>;
 }
 
-export const TrendDetails = ({ term, domain, days, showBorder = true }: TrendDetailsProps) => {
+export const TrendDetails = ({ term, domain, days, showBorder = true, activeTab, setActiveTab }: TrendDetailsProps) => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'lifecycle' | 'context' | 'articles'>('lifecycle');
 
   return (
     <div className={`trend-details-container ${!showBorder ? 'no-border' : ''}`}>
@@ -41,7 +42,7 @@ export const TrendDetails = ({ term, domain, days, showBorder = true }: TrendDet
       </div>
       {activeTab === 'context' && <TrendContextChart topic={term} days={days} domain={domain} />}
       {activeTab === 'lifecycle' && <TrendLifecycleChart domain={domain} days={days} term={term} />}
-      {activeTab === 'articles' && <ArticleList term={term} domain={domain} days={days} />}
+      {activeTab === 'articles' && <ArticleList term={term} domain={domain} days={days} hideTitle={true} />}
     </div>
   );
 };

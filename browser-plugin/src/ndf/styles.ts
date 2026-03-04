@@ -617,6 +617,211 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 }
 
 /* ArticleList.tsx */
+.article-header-with-tooltip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.article-header-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.tooltip-trigger-icon {
+  cursor: help;
+  font-size: 0.8em;
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1;
+}
+.article-header-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 250px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  text-align: left;
+  border-radius: 6px;
+  padding: 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  font-size: 0.9em;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal; /* Allows multi-line text */
+  box-shadow: var(--card-shadow);
+}
+.article-header-tooltip-container:hover .article-header-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.article-table th,
+.article-table td {
+  padding: 8px 5px;
+  text-align: left;
+  vertical-align: middle; /* Ensure content is vertically centered */
+}
+.article-header-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.tooltip-trigger-icon {
+  cursor: help;
+  font-size: 0.8em;
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1;
+}
+.article-header-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 250px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  text-align: left;
+  border-radius: 6px;
+  padding: 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  font-size: 0.9em;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal; /* Crucial for multi-line text */
+  box-shadow: var(--card-shadow);
+}
+.article-header-tooltip-container:hover .article-header-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.article-table th,
+.article-table td {
+  padding: 8px 5px;
+  text-align: left;
+  vertical-align: middle; /* Ensure content is vertically centered */
+}
+
+.component-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 250px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  text-align: left;
+  border-radius: 6px;
+  padding: 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  font-size: 0.9em;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal; /* Allows multi-line text */
+  box-shadow: var(--card-shadow);
+}
+
+.tooltip-container:hover .component-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-trigger-icon {
+  cursor: help;
+  font-size: 0.8em;
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1;
+}
+
+.article-table th,
+.article-table td {
+  padding: 8px 5px;
+  text-align: left;
+  vertical-align: middle; /* Ensure content is vertically centered */
+}
+.article-header-tooltip-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+.tooltip-trigger-icon {
+  cursor: help;
+  font-size: 0.8em;
+  color: var(--secondary-text);
+  border: 1px solid var(--secondary-text);
+  border-radius: 50%;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  line-height: 1;
+}
+.article-header-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 250px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  text-align: left;
+  border-radius: 6px;
+  padding: 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  font-size: 0.9em;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal; /* This allows multi-line text */
+  box-shadow: var(--card-shadow);
+}
+.article-header-tooltip-container:hover .article-header-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
 .article-table th,
 .article-table td {
   padding: 8px 5px;
@@ -660,7 +865,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   border-color: var(--btn-hover-bg);
 }
 .pagination-controls button:disabled {
-  background-color: var(--bg-color-secondary);
+  background-color: transparent;
   color: var(--secondary-text);
   border-color: var(--border-color);
   cursor: not-allowed;

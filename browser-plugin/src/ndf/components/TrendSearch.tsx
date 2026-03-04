@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DomainEntry } from '../client';
@@ -7,9 +7,11 @@ import { TrendDetails } from './TrendDetails';
 interface TrendSearchProps {
   domain: DomainEntry;
   days: number;
+  activeTab: 'lifecycle' | 'context' | 'articles';
+  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles'>>;
 }
 
-export const TrendSearch = ({ domain, days }: TrendSearchProps) => {
+export const TrendSearch = ({ domain, days, activeTab, setActiveTab }: TrendSearchProps) => {
   const { t } = useTranslation();
   const [term, setTerm] = useState('');
   const [activeTerm, setActiveTerm] = useState('');
@@ -35,7 +37,7 @@ export const TrendSearch = ({ domain, days }: TrendSearchProps) => {
         </button>
       </div>
 
-      {activeTerm && <TrendDetails domain={domain} days={days} term={activeTerm} showBorder={false} />}
+      {activeTerm && <TrendDetails domain={domain} days={days} term={activeTerm} showBorder={false} activeTab={activeTab} setActiveTab={setActiveTab} />}
     </div>
   );
 };

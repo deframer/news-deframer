@@ -2,7 +2,7 @@ import { ParentSize } from '@visx/responsive';
 import { scaleLog } from '@visx/scale';
 import { Text } from '@visx/text';
 import { Wordcloud } from '@visx/wordcloud';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState, Dispatch, SetStateAction } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -16,6 +16,8 @@ interface TrendTagCloudProps {
   domain: DomainEntry;
   days: number;
   searchEngineUrl: string;
+  activeTab: 'lifecycle' | 'context' | 'articles';
+  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles'>>;
 }
 
 const BULLET_DELIMITER = '•';
@@ -98,7 +100,7 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
 });
 TrendWordCloud.displayName = 'TrendWordCloud';
 
-export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudProps) => {
+export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setActiveTab }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendMetric & { rank: number } } | null>(null);
@@ -223,7 +225,7 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudPr
         </ParentSize>
       </div>
       {selectedTerm && (
-        <TrendDetails term={selectedTerm} domain={domain} days={days} />
+        <TrendDetails term={selectedTerm} domain={domain} days={days} activeTab={activeTab} setActiveTab={setActiveTab} />
       )}
     </>
   );
