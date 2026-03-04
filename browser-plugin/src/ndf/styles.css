@@ -555,6 +555,57 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 }
 
 /* TrendLifecycle.tsx */
+
+/* ArticleList.tsx */
+.article-table th,
+.article-table td {
+  padding: 8px 5px;
+  text-align: left;
+  vertical-align: middle; /* Ensure content is vertically centered */
+}
+
+.article-table thead th {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 8px;
+  font-size: 0.9em;
+  color: var(--secondary-text);
+}
+
+.article-table tbody tr {
+  border-top: 1px solid var(--border-color);
+}
+
+.article-table tbody td:first-child {
+  padding-left: 0;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center; /* Center align buttons and page number */
+  align-items: center;
+  margin-top: 15px;
+  gap: 15px; /* Add gap between elements */
+}
+.pagination-controls button {
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: 1px solid var(--btn-border);
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.pagination-controls button:hover:not(:disabled) {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--btn-hover-bg);
+}
+.pagination-controls button:disabled {
+  background-color: var(--bg-color-secondary); /* Softer background for disabled */
+  color: var(--secondary-text); /* Less prominent text color */
+  border-color: var(--border-color); /* Subtle border */
+  cursor: not-allowed;
+}
+
 .lifecycle-controls {
   display: flex;
   gap: 10px;

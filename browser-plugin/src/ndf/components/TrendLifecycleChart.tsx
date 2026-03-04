@@ -1,7 +1,7 @@
 import { CSSProperties, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { getSettings } from '../../shared/settings';
+import { getSettings, Settings } from '../../shared/settings';
 import { DomainEntry, Lifecycle, NewsDeframerClient } from '../client';
 import { ArticleList } from './ArticleList';
 
@@ -16,6 +16,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   const [data, setData] = useState<Lifecycle[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [userLanguage, setUserLanguage] = useState<string>(domain.language); // Default to domain language
 
   useEffect(() => {
     const fetchData = async () => {
@@ -23,6 +24,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
       setLoading(true);
       try {
         const settings = await getSettings();
+        setUserLanguage(settings.language || domain.language); // Use user setting, fallback to domain
         const client = new NewsDeframerClient(settings);
         const result = await client.getLifecycleByDomain(term, domain.domain, domain.language, days);
         // Sort by date ascending for the chart
@@ -36,7 +38,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
       }
     };
     fetchData();
-  }, [term, domain, days]);
+  }, [term, domain, days, domain.language]);
 
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
       <div className="chart-container">
         {data.map((item, idx) => {
           const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
-          const dateLabel = new Date(item.time_slice).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          const dateLabel = new Date(item.time_slice).toLocaleDateString(userLanguage, { month: 'short', day: 'numeric' });
 
           const isSelected = selectedDate === item.time_slice;
           const style: CSSProperties = { height: `${heightPercent}%` };
@@ -110,7 +112,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
                 <div className="bar-tooltip">
                   {dateLabel}<br/>
                   {t('trends.freq', 'Freq')}: {item.frequency}<br/>
-                  {t('trends.vel', 'Vel')}: {item.velocity > 0 ? '+' : ''}{item.velocity}
+                  {t('trends.vel', 'Vel')}: {(item.velocity > 0 ? '+' : '') + item.velocity}
                 </div>
               </div>
               {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
@@ -124,8 +126,9 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
         <ArticleList 
           term={term} 
           domain={domain} 
-          date={selectedDate}
-          titleOverride={`${t('trends.articles', 'Articles')} / ${new Date(selectedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} / ${term}`}
+          date={new Date(selectedDate).toISOString().split('T')[0]} /* Explicitly format to YYYY-MM-DD for API */
+          days={undefined} 
+          titleOverride={`${t('trends.articles', 'Articles')} / ${new Date(selectedDate).toLocaleDateString(userLanguage, { month: 'short', day: 'numeric' })} / ${term}`}
         />
       )}
     </>

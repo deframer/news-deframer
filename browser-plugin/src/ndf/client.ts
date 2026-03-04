@@ -158,7 +158,7 @@ export class NewsDeframerClient {
   }
 
   async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       domain,
       lang: language,
       days: daysInPast.toString(),
@@ -168,7 +168,7 @@ export class NewsDeframerClient {
   }
 
   async getContextByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<TrendContext[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       term,
       domain,
       lang: language,
@@ -179,7 +179,7 @@ export class NewsDeframerClient {
   }
 
   async getLifecycleByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<Lifecycle[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       term,
       domain,
       lang: language,
@@ -190,7 +190,7 @@ export class NewsDeframerClient {
   }
 
   async getDomainComparison(domainA: string, domainB: string, language: string, daysInPast: number): Promise<DomainComparison[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       domain_a: domainA,
       domain_b: domainB,
       lang: language,
@@ -208,7 +208,7 @@ export class NewsDeframerClient {
     if (date) {
       params.date = date;
     }
-    if (days !== undefined) {
+    if (days !== undefined && days !== null) {
       params.days = days.toString();
     }
     if (offset !== undefined) {

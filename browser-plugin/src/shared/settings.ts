@@ -7,6 +7,7 @@ export interface Settings {
   enabled: boolean;
   theme: Theme;
   searchEngineUrl?: string;
+  language?: string;
 }
 
 export const DEFAULT_BACKEND_URL = 'http://localhost:8080';

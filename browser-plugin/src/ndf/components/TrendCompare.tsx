@@ -121,18 +121,29 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
       const dcItem = item as DomainComparison;
       scoreA = dcItem.score_a;
       scoreB = dcItem.score_b;
-    } else { // TrendMetric for baseItems
+    } else { // TrendMetric for baseItems (Column A when not comparing)
       scoreA = (item as TrendMetric).outlier_ratio.toFixed(1) + 'x';
+      scoreB = ''; 
     }
 
-    let displayDomainName = currentDomainName;
-    let displayScore: number | string = scoreA; 
-    let clickDomain = currentDomainName;
+    let displayDomainName = '';
+    let displayScore: number | string = ''; 
+    let clickDomain = '';
 
-    if (columnType === 'B') {
+    if (columnType === 'A') { 
+      displayDomainName = currentDomainName;
+      displayScore = scoreA;
+      clickDomain = currentDomainName;
+    } else if (columnType === 'B') { 
       displayDomainName = comparisonDomainName;
       displayScore = scoreB; 
       clickDomain = comparisonDomainName;
+    } else { 
+      // For Intersect, these are handled by individual chips, no need to set here
+      // but ensuring they are explicitly empty for safety
+      displayDomainName = ''; 
+      displayScore = '';      
+      clickDomain = '';       
     }
 
 

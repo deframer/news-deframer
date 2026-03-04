@@ -615,6 +615,56 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .lifecycle-btn:hover {
   background: var(--primary-color-dark, #004494);
 }
+
+/* ArticleList.tsx */
+.article-table th,
+.article-table td {
+  padding: 8px 5px;
+  text-align: left;
+  vertical-align: middle; /* Ensure content is vertically centered */
+}
+
+.article-table thead th {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 8px;
+  font-size: 0.9em;
+  color: var(--secondary-text);
+}
+
+.article-table tbody tr {
+  border-top: 1px solid var(--border-color);
+}
+
+.article-table tbody td:first-child {
+  padding-left: 0;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 15px;
+  gap: 15px;
+}
+.pagination-controls button {
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: 1px solid var(--btn-border);
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.pagination-controls button:hover:not(:disabled) {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--btn-hover-bg);
+}
+.pagination-controls button:disabled {
+  background-color: var(--bg-color-secondary);
+  color: var(--secondary-text);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+}
 .chart-container {
   height: 300px;
   display: flex;
