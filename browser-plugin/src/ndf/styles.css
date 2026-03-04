@@ -350,11 +350,191 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border-color, #f5f5f5);
   font-size: 0.9em;
+  transition: background-color 0.2s;
+  border-radius: 6px;
+  cursor: pointer !important;
+  user-select: none;
+}
+.compare-item * {
+  cursor: pointer !important;
+}
+.compare-item .topic-name {
+  color: var(--text-color);
+  flex: 1;
+  text-decoration: none; /* No underline by default */
+  cursor: default !important; /* Topic name itself is not clickable by default for all columns */
+}
+
+.compare-item:hover {
+  background-color: var(--hover-bg, rgba(0,0,0,0.03));
+}
+
+.compare-item:hover .topic-name {
+  /* No change here, handled by explicit A/B vs Shared below */
+}
+
+/* A/B Specific: Topic name becomes clickable/underlined on hover of LI */
+.compare-item:not(.shared):hover .topic-name {
+  color: var(--accent-color);
+  text-decoration: underline;
+  cursor: pointer !important; /* Hand cursor on topic name when hovering clickable A/B row */
+}
+
+/* Shared Specific: Topic name is never underlined/clickable directly */
+.compare-item.shared .topic-name {
+  color: var(--text-color) !important; /* Force default color */
+  text-decoration: none !important; /* Force no underline */
+  cursor: default !important; /* Force default cursor */
+}
+
+.item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.item-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.source-chip {
+  cursor: pointer !important; /* Pills are always clickable */
+}
+.compare-item.selected .topic-name {
+  font-weight: bold;
+}
+
+.compare-item.shared .topic-name {
+  text-decoration: none;
+  cursor: default !important;
+}
+.compare-item:hover .topic-name {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+.compare-item.shared:hover .topic-name {
+  color: var(--text-color);
+  text-decoration: none;
+}
+.compare-item.shared {
+  /* Removed flex-direction: column */
+  align-items: center; /* Align contents horizontally */
+  padding: 8px 12px; /* Unified padding */
+  cursor: default !important;
+}
+.shared-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0px; /* Adjust margin if needed for single line */
+  flex: 1;
+}
+.shared-sources {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-left: auto;
+  align-items: center; /* Align chips vertically */
+}
+.compare-item:hover .topic-name {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+.compare-item:hover {
+  background-color: var(--hover-bg, rgba(0,0,0,0.03));
+}
+.compare-item:hover .topic-name {
+  color: var(--accent-color);
+}
+.compare-item:hover .topic-name {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+.compare-item.selected {
+  background-color: var(--hover-bg, rgba(0,0,0,0.06));
+  box-shadow: inset 4px 0 0 var(--accent-color);
+}
+.compare-item.selected .topic-name {
+  font-weight: bold;
 }
 .compare-item:last-child { border-bottom: none; }
+
+/* Unified Trend Item Layout */
+.item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+}
+.topic-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  flex-shrink: 0;
+}
+.item-sources {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-left: auto;
+}
+.item-sources::-webkit-scrollbar { display: none; }
+
+.source-chip {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  color: var(--secondary-text);
+  cursor: pointer !important;
+  transition: all 0.2s;
+  background: var(--bg-color-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.source-chip:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: var(--bg-color);
+}
+.source-chip.active {
+  background: var(--accent-color);
+  color: var(--accent-text);
+  border-color: var(--accent-color);
+  font-weight: bold;
+}
+.source-score {
+  opacity: 0.7;
+  font-weight: bold;
+  border-left: 1px solid currentColor;
+  padding-left: 4px;
+  margin-left: 2px;
+}
+.source-chip .source-score:first-child {
+  border-left: none;
+  margin-left: 0;
+  padding-left: 0;
+}
+.source-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .topic-name { font-weight: 500; }
 .topic-score {
   font-size: 0.8em;
@@ -425,6 +605,11 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   justify-content: flex-end;
   position: relative;
   outline: none;
+  cursor: pointer;
+}
+.chart-bar-wrapper.selected .chart-bar {
+  box-shadow: 0 0 0 2px var(--accent-color);
+  z-index: 5;
 }
 .chart-bar-wrapper:hover,
 .chart-bar-wrapper:focus-visible {

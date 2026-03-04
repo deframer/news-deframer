@@ -83,6 +83,13 @@ export interface AnalyzedItem extends ThinkResult {
   pubDate?: string;
 }
 
+export interface AnalyzedArticle {
+  url: string;
+  title?: string;
+  rating?: number;
+  pub_date: string;
+}
+
 // --- API Client ---
 
 export class NewsDeframerClient {
@@ -190,6 +197,27 @@ export class NewsDeframerClient {
       days: daysInPast.toString(),
     };
     const result = await this.proxyRequest<DomainComparison[]>('/api/trends/comparedomains', params);
+    return result ?? [];
+  }
+
+  async getArticlesByTrend(root: string, term: string, date?: string, days?: number, offset?: number, limit?: number): Promise<AnalyzedArticle[]> {
+    const params: Record<string, string> = {
+      root,
+      term,
+    };
+    if (date) {
+      params.date = date;
+    }
+    if (days !== undefined) {
+      params.days = days.toString();
+    }
+    if (offset !== undefined) {
+      params.offset = offset.toString();
+    }
+    if (limit !== undefined) {
+      params.limit = limit.toString();
+    }
+    const result = await this.proxyRequest<AnalyzedArticle[]>('/api/articles', params);
     return result ?? [];
   }
 }

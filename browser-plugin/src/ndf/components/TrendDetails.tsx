@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DomainEntry } from '../client';
+import { ArticleList } from './ArticleList';
 import { TrendContextChart } from './TrendContext';
 import { TrendLifecycleChart } from './TrendLifecycleChart';
 
@@ -14,7 +15,7 @@ interface TrendDetailsProps {
 
 export const TrendDetails = ({ term, domain, days, showBorder = true }: TrendDetailsProps) => {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'lifecycle' | 'context'>('lifecycle');
+  const [activeTab, setActiveTab] = useState<'lifecycle' | 'context' | 'articles'>('lifecycle');
 
   return (
     <div className={`trend-details-container ${!showBorder ? 'no-border' : ''}`}>
@@ -31,9 +32,16 @@ export const TrendDetails = ({ term, domain, days, showBorder = true }: TrendDet
         >
           {t('trends.context', 'Context')}
         </button>
+        <button
+          className={`sub-tab-btn ${activeTab === 'articles' ? 'active' : ''}`}
+          onClick={() => setActiveTab('articles')}
+        >
+          {t('trends.articles', 'Articles')}
+        </button>
       </div>
       {activeTab === 'context' && <TrendContextChart topic={term} days={days} domain={domain} />}
       {activeTab === 'lifecycle' && <TrendLifecycleChart domain={domain} days={days} term={term} />}
+      {activeTab === 'articles' && <ArticleList term={term} domain={domain} days={days} />}
     </div>
   );
 };

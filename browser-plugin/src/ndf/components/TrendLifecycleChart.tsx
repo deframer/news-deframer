@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
 import { DomainEntry, Lifecycle, NewsDeframerClient } from '../client';
+import { ArticleList } from './ArticleList';
 
 interface TrendLifecycleChartProps {
   domain: DomainEntry;
@@ -14,6 +15,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   const { t } = useTranslation();
   const [data, setData] = useState<Lifecycle[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,6 +38,11 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
     fetchData();
   }, [term, domain, days]);
 
+
+  useEffect(() => {
+    setSelectedDate(null);
+  }, [term, domain.domain]);
+
   const maxFreq = data.length > 0 ? Math.max(...data.map(d => d.frequency)) : 0;
 
   if (loading) {
@@ -55,60 +62,72 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   }
 
   return (
-    <div className="chart-container">
-      {data.map((item, idx) => {
-        const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
-        const dateLabel = new Date(item.time_slice).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    <>
+      <div className="chart-container">
+        {data.map((item, idx) => {
+          const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
+          const dateLabel = new Date(item.time_slice).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
-        const style: CSSProperties = { height: `${heightPercent}%` };
-        let icon = null;
-        let barClass = 'chart-bar';
-        // Unified label style: below the bar with a -45 degree angle
-        const labelStyle: CSSProperties = {
-          color: 'var(--text-color)',
-        };
- 
-        if (item.velocity > 0) {
-          style.backgroundColor = 'var(--trend-up)';
-          icon = <span className="trend-icon" style={{ color: 'var(--trend-up)' }}>▲</span>;
-          labelStyle.color = 'var(--trend-text)';
-        } else if (item.velocity < 0) {
-          style.backgroundColor = 'var(--trend-down)';
-          icon = <span className="trend-icon" style={{ color: 'var(--trend-down)' }}>▼</span>;
-          labelStyle.color = 'var(--trend-text)';
-        } else {
-          style.backgroundColor = 'var(--trend-steady)';
-          icon = <span className="trend-icon" style={{ color: 'var(--trend-steady)' }}>▶</span>;
-          barClass += ' lateral';
-          labelStyle.color = 'var(--trend-text)';
-        }
+          const isSelected = selectedDate === item.time_slice;
+          const style: CSSProperties = { height: `${heightPercent}%` };
+          let icon = null;
+          let barClass = 'chart-bar';
+          // Unified label style: below the bar with a -45 degree angle
+          const labelStyle: CSSProperties = {
+            color: 'var(--text-color)',
+          };
+  
+          if (item.velocity > 0) {
+            style.backgroundColor = 'var(--trend-up)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-up)' }}>▲</span>;
+            labelStyle.color = 'var(--trend-text)';
+          } else if (item.velocity < 0) {
+            style.backgroundColor = 'var(--trend-down)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-down)' }}>▼</span>;
+            labelStyle.color = 'var(--trend-text)';
+          } else {
+            style.backgroundColor = 'var(--trend-steady)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-steady)' }}>▶</span>;
+            barClass += ' lateral';
+            labelStyle.color = 'var(--trend-text)';
+          }
 
-        return (
-          <div
-            key={item.time_slice}
-            className="chart-bar-wrapper"
-            tabIndex={0}
-            role="img"
-            aria-label={t('trends.search_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
-              date: dateLabel,
-              frequency: item.frequency,
-              velocity: (item.velocity > 0 ? '+' : '') + item.velocity
-            })}
-          >
-            <div className={barClass} style={style}>
-              {icon}
-              <div className="bar-tooltip">
-                {dateLabel}<br/>
-                {t('trends.freq', 'Freq')}: {item.frequency}<br/>
-                {t('trends.vel', 'Vel')}: {item.velocity > 0 ? '+' : ''}{item.velocity}
+          return (
+            <div
+              key={item.time_slice}
+              className={`chart-bar-wrapper ${isSelected ? 'selected' : ''}`}
+              onClick={() => setSelectedDate(isSelected ? null : item.time_slice)}
+              tabIndex={0}
+              role="img"
+              aria-label={t('trends.search_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
+                date: dateLabel,
+                frequency: item.frequency,
+                velocity: (item.velocity > 0 ? '+' : '') + item.velocity
+              })}
+            >
+              <div className={barClass} style={style}>
+                {icon}
+                <div className="bar-tooltip">
+                  {dateLabel}<br/>
+                  {t('trends.freq', 'Freq')}: {item.frequency}<br/>
+                  {t('trends.vel', 'Vel')}: {item.velocity > 0 ? '+' : ''}{item.velocity}
+                </div>
               </div>
+              {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
+                <div className="bar-label" style={labelStyle}>{dateLabel}</div>
+              )}
             </div>
-            {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
-              <div className="bar-label" style={labelStyle}>{dateLabel}</div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+      {selectedDate && (
+        <ArticleList 
+          term={term} 
+          domain={domain} 
+          date={selectedDate}
+          titleOverride={`${t('trends.articles', 'Articles')} / ${new Date(selectedDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} / ${term}`}
+        />
+      )}
+    </>
   );
 };
