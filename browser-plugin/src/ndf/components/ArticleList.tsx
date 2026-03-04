@@ -22,7 +22,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
   const [articles, setArticles] = useState<AnalyzedArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true); 
+  const [hasMore, setHasMore] = useState(true);
   const paginationRef = useRef<HTMLDivElement>(null); // Ref for the pagination controls
 
   const isFixedDateMode = !!date;
@@ -47,7 +47,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
         const limit = ARTICLES_PER_PAGE;
 
         const result = await client.getArticlesByTrend(domain.domain, term, date, days, offset, limit);
-        
+
         if (currentPage > 1 && (!result || result.length === 0)) {
           setHasMore(false);
         } else {
@@ -121,11 +121,11 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
                   <th style={{ width: 'auto', textAlign: 'left' }}>
                     <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                       <span>{t('trends.article_caption', 'Article')}</span>
-                      <span 
+                      <span
                         title={t('trends.article_column_tooltip_content')}
                         style={{ marginLeft: '5px', cursor: 'help', fontSize: '0.8em', verticalAlign: 'super', color: 'var(--secondary-text)' }}
                       >
-                        i
+                        (i)
                       </span>
                       <div className="article-header-tooltip" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '8px' }}>
                         {t('trends.article_column_tooltip_content')}
@@ -139,18 +139,18 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
                   <tr key={article.url + index} style={{ borderTop: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '8px 5px', verticalAlign: 'middle' }}>
                       {article.rating !== undefined && (
-                        <RatingBar 
-                          value={article.rating} 
-                          label={undefined} 
+                        <RatingBar
+                          value={article.rating}
+                          label={undefined}
                           id={`article-rating-${index}`}
                         />
                       )}
                     </td>
                     {!isFixedDateMode && <td style={{ padding: '8px 5px', verticalAlign: 'middle', fontSize: '0.9em', color: 'var(--secondary-text)' }}>{formatPubDate(article.pub_date)}</td>}
                     <td style={{ padding: '8px 5px', verticalAlign: 'middle' }}>
-                      <a 
-                        href={article.url} 
-                        target="_blank" 
+                      <a
+                        href={article.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         style={{ color: 'var(--accent-color)', textDecoration: 'underline', fontSize: '0.95em', lineHeight: '1.3' }}
                       >
@@ -164,7 +164,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
           </div>
 
           <div ref={paginationRef} className="pagination-controls" style={{ display: 'flex', alignItems: 'center', marginTop: '15px' }}>
-            <button 
+            <button
               className="pagination-btn"
               onClick={handlePrevPage}
               disabled={currentPage === 1}
@@ -174,7 +174,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
             <span style={{ fontSize: '0.9em', color: 'var(--secondary-text)' }}>
               Page {currentPage}
             </span>
-            <button 
+            <button
               className="pagination-btn"
               onClick={handleNextPage}
               disabled={!hasMore}
