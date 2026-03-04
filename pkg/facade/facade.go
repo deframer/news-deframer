@@ -47,7 +47,7 @@ type Facade interface {
 	GetContextByDomain(ctx context.Context, term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
 	GetLifecycleByDomain(ctx context.Context, term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
 	GetDomainComparison(ctx context.Context, domainA string, domainB string, language string, date *time.Time, days int) ([]database.DomainComparison, error)
-	GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error)
+	GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
 }
 
 type facade struct {
@@ -216,6 +216,6 @@ func (f *facade) GetDomainComparison(ctx context.Context, domainA string, domain
 	return f.repo.GetDomainComparison(domainA, domainB, language, date, days, database.DomainComparisonUtilityThreshold, database.DomainComparisonOutlierRatioThreshold, database.DomainComparisonLimit)
 }
 
-func (f *facade) GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
-	return f.repo.GetArticlesByTrend(term, domain, date, days)
+func (f *facade) GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error) {
+	return f.repo.GetArticlesByTrend(term, domain, date, days, offset, limit)
 }

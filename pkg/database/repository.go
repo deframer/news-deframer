@@ -104,7 +104,7 @@ type Repository interface {
 	GetContextByDomain(term string, domain string, language string, date *time.Time, days int) ([]TrendContext, error)
 	GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]Lifecycle, error)
 	GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
-	GetArticlesByTrend(term string, domain string, date *time.Time, days int) ([]AnalyzedArticle, error)
+	GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error)
 }
 
 type repository struct {
@@ -758,15 +758,27 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 	return items, nil
 }
 
-func (r *repository) GetArticlesByTrend(term string, domain string, date *time.Time, days int) ([]AnalyzedArticle, error) {
+func (r *repository) GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error) {
 	var items []AnalyzedArticle
 	days = normalizeDays(days, 365)
+
+	if limit <= 0 {
+		limit = 20
+	}
+	if limit > 100 {
+		limit = 100
+	}
+	if offset < 0 {
+		offset = 0
+	}
 
 	if err := r.db.Raw(articlesByTrendQuery,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
 		sql.Named("date", normalizeDateParam(date)),
 		sql.Named("days", days),
+		sql.Named("offset", offset),
+		sql.Named("limit", limit),
 	).Scan(&items).Error; err != nil {
 		return nil, err
 	}
