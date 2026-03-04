@@ -28,6 +28,10 @@ export const cssVariables = {
     --badge-bg: #e9ecef;
     --primary-color: #0056b3;
     --primary-color-dark: #004494;
+    --trend-up: #0056b3;       /* Brand Blue */
+    --trend-down: #000000;     /* Pitch Black */
+    --trend-steady: #767676;   /* Accessible Medium Gray */
+    --trend-text: #ffffff;     /* White text on dark bars */
   `,
   dark: `
     --bg-color: #18191a;
@@ -56,6 +60,10 @@ export const cssVariables = {
      --badge-bg: #3a3b3c;
      --primary-color: #2d88ff;
      --primary-color-dark: #4599ff;
+     --trend-up: #2d88ff;      /* Vibrant Blue */
+     --trend-down: #ffffff;    /* Pure White */
+     --trend-steady: #959595;  /* Slate Gray */
+     --trend-text: #18191a;    /* Dark text on light bars */
    `
 };
 

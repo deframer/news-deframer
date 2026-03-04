@@ -445,8 +445,9 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   opacity: 0.8;
 }
 .chart-bar.lateral {
-  background-color: var(--badge-bg, #e9ecef);
-  border-top: 3px dotted var(--secondary-text);
+  background-color: var(--trend-steady, #475569);
+  border-top: 1px solid rgba(255,255,255,0.2);
+  opacity: 0.8;
 }
 .trend-icon {
   position: absolute;

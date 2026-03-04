@@ -60,7 +60,6 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
         const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
         const dateLabel = new Date(item.time_slice).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
-        const textShadow = '0 0 3px rgba(0,0,0,0.7)';
         const style: CSSProperties = { height: `${heightPercent}%` };
         let icon = null;
         let barClass = 'chart-bar';
@@ -68,19 +67,20 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
         const labelStyle: CSSProperties = {
           color: 'var(--text-color)',
         };
-
+ 
         if (item.velocity > 0) {
-          style.backgroundColor = 'var(--success-color, #198754)';
-          icon = <span className="trend-icon" style={{ color: 'var(--success-color, #198754)' }}>▲</span>;
-          labelStyle.color = '#ffffff';
-          labelStyle.textShadow = textShadow;
+          style.backgroundColor = 'var(--trend-up)';
+          icon = <span className="trend-icon" style={{ color: 'var(--trend-up)' }}>▲</span>;
+          labelStyle.color = 'var(--trend-text)';
         } else if (item.velocity < 0) {
-          style.backgroundColor = 'var(--danger-color, #b02a37)';
-          icon = <span className="trend-icon" style={{ color: 'var(--danger-color, #b02a37)' }}>▼</span>;
-          labelStyle.color = '#ffffff';
-          labelStyle.textShadow = textShadow;
+          style.backgroundColor = 'var(--trend-down)';
+          icon = <span className="trend-icon" style={{ color: 'var(--trend-down)' }}>▼</span>;
+          labelStyle.color = 'var(--trend-text)';
         } else {
+          style.backgroundColor = 'var(--trend-steady)';
+          icon = <span className="trend-icon" style={{ color: 'var(--trend-steady)' }}>▶</span>;
           barClass += ' lateral';
+          labelStyle.color = 'var(--trend-text)';
         }
 
         return (

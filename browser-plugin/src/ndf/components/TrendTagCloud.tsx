@@ -51,7 +51,7 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
   const fixedRandom = useCallback(() => 0.5, []);
 
   // Use CSS variables for colors to match theme
-  const colors = ['var(--text-color)', 'var(--primary-color)', 'var(--secondary-text)'];
+  const colors = ['var(--trend-up)', 'var(--trend-down)', 'var(--trend-steady)'];
 
   const getColor = (text: string) => {
     let hash = 0;
