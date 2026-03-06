@@ -407,6 +407,14 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 
 .source-chip {
   cursor: pointer !important; /* Pills are always clickable */
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-color-secondary);
+  border: 1px solid var(--border-color);
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+  outline: none;
 }
 .compare-item.selected .topic-name {
   font-weight: bold;
@@ -506,6 +514,17 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+}
+.source-chip:focus-visible {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.55);
+}
+.open-icon-btn:focus-visible,
+.header-select:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 .source-chip:hover {
   border-color: var(--accent-color);

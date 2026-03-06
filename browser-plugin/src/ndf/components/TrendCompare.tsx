@@ -106,6 +106,16 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     }
   };
 
+  const handlePillClick = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    term: string,
+    trendDomain: string,
+    column: 'A' | 'B' | 'Intersect'
+  ) => {
+    e.stopPropagation();
+    handleTrendClick(term, trendDomain, column);
+  };
+
   const renderArticleList = () => {
     if (!selected) return null;
     return (
@@ -175,31 +185,37 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
           <span className="topic-name">{trendTopic}</span>
           <div className="item-sources">
             {columnType !== 'Intersect' ? (
-              <div 
+              <button
+                type="button"
                 className={`source-chip ${isActive ? 'active' : ''}`}
-                onClick={liClickHandler} 
+                onClick={(e) => handlePillClick(e, trendTopic, clickDomain, columnType)}
+                aria-pressed={isActive}
               >
                 <span className="source-score">{displayScore}</span>
                 <span className="source-name">{displayDomainName}</span>
-              </div>
+              </button>
             ) : (
               /* Intersect column: two clickable chips */
               <>
-                <div 
+                <button
+                  type="button"
                   className={`source-chip ${isActive && selected?.domain === currentDomainName ? 'active' : ''}`}
-                  onClick={() => handleTrendClick(trendTopic, currentDomainName, columnType)}
+                  onClick={(e) => handlePillClick(e, trendTopic, currentDomainName, columnType)}
+                  aria-pressed={isActive && selected?.domain === currentDomainName}
                 >
                   <span className="source-score">{scoreA}</span>
                   <span className="source-name">{currentDomainName}</span>
-                </div>
+                </button>
                 {compareDomain && (
-                  <div 
+                  <button
+                    type="button"
                     className={`source-chip ${isActive && selected?.domain === comparisonDomainName ? 'active' : ''}`}
-                    onClick={() => handleTrendClick(trendTopic, comparisonDomainName, columnType)}
+                    onClick={(e) => handlePillClick(e, trendTopic, comparisonDomainName, columnType)}
+                    aria-pressed={isActive && selected?.domain === comparisonDomainName}
                   >
                     <span className="source-score">{scoreB}</span>
                     <span className="source-name">{comparisonDomainName}</span>
-                  </div>
+                  </button>
                 )}
               </>
             )}
