@@ -118,12 +118,12 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
           }
 
           return (
-            <div
+            <button
               key={item.time_slice}
+              type="button"
               className={`chart-bar-wrapper ${isSelected ? 'selected' : ''}`}
               onClick={() => setSelectedDate(isSelected ? null : item.time_slice)}
-              tabIndex={0}
-              role="img"
+              aria-pressed={isSelected}
               aria-label={t('trends.search_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
                 date: dateLabel,
                 frequency: item.frequency,
@@ -141,7 +141,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
               {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
                 <div className="bar-label" style={labelStyle}>{dateLabel}</div>
               )}
-            </div>
+            </button>
           );
         })}
       </div>

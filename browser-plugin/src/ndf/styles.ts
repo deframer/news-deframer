@@ -807,6 +807,11 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   }
 }
 .chart-bar-wrapper {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
   flex: 1;
   height: 100%;
   display: flex;
@@ -814,6 +819,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   justify-content: flex-end;
   position: relative;
   outline: none;
+  cursor: pointer;
 }
 .chart-bar-wrapper:hover,
 .chart-bar-wrapper:focus-visible {
