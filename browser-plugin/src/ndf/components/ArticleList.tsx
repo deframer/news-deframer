@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, useRef } from 'react';
+import { Fragment, useEffect, useState, useRef, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -19,10 +19,13 @@ const ARTICLES_PER_PAGE = 10;
 
 export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle = false }: ArticleListProps) => {
   const { t, i18n } = useTranslation();
+  const articleTooltipId = useId();
   const [articles, setArticles] = useState<AnalyzedArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [isArticleTooltipOpen, setIsArticleTooltipOpen] = useState(false);
+  const [articleTooltipPos, setArticleTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const paginationRef = useRef<HTMLDivElement>(null); // Ref for the pagination controls
 
   const isFixedDateMode = !!date;
@@ -90,6 +93,16 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
     return new Date(pubDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
   };
 
+  const showArticleTooltip = (target: HTMLElement) => {
+    const rect = target.getBoundingClientRect();
+    setArticleTooltipPos({ x: rect.left + rect.width / 2, y: rect.top - 10 });
+    setIsArticleTooltipOpen(true);
+  };
+
+  const hideArticleTooltip = () => {
+    setIsArticleTooltipOpen(false);
+  };
+
   return (
     <div className="article-list-container" style={{ padding: '16px', border: '1px solid var(--border-color)', marginTop: '16px', borderRadius: '8px', backgroundColor: 'var(--card-bg)' }}>
       {!hideTitle && (
@@ -119,16 +132,21 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
                   <th style={{ width: '70px', textAlign: 'left' }}>{t('trends.rating_caption', 'Rating')}</th>
                   {!isFixedDateMode && <th style={{ width: '80px', textAlign: 'left' }}>{t('trends.date_caption', 'Date')}</th>}
                   <th style={{ width: 'auto', textAlign: 'left' }}>
-                    <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                    <div className="article-header-info">
                       <span>{t('trends.article_caption', 'Article')}</span>
-                      <span
-                        title={t('trends.article_column_tooltip_content')}
-                        style={{ marginLeft: '5px', cursor: 'help', fontSize: '0.8em', verticalAlign: 'super', color: 'var(--secondary-text)' }}
-                      >
-                        (i)
-                      </span>
-                      <div className="article-header-tooltip" style={{ position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)', marginBottom: '8px' }}>
-                        {t('trends.article_column_tooltip_content')}
+                      <div className="article-header-info-trigger-wrap">
+                        <button
+                          type="button"
+                          className="article-header-info-trigger"
+                          aria-label={t('trends.article_column_tooltip_content')}
+                          aria-describedby={articleTooltipId}
+                          onMouseEnter={(e) => showArticleTooltip(e.currentTarget)}
+                          onMouseLeave={hideArticleTooltip}
+                          onFocus={(e) => showArticleTooltip(e.currentTarget)}
+                          onBlur={hideArticleTooltip}
+                        >
+                          i
+                        </button>
                       </div>
                     </div>
                   </th>
@@ -182,6 +200,16 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
               {t('trends.pagination_next', 'Next')}
             </button>
           </div>
+          {isArticleTooltipOpen && (
+            <div
+              id={articleTooltipId}
+              role="tooltip"
+              className="article-header-floating-tooltip"
+              style={{ left: articleTooltipPos.x, top: articleTooltipPos.y }}
+            >
+              {t('trends.article_column_tooltip_content')}
+            </div>
+          )}
         </Fragment>
       )}
     </div>
