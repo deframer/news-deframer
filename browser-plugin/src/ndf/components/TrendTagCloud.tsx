@@ -137,6 +137,11 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
     })).sort((a, b) => b.value - a.value);
   }, [items]);
 
+  const isSelectedTermVisible = useMemo(() => {
+    if (!selectedTerm) return false;
+    return words.some((word) => word.text === selectedTerm);
+  }, [selectedTerm, words]);
+
   // Memoize the render function for ParentSize to prevent it from triggering updates
   // when TrendTagCloud re-renders (e.g. tab switch) but dimensions haven't changed.
   const renderCloud = useCallback(({ width, height }: { width: number; height: number }) => (
@@ -190,9 +195,9 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
     <>
       <div
         className="tag-cloud"
-        style={{ width: '100%', height: selectedTerm ? '250px' : '400px', position: 'relative' }}
+        style={{ width: '100%', height: isSelectedTermVisible ? '250px' : '400px', position: 'relative' }}
       >
-        {selectedTerm && (
+        {isSelectedTermVisible && (
           <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
             <button
               onClick={handleSearch}
@@ -224,7 +229,7 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
           {renderCloud}
         </ParentSize>
       </div>
-      {selectedTerm && (
+      {isSelectedTermVisible && selectedTerm && (
         <TrendDetails term={selectedTerm} domain={domain} days={days} activeTab={activeTab} setActiveTab={setActiveTab} />
       )}
     </>
