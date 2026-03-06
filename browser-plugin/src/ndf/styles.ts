@@ -826,8 +826,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   z-index: 20;
 }
 .chart-bar-wrapper:focus-visible .chart-bar {
-  box-shadow: 0 0 0 2px var(--text-color);
-  opacity: 0.8;
+  box-shadow: inset 0 0 0 2px var(--text-color);
 }
 .chart-bar {
   width: 100%;
@@ -1080,8 +1079,10 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .nav-tab {
   flex: 1;
   padding: 14px 10px;
+  appearance: none;
   border: none;
   background: none;
+  margin: 0;
   cursor: pointer;
   font-size: 0.95em;
   font-weight: 500;
@@ -1095,6 +1096,10 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .nav-tab:hover {
   color: var(--primary-color, #0056b3);
   background-color: var(--hover-bg, rgba(0,0,0,0.02));
+}
+.nav-tab:focus-visible {
+  outline: 2px solid var(--text-color);
+  outline-offset: -2px;
 }
 .nav-tab.active {
   color: var(--primary-color, #0056b3);
