@@ -1,4 +1,4 @@
-import { useState, Dispatch, SetStateAction } from 'react';
+import { Dispatch, SetStateAction,useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DomainEntry } from '../client';

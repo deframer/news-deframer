@@ -2,7 +2,7 @@ import { ParentSize } from '@visx/responsive';
 import { scaleLog } from '@visx/scale';
 import { Text } from '@visx/text';
 import { Wordcloud } from '@visx/wordcloud';
-import { memo, useCallback, useEffect, useMemo, useState, Dispatch, SetStateAction } from 'react';
+import { Dispatch, memo, SetStateAction,useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
