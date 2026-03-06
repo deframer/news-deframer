@@ -179,8 +179,8 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
                 className={`source-chip ${isActive ? 'active' : ''}`}
                 onClick={liClickHandler} 
               >
-                <span className="source-name">{displayDomainName}</span>
                 <span className="source-score">{displayScore}</span>
+                <span className="source-name">{displayDomainName}</span>
               </div>
             ) : (
               /* Intersect column: two clickable chips */
@@ -189,16 +189,16 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
                   className={`source-chip ${isActive && selected?.domain === currentDomainName ? 'active' : ''}`}
                   onClick={() => handleTrendClick(trendTopic, currentDomainName, columnType)}
                 >
-                  <span className="source-name">{currentDomainName}</span>
                   <span className="source-score">{scoreA}</span>
+                  <span className="source-name">{currentDomainName}</span>
                 </div>
                 {compareDomain && (
                   <div 
                     className={`source-chip ${isActive && selected?.domain === comparisonDomainName ? 'active' : ''}`}
                     onClick={() => handleTrendClick(trendTopic, comparisonDomainName, columnType)}
                   >
-                    <span className="source-name">{comparisonDomainName}</span>
                     <span className="source-score">{scoreB}</span>
+                    <span className="source-name">{comparisonDomainName}</span>
                   </div>
                 )}
               </>
