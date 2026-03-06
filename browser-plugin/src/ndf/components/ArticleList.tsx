@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, useRef, useId } from 'react';
+import { Fragment, useEffect, useState, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -26,7 +26,6 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
   const [hasMore, setHasMore] = useState(true);
   const [isArticleTooltipOpen, setIsArticleTooltipOpen] = useState(false);
   const [articleTooltipPos, setArticleTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const paginationRef = useRef<HTMLDivElement>(null); // Ref for the pagination controls
 
   const isFixedDateMode = !!date;
 
@@ -73,13 +72,6 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
     setCurrentPage(1);
     setHasMore(true);
   }, [term, domain, date, days]);
-
-  // Scroll to pagination controls when page changes
-  useEffect(() => {
-    if (paginationRef.current) {
-      paginationRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [currentPage]);
 
   const handleNextPage = () => {
     setCurrentPage(prev => prev + 1);
@@ -181,7 +173,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
             </table>
           </div>
 
-          <div ref={paginationRef} className="pagination-controls" style={{ display: 'flex', alignItems: 'center', marginTop: '15px' }}>
+          <div className="pagination-controls" style={{ display: 'flex', alignItems: 'center', marginTop: '15px' }}>
             <button
               className="pagination-btn"
               onClick={handlePrevPage}
