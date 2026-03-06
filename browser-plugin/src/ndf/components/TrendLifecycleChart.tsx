@@ -1,8 +1,9 @@
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
 import { DomainEntry, Lifecycle, NewsDeframerClient } from '../client';
+import { ArticleList } from './ArticleList';
 
 interface TrendLifecycleChartProps {
   domain: DomainEntry;
@@ -11,9 +12,13 @@ interface TrendLifecycleChartProps {
 }
 
 export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [data, setData] = useState<Lifecycle[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const toIsoDay = (value: string) => new Date(value).toISOString().split('T')[0];
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,6 +41,33 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
     fetchData();
   }, [term, domain, days]);
 
+
+  useEffect(() => {
+    setSelectedDate(null);
+  }, [term, domain.domain]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    if (loading) return;
+    const selectedDay = toIsoDay(selectedDate);
+    const isStillInRange = data.some((entry) => toIsoDay(entry.time_slice) === selectedDay);
+    if (!isStillInRange) {
+      setSelectedDate(null);
+    }
+  }, [data, selectedDate, loading]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(max-width: 799px)').matches) return;
+    const trendContent = chartRef.current?.closest('.trend-content');
+    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
+      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
+      return;
+    }
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  }, [selectedDate]);
+
   const maxFreq = data.length > 0 ? Math.max(...data.map(d => d.frequency)) : 0;
 
   if (loading) {
@@ -55,60 +87,73 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   }
 
   return (
-    <div className="chart-container">
-      {data.map((item, idx) => {
-        const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
-        const dateLabel = new Date(item.time_slice).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    <>
+      <div ref={chartRef} className="chart-container">
+        {data.map((item, idx) => {
+          const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
+          const dateLabel = new Date(item.time_slice).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
 
-        const textShadow = '0 0 3px rgba(0,0,0,0.7)';
-        const style: CSSProperties = { height: `${heightPercent}%` };
-        let icon = null;
-        let barClass = 'chart-bar';
-        // Unified label style: below the bar with a -45 degree angle
-        const labelStyle: CSSProperties = {
-          color: 'var(--text-color)',
-        };
+          const isSelected = selectedDate === item.time_slice;
+          const style: CSSProperties = { height: `${heightPercent}%` };
+          let icon = null;
+          let barClass = 'chart-bar';
+          // Unified label style: below the bar with a -45 degree angle
+          const labelStyle: CSSProperties = {
+            color: 'var(--text-color)',
+          };
+  
+          if (item.velocity > 0) {
+            style.backgroundColor = 'var(--trend-up)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-up)' }}>▲</span>;
+            labelStyle.color = 'var(--trend-text)';
+          } else if (item.velocity < 0) {
+            style.backgroundColor = 'var(--trend-down)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-down)' }}>▼</span>;
+            labelStyle.color = 'var(--trend-text)';
+          } else {
+            style.backgroundColor = 'var(--trend-steady)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-steady)' }}>▶</span>;
+            barClass += ' lateral';
+            labelStyle.color = 'var(--trend-text)';
+          }
 
-        if (item.velocity > 0) {
-          style.backgroundColor = 'var(--success-color, #198754)';
-          icon = <span className="trend-icon" style={{ color: 'var(--success-color, #198754)' }}>▲</span>;
-          labelStyle.color = '#ffffff';
-          labelStyle.textShadow = textShadow;
-        } else if (item.velocity < 0) {
-          style.backgroundColor = 'var(--danger-color, #b02a37)';
-          icon = <span className="trend-icon" style={{ color: 'var(--danger-color, #b02a37)' }}>▼</span>;
-          labelStyle.color = '#ffffff';
-          labelStyle.textShadow = textShadow;
-        } else {
-          barClass += ' lateral';
-        }
-
-        return (
-          <div
-            key={item.time_slice}
-            className="chart-bar-wrapper"
-            tabIndex={0}
-            role="img"
-            aria-label={t('trends.search_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
-              date: dateLabel,
-              frequency: item.frequency,
-              velocity: (item.velocity > 0 ? '+' : '') + item.velocity
-            })}
-          >
-            <div className={barClass} style={style}>
-              {icon}
-              <div className="bar-tooltip">
-                {dateLabel}<br/>
-                {t('trends.freq', 'Freq')}: {item.frequency}<br/>
-                {t('trends.vel', 'Vel')}: {item.velocity > 0 ? '+' : ''}{item.velocity}
+          return (
+            <button
+              key={item.time_slice}
+              type="button"
+              className={`chart-bar-wrapper ${isSelected ? 'selected' : ''}`}
+              onClick={() => setSelectedDate(isSelected ? null : item.time_slice)}
+              aria-pressed={isSelected}
+              aria-label={t('trends.search_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
+                date: dateLabel,
+                frequency: item.frequency,
+                velocity: (item.velocity > 0 ? '+' : '') + item.velocity
+              })}
+            >
+              <div className={barClass} style={style}>
+                {icon}
+                <div className="bar-tooltip">
+                  {dateLabel}<br/>
+                  {t('trends.freq', 'Freq')}: {item.frequency}<br/>
+                  {t('trends.vel', 'Vel')}: {(item.velocity > 0 ? '+' : '') + item.velocity}
+                </div>
               </div>
-            </div>
-            {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
-              <div className="bar-label" style={labelStyle}>{dateLabel}</div>
-            )}
-          </div>
-        );
-      })}
-    </div>
+              {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
+                <div className="bar-label" style={labelStyle}>{dateLabel}</div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {selectedDate && (
+        <ArticleList
+          term={term}
+          domain={domain}
+          date={new Date(selectedDate).toISOString().split('T')[0]} /* Explicitly format to YYYY-MM-DD for API */
+          days={undefined}
+          titleOverride={`${t('trends.articles', 'Articles')} / ${new Date(selectedDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })} / ${term}`}
+        />
+      )}
+    </>
   );
 };

@@ -522,12 +522,22 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 		days = v
 	}
 
+	offset := 0
+	if v, err := strconv.Atoi(q.Get("offset")); err == nil {
+		offset = v
+	}
+
+	limit := 20
+	if v, err := strconv.Atoi(q.Get("limit")); err == nil {
+		limit = v
+	}
+
 	if rootDomain == "" || term == "" {
 		http.Error(w, "missing root or term", http.StatusBadRequest)
 		return
 	}
 
-	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, date, days)
+	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, date, days, offset, limit)
 	if err != nil || len(articles) == 0 {
 		if err != nil {
 			s.logger.Error("GetArticlesByTrend failed", "error", err)

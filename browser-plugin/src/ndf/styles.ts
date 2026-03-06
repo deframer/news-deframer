@@ -352,12 +352,194 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border-color, #f5f5f5);
   font-size: 0.9em;
+  transition: background-color 0.2s;
+  border-radius: 6px;
+  cursor: pointer !important;
+  user-select: none;
+}
+.compare-item * {
+  cursor: pointer !important;
+}
+.compare-item .topic-name {
+  color: var(--text-color);
+  flex: 1;
+  text-decoration: none; /* No underline by default */
+  cursor: default !important; /* Topic name itself is not clickable by default for all columns */
+}
+
+.compare-item:hover .topic-name {
+  /* No change here, handled by explicit A/B vs Shared below */
+}
+
+/* A/B Specific: Topic name becomes clickable/underlined on hover of LI */
+.compare-item:not(.shared):hover .topic-name {
+  color: var(--accent-color);
+  text-decoration: underline;
+  cursor: pointer !important; /* Hand cursor on topic name when hovering clickable A/B row */
+}
+
+/* Shared Specific: Topic name is never underlined/clickable directly */
+.compare-item.shared .topic-name {
+  color: var(--text-color) !important; /* Force default color */
+  text-decoration: none !important;
+  cursor: default !important;
+}
+
+.item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.item-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.source-chip {
+  cursor: pointer !important; /* Pills are always clickable */
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--bg-color-secondary);
+  border: 1px solid var(--border-color);
+  font: inherit;
+  text-align: left;
+  box-shadow: none;
+  outline: none;
+}
+.compare-item.selected .topic-name {
+  font-weight: bold;
+}
+
+.compare-item.shared .topic-name {
+  text-decoration: none;
+  cursor: default !important;
+}
+.compare-item:hover .topic-name {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+.compare-item.shared:hover .topic-name {
+  color: var(--text-color);
+  text-decoration: none;
+}
+.compare-item.shared {
+  /* Removed flex-direction: column */
+  align-items: center;
+  padding: 8px 12px;
+  cursor: default !important;
+}
+.shared-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0px;
+  flex: 1;
+}
+.shared-sources {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-left: auto;
+  align-items: center;
+}
+.compare-item:hover .topic-name {
+  color: var(--accent-color);
+  text-decoration: underline;
+}
+.compare-item:hover .topic-name {
+  color: var(--accent-color);
+}
+.compare-item.selected {
+  background-color: var(--hover-bg, rgba(0,0,0,0.06));
+  box-shadow: inset 4px 0 0 var(--accent-color);
+}
+.compare-item.selected .topic-name {
+  font-weight: bold;
 }
 .compare-item:last-child { border-bottom: none; }
-.topic-name { font-weight: 500; }
+
+/* Unified Trend Item Layout */
+.item-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  overflow: hidden;
+}
+.topic-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  flex-shrink: 0;
+}
+.item-sources {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-left: auto;
+}
+.item-sources::-webkit-scrollbar { display: none; }
+
+.source-chip {
+  font-size: 0.75em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  color: var(--secondary-text);
+  cursor: pointer !important;
+  transition: all 0.2s;
+  background: var(--bg-color-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.source-chip:focus-visible {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.55);
+}
+.open-icon-btn:focus-visible,
+.header-select:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.source-chip:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: var(--bg-color);
+}
+.source-chip.active {
+  background: var(--accent-color);
+  color: var(--accent-text);
+  border-color: var(--accent-color);
+  font-weight: bold;
+}
+.source-score {
+  opacity: 0.7;
+  font-weight: bold;
+  border-right: 1px solid currentColor;
+  padding-right: 4px;
+  margin-right: 2px;
+}
+.source-name {
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .topic-score {
   font-size: 0.8em;
   color: var(--secondary-text);
@@ -374,6 +556,42 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   font-size: 0.9em;
   font-weight: bold;
   max-width: 100%;
+}
+@media (max-width: 799px) {
+  .item-sources {
+    flex-wrap: nowrap;
+    overflow-x: hidden;
+  }
+
+  .source-chip {
+    flex: 0 1 96px;
+    min-width: 0;
+    max-width: 96px;
+    font-size: 0.72em;
+    padding: 2px 6px;
+    gap: 3px;
+    overflow: hidden;
+  }
+
+  .compare-item.shared .source-chip {
+    flex-basis: 68px;
+    max-width: 68px;
+    padding: 2px 5px;
+    gap: 2px;
+  }
+
+  .source-name {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .compare-item.shared .source-name {
+    font-size: 0.95em;
+  }
 }
 .open-icon-wrapper {
   position: relative;
@@ -447,6 +665,132 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .lifecycle-btn:hover {
   background: var(--primary-color-dark, #004494);
 }
+
+/* ArticleList.tsx */
+.article-table th,
+.article-table td {
+  padding: 8px 5px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.article-header-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.article-header-info-trigger-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.article-header-info-trigger {
+  cursor: help;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--accent-color);
+  background-color: var(--card-bg);
+  color: var(--accent-color);
+  font-size: 0.75em;
+  font-weight: 600;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  appearance: none;
+  font-family: inherit;
+}
+
+.article-header-floating-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%);
+  width: 280px;
+  max-width: 60vw;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background-color: var(--tooltip-bg, rgba(0,0,0,0.8));
+  color: var(--tooltip-text, #fff);
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  z-index: 9999;
+  pointer-events: none;
+  white-space: normal;
+}
+
+.component-tooltip {
+  visibility: hidden;
+  opacity: 0;
+  width: 250px;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
+  text-align: left;
+  border-radius: 6px;
+  padding: 10px;
+  position: absolute;
+  z-index: 10;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 8px;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  font-size: 0.9em;
+  line-height: 1.4;
+  font-weight: normal;
+  white-space: normal; /* Allows multi-line text */
+  box-shadow: var(--card-shadow);
+}
+
+.tooltip-container:hover .component-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+.article-table thead th {
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 8px;
+  font-size: 0.9em;
+  color: var(--secondary-text);
+}
+
+.article-table tbody tr {
+  border-top: 1px solid var(--border-color);
+}
+
+.article-table tbody td:first-child {
+  padding-left: 0;
+}
+
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 15px;
+  gap: 15px;
+}
+.pagination-controls button {
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: 1px solid var(--btn-border);
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+.pagination-controls button:hover:not(:disabled) {
+  background-color: var(--btn-hover-bg);
+  border-color: var(--btn-hover-bg);
+}
+.pagination-controls button:disabled {
+  background-color: transparent;
+  color: var(--secondary-text);
+  border-color: var(--border-color);
+  cursor: not-allowed;
+}
 .chart-container {
   height: 300px;
   display: flex;
@@ -463,6 +807,11 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   }
 }
 .chart-bar-wrapper {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
   flex: 1;
   height: 100%;
   display: flex;
@@ -470,14 +819,14 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   justify-content: flex-end;
   position: relative;
   outline: none;
+  cursor: pointer;
 }
 .chart-bar-wrapper:hover,
 .chart-bar-wrapper:focus-visible {
   z-index: 20;
 }
 .chart-bar-wrapper:focus-visible .chart-bar {
-  box-shadow: 0 0 0 2px var(--text-color);
-  opacity: 0.8;
+  box-shadow: inset 0 0 0 2px var(--text-color);
 }
 .chart-bar {
   width: 100%;
@@ -671,7 +1020,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   background: none;
   border: none;
   padding: 6px 12px;
-  cursor: pointer;
+  cursor: pointer !important;
   font-size: 0.9em;
   color: var(--secondary-text);
   border-bottom: 2px solid transparent;
@@ -730,8 +1079,10 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .nav-tab {
   flex: 1;
   padding: 14px 10px;
+  appearance: none;
   border: none;
   background: none;
+  margin: 0;
   cursor: pointer;
   font-size: 0.95em;
   font-weight: 500;
@@ -745,6 +1096,10 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .nav-tab:hover {
   color: var(--primary-color, #0056b3);
   background-color: var(--hover-bg, rgba(0,0,0,0.02));
+}
+.nav-tab:focus-visible {
+  outline: 2px solid var(--text-color);
+  outline-offset: -2px;
 }
 .nav-tab.active {
   color: var(--primary-color, #0056b3);

@@ -19,3 +19,4 @@ WHERE
 ORDER BY
     t.pub_date DESC,
     title ASC NULLS LAST
+LIMIT @limit OFFSET @offset

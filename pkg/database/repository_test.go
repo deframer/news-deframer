@@ -1535,7 +1535,7 @@ func TestGetArticlesByTrend(t *testing.T) {
 		repo := NewFromDB(tx)
 		date := time.Date(2026, time.March, 3, 0, 0, 0, 0, time.UTC)
 
-		items, err := repo.GetArticlesByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), &date, 0)
+		items, err := repo.GetArticlesByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), &date, 0, 0, 10)
 		assert.NoError(t, err)
 		assert.Nil(t, items)
 	})

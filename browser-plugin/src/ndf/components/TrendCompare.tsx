@@ -1,8 +1,9 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
 import { DomainComparison, DomainEntry, NewsDeframerClient, TrendMetric } from '../client';
+import { ArticleList } from './ArticleList';
 
 interface DomainOption {
   id: string;
@@ -45,6 +46,16 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
   const { t } = useTranslation();
   const [items, setItems] = useState<DomainComparison[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selected, setSelected] = useState<{ term: string; domain: string; column: 'A' | 'B' | 'Intersect' } | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const compareGridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 799px)').matches);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -65,58 +76,193 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     fetchData();
   }, [domain, compareDomain, days]);
 
+  useEffect(() => {
+    setSelected(null);
+  }, [domain.domain, compareDomain, days]);
+
+  useEffect(() => {
+    if (!selected) return;
+    if (isMobile) return;
+    if (typeof window === 'undefined') return;
+    const trendContent = compareGridRef.current?.closest('.trend-content');
+    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
+      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
+      return;
+    }
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  }, [selected, isMobile]);
+
   const handleSearch = (term: string, searchDomain: string) => {
     const query = encodeURIComponent(`${term} site:${searchDomain}`);
     const baseUrl = searchEngineUrl.replace(/\/$/, '');
     window.open(`${baseUrl}/search?q=${query}`, '_blank');
   };
 
-  // If comparing, use the comparison data. If not, uniqueA is just the base list (top 10)
+  const handleTrendClick = (term: string, trendDomain: string, column: 'A' | 'B' | 'Intersect') => {
+    if (selected?.term === term && selected?.domain === trendDomain) {
+      setSelected(null);
+    } else {
+      setSelected({ term, domain: trendDomain, column });
+    }
+  };
+
+  const handlePillClick = (
+    e: React.MouseEvent<HTMLButtonElement>,
+    term: string,
+    trendDomain: string,
+    column: 'A' | 'B' | 'Intersect'
+  ) => {
+    e.stopPropagation();
+    handleTrendClick(term, trendDomain, column);
+  };
+
+  const renderArticleList = () => {
+    if (!selected) return null;
+    return (
+      <ArticleList
+        term={selected.term}
+        domain={{ domain: selected.domain, language: domain.language }}
+        days={days}
+        titleOverride={`${t('trends.articles', 'Articles')} / ${selected.domain} / ${selected.term}`}
+      />
+    );
+  };
+
+  // Helper to render a single trend item, handling different column types
+  const renderTrendItem = (item: TrendMetric | DomainComparison, columnType: 'A' | 'B' | 'Intersect') => {
+    const isDomainComparison = (item as DomainComparison).classification !== undefined;
+    const trendTopic = isDomainComparison ? (item as DomainComparison).trend_topic : (item as TrendMetric).trend_topic;
+    
+    const isActive = selected?.term === trendTopic && selected?.column === columnType;
+    
+    let scoreA: number | string = '';
+    let scoreB: number | string = '';
+    const currentDomainName = domain.domain;
+    const comparisonDomainName = compareDomain || '';
+
+    if (isDomainComparison) {
+      const dcItem = item as DomainComparison;
+      scoreA = dcItem.score_a;
+      scoreB = dcItem.score_b;
+    } else { // TrendMetric for baseItems (Column A when not comparing)
+      scoreA = (item as TrendMetric).outlier_ratio.toFixed(1) + 'x';
+      scoreB = ''; 
+    }
+
+    let displayDomainName = '';
+    let displayScore: number | string = ''; 
+    let clickDomain = '';
+
+    if (columnType === 'A') { 
+      displayDomainName = currentDomainName;
+      displayScore = scoreA;
+      clickDomain = currentDomainName;
+    } else if (columnType === 'B') { 
+      displayDomainName = comparisonDomainName;
+      displayScore = scoreB; 
+      clickDomain = comparisonDomainName;
+    } else { 
+      // For Intersect, these are handled by individual chips, no need to set here
+      // but ensuring they are explicitly empty for safety
+      displayDomainName = ''; 
+      displayScore = '';      
+      clickDomain = '';       
+    }
+
+
+    // Determine the main click handler for the li element
+    const liClickHandler = columnType !== 'Intersect' 
+      ? () => handleTrendClick(trendTopic, clickDomain, columnType) 
+      : undefined; // Intersect clicks are handled by individual chips
+
+    return (
+      <li 
+        key={`${trendTopic}-${isDomainComparison ? (item as DomainComparison).classification : 'base'}`}
+        className={`compare-item ${isActive ? 'selected' : ''} ${columnType === 'Intersect' ? 'shared' : ''}`}
+        onClick={liClickHandler}
+      >
+        <div className="item-content">
+          <span className="topic-name">{trendTopic}</span>
+          <div className="item-sources">
+            {columnType !== 'Intersect' ? (
+              <button
+                type="button"
+                className={`source-chip ${isActive ? 'active' : ''}`}
+                onClick={(e) => handlePillClick(e, trendTopic, clickDomain, columnType)}
+                aria-pressed={isActive}
+              >
+                <span className="source-score">{displayScore}</span>
+                <span className="source-name">{displayDomainName}</span>
+              </button>
+            ) : (
+              /* Intersect column: two clickable chips */
+              <>
+                <button
+                  type="button"
+                  className={`source-chip ${isActive && selected?.domain === currentDomainName ? 'active' : ''}`}
+                  onClick={(e) => handlePillClick(e, trendTopic, currentDomainName, columnType)}
+                  aria-pressed={isActive && selected?.domain === currentDomainName}
+                >
+                  <span className="source-score">{scoreA}</span>
+                  <span className="source-name">{currentDomainName}</span>
+                </button>
+                {compareDomain && (
+                  <button
+                    type="button"
+                    className={`source-chip ${isActive && selected?.domain === comparisonDomainName ? 'active' : ''}`}
+                    onClick={(e) => handlePillClick(e, trendTopic, comparisonDomainName, columnType)}
+                    aria-pressed={isActive && selected?.domain === comparisonDomainName}
+                  >
+                    <span className="source-score">{scoreB}</span>
+                    <span className="source-name">{comparisonDomainName}</span>
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        <div className="item-actions">
+          {(columnType === 'A' || columnType === 'Intersect') && (
+            <OpenIcon onClick={() => handleSearch(trendTopic, currentDomainName)} tooltip={<>{trendTopic} {BULLET_DELIMITER} {currentDomainName}</>} />
+          )}
+          {compareDomain && (columnType === 'B' || columnType === 'Intersect') && (
+            <OpenIcon onClick={() => handleSearch(trendTopic, comparisonDomainName)} tooltip={<>{trendTopic} {BULLET_DELIMITER} {comparisonDomainName}</>} />
+          )}
+        </div>
+      </li>
+    );
+  };
+
   const uniqueA = compareDomain ? items.filter(i => i.classification === 'BLINDSPOT_A') : [];
   const intersect = compareDomain ? items.filter(i => i.classification === 'INTERSECT') : [];
   const uniqueB = compareDomain ? items.filter(i => i.classification === 'BLINDSPOT_B') : [];
 
-  const renderList = (list: DomainComparison[], scoreKey: 'score_a' | 'score_b' | 'both') => (
-    <ul className="compare-list">
-      {list.map((item, idx) => (
-        <li key={`${item.trend_topic}-${idx}`} className="compare-item">
-          <span className="topic-name">{item.trend_topic}</span>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span className="topic-score">
-              {scoreKey === 'both'
-                ? `${item.score_a} / ${item.score_b}`
-                : item[scoreKey]}
-            </span>
-            {scoreKey === 'score_a' && <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {domain.domain}</>} />}
-            {scoreKey === 'score_b' && compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {compareDomain}</>} />}
-            {scoreKey === 'both' && (
-              <>
-                <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {domain.domain}</>} />
-                {compareDomain && <OpenIcon onClick={() => handleSearch(item.trend_topic, compareDomain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {compareDomain}</>} />}
-              </>
-            )}
-          </div>
-        </li>
-      ))}
-      {list.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>{t('trends.none', 'None')}</li>}
-    </ul>
+  const renderList = (list: DomainComparison[], column: 'A' | 'B' | 'Intersect') => (
+    <>
+      <ul className="compare-list">
+        {list.map((item, idx) => (
+          <Fragment key={`${item.trend_topic}-${idx}-frag`}>
+            {renderTrendItem(item, column)}
+          </Fragment>
+        ))}
+        {list.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>{t('trends.none', 'None')}</li>}
+      </ul>
+      {isMobile && selected?.column === column && renderArticleList()}
+    </>
   );
 
-  const renderBaseList = (list: TrendMetric[]) => (
-    <ul className="compare-list">
-      {list.slice(0, 10).map((item) => (
-        <li key={item.trend_topic} className="compare-item">
-          <span className="topic-name">{item.trend_topic}</span>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <span className="topic-score">
-              {item.outlier_ratio.toFixed(1)}x
-            </span>
-            <OpenIcon onClick={() => handleSearch(item.trend_topic, domain.domain)} tooltip={<>{item.trend_topic} <span style={{ opacity: 0.6, margin: '0 2px' }}>{BULLET_DELIMITER}</span> {domain.domain}</>} />
-          </div>
-        </li>
-      ))}
-      {list.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>{t('trends.none', 'None')}</li>}
-    </ul>
+  const renderBaseList = () => (
+    <>
+      <ul className="compare-list">
+        {baseItems.slice(0, 10).map((item) => (
+          <Fragment key={`${item.trend_topic}-base-frag`}>
+            {renderTrendItem(item, 'A')}
+          </Fragment>
+        ))}
+        {baseItems.length === 0 && <li className="compare-item" style={{color: 'var(--secondary-text)', fontStyle: 'italic'}}>{t('trends.none', 'None')}</li>}
+      </ul>
+      {isMobile && selected?.column === 'A' && renderArticleList()}
+    </>
   );
 
   if (loading) {
@@ -135,7 +281,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
 
   return (
     <>
-      <div className="compare-grid">
+      <div ref={compareGridRef} className="compare-grid">
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">
           <div
@@ -150,7 +296,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
           >
             <span>{t('trends.compare.trending_on', { domain: domain.domain })}</span>
           </div>
-          {compareDomain ? renderList(uniqueA, 'score_a') : renderBaseList(baseItems)}
+          {compareDomain ? renderList(uniqueA, 'A') : renderBaseList()}
         </div>
 
         {/* Column B: Blindspots (Unique to Compare Domain) */}
@@ -180,7 +326,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
               <OpenIcon onClick={() => window.open(`https://${compareDomain}`, '_blank')} tooltip={compareDomain} />
             )}
           </div>
-          {renderList(uniqueB, 'score_b')}
+          {renderList(uniqueB, 'B')}
         </div>
 
         {/* Column Intersect: Shared */}
@@ -197,9 +343,10 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
           >
             <span>{t('trends.compare.shared', 'Shared')}</span>
           </div>
-          {renderList(intersect, 'both')}
+          {renderList(intersect, 'Intersect')}
         </div>
       </div>
+      {!isMobile && renderArticleList()}
     </>
   );
 };

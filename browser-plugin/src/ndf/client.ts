@@ -83,6 +83,13 @@ export interface AnalyzedItem extends ThinkResult {
   pubDate?: string;
 }
 
+export interface AnalyzedArticle {
+  url: string;
+  title?: string;
+  rating?: number;
+  pub_date: string;
+}
+
 // --- API Client ---
 
 export class NewsDeframerClient {
@@ -151,7 +158,7 @@ export class NewsDeframerClient {
   }
 
   async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       domain,
       lang: language,
       days: daysInPast.toString(),
@@ -161,7 +168,7 @@ export class NewsDeframerClient {
   }
 
   async getContextByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<TrendContext[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       term,
       domain,
       lang: language,
@@ -172,7 +179,7 @@ export class NewsDeframerClient {
   }
 
   async getLifecycleByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<Lifecycle[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       term,
       domain,
       lang: language,
@@ -183,13 +190,34 @@ export class NewsDeframerClient {
   }
 
   async getDomainComparison(domainA: string, domainB: string, language: string, daysInPast: number): Promise<DomainComparison[]> {
-    const params: Record<string, string> = {
+    const params: Record<string, string> = { 
       domain_a: domainA,
       domain_b: domainB,
       lang: language,
       days: daysInPast.toString(),
     };
     const result = await this.proxyRequest<DomainComparison[]>('/api/trends/comparedomains', params);
+    return result ?? [];
+  }
+
+  async getArticlesByTrend(root: string, term: string, date?: string, days?: number, offset?: number, limit?: number): Promise<AnalyzedArticle[]> {
+    const params: Record<string, string> = {
+      root,
+      term,
+    };
+    if (date) {
+      params.date = date;
+    }
+    if (days !== undefined && days !== null) {
+      params.days = days.toString();
+    }
+    if (offset !== undefined) {
+      params.offset = offset.toString();
+    }
+    if (limit !== undefined) {
+      params.limit = limit.toString();
+    }
+    const result = await this.proxyRequest<AnalyzedArticle[]>('/api/articles', params);
     return result ?? [];
   }
 }

@@ -2,7 +2,7 @@ import { ParentSize } from '@visx/responsive';
 import { scaleLog } from '@visx/scale';
 import { Text } from '@visx/text';
 import { Wordcloud } from '@visx/wordcloud';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { Dispatch, memo, SetStateAction,useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -16,6 +16,8 @@ interface TrendTagCloudProps {
   domain: DomainEntry;
   days: number;
   searchEngineUrl: string;
+  activeTab: 'lifecycle' | 'context' | 'articles';
+  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles'>>;
 }
 
 const BULLET_DELIMITER = '•';
@@ -51,7 +53,7 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
   const fixedRandom = useCallback(() => 0.5, []);
 
   // Use CSS variables for colors to match theme
-  const colors = ['var(--text-color)', 'var(--primary-color)', 'var(--secondary-text)'];
+  const colors = ['var(--trend-up)', 'var(--trend-down)', 'var(--trend-steady)'];
 
   const getColor = (text: string) => {
     let hash = 0;
@@ -98,7 +100,7 @@ const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onH
 });
 TrendWordCloud.displayName = 'TrendWordCloud';
 
-export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudProps) => {
+export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setActiveTab }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendMetric & { rank: number } } | null>(null);
@@ -134,6 +136,11 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudPr
       original: { ...i, rank: index + 1 },
     })).sort((a, b) => b.value - a.value);
   }, [items]);
+
+  const isSelectedTermVisible = useMemo(() => {
+    if (!selectedTerm) return false;
+    return words.some((word) => word.text === selectedTerm);
+  }, [selectedTerm, words]);
 
   // Memoize the render function for ParentSize to prevent it from triggering updates
   // when TrendTagCloud re-renders (e.g. tab switch) but dimensions haven't changed.
@@ -188,9 +195,9 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudPr
     <>
       <div
         className="tag-cloud"
-        style={{ width: '100%', height: selectedTerm ? '250px' : '400px', position: 'relative' }}
+        style={{ width: '100%', height: isSelectedTermVisible ? '250px' : '400px', position: 'relative' }}
       >
-        {selectedTerm && (
+        {isSelectedTermVisible && (
           <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
             <button
               onClick={handleSearch}
@@ -222,8 +229,8 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl }: TrendTagCloudPr
           {renderCloud}
         </ParentSize>
       </div>
-      {selectedTerm && (
-        <TrendDetails term={selectedTerm} domain={domain} days={days} />
+      {isSelectedTermVisible && selectedTerm && (
+        <TrendDetails term={selectedTerm} domain={domain} days={days} activeTab={activeTab} setActiveTab={setActiveTab} />
       )}
     </>
   );

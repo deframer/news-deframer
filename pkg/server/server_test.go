@@ -16,7 +16,7 @@ import (
 )
 
 type mockFacade struct {
-	getArticlesByTrend func(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error)
+	getArticlesByTrend func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
 }
 
 func (m *mockFacade) GetRssProxyFeed(ctx context.Context, filter *facade.RSSProxyFilter) (string, error) {
@@ -51,9 +51,9 @@ func (m *mockFacade) GetDomainComparison(ctx context.Context, domainA string, do
 	return nil, nil
 }
 
-func (m *mockFacade) GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
+func (m *mockFacade) GetArticlesByTrend(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error) {
 	if m.getArticlesByTrend != nil {
-		return m.getArticlesByTrend(ctx, term, domain, date, days)
+		return m.getArticlesByTrend(ctx, term, domain, date, days, offset, limit)
 	}
 	return nil, nil
 }
@@ -68,11 +68,13 @@ func TestHandleArticles(t *testing.T) {
 		todayPtr, err := parseOptionalDateParam(today)
 		assert.NoError(t, err)
 		mockF := &mockFacade{
-			getArticlesByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
+			getArticlesByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error) {
 				assert.Equal(t, "ai", term)
 				assert.Equal(t, "example.com", domain)
 				assert.Equal(t, todayPtr, date)
 				assert.Equal(t, 1, days)
+				assert.Equal(t, 0, offset)
+				assert.Equal(t, 20, limit)
 				return []database.AnalyzedArticle{{URL: "https://example.com/a", Rating: &rating, Title: &title}}, nil
 			},
 		}
@@ -109,7 +111,7 @@ func TestHandleArticles(t *testing.T) {
 
 	t.Run("facade error", func(t *testing.T) {
 		mockF := &mockFacade{
-			getArticlesByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
+			getArticlesByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error) {
 				return nil, errors.New("boom")
 			},
 		}

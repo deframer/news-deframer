@@ -56,7 +56,7 @@ type mockRepo struct {
 	getContextByDomain           func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
 	getLifecycleByDomain         func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
 	getDomainComparison          func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
-	getArticlesByTrend           func(term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error)
+	getArticlesByTrend           func(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
 }
 
 func mustParseTestDate(raw string) *time.Time {
@@ -249,9 +249,9 @@ func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language 
 	return nil, nil
 }
 
-func (m *mockRepo) GetArticlesByTrend(term string, domain string, date *time.Time, days int) ([]database.AnalyzedArticle, error) {
+func (m *mockRepo) GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error) {
 	if m.getArticlesByTrend != nil {
-		return m.getArticlesByTrend(term, domain, date, days)
+		return m.getArticlesByTrend(term, domain, date, days, offset, limit)
 	}
 	return nil, nil
 }
@@ -670,7 +670,7 @@ func TestGetArticlesByTrend(t *testing.T) {
 		}}
 
 		mockR := &mockRepo{
-			getArticlesByTrend: func(argTerm string, argDomain string, argDate *time.Time, argDays int) ([]database.AnalyzedArticle, error) {
+			getArticlesByTrend: func(argTerm string, argDomain string, argDate *time.Time, argDays int, argOffset int, argLimit int) ([]database.AnalyzedArticle, error) {
 				assert.Equal(t, term, argTerm)
 				assert.Equal(t, domain, argDomain)
 				assert.Equal(t, date, argDate)
@@ -680,7 +680,7 @@ func TestGetArticlesByTrend(t *testing.T) {
 		}
 		f := New(ctx, nil, mockR)
 
-		items, err := f.GetArticlesByTrend(ctx, term, domain, date, days)
+		items, err := f.GetArticlesByTrend(ctx, term, domain, date, days, 0, 10)
 		assert.NoError(t, err)
 		assert.Len(t, items, 2)
 		assert.Equal(t, "http://example.com/1", items[0].URL)
@@ -697,12 +697,12 @@ func TestGetArticlesByTrend(t *testing.T) {
 
 	t.Run("RepoError", func(t *testing.T) {
 		mockR := &mockRepo{
-			getArticlesByTrend: func(argTerm string, argDomain string, argDate *time.Time, argDays int) ([]database.AnalyzedArticle, error) {
+			getArticlesByTrend: func(argTerm string, argDomain string, argDate *time.Time, argDays int, argOffset int, argLimit int) ([]database.AnalyzedArticle, error) {
 				return nil, assert.AnError
 			},
 		}
 		f := New(ctx, nil, mockR)
-		res, err := f.GetArticlesByTrend(ctx, term, domain, date, days)
+		res, err := f.GetArticlesByTrend(ctx, term, domain, date, days, 0, 10)
 		assert.Error(t, err)
 		assert.Nil(t, res)
 	})

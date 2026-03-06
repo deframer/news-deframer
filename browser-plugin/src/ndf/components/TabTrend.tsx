@@ -20,6 +20,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
+  const [detailTab, setDetailTab] = useState<'lifecycle' | 'context' | 'articles'>('lifecycle');
 
   const domainOptions = availableDomains.filter(d => d.domain !== domain.domain && d.language === domain.language).map(d => ({ id: d.domain, name: d.domain }));
   const [compareDomain, setCompareDomain] = useState<string | null>(domainOptions[0]?.id || null);
@@ -71,7 +72,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'cloud' && <TrendTagCloud domain={domain} days={currentDays} searchEngineUrl={searchEngineUrl} />}
+        {viewMode === 'cloud' && <TrendTagCloud domain={domain} days={currentDays} searchEngineUrl={searchEngineUrl} activeTab={detailTab} setActiveTab={setDetailTab} />}
 
         {viewMode === 'compare' && (
           <TrendCompare
@@ -85,7 +86,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
           />
         )}
 
-        {viewMode === 'lifecycle' && <TrendSearch domain={domain} days={currentDays} />}
+        {viewMode === 'lifecycle' && <TrendSearch domain={domain} days={currentDays} activeTab={detailTab} setActiveTab={setDetailTab} />}
 
         <div className="trend-footer">
           <Footer />

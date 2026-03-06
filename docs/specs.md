@@ -70,7 +70,7 @@ GET /api/site?root=${ROOT_DOMAIN}
     - `404 Not Found`: Domain unknown.
 
 ```bash
-GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
+GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}&offset=${OFFSET}&limit=${LIMIT}
 ```
 **Behavior**:
 - Used to get a list of articles with the selected trend term for the given period.
@@ -80,6 +80,9 @@ GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
     - `days` (optional, default `1`) defines window size.
     - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
     - Without `date`: effective window is `[NOW() - days, NOW())`.
+- **Paging Parameters**:
+    - `offset` (optional, default `0`): number of items to skip.
+    - `limit` (optional, default `20`): maximum number of items to return.
 - **Status Codes**:
     - `200 OK`: Returns JSON object/array.
     - `404 Not Found`: Domain or term unknown.
