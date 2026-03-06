@@ -1,4 +1,4 @@
-import { CSSProperties, useEffect, useState } from 'react';
+import { CSSProperties, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -16,6 +16,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   const [data, setData] = useState<Lifecycle[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -43,6 +44,18 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
     setSelectedDate(null);
   }, [term, domain.domain]);
 
+  useEffect(() => {
+    if (!selectedDate) return;
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(max-width: 799px)').matches) return;
+    const trendContent = chartRef.current?.closest('.trend-content');
+    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
+      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
+      return;
+    }
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  }, [selectedDate]);
+
   const maxFreq = data.length > 0 ? Math.max(...data.map(d => d.frequency)) : 0;
 
   if (loading) {
@@ -63,7 +76,7 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
 
   return (
     <>
-      <div className="chart-container">
+      <div ref={chartRef} className="chart-container">
         {data.map((item, idx) => {
           const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
           const dateLabel = new Date(item.time_slice).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
@@ -121,11 +134,11 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
         })}
       </div>
       {selectedDate && (
-        <ArticleList 
-          term={term} 
-          domain={domain} 
+        <ArticleList
+          term={term}
+          domain={domain}
           date={new Date(selectedDate).toISOString().split('T')[0]} /* Explicitly format to YYYY-MM-DD for API */
-          days={undefined} 
+          days={undefined}
           titleOverride={`${t('trends.articles', 'Articles')} / ${new Date(selectedDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })} / ${term}`}
         />
       )}

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState, useId } from 'react';
+import { Fragment, useEffect, useRef, useState, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -26,6 +26,8 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
   const [hasMore, setHasMore] = useState(true);
   const [isArticleTooltipOpen, setIsArticleTooltipOpen] = useState(false);
   const [articleTooltipPos, setArticleTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const didInitPageRef = useRef(false);
 
   const isFixedDateMode = !!date;
 
@@ -71,7 +73,37 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
   useEffect(() => {
     setCurrentPage(1);
     setHasMore(true);
+    didInitPageRef.current = false;
   }, [term, domain, date, days]);
+
+  useEffect(() => {
+    if (!didInitPageRef.current) {
+      didInitPageRef.current = true;
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(max-width: 799px)').matches) return;
+    const trendContent = containerRef.current?.closest('.trend-content');
+    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
+      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
+      return;
+    }
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  }, [currentPage]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (articles.length === 0) return;
+    if (currentPage !== 1) return;
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(max-width: 799px)').matches) return;
+    const trendContent = containerRef.current?.closest('.trend-content');
+    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
+      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
+      return;
+    }
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+  }, [loading, articles.length, currentPage]);
 
   const handleNextPage = () => {
     setCurrentPage(prev => prev + 1);
@@ -96,7 +128,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
   };
 
   return (
-    <div className="article-list-container" style={{ padding: '16px', border: '1px solid var(--border-color)', marginTop: '16px', borderRadius: '8px', backgroundColor: 'var(--card-bg)' }}>
+    <div ref={containerRef} className="article-list-container" style={{ padding: '16px', border: '1px solid var(--border-color)', marginTop: '16px', borderRadius: '8px', backgroundColor: 'var(--card-bg)' }}>
       {!hideTitle && (
         <h4 style={{ margin: '0 0 12px 0', color: 'var(--text-color)' }}>
           {renderTitle()}
