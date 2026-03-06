@@ -512,14 +512,9 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .source-score {
   opacity: 0.7;
   font-weight: bold;
-  border-left: 1px solid currentColor;
-  padding-left: 4px;
-  margin-left: 2px;
-}
-.source-chip .source-score:first-child {
-  border-left: none;
-  margin-left: 0;
-  padding-left: 0;
+  border-right: 1px solid currentColor;
+  padding-right: 4px;
+  margin-right: 2px;
 }
 .source-name {
   max-width: 100px;
