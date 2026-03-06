@@ -16,6 +16,8 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   const [data, setData] = useState<Lifecycle[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const toIsoDay = (value: string) => new Date(value).toISOString().split('T')[0];
   const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,6 +45,16 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   useEffect(() => {
     setSelectedDate(null);
   }, [term, domain.domain]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    if (loading) return;
+    const selectedDay = toIsoDay(selectedDate);
+    const isStillInRange = data.some((entry) => toIsoDay(entry.time_slice) === selectedDay);
+    if (!isStillInRange) {
+      setSelectedDate(null);
+    }
+  }, [data, selectedDate, loading]);
 
   useEffect(() => {
     if (!selectedDate) return;

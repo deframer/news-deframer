@@ -78,7 +78,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
 
   useEffect(() => {
     setSelected(null);
-  }, [domain.domain, compareDomain]);
+  }, [domain.domain, compareDomain, days]);
 
   useEffect(() => {
     if (!selected) return;
