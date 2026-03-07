@@ -18,16 +18,45 @@ WITH authors AS (
     ) AS first_author
   FROM items
   JOIN feeds ON feeds.id = items.feed_id
+), split_authors AS (
+  SELECT
+    domain,
+    think_rating,
+    BTRIM(
+      regexp_split_to_table(
+        regexp_replace(
+          regexp_replace(first_author, '\s*(?:&amp;|&)\s*', ',', 'gi'),
+          '\s+(?:and|und)\s+',
+          ',',
+          'gi'
+        ),
+        '\s*(?:,|/)\s*'
+      )
+    ) AS author
+  FROM authors
+), cleaned_authors AS (
+  SELECT
+    domain,
+    think_rating,
+    BTRIM(
+      regexp_replace(
+        regexp_replace(author, '\s*\|.*$', '', 'g'),
+        '\s+',
+        ' ',
+        'g'
+      )
+    ) AS author
+  FROM split_authors
 )
 SELECT
   AVG(think_rating) AS rating,
   COUNT(*) AS article_count,
   domain,
-  first_author AS author
-FROM authors
+  author
+FROM cleaned_authors
 WHERE domain IS NOT NULL
   AND domain <> ''
-  AND first_author IS NOT NULL
-  AND first_author <> ''
-GROUP BY domain, first_author
+  AND author IS NOT NULL
+  AND author <> ''
+GROUP BY domain, author
 ORDER BY domain ASC, rating DESC, author ASC;
