@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html"
 	"log/slog"
 	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -36,11 +34,6 @@ const thinkFixerBatchSize = 15
 const thinkFixerLookback = 30 * 24 * time.Hour
 const thinkFixerStopThreshold = maxThinkRetries
 const publicationDateGracePeriod = 10 * time.Minute
-
-// this is too simple - we have to make the "and" per language
-var authorJoinerRegex = regexp.MustCompile(`(?i)\s+(?:and|und)\s+`)
-var authorPipeSuffixRegex = regexp.MustCompile(`\s*\|.*$`)
-var authorWhitespaceRegex = regexp.MustCompile(`\s+`)
 
 type Mode string
 
@@ -509,7 +502,7 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 		nextErrorCount: nextErrorCount,
 		thinkRating:    thinkRating,
 		categories:     s.feeds.ExtractCategories(parsedItem),
-		authors:        s.extractAndNormalizeAuthors(parsedItem),
+		authors:        s.extractAndNormalizeAuthors(parsedItem, language),
 		pubDate:        pubDate,
 	}, nil
 }
@@ -524,124 +517,6 @@ func (s *Syncer) parseItemFromContent(content string) (*gofeed.Item, error) {
 		return nil, fmt.Errorf("no items found in content")
 	}
 	return pf.Items[0], nil
-}
-
-func (s *Syncer) extractAndNormalizeAuthors(item *gofeed.Item) database.StringArray {
-	if item == nil {
-		return nil
-	}
-
-	firstAuthor := strings.TrimSpace(s.guessAuthorsByTag(item))
-	if firstAuthor == "" {
-		return nil
-	}
-
-	normalized := html.UnescapeString(firstAuthor)
-	normalized = strings.ReplaceAll(normalized, "&", ",")
-	normalized = authorJoinerRegex.ReplaceAllString(normalized, ",")
-
-	parts := strings.FieldsFunc(normalized, func(r rune) bool {
-		return r == ',' || r == '/'
-	})
-
-	authors := make(database.StringArray, 0, len(parts))
-	seen := make(map[string]struct{}, len(parts))
-	for _, part := range parts {
-		author := strings.TrimSpace(part)
-		author = authorPipeSuffixRegex.ReplaceAllString(author, "")
-		author = strings.TrimSpace(authorWhitespaceRegex.ReplaceAllString(author, " "))
-		if author == "" {
-			continue
-		}
-		if _, ok := seen[author]; ok {
-			continue
-		}
-		seen[author] = struct{}{}
-		authors = append(authors, author)
-	}
-
-	if len(authors) == 0 {
-		return nil
-	}
-
-	return authors
-}
-
-func (s *Syncer) guessAuthorsByTag(item *gofeed.Item) string {
-	if item == nil {
-		return ""
-	}
-
-	for _, author := range item.Authors {
-		if author == nil {
-			continue
-		}
-		if name := strings.TrimSpace(author.Name); name != "" {
-			return name
-		}
-	}
-
-	candidates := []struct {
-		namespace string
-		name      string
-		child     string
-	}{
-		{namespace: "dc", name: "creator"},
-		{namespace: "atom", name: "author", child: "name"},
-		{namespace: "atom", name: "name"},
-		{namespace: "content", name: "author"},
-		{namespace: "", name: "byline"},
-		{namespace: "", name: "creator"},
-		{namespace: "slash", name: "author"},
-		{namespace: "sy", name: "author"},
-		{namespace: "foaf", name: "name"},
-		{namespace: "creativeCommons", name: "attributionName"},
-	}
-
-	for _, candidate := range candidates {
-		if value := firstExtensionValue(item.Extensions, candidate.namespace, candidate.name, candidate.child); value != "" {
-			return value
-		}
-	}
-
-	return ""
-}
-
-func firstExtensionValue(extensions map[string]map[string][]ext.Extension, namespace string, name string, child string) string {
-	if extensions == nil {
-		return ""
-	}
-
-	namespaceEntries, ok := extensions[namespace]
-	if !ok {
-		return ""
-	}
-
-	entries, ok := namespaceEntries[name]
-	if !ok {
-		return ""
-	}
-
-	for _, entry := range entries {
-		if child != "" {
-			children, ok := entry.Children[child]
-			if !ok {
-				continue
-			}
-			for _, childEntry := range children {
-				if value := strings.TrimSpace(childEntry.Value); value != "" {
-					return value
-				}
-			}
-			continue
-		}
-
-		if value := strings.TrimSpace(entry.Value); value != "" {
-			return value
-		}
-	}
-
-	return ""
 }
 
 func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) error {
