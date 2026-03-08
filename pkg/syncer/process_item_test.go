@@ -97,6 +97,35 @@ func TestProcessItem_Authors(t *testing.T) {
 	assert.Equal(t, database.StringArray{"Alice", "Bob", "Carol"}, capturedItem.Authors)
 }
 
+func TestProcessItem_EmptyAuthors(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	s.think = &mockThink{}
+	s.feeds = &mockFeeds{}
+
+	feed := &database.Feed{Base: database.Base{ID: uuid.New()}}
+	item := &gofeed.Item{
+		Title: "Test item without authors",
+		Link:  "http://example.com/item",
+	}
+
+	var capturedItem *database.Item
+	repo.upsertItemFunc = func(dbItem *database.Item) error {
+		capturedItem = dbItem
+		return nil
+	}
+
+	s.processItem(feed, "test-hash", item, "en", 0)
+
+	assert.NotNil(t, capturedItem)
+	assert.Equal(t, database.StringArray{}, capturedItem.Authors)
+}
+
 func TestProcessThinkerItem_Authors(t *testing.T) {
 	repo := &mockRepo{}
 	cfg, err := config.Load()
@@ -132,6 +161,42 @@ func TestProcessThinkerItem_Authors(t *testing.T) {
 
 	assert.NotNil(t, capturedItem)
 	assert.Equal(t, database.StringArray{"Alice"}, capturedItem.Authors)
+}
+
+func TestProcessThinkerItem_EmptyAuthors(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	s.think = &mockThink{}
+	s.feeds = feeds.NewFeeds(context.Background(), cfg)
+
+	dbItem := &database.Item{
+		ID:     uuid.New(),
+		FeedID: uuid.New(),
+		URL:    "http://example.com/item",
+		Content: strings.TrimSpace(`
+			<item>
+				<title>Thinker item</title>
+				<link>http://example.com/item</link>
+				<description>hello</description>
+			</item>`),
+		Authors: database.StringArray{"stale"},
+	}
+
+	var capturedItem *database.Item
+	repo.upsertItemFunc = func(updated *database.Item) error {
+		capturedItem = updated
+		return nil
+	}
+
+	s.processThinkerItem(dbItem)
+
+	assert.NotNil(t, capturedItem)
+	assert.Equal(t, database.StringArray{}, capturedItem.Authors)
 }
 
 func TestProcessItemErrorHandling(t *testing.T) {

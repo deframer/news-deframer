@@ -364,8 +364,8 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		ThinkError:      result.thinkError,
 		ThinkErrorCount: result.nextErrorCount,
 		ThinkRating:     result.thinkRating,
-		Categories:      result.categories,
-		Authors:         result.authors,
+		Categories:      emptyStringArray(result.categories),
+		Authors:         emptyStringArray(result.authors),
 	}
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
@@ -413,8 +413,8 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 	dbItem.ThinkError = result.thinkError
 	dbItem.ThinkErrorCount = result.nextErrorCount
 	dbItem.ThinkRating = result.thinkRating
-	dbItem.Categories = result.categories
-	dbItem.Authors = result.authors
+	dbItem.Categories = emptyStringArray(result.categories)
+	dbItem.Authors = emptyStringArray(result.authors)
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
 		s.logger.Error("failed to update item", "error", err, "item_id", dbItem.ID)
@@ -431,6 +431,13 @@ type thinkerOutcome struct {
 	categories     []string
 	authors        database.StringArray
 	pubDate        *time.Time
+}
+
+func emptyStringArray(values []string) database.StringArray {
+	if values == nil {
+		return database.StringArray{}
+	}
+	return database.StringArray(values)
 }
 
 func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string, currentErrorCount int, logKeys ...any) (*thinkerOutcome, error) {
