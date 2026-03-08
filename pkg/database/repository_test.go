@@ -1469,7 +1469,7 @@ func TestGetArticlesByTrend(t *testing.T) {
 		item := Item{
 			ID:          uuid.New(),
 			FeedID:      feed.ID,
-			Hash:        "hash-articles-by-trend-authors-" + uuid.NewString(),
+			Hash:        uuid.NewString(),
 			URL:         "http://example.com/articles/" + uuid.NewString(),
 			Content:     "content",
 			PubDate:     date,

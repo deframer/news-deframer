@@ -118,7 +118,7 @@ func TestGuessAuthorsByTag(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "Parsed Author", s.guessAuthorsByTag(item))
+		assert.Equal(t, "Parsed Author", s.guessAuthorByTag(item))
 	})
 
 	t.Run("extracts nested atom author name", func(t *testing.T) {
@@ -134,11 +134,11 @@ func TestGuessAuthorsByTag(t *testing.T) {
 			},
 		}
 
-		assert.Equal(t, "Atom Author", s.guessAuthorsByTag(item))
+		assert.Equal(t, "Atom Author", s.guessAuthorByTag(item))
 	})
 
 	t.Run("returns empty string when no author tags exist", func(t *testing.T) {
-		assert.Equal(t, "", s.guessAuthorsByTag(&gofeed.Item{}))
+		assert.Equal(t, "", s.guessAuthorByTag(&gofeed.Item{}))
 	})
 }
 
