@@ -86,7 +86,7 @@ const resources = {
         github_link: 'News Deframer on GitHub',
       },
       metadata: {
-        just_now: 'just now',
+        just_now: 'a moment ago',
       },
       options: {
         title: 'Options',
@@ -199,7 +199,7 @@ const resources = {
         github_link: 'News Deframer auf GitHub',
       },
       metadata: {
-        just_now: 'gerade eben',
+        just_now: 'vor einem Augenblick',
       },
       options: {
         title: 'Einstellungen',

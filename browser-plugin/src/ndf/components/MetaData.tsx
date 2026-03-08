@@ -11,25 +11,26 @@ const getRelativeTime = (dateStr: string | Date, locale: string): string => {
   if (isNaN(date.getTime())) return '';
 
   const seconds = (new Date().getTime() - date.getTime()) / 1000;
+  const absoluteSeconds = Math.abs(seconds);
   const rtf = new Intl.RelativeTimeFormat(locale, { style: 'narrow' });
 
-  if (seconds < 60) return rtf.format(-Math.floor(seconds), 'second');
-  if (seconds < 3600) return rtf.format(-Math.floor(seconds / 60), 'minute');
-  if (seconds < 86400) return rtf.format(-Math.floor(seconds / 3600), 'hour');
-  if (seconds < 604800) return rtf.format(-Math.floor(seconds / 86400), 'day');
-  if (seconds < 2592000) return rtf.format(-Math.floor(seconds / 604800), 'week');
-  if (seconds < 31536000) return rtf.format(-Math.floor(seconds / 2592000), 'month');
-  return rtf.format(-Math.floor(seconds / 31536000), 'year');
+  if (absoluteSeconds < 60) return '';
+  if (absoluteSeconds < 3600) return rtf.format(-Math.round(seconds / 60), 'minute');
+  if (absoluteSeconds < 86400) return rtf.format(-Math.round(seconds / 3600), 'hour');
+  if (absoluteSeconds < 604800) return rtf.format(-Math.round(seconds / 86400), 'day');
+  if (absoluteSeconds < 2592000) return rtf.format(-Math.round(seconds / 604800), 'week');
+  if (absoluteSeconds < 31536000) return rtf.format(-Math.round(seconds / 2592000), 'month');
+  return rtf.format(-Math.round(seconds / 31536000), 'year');
 };
 
 export const MetaData = ({ pubDate, author, category }: MetaDataProps) => {
-  const { i18n } = useTranslation();
+  const { i18n, t } = useTranslation();
   // If no metadata is available, don't render anything to save space
   if (!pubDate && !author && !category) return null;
 
   let timeAgo = '';
   if (pubDate) {
-    timeAgo = getRelativeTime(pubDate, i18n.language);
+    timeAgo = getRelativeTime(pubDate, i18n.language) || t('metadata.just_now', 'a moment ago');
   }
 
   return (
