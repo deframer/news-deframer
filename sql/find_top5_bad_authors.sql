@@ -7,7 +7,9 @@ WITH expanded_authors AS (
   JOIN feeds ON feeds.id = items.feed_id
 ), ranked_authors AS (
   SELECT
-    AVG(think_rating) AS rating,
+    ROUND(AVG(think_rating), 2) AS avg,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY think_rating) AS median,
+    ROUND(STDDEV_SAMP(think_rating), 2) AS stddev,
     COUNT(*) AS article_count,
     domain,
     author,
@@ -23,10 +25,12 @@ WITH expanded_authors AS (
   GROUP BY domain, author
 )
 SELECT
-  rating,
-  article_count,
   domain,
-  author
+  author,
+  article_count,
+  avg,
+  median,
+  stddev
 FROM ranked_authors
 WHERE rank_in_domain <= 5
-ORDER BY domain ASC, rating DESC, author ASC;
+ORDER BY domain ASC, avg DESC, author ASC;

@@ -8,7 +8,9 @@ WITH expanded_authors AS (
 ), ranked_authors AS (
   SELECT
     COUNT(*) AS article_count,
-    AVG(think_rating) AS rating,
+    ROUND(AVG(think_rating), 2) AS avg,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY think_rating) AS median,
+    ROUND(STDDEV_SAMP(think_rating), 2) AS stddev,
     domain,
     author,
     ROW_NUMBER() OVER (
@@ -23,10 +25,12 @@ WITH expanded_authors AS (
   GROUP BY domain, author
 )
 SELECT
-  article_count,
-  rating,
   domain,
-  author
+  author,
+  article_count,
+  avg,
+  median,
+  stddev
 FROM ranked_authors
 WHERE rank_in_domain <= 5
-ORDER BY domain ASC, article_count DESC, rating DESC, author ASC;
+ORDER BY domain ASC, article_count DESC, avg DESC, author ASC;
