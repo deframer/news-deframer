@@ -1455,6 +1455,47 @@ func TestGetArticlesByTrend(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Nil(t, items)
 	})
+
+	t.Run("ScansAuthors", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://articles-by-trend-authors-" + uuid.NewString() + ".test", Enabled: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		date := time.Date(2026, time.March, 3, 12, 0, 0, 0, time.UTC)
+		correctedTitle := "Corrected Title"
+		item := Item{
+			ID:          uuid.New(),
+			FeedID:      feed.ID,
+			Hash:        "hash-articles-by-trend-authors-" + uuid.NewString(),
+			URL:         "http://example.com/articles/" + uuid.NewString(),
+			Content:     "content",
+			PubDate:     date,
+			ThinkResult: &ThinkResult{TitleCorrected: correctedTitle},
+			ThinkRating: 0.75,
+			Authors:     StringArray{"Jane Doe", "John Roe"},
+		}
+		assert.NoError(t, tx.Create(&item).Error)
+
+		trend := Trend{
+			ItemID:     item.ID,
+			FeedID:     feed.ID,
+			Language:   "en",
+			PubDate:    date,
+			NounStems:  StringArray{"test-term-authors"},
+			RootDomain: "example.com",
+		}
+		assert.NoError(t, tx.Create(&trend).Error)
+
+		items, err := repo.GetArticlesByTrend("test-term-authors", "example.com", &date, 1, 0, 10)
+		assert.NoError(t, err)
+		if assert.Len(t, items, 1) {
+			assert.Equal(t, item.URL, items[0].URL)
+			assert.Equal(t, StringArray{"Jane Doe", "John Roe"}, items[0].Authors)
+		}
+	})
 }
 
 func TestEnqueueMine(t *testing.T) {

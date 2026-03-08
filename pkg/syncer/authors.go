@@ -119,7 +119,7 @@ func (s *Syncer) extractAndNormalizeAuthors(item *gofeed.Item, language string) 
 		return nil
 	}
 
-	firstAuthor := strings.TrimSpace(s.guessAuthorsByTag(item))
+	firstAuthor := strings.TrimSpace(s.guessAuthorByTag(item))
 	if firstAuthor == "" {
 		return nil
 	}
@@ -189,7 +189,7 @@ func authorJoinerRegex(joiner string) *regexp.Regexp {
 	return actual.(*regexp.Regexp)
 }
 
-func (s *Syncer) guessAuthorsByTag(item *gofeed.Item) string {
+func (s *Syncer) guessAuthorByTag(item *gofeed.Item) string {
 	if item == nil {
 		return ""
 	}
