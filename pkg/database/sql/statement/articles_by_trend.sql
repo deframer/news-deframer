@@ -2,6 +2,7 @@ SELECT
     i.url AS url,
     NULLIF(i.think_result->>'title_corrected', '') AS title,
     CASE WHEN i.think_result IS NOT NULL THEN i.think_rating ELSE NULL END AS rating,
+    NULLIF(i.authors, '{}'::text[]) AS authors,
     t.pub_date AS pub_date
 FROM public.trends t
 JOIN public.items i ON t.item_id = i.id

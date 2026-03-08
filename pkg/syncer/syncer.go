@@ -37,6 +37,7 @@ const thinkFixerLookback = 30 * 24 * time.Hour
 const thinkFixerStopThreshold = maxThinkRetries
 const publicationDateGracePeriod = 10 * time.Minute
 
+// this is too simple - we have to make the "and" per language
 var authorJoinerRegex = regexp.MustCompile(`(?i)\s+(?:and|und)\s+`)
 var authorPipeSuffixRegex = regexp.MustCompile(`\s*\|.*$`)
 var authorWhitespaceRegex = regexp.MustCompile(`\s+`)

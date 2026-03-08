@@ -12,15 +12,30 @@ import (
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
+	"gorm.io/gorm"
 )
 
-func TestFindFeedByUrlAndAvailability(t *testing.T) {
+func mustOpenTestRepo(t *testing.T) (*repository, *gorm.DB) {
+	t.Helper()
+
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
 	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	if err != nil {
+		t.Skipf("skipping database integration test: %v", err)
+	}
+
+	repo, ok := baseRepo.(*repository)
+	if !ok {
+		t.Fatalf("unexpected repository type %T", baseRepo)
+	}
+
+	return repo, repo.db
+}
+
+func TestFindFeedByUrlAndAvailability(t *testing.T) {
+	baseRepo, baseDB := mustOpenTestRepo(t)
 
 	t.Run("Found_Enabled", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -119,12 +134,7 @@ func TestFindFeedByUrlAndAvailability(t *testing.T) {
 }
 
 func TestFindFeedById(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	baseRepo, baseDB := mustOpenTestRepo(t)
 
 	t.Run("Found", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -198,12 +208,7 @@ func TestFindFeedById(t *testing.T) {
 }
 
 func TestUpsertFeed(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("Create", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -353,12 +358,7 @@ func TestUpsertFeed(t *testing.T) {
 }
 
 func TestUpsertItem(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("CreateNew", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -420,6 +420,7 @@ func TestUpsertItem(t *testing.T) {
 			Content:     "content-new",
 			ThinkResult: &ThinkResult{Framing: 0.2},
 			ThinkRating: 0.2,
+			Authors:     StringArray{},
 		}
 
 		err := repo.UpsertItem(update)
@@ -480,12 +481,7 @@ func TestUpsertItem(t *testing.T) {
 }
 
 func TestFindItemsByUrl(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	// Helper to create valid SHA256 hash string
 	makeHash := func(s string) string {
@@ -616,12 +612,7 @@ func TestFindItemsByUrl(t *testing.T) {
 }
 
 func TestFindItemsByRootDomain(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	// Helper to create valid SHA256 hash string
 	makeHash := func(s string) string {
@@ -707,12 +698,7 @@ func TestFindItemsByRootDomain(t *testing.T) {
 }
 
 func TestGetAllFeeds(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("ListFeeds", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -773,12 +759,7 @@ func TestGetAllFeeds(t *testing.T) {
 }
 
 func TestEnqueueSync(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("CheckFeedAvailability", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -856,12 +837,7 @@ func TestEnqueueSync(t *testing.T) {
 }
 
 func TestRemoveSync(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("RemoveExisting", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -900,12 +876,7 @@ func TestRemoveSync(t *testing.T) {
 }
 
 func TestBeginFeedUpdate(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("NoDueFeeds", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -994,12 +965,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 }
 
 func TestEndFeedUpdate(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("Polling_Enabled", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -1070,12 +1036,7 @@ func TestEndFeedUpdate(t *testing.T) {
 }
 
 func TestGetPendingItems(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	// Helper to create valid SHA256 hash string
 	makeHash := func(s string) string {
@@ -1160,12 +1121,7 @@ func TestGetPendingItems(t *testing.T) {
 }
 
 func TestGetItemsByHashes(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	// Helper to create valid SHA256 hash string
 	makeHash := func(s string) string {
@@ -1243,12 +1199,7 @@ func TestGetItemsByHashes(t *testing.T) {
 }
 
 func TestUpsertCachedFeed(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("CreateAndUpdate", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -1297,12 +1248,7 @@ func TestUpsertCachedFeed(t *testing.T) {
 }
 
 func TestFindCachedFeedById(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	baseRepo, baseDB := mustOpenTestRepo(t)
 
 	t.Run("Found", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -1385,12 +1331,7 @@ func TestFindCachedFeedById(t *testing.T) {
 }
 
 func TestFindFeedScheduleById(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	baseRepo, baseDB := mustOpenTestRepo(t)
 
 	t.Run("Found", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -1423,12 +1364,7 @@ func TestFindFeedScheduleById(t *testing.T) {
 }
 
 func TestGetTopTrendByDomain(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("QueryEmbedded", func(t *testing.T) {
 		assert.NotEmpty(t, topTrendByDomainQuery, "Embedded SQL query should not be empty")
@@ -1449,12 +1385,7 @@ func TestGetTopTrendByDomain(t *testing.T) {
 }
 
 func TestGetContextByDomain(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("QueryEmbedded", func(t *testing.T) {
 		assert.NotEmpty(t, contextByDomainQuery, "Embedded SQL query should not be empty")
@@ -1472,12 +1403,7 @@ func TestGetContextByDomain(t *testing.T) {
 }
 
 func TestGetLifecycleByDomain(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("QueryEmbedded", func(t *testing.T) {
 		assert.NotEmpty(t, lifecycleByDomainQuery, "Embedded SQL query should not be empty")
@@ -1495,12 +1421,7 @@ func TestGetLifecycleByDomain(t *testing.T) {
 }
 
 func TestGetDomainComparison(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("QueryEmbedded", func(t *testing.T) {
 		assert.NotEmpty(t, compareDomainsQuery, "Embedded SQL query should not be empty")
@@ -1518,12 +1439,7 @@ func TestGetDomainComparison(t *testing.T) {
 }
 
 func TestGetArticlesByTrend(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("QueryEmbedded", func(t *testing.T) {
 		assert.NotEmpty(t, articlesByTrendQuery, "Embedded SQL query should not be empty")
@@ -1542,11 +1458,7 @@ func TestGetArticlesByTrend(t *testing.T) {
 }
 
 func TestEnqueueMine(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("CreateMiningSchedule", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -1566,11 +1478,7 @@ func TestEnqueueMine(t *testing.T) {
 }
 
 func TestRemoveMine(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("RemoveExisting", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -1590,11 +1498,7 @@ func TestRemoveMine(t *testing.T) {
 }
 
 func TestPurgeFeedById(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("HardDeleteAllRelated", func(t *testing.T) {
 		tx := baseDB.Begin()
@@ -1631,11 +1535,7 @@ func TestPurgeFeedById(t *testing.T) {
 }
 
 func TestCreateFeedSchedule(t *testing.T) {
-	cfg, err := config.Load()
-	assert.NoError(t, err)
-	baseRepo, err := NewRepository(cfg)
-	assert.NoError(t, err)
-	baseDB := baseRepo.(*repository).db
+	_, baseDB := mustOpenTestRepo(t)
 
 	t.Run("CreateIfMissing", func(t *testing.T) {
 		tx := baseDB.Begin()
