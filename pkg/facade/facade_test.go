@@ -300,8 +300,9 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		now := time.Now()
 		expectedItems := []database.Item{
 			{
-				Hash: "hash1",
-				URL:  "http://example.com/1",
+				Hash:    "hash1",
+				URL:     "http://example.com/1",
+				Authors: database.StringArray{"Jane Doe", "John Roe"},
 				ThinkResult: &database.ThinkResult{
 					TitleCorrected: "Corrected Title 1",
 				},
@@ -339,6 +340,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		assert.Equal(t, "Corrected Title 1", items[0].TitleCorrected)
 		assert.Equal(t, "http://example.com/img1.jpg", items[0].MediaContent.URL)
 		assert.Equal(t, 0.5, items[0].ThinkRating)
+		assert.Equal(t, database.StringArray{"Jane Doe", "John Roe"}, items[0].Authors)
 		assert.Equal(t, now, items[0].PubDate)
 
 		// Verify Item 2
@@ -395,8 +397,9 @@ func TestGetFirstItemForUrl(t *testing.T) {
 	t.Run("Found", func(t *testing.T) {
 		now := time.Now()
 		expectedItem := database.Item{
-			Hash: "hash1",
-			URL:  targetURL,
+			Hash:    "hash1",
+			URL:     targetURL,
+			Authors: database.StringArray{"Jane Doe"},
 			ThinkResult: &database.ThinkResult{
 				TitleCorrected: "Corrected Title",
 			},
@@ -418,6 +421,7 @@ func TestGetFirstItemForUrl(t *testing.T) {
 		assert.NotNil(t, item)
 		assert.Equal(t, "hash1", item.Hash)
 		assert.Equal(t, "Corrected Title", item.TitleCorrected)
+		assert.Equal(t, database.StringArray{"Jane Doe"}, item.Authors)
 		assert.Equal(t, now, item.PubDate)
 	})
 

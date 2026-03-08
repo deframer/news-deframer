@@ -60,4 +60,17 @@ describe('MetaData', () => {
     expect(screen.getByText('in 2d')).toBeInTheDocument();
     expect(screen.queryByText(/in .*s$/)).not.toBeInTheDocument();
   });
+
+  it('renders the author value when present', () => {
+    render(<MetaData author="Clark Kent" />);
+
+    expect(screen.getByText('Clark Kent')).toBeInTheDocument();
+  });
+
+  it('renders a separator between time and author', () => {
+    render(<MetaData pubDate="2026-03-08T11:59:30Z" author="Clark Kent" />);
+
+    expect(screen.getByText('|')).toBeInTheDocument();
+    expect(screen.getByText('Clark Kent')).toBeInTheDocument();
+  });
 });

@@ -29,6 +29,7 @@ type AnalyzedItem struct {
 	database.ThinkResult
 	MediaContent *database.MediaContent `json:"media,omitempty"`
 	ThinkRating  float64                `json:"rating"`
+	Authors      database.StringArray   `json:"authors,omitempty"`
 	PubDate      time.Time              `json:"pubDate"`
 }
 
@@ -120,6 +121,7 @@ func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string, m
 			URL:          dbItem.URL,
 			MediaContent: dbItem.MediaContent,
 			ThinkRating:  dbItem.ThinkRating,
+			Authors:      dbItem.Authors,
 			PubDate:      dbItem.PubDate,
 		}
 		if dbItem.ThinkResult != nil {
@@ -146,6 +148,7 @@ func (f *facade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedI
 		URL:          dbItem.URL,
 		MediaContent: dbItem.MediaContent,
 		ThinkRating:  dbItem.ThinkRating,
+		Authors:      dbItem.Authors,
 		PubDate:      dbItem.PubDate,
 	}
 	if dbItem.ThinkResult != nil {

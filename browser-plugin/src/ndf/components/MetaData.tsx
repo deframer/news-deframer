@@ -33,6 +33,8 @@ export const MetaData = ({ pubDate, author, category }: MetaDataProps) => {
     timeAgo = getRelativeTime(pubDate, i18n.language) || t('metadata.just_now', 'a moment ago');
   }
 
+  const showSeparator = Boolean(timeAgo && author);
+
   return (
     <>
       <div className="meta-data">
@@ -46,10 +48,11 @@ export const MetaData = ({ pubDate, author, category }: MetaDataProps) => {
           </div>
         )}
 
-        {/* Placeholders for future author/category implementation */}
+        {showSeparator && <span className="meta-separator">|</span>}
+
         {author && (
           <div className="meta-item">
-             <span>{author}</span>
+            <span>{author}</span>
           </div>
         )}
       </div>

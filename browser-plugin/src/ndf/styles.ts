@@ -174,8 +174,8 @@ h1 { margin: 0; font-size: 1.5em; }
 h3 { margin: 0 0 10px; font-size: 1.1em; color: var(--text-color); }
 p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .tile-footer {
-  height: 30px;
-  padding: 0 15px;
+  min-height: 30px;
+  padding: 8px 15px;
   display: flex;
   align-items: center;
   border-top: 1px solid var(--border-color, #eee);
@@ -183,6 +183,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .tile-footer .meta-data {
   margin: 0;
   font-size: 0.9em;
+  gap: 6px;
 }
 
 /* Spinner.tsx */
@@ -908,7 +909,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   font-size: 0.85em;
   color: var(--secondary-text);
   margin-top: 0.5em;
@@ -918,8 +919,11 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .meta-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   white-space: nowrap;
+}
+.meta-separator {
+  color: var(--secondary-text);
 }
 .meta-icon {
   width: 14px;

@@ -78,6 +78,7 @@ export interface MediaContent {
 export interface AnalyzedItem extends ThinkResult {
   hash: string;
   url: string;
+  authors?: string[];
   media?: MediaContent;
   rating: number;
   pubDate?: string;

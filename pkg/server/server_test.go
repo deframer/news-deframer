@@ -16,7 +16,9 @@ import (
 )
 
 type mockFacade struct {
-	getArticlesByTrend func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
+	getItemsForRootDomain func(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error)
+	getFirstItemForUrl    func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error)
+	getArticlesByTrend    func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
 }
 
 func (m *mockFacade) GetRssProxyFeed(ctx context.Context, filter *facade.RSSProxyFilter) (string, error) {
@@ -24,10 +26,16 @@ func (m *mockFacade) GetRssProxyFeed(ctx context.Context, filter *facade.RSSProx
 }
 
 func (m *mockFacade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error) {
+	if m.getItemsForRootDomain != nil {
+		return m.getItemsForRootDomain(ctx, rootDomain, maxScore)
+	}
 	return nil, nil
 }
 
 func (m *mockFacade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+	if m.getFirstItemForUrl != nil {
+		return m.getFirstItemForUrl(ctx, u)
+	}
 	return nil, nil
 }
 
@@ -65,6 +73,7 @@ func TestHandleArticles(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		title := "T"
 		rating := 0.2
+		authors := database.StringArray{"Jane Doe"}
 		todayPtr, err := parseOptionalDateParam(today)
 		assert.NoError(t, err)
 		mockF := &mockFacade{
@@ -75,7 +84,7 @@ func TestHandleArticles(t *testing.T) {
 				assert.Equal(t, 1, days)
 				assert.Equal(t, 0, offset)
 				assert.Equal(t, 20, limit)
-				return []database.AnalyzedArticle{{URL: "https://example.com/a", Rating: &rating, Title: &title}}, nil
+				return []database.AnalyzedArticle{{URL: "https://example.com/a", Rating: &rating, Title: &title, Authors: authors}}, nil
 			},
 		}
 
@@ -87,6 +96,7 @@ func TestHandleArticles(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), "https://example.com/a")
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe"]`)
 	})
 
 	t.Run("missing params", func(t *testing.T) {
@@ -123,5 +133,63 @@ func TestHandleArticles(t *testing.T) {
 		s.httpServer.Handler.ServeHTTP(rr, req)
 
 		assert.Equal(t, http.StatusNotFound, rr.Code)
+	})
+}
+
+func TestHandleItem(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		mockF := &mockFacade{
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+				assert.Equal(t, "https://example.com/a", u.String())
+				return &facade.AnalyzedItem{
+					Hash:    "hash1",
+					URL:     "https://example.com/a",
+					Authors: database.StringArray{"Jane Doe", "John Roe"},
+					ThinkResult: database.ThinkResult{
+						TitleCorrected: "Corrected Title",
+					},
+				}, nil
+			},
+		}
+
+		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		req := httptest.NewRequest(http.MethodGet, "/api/item?url=https://example.com/a", nil)
+		rr := httptest.NewRecorder()
+
+		s.httpServer.Handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe","John Roe"]`)
+	})
+}
+
+func TestHandleSite(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("success", func(t *testing.T) {
+		mockF := &mockFacade{
+			getItemsForRootDomain: func(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error) {
+				assert.Equal(t, "example.com", rootDomain)
+				return []facade.AnalyzedItem{{
+					Hash:    "hash1",
+					URL:     "https://example.com/a",
+					Authors: database.StringArray{"Jane Doe"},
+					ThinkResult: database.ThinkResult{
+						TitleCorrected: "Corrected Title",
+					},
+				}}, nil
+			},
+		}
+
+		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		req := httptest.NewRequest(http.MethodGet, "/api/site?root=example.com", nil)
+		rr := httptest.NewRecorder()
+
+		s.httpServer.Handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe"]`)
 	})
 }
