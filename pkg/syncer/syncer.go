@@ -33,6 +33,7 @@ const maxThinkRetries = 3
 const thinkFixerBatchSize = 15
 const thinkFixerLookback = 30 * 24 * time.Hour
 const thinkFixerStopThreshold = maxThinkRetries
+const publicationDateGracePeriod = 10 * time.Minute
 
 type Mode string
 
@@ -344,7 +345,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 
 	pubDate := time.Now()
 	if result.pubDate != nil {
-		if result.pubDate.After(time.Now()) {
+		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
 			s.logger.Warn("ignoring future publication date", "hash", hash, "item_url", item.Link, "pub_date", *result.pubDate)
 		} else {
 			pubDate = *result.pubDate
@@ -398,7 +399,7 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 	}
 
 	if result.pubDate != nil {
-		if result.pubDate.After(time.Now()) {
+		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
 			s.logger.Warn("ignoring future publication date", "item_id", dbItem.ID, "item_url", parsedItem.Link, "pub_date", *result.pubDate)
 		} else {
 			dbItem.PubDate = *result.pubDate
