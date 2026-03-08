@@ -57,7 +57,10 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
         <div className="main-content">
           <h1>{title}</h1>
           <p className="description">{description}</p>
-          <MetaData pubDate={(item as AnalyzedItem & { pubDate?: string | Date }).pubDate} />
+          <MetaData
+            pubDate={(item as AnalyzedItem & { pubDate?: string | Date }).pubDate}
+            author={item.authors?.join(', ')}
+          />
 
           <div className="analysis-section">
             <div className="metric-item">

@@ -29,7 +29,10 @@ export const ArticleTile = ({ item }: ArticleTileProps) => {
           <p>{description}</p>
         </div>
         <div className="tile-footer">
-          <MetaData pubDate={(item as AnalyzedItem & { pubDate?: string | Date }).pubDate} />
+          <MetaData
+            pubDate={(item as AnalyzedItem & { pubDate?: string | Date }).pubDate}
+            author={item.authors?.join(', ')}
+          />
         </div>
       </div>
     </a>

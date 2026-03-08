@@ -65,10 +65,11 @@ type DomainComparison struct {
 }
 
 type AnalyzedArticle struct {
-	URL     string    `gorm:"column:url" json:"url"`
-	Title   *string   `gorm:"column:title" json:"title,omitempty"`
-	Rating  *float64  `gorm:"column:rating" json:"rating,omitempty"`
-	PubDate time.Time `gorm:"column:pub_date" json:"pub_date"`
+	URL     string      `gorm:"column:url" json:"url"`
+	Title   *string     `gorm:"column:title" json:"title,omitempty"`
+	Rating  *float64    `gorm:"column:rating" json:"rating,omitempty"`
+	Authors StringArray `gorm:"column:authors;type:text[]" json:"authors,omitempty"`
+	PubDate time.Time   `gorm:"column:pub_date" json:"pub_date"`
 }
 
 type Repository interface {

@@ -56,18 +56,6 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
     }
   }, [data, selectedDate, loading]);
 
-  useEffect(() => {
-    if (!selectedDate) return;
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(max-width: 799px)').matches) return;
-    const trendContent = chartRef.current?.closest('.trend-content');
-    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
-      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
-      return;
-    }
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-  }, [selectedDate]);
-
   const maxFreq = data.length > 0 ? Math.max(...data.map(d => d.frequency)) : 0;
 
   if (loading) {

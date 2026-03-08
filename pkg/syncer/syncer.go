@@ -33,6 +33,7 @@ const maxThinkRetries = 3
 const thinkFixerBatchSize = 15
 const thinkFixerLookback = 30 * 24 * time.Hour
 const thinkFixerStopThreshold = maxThinkRetries
+const publicationDateGracePeriod = 10 * time.Minute
 
 type Mode string
 
@@ -344,7 +345,11 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 
 	pubDate := time.Now()
 	if result.pubDate != nil {
-		pubDate = *result.pubDate
+		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
+			s.logger.Warn("ignoring future publication date", "hash", hash, "item_url", item.Link, "pub_date", *result.pubDate)
+		} else {
+			pubDate = *result.pubDate
+		}
 	}
 
 	dbItem := &database.Item{
@@ -360,6 +365,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		ThinkErrorCount: result.nextErrorCount,
 		ThinkRating:     result.thinkRating,
 		Categories:      result.categories,
+		Authors:         result.authors,
 	}
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
@@ -394,7 +400,11 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 	}
 
 	if result.pubDate != nil {
-		dbItem.PubDate = *result.pubDate
+		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
+			s.logger.Warn("ignoring future publication date", "item_id", dbItem.ID, "item_url", parsedItem.Link, "pub_date", *result.pubDate)
+		} else {
+			dbItem.PubDate = *result.pubDate
+		}
 	}
 
 	dbItem.Content = result.content
@@ -404,6 +414,7 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 	dbItem.ThinkErrorCount = result.nextErrorCount
 	dbItem.ThinkRating = result.thinkRating
 	dbItem.Categories = result.categories
+	dbItem.Authors = result.authors
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
 		s.logger.Error("failed to update item", "error", err, "item_id", dbItem.ID)
@@ -418,6 +429,7 @@ type thinkerOutcome struct {
 	nextErrorCount int
 	thinkRating    float64
 	categories     []string
+	authors        database.StringArray
 	pubDate        *time.Time
 }
 
@@ -490,6 +502,7 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 		nextErrorCount: nextErrorCount,
 		thinkRating:    thinkRating,
 		categories:     s.feeds.ExtractCategories(parsedItem),
+		authors:        s.extractAndNormalizeAuthors(parsedItem, language),
 		pubDate:        pubDate,
 	}, nil
 }

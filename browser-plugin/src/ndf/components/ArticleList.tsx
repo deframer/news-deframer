@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useId,useRef, useState } from 'react';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -28,6 +28,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
   const [articleTooltipPos, setArticleTooltipPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitPageRef = useRef(false);
+  const hasLoadedOnceRef = useRef(false);
 
   const isFixedDateMode = !!date;
 
@@ -74,35 +75,30 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
     setCurrentPage(1);
     setHasMore(true);
     didInitPageRef.current = false;
+    hasLoadedOnceRef.current = false;
   }, [term, domain, date, days]);
+
+  const scrollListIntoView = () => {
+    if (typeof window === 'undefined') return;
+    if (window.matchMedia('(max-width: 799px)').matches) return;
+    containerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   useEffect(() => {
     if (!didInitPageRef.current) {
       didInitPageRef.current = true;
       return;
     }
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(max-width: 799px)').matches) return;
-    const trendContent = containerRef.current?.closest('.trend-content');
-    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
-      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
-      return;
-    }
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+    scrollListIntoView();
   }, [currentPage]);
 
   useEffect(() => {
     if (loading) return;
     if (articles.length === 0) return;
     if (currentPage !== 1) return;
-    if (typeof window === 'undefined') return;
-    if (window.matchMedia('(max-width: 799px)').matches) return;
-    const trendContent = containerRef.current?.closest('.trend-content');
-    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
-      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
-      return;
-    }
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+    if (hasLoadedOnceRef.current) return;
+    hasLoadedOnceRef.current = true;
+    scrollListIntoView();
   }, [loading, articles.length, currentPage]);
 
   const handleNextPage = () => {
@@ -115,6 +111,11 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
 
   const formatPubDate = (pubDate: string) => {
     return new Date(pubDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
+  };
+
+  const formatAuthors = (authors?: string[]) => {
+    if (!authors || authors.length === 0) return '';
+    return authors.join(', ');
   };
 
   const showArticleTooltip = (target: HTMLElement) => {
@@ -155,6 +156,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
                 <tr>
                   <th style={{ width: '70px', textAlign: 'left' }}>{t('trends.rating_caption', 'Rating')}</th>
                   {!isFixedDateMode && <th style={{ width: '80px', textAlign: 'left' }}>{t('trends.date_caption', 'Date')}</th>}
+                  <th style={{ width: '180px', textAlign: 'left' }}>{t('trends.author_caption', 'Author')}</th>
                   <th style={{ width: 'auto', textAlign: 'left' }}>
                     <div className="article-header-info">
                       <span>{t('trends.article_caption', 'Article')}</span>
@@ -189,6 +191,9 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
                       )}
                     </td>
                     {!isFixedDateMode && <td style={{ padding: '8px 5px', verticalAlign: 'middle', fontSize: '0.9em', color: 'var(--secondary-text)' }}>{formatPubDate(article.pub_date)}</td>}
+                    <td style={{ padding: '8px 5px', verticalAlign: 'middle', fontSize: '0.9em', color: 'var(--secondary-text)' }}>
+                      {formatAuthors(article.authors)}
+                    </td>
                     <td style={{ padding: '8px 5px', verticalAlign: 'middle' }}>
                       <a
                         href={article.url}

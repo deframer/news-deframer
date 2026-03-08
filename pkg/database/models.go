@@ -168,6 +168,7 @@ type Item struct {
 	ThinkErrorCount int           `gorm:"not null;default:0"`
 	ThinkRating     float64       `gorm:"not null;default:0.0"`
 	Categories      StringArray   `gorm:"type:text[];not null;default:'{}'"`
+	Authors         StringArray   `gorm:"type:text[];not null;default:'{}'"`
 }
 
 // BeforeCreate will set a UUID rather than numeric ID.

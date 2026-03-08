@@ -1,4 +1,4 @@
-import { Fragment, ReactNode, useEffect, useRef, useState } from 'react';
+import { Fragment, ReactNode, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
@@ -48,7 +48,6 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<{ term: string; domain: string; column: 'A' | 'B' | 'Intersect' } | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const compareGridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 799px)').matches);
@@ -79,18 +78,6 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
   useEffect(() => {
     setSelected(null);
   }, [domain.domain, compareDomain, days]);
-
-  useEffect(() => {
-    if (!selected) return;
-    if (isMobile) return;
-    if (typeof window === 'undefined') return;
-    const trendContent = compareGridRef.current?.closest('.trend-content');
-    if (trendContent instanceof HTMLElement && trendContent.scrollHeight > trendContent.clientHeight + 1) {
-      trendContent.scrollTo({ top: trendContent.scrollHeight, behavior: 'smooth' });
-      return;
-    }
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
-  }, [selected, isMobile]);
 
   const handleSearch = (term: string, searchDomain: string) => {
     const query = encodeURIComponent(`${term} site:${searchDomain}`);
@@ -281,7 +268,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
 
   return (
     <>
-      <div ref={compareGridRef} className="compare-grid">
+      <div className="compare-grid">
         {/* Column A: Unique to Current Domain */}
         <div className="compare-col">
           <div
