@@ -344,7 +344,11 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 
 	pubDate := time.Now()
 	if result.pubDate != nil {
-		pubDate = *result.pubDate
+		if result.pubDate.After(time.Now()) {
+			s.logger.Warn("ignoring future publication date", "hash", hash, "item_url", item.Link, "pub_date", *result.pubDate)
+		} else {
+			pubDate = *result.pubDate
+		}
 	}
 
 	dbItem := &database.Item{
@@ -394,7 +398,11 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 	}
 
 	if result.pubDate != nil {
-		dbItem.PubDate = *result.pubDate
+		if result.pubDate.After(time.Now()) {
+			s.logger.Warn("ignoring future publication date", "item_id", dbItem.ID, "item_url", parsedItem.Link, "pub_date", *result.pubDate)
+		} else {
+			dbItem.PubDate = *result.pubDate
+		}
 	}
 
 	dbItem.Content = result.content
