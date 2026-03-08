@@ -117,6 +117,11 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
     return new Date(pubDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
   };
 
+  const formatAuthors = (authors?: string[]) => {
+    if (!authors || authors.length === 0) return '';
+    return authors.join(', ');
+  };
+
   const showArticleTooltip = (target: HTMLElement) => {
     const rect = target.getBoundingClientRect();
     setArticleTooltipPos({ x: rect.left + rect.width / 2, y: rect.top - 10 });
@@ -155,6 +160,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
                 <tr>
                   <th style={{ width: '70px', textAlign: 'left' }}>{t('trends.rating_caption', 'Rating')}</th>
                   {!isFixedDateMode && <th style={{ width: '80px', textAlign: 'left' }}>{t('trends.date_caption', 'Date')}</th>}
+                  <th style={{ width: '180px', textAlign: 'left' }}>{t('trends.author_caption', 'Author')}</th>
                   <th style={{ width: 'auto', textAlign: 'left' }}>
                     <div className="article-header-info">
                       <span>{t('trends.article_caption', 'Article')}</span>
@@ -189,6 +195,9 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
                       )}
                     </td>
                     {!isFixedDateMode && <td style={{ padding: '8px 5px', verticalAlign: 'middle', fontSize: '0.9em', color: 'var(--secondary-text)' }}>{formatPubDate(article.pub_date)}</td>}
+                    <td style={{ padding: '8px 5px', verticalAlign: 'middle', fontSize: '0.9em', color: 'var(--secondary-text)' }}>
+                      {formatAuthors(article.authors)}
+                    </td>
                     <td style={{ padding: '8px 5px', verticalAlign: 'middle' }}>
                       <a
                         href={article.url}

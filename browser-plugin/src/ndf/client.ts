@@ -87,6 +87,7 @@ export interface AnalyzedArticle {
   url: string;
   title?: string;
   rating?: number;
+  authors?: string[];
   pub_date: string;
 }
 
