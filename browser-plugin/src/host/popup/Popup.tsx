@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { getSettings, Settings } from '../../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../../shared/theme';
 import { QuickActions } from '../components/QuickActions';
-import { StatusBadge, HostStatus } from '../components/StatusBadge';
+import { HostStatus,StatusBadge } from '../components/StatusBadge';
 import { ToggleSwitch } from '../components/ToggleSwitch';
 import { testConnection } from '../lib/connection';
 
