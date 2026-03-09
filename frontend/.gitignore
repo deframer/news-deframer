@@ -1,0 +1,8 @@
+# Build artifacts
+news-deframer-lib.js
+node_modules/
+browser-extension/node_modules/
+browser-extension/extension.zip
+browser-extension/extension.crx
+browser-extension/extension.pem
+browser-extension/dist/

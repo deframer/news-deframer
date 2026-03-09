@@ -45,9 +45,9 @@ updates:
     commit-message:
       prefix: "docker"
 
-  # Keep Browser Plugin dependencies up to date
+  # Keep frontend browser extension dependencies up to date
   - package-ecosystem: "npm"
-    directory: "/browser-plugin/"
+    directory: "/frontend/browser-extension/"
     schedule:
       interval: "weekly"
       day: "monday"
