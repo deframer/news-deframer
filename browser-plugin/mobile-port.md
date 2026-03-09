@@ -2,52 +2,131 @@
 
 ## Major Refactoring Tasks Before The New Architecture
 
-Before introducing the final `frontend/apps` and `frontend/packages` structure, there are a few major product-level refactorings to do first.
+Before introducing a real shared frontend layout, the current browser code needs to be simplified and renamed in a way that matches what the code actually does.
 
 ### 1. Replace the current popup-first settings model
 
 - [done] popup is now a small control surface and settings live in a fullscreen browser page under `src/host/pages/`
 
-### 2. Remove reload-centric extension behavior
+### 2. Consolidate the current browser code before any mobile work
 
-The current extension flow relies too much on reload and bypass behavior.
+#### a. Rename `browser-plugin` to `frontend` first
 
-That should be simplified before extracting the shared architecture:
+The rename should happen before the internal split.
 
-- remove the assumption that enabling or disabling always requires page reload logic
-- remove popup-driven page refresh behavior as a core UX pattern
-- treat start or stop as host state, not as a UI flow tied to reloads
+That gives us one stable top-level name for all later work and avoids planning the rest of the restructure around a directory name we already know we want to replace.
 
-### 3. Separate product screens from browser page manipulation
+After that rename, the browser-specific build tooling should live with the browser extension host instead of pretending to be shared root tooling.
 
-The content script and any page takeover logic should become a thin mount layer only.
+The immediate target is:
+
+```text
+frontend/
+  .gitignore
+  README.md
+  mobile-port.md
+
+  browser-extension/
+    promo_assets/
+    package.json
+    package-lock.json
+    webpack.config.js
+    tsconfig.json
+    tsconfig.build.json
+    jest.config.js
+    jest.setup.js
+    eslint.config.mjs
+    Makefile
+    src/
+      manifest.json
+      background.ts
+      content.ts
+      domGuard.ts
+      popup/
+      options/
+      components/
+      assets/
+      styles.css
+
+  product/
+    src/
+      index.tsx
+      client.ts
+      components/
+      pages/
+      utils/
+      styles.css
+      styles.ts
+
+  shared/
+    src/
+      settings.ts
+      theme.ts
+      i18n.ts
+      logger.ts
+      domain-cache.ts
+      types.ts
+
+  mobile/
+    README.md
+```
+
+Notes:
+
+- keep `.gitignore` at `frontend/.gitignore`
+- do not keep browser-specific `package.json`, webpack, Jest, or TypeScript files at `frontend/` root
+- keep the browser extension as a self-contained package under `frontend/browser-extension/`
+- move `promo_assets/` into `frontend/browser-extension/promo_assets/` because those assets are browser-extension specific
+- mobile gets only a placeholder `README.md` for now
+
+#### b. Separate product screens from browser page manipulation
+
+The content script and page takeover logic should become a thin browser-only mount layer.
 
 That means:
 
 - browser page manipulation stays in the extension host
-- article, portal, trends, settings, and dashboard screens move out into shared features
+- article, portal, trends, settings, and dashboard screens move into shared product code
 - `src/ndf/index.tsx` should stop being both product bootstrap and browser takeover bootstrap
+- `domGuard` stays browser-specific and should move with the extension host, not with shared product code
 
-### 4. Create a standalone browser surface for shared screens
+#### c. Remove the standalone debug browser app
 
-Use the existing `src/debug` direction as the first stepping stone.
+The current `src/debug` path and `webpack.debug.config.js` add a second browser app variant that we do not want to keep.
 
-The goal is to make shared feature screens render in a normal browser page before moving them into the new host structure.
+That means:
 
-This is especially useful for:
+- remove `src/debug`
+- remove `webpack.debug.config.js`
+- remove `dev-react` from `package.json`
+- remove `dev-react` and stale debug cleanup from `Makefile`
 
-- fullscreen settings page
-- dashboard page
-- portal and article screens in standalone mode
+### 3. Reserve a future mobile host structure, but do not build it yet
 
-### 5. Shrink the extension UI down to host controls
+We do not want to implement the mobile app structure now.
 
-The extension should eventually have two browser-specific surfaces:
+We only want to document a likely future shape so it can be used later for prompting and planning.
 
-- a tiny popup for quick controls
-- a fullscreen browser page for shared settings and dashboard UI
+For now, the actual repository change is only:
 
-This keeps browser-only logic small and makes the shared feature layer the main product surface.
+- create `frontend/mobile/README.md`
+
+Later, if and when mobile work starts, a reasonable target could look like this:
+
+```text
+frontend/
+  mobile/
+    README.md
+    app/
+    src/
+      index.tsx
+      navigation/
+      screens/
+      host/
+      services/
+```
+
+This is intentionally deferred.
 
 ## Goal
 
@@ -213,74 +292,71 @@ The current `src/host/ui/options.tsx` should not stay as the long-term settings 
 
 ## Repository Structure
 
+The previous `apps`, `packages`, `features`, `ports`, `providers`, and `services` layout was too abstract for the current codebase.
+
+The structure we should actually move toward first is:
+
 ```text
 frontend/
-  apps/
-    mobile/
-      app/
-      src/
-        bootstrap/
-        navigation/
-        providers/
-        services/
-          storage.native.ts
-          http.native.ts
-          browser.native.ts
-          share.native.ts
+  .gitignore
+  README.md
+  mobile-port.md
 
-    extension/
-      entrypoints/
-        background.ts
-        content.ts
-        popup/
-        options/
-        dashboard/
-      src/
-        bootstrap/
-        providers/
-        services/
-          storage.web.ts
-          http.web.ts
-          browser.web.ts
-          page-context.web.ts
+  browser-extension/
+    promo_assets/
+    package.json
+    package-lock.json
+    webpack.config.js
+    tsconfig.json
+    tsconfig.build.json
+    jest.config.js
+    jest.setup.js
+    eslint.config.mjs
+    Makefile
+    src/
+      manifest.json
+      background.ts
+      content.ts
+      domGuard.ts
+      popup/
+      options/
+      components/
+      assets/
+      styles.css
 
-  packages/
-    core/
-      src/
-        domain/
-        api/
-        auth/
-        state/
-        schemas/
-        utils/
+  product/
+    src/
+      index.tsx
+      client.ts
+      components/
+      pages/
+      utils/
+      styles.css
+      styles.ts
 
-    ports/
-      src/
-        http.ts
-        storage.ts
-        auth.ts
-        navigation.ts
-        runtime.ts
-        sharing.ts
-        page-context.ts
+  shared/
+    src/
+      settings.ts
+      theme.ts
+      i18n.ts
+      logger.ts
+      domain-cache.ts
+      types.ts
 
-    ui/
-      src/
-        primitives/
-        theme/
-        layout/
-
-    features/
-      src/
-        article/
-        portal/
-        trends/
-        settings/
-        dashboard/
-        auth/
+  mobile/
+    README.md
 ```
 
-`apps` here means frontend applications or hosts. It is not a separate backend layer.
+This is a simpler transition structure:
+
+- `frontend/` is the renamed top-level directory
+- `browser-extension/` contains browser-only build tooling and runtime code
+- `browser-extension/` also owns browser-specific promo assets
+- `product/` contains the shared product UI and product logic
+- `shared/` contains cross-cutting shared support code
+- `mobile/` is only a placeholder for now
+
+Later, once the browser refactor is done and mobile work is real, we can decide whether `product/` and `shared/` should become a more formal package layout.
 
 ## UI Strategy
 
@@ -301,8 +377,6 @@ This gives us real shared components for:
 - dashboard screens
 
 Browser-only wrappers can still mount those shared screens inside popup, options, dashboard, or content-script containers.
-
-Note: `src/debug` already shows that parts of the UI can be rendered in a standalone browser surface today. That makes it a good early reference for extracting shared feature screens out of the extension host.
 
 For settings specifically, the preferred direction is:
 
@@ -426,28 +500,33 @@ This structure supports future work without splitting the codebase:
 
 ### Phase 1
 
-- refactor the extension UX so popup is small and settings move to a fullscreen shared page
+- rename `browser-plugin` to `frontend`
+- keep the popup small and keep settings in a fullscreen browser page
 - simplify or remove reload-centric start or stop behavior
-- separate product screens from content-script bootstrap
-- create `apps/*` and `packages/*` structure
-- extract pure models, schemas, and utils
-- define the ports/interfaces
+- separate browser takeover code from product screens
+- remove the standalone debug browser app
 
 ### Phase 2
+
+- move browser-specific build files into `frontend/browser-extension/`
+- move browser-only runtime code into `frontend/browser-extension/src/`
+- move `promo_assets/` into `frontend/browser-extension/promo_assets/`
+- move product UI and product logic into `frontend/product/src/`
+- move cross-cutting shared code into `frontend/shared/src/`
+- create `frontend/mobile/README.md` as a placeholder only
+
+### Phase 3
 
 - replace `src/ndf/client.ts` with a transport-agnostic shared API layer
 - move settings and cache behind interfaces
 - remove direct platform access from feature code
-
-### Phase 3
-
-- build shared article, portal, trends, settings, and dashboard modules
-- move styling toward cross-platform shared UI primitives
+- define the host-facing interfaces once the boundaries are clearer in the new layout
 
 ### Phase 4
 
+- build shared article, portal, trends, settings, and dashboard modules on top of the cleaned structure
 - keep browser-specific page takeover as a thin host-only integration
-- build the mobile app shell with its own index, menu, and navigation
+- plan the real mobile app shell and directory structure later, after the browser-side split is stable
 
 ## Final Recommendation
 
