@@ -21,7 +21,7 @@
     "@types/chrome": "^0.1.37",
     "@types/jest": "^30.0.0",
     "@types/loglevel": "^1.6.3",
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.3.5",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "copy-webpack-plugin": "^13.0.1",
@@ -41,7 +41,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.1",
-    "webpack": "^5.105.3",
+    "webpack": "^5.105.4",
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.3"
   },
@@ -50,12 +50,12 @@
     "@visx/scale": "^4.0.1-alpha.0",
     "@visx/text": "^4.0.1-alpha.0",
     "@visx/wordcloud": "^4.0.1-alpha.0",
-    "i18next": "^25.8.13",
+    "i18next": "^25.8.14",
     "i18next-browser-languagedetector": "^8.2.1",
     "loglevel": "^1.9.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-i18next": "^16.5.4",
-    "tldts": "^7.0.24"
+    "react-i18next": "^16.5.6",
+    "tldts": "^7.0.25"
   }
 }
