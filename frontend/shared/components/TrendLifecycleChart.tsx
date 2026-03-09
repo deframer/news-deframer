@@ -1,0 +1,146 @@
+import { CSSProperties, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import { DomainEntry, Lifecycle, NewsDeframerApi } from '@frontend-shared/ndf-api-interfaces';
+import { ArticleList } from './ArticleList';
+
+interface TrendLifecycleChartProps {
+  domain: DomainEntry;
+  days: number;
+  term: string;
+  api: NewsDeframerApi;
+}
+
+export const TrendLifecycleChart = ({ domain, days, term, api }: TrendLifecycleChartProps) => {
+  const { t, i18n } = useTranslation();
+  const [data, setData] = useState<Lifecycle[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+
+  const toIsoDay = (value: string) => new Date(value).toISOString().split('T')[0];
+  const chartRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!term) return;
+      setLoading(true);
+      try {
+        const result = await api.getLifecycleByDomain(term, domain.domain, domain.language, days);
+        // Sort by date ascending for the chart
+        const sorted = [...result].sort((a, b) => new Date(a.time_slice).getTime() - new Date(b.time_slice).getTime());
+        setData(sorted);
+      } catch (error) {
+        console.error('Failed to fetch trend lifecycle data', error);
+        setData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [api, term, domain, days]);
+
+
+  useEffect(() => {
+    setSelectedDate(null);
+  }, [term, domain.domain]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    if (loading) return;
+    const selectedDay = toIsoDay(selectedDate);
+    const isStillInRange = data.some((entry) => toIsoDay(entry.time_slice) === selectedDay);
+    if (!isStillInRange) {
+      setSelectedDate(null);
+    }
+  }, [data, selectedDate, loading]);
+
+  const maxFreq = data.length > 0 ? Math.max(...data.map(d => d.frequency)) : 0;
+
+  if (loading) {
+    return (
+      <div className="chart-container" style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <div className="spinner-small" />
+      </div>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <div className="chart-container" style={{ alignItems: 'center', justifyContent: 'center', color: 'var(--secondary-text)' }}>
+        {t('trends.lifecycle_no_data', 'No lifecycle data available for this topic.')}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div ref={chartRef} className="chart-container">
+        {data.map((item, idx) => {
+          const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
+          const dateLabel = new Date(item.time_slice).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
+
+          const isSelected = selectedDate === item.time_slice;
+          const style: CSSProperties = { height: `${heightPercent}%` };
+          let icon = null;
+          let barClass = 'chart-bar';
+          // Unified label style: below the bar with a -45 degree angle
+          const labelStyle: CSSProperties = {
+            color: 'var(--text-color)',
+          };
+  
+          if (item.velocity > 0) {
+            style.backgroundColor = 'var(--trend-up)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-up)' }}>▲</span>;
+            labelStyle.color = 'var(--trend-text)';
+          } else if (item.velocity < 0) {
+            style.backgroundColor = 'var(--trend-down)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-down)' }}>▼</span>;
+            labelStyle.color = 'var(--trend-text)';
+          } else {
+            style.backgroundColor = 'var(--trend-steady)';
+            icon = <span className="trend-icon" style={{ color: 'var(--trend-steady)' }}>▶</span>;
+            barClass += ' lateral';
+            labelStyle.color = 'var(--trend-text)';
+          }
+
+          return (
+            <button
+              key={item.time_slice}
+              type="button"
+              className={`chart-bar-wrapper ${isSelected ? 'selected' : ''}`}
+              onClick={() => setSelectedDate(isSelected ? null : item.time_slice)}
+              aria-pressed={isSelected}
+              aria-label={t('trends.search_aria_label', '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', {
+                date: dateLabel,
+                frequency: item.frequency,
+                velocity: (item.velocity > 0 ? '+' : '') + item.velocity
+              })}
+            >
+              <div className={barClass} style={style}>
+                {icon}
+                <div className="bar-tooltip">
+                  {dateLabel}<br/>
+                  {t('trends.freq', 'Freq')}: {item.frequency}<br/>
+                  {t('trends.vel', 'Vel')}: {(item.velocity > 0 ? '+' : '') + item.velocity}
+                </div>
+              </div>
+              {(data.length < 15 || idx % Math.ceil(data.length / 10) === 0) && (
+                <div className="bar-label" style={labelStyle}>{dateLabel}</div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      {selectedDate && (
+        <ArticleList
+          api={api}
+          term={term}
+          domain={domain}
+          date={new Date(selectedDate).toISOString().split('T')[0]} /* Explicitly format to YYYY-MM-DD for API */
+          days={undefined}
+          titleOverride={`${t('trends.articles', 'Articles')} / ${new Date(selectedDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' })} / ${term}`}
+        />
+      )}
+    </>
+  );
+};

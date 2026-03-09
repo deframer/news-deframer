@@ -4,9 +4,9 @@
 
 News Deframer will detect journalistic neutrality and framing in news articles. By leveraging Large Language Models (LLMs), it analyzes the headlines and bodies.
 
-It is implemented as dual use. It can act as an **RSS Feed Proxy** or as a **browser plugin** to provide a "framing score" and context, helping users decide if an article is worth reading or if it is heavily biased.
+It is implemented as dual use. It can act as an **RSS Feed Proxy** or as a **browser extension** to provide a "framing score" and context, helping users decide if an article is worth reading or if it is heavily biased.
 
-Here are examples with screenshots for our [browser plugin](https://deframer.github.io/screenshots/) and [RSS feed](https://deframer.github.io/screenshots/rss-feed/) for very quick use on your mobile phone.
+Here are examples with screenshots for our [browser extension](https://deframer.github.io/screenshots/) and [RSS feed](https://deframer.github.io/screenshots/rss-feed/) for very quick use on your mobile phone.
 
 ## What this project is and is not
 

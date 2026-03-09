@@ -60,7 +60,8 @@ You can install the plugin by loading it as an unpacked extension.
 ### Option 3: Build from Source
 
 1.  Clone this repository.
-2.  Navigate into the `browser-plugin` directory.
+2.  Navigate into the `frontend/browser-extension` directory.
 3.  Install dependencies: `npm ci`.
-4.  Build the project: `npm run build`. This creates the necessary files in the `dist/host` directory.
-5.  Follow steps 4-6 from "Option 1", but select the `dist/host` directory when you "Load unpacked".
+4.  Generate the shared extension icons once after icon changes: `cd ../shared && make icons`.
+5.  Build the project: `npm run build`. This creates the necessary files in the `dist/host` directory.
+6.  Follow steps 4-6 from "Option 1", but select the `dist/host` directory when you "Load unpacked".
