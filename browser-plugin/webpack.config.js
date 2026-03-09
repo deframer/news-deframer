@@ -8,7 +8,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: {
-        options: './src/host/ui/index.tsx',
+        options: './src/host/pages/index.tsx',
+        popup: './src/host/popup/index.tsx',
         content: './src/host/content.ts',
         background: './src/host/background.ts'
     },
@@ -69,9 +70,14 @@ module.exports = {
             ],
         }),
         new HtmlWebpackPlugin({
-            template: 'src/host/ui/index.html',
+            template: 'src/host/index.html',
             filename: 'options.html',
             chunks: ['options'],
+        }),
+        new HtmlWebpackPlugin({
+            template: 'src/host/popup.html',
+            filename: 'popup.html',
+            chunks: ['popup'],
         }),
         new MiniCssExtractPlugin({
             filename: '[name].css',

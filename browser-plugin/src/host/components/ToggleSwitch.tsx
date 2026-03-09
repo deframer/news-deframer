@@ -8,13 +8,7 @@ interface ToggleSwitchProps {
   disabled?: boolean;
 }
 
-export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
-  id,
-  label,
-  checked,
-  onChange,
-  disabled = false,
-}) => {
+export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ id, label, checked, onChange, disabled = false }) => {
   const handleToggle = () => {
     if (!disabled) {
       onChange(!checked);
@@ -22,9 +16,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
   };
 
   return (
-    <div
-      className={`toggle-container ${disabled ? 'disabled' : ''}`}
-    >
+    <div className={`toggle-container ${disabled ? 'disabled' : ''}`}>
       <label htmlFor={id} className="toggle-label">
         {label}
       </label>
@@ -35,6 +27,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = ({
         onClick={handleToggle}
         disabled={disabled}
         className="toggle-switch"
+        type="button"
       >
         <span className="toggle-knob" />
       </button>

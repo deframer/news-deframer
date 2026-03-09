@@ -47,6 +47,13 @@ if (container) {
       url: `${baseUrl}?type=article&i=${index}`,
     }));
 
-    root.render(<PortalPage items={items} />);
+    root.render(
+      <PortalPage
+        items={items}
+        domain={{ domain: 'example.com', language: 'en' }}
+        availableDomains={[{ domain: 'example.com', language: 'en' }]}
+        searchEngineUrl="https://search.brave.com"
+      />,
+    );
   }
 }
