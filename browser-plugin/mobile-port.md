@@ -7,13 +7,14 @@ Before introducing the final `frontend/apps` and `frontend/packages` structure, 
 ### 1. Replace the current popup-first settings model
 
 - remove `src/host/ui/options.tsx` as the main long-form settings surface
-- create a fullscreen settings page that is treated as a real shared feature screen
+- create a fullscreen browser settings page under `src/host/pages/`
 - keep the extension popup intentionally small
 
 Target behavior:
 
-- popup: start or stop browser behavior, open settings page
-- fullscreen settings page: connection settings, language, theme, future account settings, future domain preferences
+- popup: enable or disable, show connected status, open settings page, project link
+- fullscreen settings page: connection settings, language, theme, search engine settings, and later host-level account or domain preferences
+- settings changes in the fullscreen settings page only save configuration and do not reload or update the current tab
 
 ### 2. Remove reload-centric extension behavior
 
