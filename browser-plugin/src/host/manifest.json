@@ -16,7 +16,7 @@
     "128": "assets/icons/icon128.png"
   },
   "action": {
-    "default_popup": "options.html",
+    "default_popup": "popup.html",
     "default_title": "News Deframer Settings",
     "default_icon": {
       "16": "assets/icons/icon16.png",
@@ -24,6 +24,10 @@
       "48": "assets/icons/icon48.png",
       "128": "assets/icons/icon128.png"
     }
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   },
   "content_scripts": [
     {
