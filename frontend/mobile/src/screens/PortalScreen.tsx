@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Info } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -32,6 +32,7 @@ export const PortalScreen = ({
   const [reasonText, setReasonText] = useState<string | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
+  const useNativeDriver = Platform.OS !== 'web';
 
   const client = useMemo(() => new NewsDeframerClient(settings), [settings]);
 
@@ -65,15 +66,15 @@ export const PortalScreen = ({
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 180,
-        useNativeDriver: true,
+        useNativeDriver,
       }),
       Animated.timing(scaleAnim, {
         toValue: 1,
         duration: 180,
-        useNativeDriver: true,
+        useNativeDriver,
       }),
     ]).start();
-  }, [fadeAnim, reasonText, scaleAnim]);
+  }, [fadeAnim, reasonText, scaleAnim, useNativeDriver]);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
