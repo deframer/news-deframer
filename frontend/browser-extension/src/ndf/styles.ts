@@ -995,13 +995,25 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   opacity: 1;
 }
 
-/* TrendTagCloud.tsx (Visx) */
-.word-cloud-text {
+/* TrendTagCloud.tsx */
+.word-cloud-item {
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: transform 0.2s ease, color 0.2s ease;
+  border: none;
+  background: transparent;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
+  font-family: inherit;
+  white-space: nowrap;
 }
-.word-cloud-text:hover {
-  transform: scale(1.1);
+.word-cloud-item:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+.word-cloud-item:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 .trend-details-container {
   margin-top: 20px;

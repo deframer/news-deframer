@@ -1,16 +1,10 @@
-import { ParentSize } from '@visx/responsive';
-import { scaleLog } from '@visx/scale';
-import { Text } from '@visx/text';
-import { Wordcloud } from '@visx/wordcloud';
-import { Dispatch, memo, SetStateAction,useCallback, useEffect, useMemo, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { buildWordCloudWords, getWordCloudColor, layoutWordCloud, MeasureWordOptions, WordCloudWord } from '../../shared/wordcloud';
 import { getSettings } from '../../shared/settings';
 import { DomainEntry, NewsDeframerClient, TrendMetric } from '../client';
 import { TrendDetails } from './TrendDetails';
-
-
-// https://visx.airbnb.tech/wordcloud
 
 interface TrendTagCloudProps {
   domain: DomainEntry;
@@ -21,91 +15,87 @@ interface TrendTagCloudProps {
 }
 
 const BULLET_DELIMITER = '•';
+const DEFAULT_WIDTH = 640;
+const DEFAULT_HEIGHT = 400;
 
-const TrendWordCloud = memo(({ width, height, words, selectedTerm, onSelect, onHover }: {
-  width: number;
-  height: number;
-  words: { text: string; value: number; original: TrendMetric & { rank: number } }[];
-  selectedTerm: string | null;
-  onSelect: (term: string | null) => void;
-  onHover: (data: { x: number; y: number; item: TrendMetric & { rank: number } } | null) => void;
-}) => {
-  const fontScale = useMemo(() => {
-    if (words.length === 0) {
-      return scaleLog({ domain: [1, 10], range: [14, 50] });
-    }
-    const values = words.map((w) => w.value);
-    const minVal = Math.min(...values);
-    const maxVal = Math.max(...values);
-
-    // Avoid log(0) or invalid domains
-    const safeMin = Math.max(minVal, 0.1);
-    const safeMax = Math.max(maxVal, safeMin * 1.1);
-
-    return scaleLog({
-      domain: [safeMin, safeMax],
-      range: [14, 50],
-    });
-  }, [words]);
-
-  // Memoize accessors to prevent re-layout on every render
-  const getFontSize = useCallback((datum: { value: number }) => fontScale(datum.value), [fontScale]);
-  const fixedRandom = useCallback(() => 0.5, []);
-
-  // Use CSS variables for colors to match theme
-  const colors = ['var(--trend-up)', 'var(--trend-down)', 'var(--trend-steady)'];
-
-  const getColor = (text: string) => {
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-      hash = text.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
-  return (
-    <Wordcloud
-      words={words}
-      width={width}
-      height={height}
-      fontSize={getFontSize}
-      font={'sans-serif'}
-      padding={4}
-      spiral={'archimedean'}
-      rotate={0}
-      random={fixedRandom}
-    >
-      {(cloudWords) =>
-        cloudWords.map((w) => (
-          <g key={w.text} transform={`translate(${w.x}, ${w.y}) rotate(${w.rotate})`}>
-            <Text
-              className="word-cloud-text"
-              fill={selectedTerm === w.text ? 'var(--accent-color)' : getColor(w.text || '')}
-              textAnchor={'middle'}
-              fontSize={w.size}
-              fontWeight={selectedTerm === w.text ? 'bold' : 'normal'}
-              textDecoration={selectedTerm === w.text ? 'underline' : 'none'}
-              fontFamily={w.font}
-              onClick={() => onSelect(w.text || null)}
-              onMouseEnter={() => onHover({ x: w.x || 0, y: w.y || 0, item: (w as unknown as { original: TrendMetric & { rank: number } }).original })}
-              onMouseLeave={() => onHover(null)}
-            >
-              {w.text}
-            </Text>
-          </g>
-        ))
-      }
-    </Wordcloud>
-  );
+const approximateMeasureWord = ({ text, fontSize }: MeasureWordOptions) => ({
+  width: Math.max(fontSize, text.length * fontSize * 0.58),
+  height: fontSize * 1.2,
 });
-TrendWordCloud.displayName = 'TrendWordCloud';
+
+const createCanvasMeasureWord = () => {
+  if (typeof document === 'undefined') {
+    return approximateMeasureWord;
+  }
+
+  const canvas = document.createElement('canvas');
+  let context: CanvasRenderingContext2D | null = null;
+
+  try {
+    context = canvas.getContext('2d');
+  } catch {
+    return approximateMeasureWord;
+  }
+
+  if (!context) {
+    return approximateMeasureWord;
+  }
+
+  return ({ text, fontSize, fontFamily, fontWeight = 'normal' }: MeasureWordOptions) => {
+    context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+    const metrics = context.measureText(text);
+
+    return {
+      width: Math.max(metrics.width, fontSize),
+      height: fontSize * 1.2,
+    };
+  };
+};
 
 export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setActiveTab }: TrendTagCloudProps) => {
   const { t } = useTranslation();
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; item: TrendMetric & { rank: number } } | null>(null);
+  const [tooltip, setTooltip] = useState<WordCloudWord<TrendMetric & { rank: number }> | null>(null);
   const [items, setItems] = useState<TrendMetric[]>([]);
   const [loading, setLoading] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
+
+  const currentHeight = selectedTerm ? 250 : 400;
+
+  useEffect(() => {
+    const node = containerRef.current;
+
+    if (!node) {
+      return;
+    }
+
+    const updateDimensions = () => {
+      const nextWidth = Math.round(node.clientWidth) || DEFAULT_WIDTH;
+      setDimensions({ width: nextWidth, height: currentHeight });
+    };
+
+    updateDimensions();
+
+    if (typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      updateDimensions();
+    });
+
+    observer.observe(node);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [currentHeight]);
+
+  const handleSelect = (term: string) => {
+    setSelectedTerm((current) => (current === term ? null : term));
+    setTooltip(null);
+  };
 
   const handleSearch = () => {
     if (!selectedTerm) return;
@@ -129,53 +119,68 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
     fetchData();
   }, [domain, days]);
 
-  const words = useMemo(() => {
-    return items.map((i, index) => ({
-      text: i.trend_topic,
-      value: i.outlier_ratio,
-      original: { ...i, rank: index + 1 },
-    })).sort((a, b) => b.value - a.value);
-  }, [items]);
+  const words = useMemo(
+    () =>
+      buildWordCloudWords(
+        items,
+        (item) => item.trend_topic,
+        (item) => item.outlier_ratio,
+        (item, index) => ({ ...item, rank: index + 1 }),
+      ),
+    [items],
+  );
+
+  const measureWord = useMemo(() => createCanvasMeasureWord(), []);
+
+  const positionedWords = useMemo(
+    () =>
+      layoutWordCloud({
+        words,
+        width: dimensions.width,
+        height: dimensions.height,
+        measureWord,
+        getColor: (text) => getWordCloudColor(text),
+      }),
+    [dimensions.height, dimensions.width, measureWord, words],
+  );
+
+  const cloudBounds = useMemo(() => {
+    if (positionedWords.length === 0) {
+      return null;
+    }
+
+    return positionedWords.reduce(
+      (acc, word) => ({
+        left: Math.min(acc.left, word.x - word.width / 2),
+        top: Math.min(acc.top, word.y - word.height / 2),
+        right: Math.max(acc.right, word.x + word.width / 2),
+        bottom: Math.max(acc.bottom, word.y + word.height / 2),
+      }),
+      { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
+    );
+  }, [positionedWords]);
+
+  const tooltipPosition = useMemo(() => {
+    if (!tooltip || !containerRef.current || !cloudBounds) {
+      return null;
+    }
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const cloudWidth = cloudBounds.right - cloudBounds.left;
+    const cloudHeight = cloudBounds.bottom - cloudBounds.top;
+    const cloudLeft = (rect.width - cloudWidth) / 2;
+    const cloudTop = (rect.height - cloudHeight) / 2;
+
+    return {
+      left: rect.left + cloudLeft + (tooltip.x - cloudBounds.left),
+      top: Math.max(rect.top + cloudTop + (tooltip.y - cloudBounds.top) - tooltip.height / 2 - 12, 12),
+    };
+  }, [cloudBounds, tooltip]);
 
   const isSelectedTermVisible = useMemo(() => {
     if (!selectedTerm) return false;
-    return words.some((word) => word.text === selectedTerm);
-  }, [selectedTerm, words]);
-
-  // Memoize the render function for ParentSize to prevent it from triggering updates
-  // when TrendTagCloud re-renders (e.g. tab switch) but dimensions haven't changed.
-  const renderCloud = useCallback(({ width, height }: { width: number; height: number }) => (
-    <>
-      <TrendWordCloud
-        width={width}
-        height={height}
-        words={words}
-        selectedTerm={selectedTerm}
-        onSelect={setSelectedTerm}
-        onHover={setTooltip}
-      />
-      {tooltip && (
-        <div
-          className="cloud-tooltip"
-          style={{
-            visibility: 'visible',
-            opacity: 1,
-            position: 'absolute',
-            left: width / 2 + tooltip.x,
-            top: height / 2 + tooltip.y,
-            transform: 'translate(-50%, -100%)',
-            marginTop: '-5px',
-            pointerEvents: 'none',
-            bottom: 'auto',
-          }}
-        >
-          {t('trends.rank', 'Rank')}: {tooltip.item.rank}<br/>
-          {t('trends.trend', 'Trend')}: {tooltip.item.outlier_ratio.toFixed(2)}x<br/>
-          {t('trends.vol', 'Vol')}: {tooltip.item.frequency}
-        </div>
-      )}
-    </>
-  ), [words, selectedTerm, tooltip, t]);
+    return positionedWords.some((word) => word.text === selectedTerm);
+  }, [positionedWords, selectedTerm]);
 
   if (loading) {
     return <div style={{ height: '400px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -194,10 +199,11 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
   return (
     <>
       <div
+        ref={containerRef}
         className="tag-cloud"
-        style={{ width: '100%', height: isSelectedTermVisible ? '250px' : '400px', position: 'relative' }}
+        style={{ width: '100%', height: `${currentHeight}px`, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        {isSelectedTermVisible && (
+        {isSelectedTermVisible && selectedTerm && (
           <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
             <button
               onClick={handleSearch}
@@ -205,8 +211,8 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
               type="button"
               title={`${selectedTerm} ${BULLET_DELIMITER} ${domain.domain}`}
               style={{
-                background: 'var(--bg-color, #fff)',
-                border: '1px solid var(--border-color, #ccc)',
+                background: 'var(--bg-color)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '4px',
                 cursor: 'pointer',
                 padding: '5px',
@@ -214,7 +220,7 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
                 alignItems: 'center',
                 justifyContent: 'center',
                 color: 'var(--text-color)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                boxShadow: 'var(--shadow-medium)'
               }}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -225,9 +231,81 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
             </button>
           </div>
         )}
-        <ParentSize>
-          {renderCloud}
-        </ParentSize>
+
+        {cloudBounds && (
+          <div
+            style={{
+              position: 'relative',
+              width: `${cloudBounds.right - cloudBounds.left}px`,
+              height: `${cloudBounds.bottom - cloudBounds.top}px`,
+            }}
+          >
+            {positionedWords.map((word) => {
+          const isSelected = selectedTerm === word.text;
+          const tooltipLabel = `${t('trends.rank', 'Rank')}: ${word.rank}. ${t('trends.trend', 'Trend')}: ${word.data.outlier_ratio.toFixed(2)}x. ${t('trends.vol', 'Vol')}: ${word.data.frequency}.`;
+
+          return (
+            <button
+              key={word.text}
+              type="button"
+              className="word-cloud-item"
+              aria-pressed={isSelected}
+              aria-label={`${word.text}. ${tooltipLabel}`}
+              onClick={(event) => {
+                handleSelect(word.text);
+                event.currentTarget.focus();
+              }}
+              onFocus={() => setTooltip(word)}
+              onBlur={() => setTooltip((current) => (current?.text === word.text ? null : current))}
+              onMouseEnter={() => setTooltip(word)}
+              onMouseLeave={() => setTooltip((current) => (current?.text === word.text ? null : current))}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  handleSelect(word.text);
+                }
+              }}
+              style={{
+                position: 'absolute',
+                left: `${word.x - cloudBounds.left}px`,
+                top: `${word.y - cloudBounds.top}px`,
+                transform: 'translate(-50%, -50%)',
+                fontSize: `${word.fontSize}px`,
+                color: isSelected ? 'var(--accent-color)' : word.color,
+                fontWeight: isSelected ? 'bold' : 'normal',
+                textDecoration: isSelected ? 'underline' : 'none',
+                width: `${Math.ceil(word.width)}px`,
+                height: `${Math.ceil(word.height)}px`,
+              }}
+            >
+              {word.text}
+            </button>
+          );
+            })}
+          </div>
+        )}
+
+        {tooltip && (
+          <div
+            className="cloud-tooltip"
+            style={{
+              visibility: 'visible',
+              opacity: 1,
+              position: 'fixed',
+              left: tooltipPosition?.left,
+              top: tooltipPosition?.top,
+              transform: 'translate(-50%, -100%)',
+              marginTop: '-5px',
+              pointerEvents: 'none',
+              bottom: 'auto',
+              zIndex: 2000,
+            }}
+          >
+            {t('trends.rank', 'Rank')}: {tooltip.rank}<br/>
+            {t('trends.trend', 'Trend')}: {tooltip.data.outlier_ratio.toFixed(2)}x<br/>
+            {t('trends.vol', 'Vol')}: {tooltip.data.frequency}
+          </div>
+        )}
       </div>
       {isSelectedTermVisible && selectedTerm && (
         <TrendDetails term={selectedTerm} domain={domain} days={days} activeTab={activeTab} setActiveTab={setActiveTab} />

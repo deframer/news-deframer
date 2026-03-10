@@ -2,6 +2,8 @@ import { render } from '@testing-library/react';
 
 import { TrendTagCloud } from './TrendTagCloud';
 
+HTMLCanvasElement.prototype.getContext = jest.fn(() => null);
+
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => key,
@@ -14,22 +16,6 @@ jest.mock('react-i18next', () => ({
     type: '3rdParty',
     init: jest.fn(),
   },
-}));
-
-jest.mock('@visx/responsive', () => ({
-  ParentSize: ({ children }: { children: ({ width, height }: { width: number; height: number }) => React.ReactNode }) => children({ width: 400, height: 300 }),
-}));
-
-jest.mock('@visx/scale', () => ({
-  scaleLog: () => (value: number) => value,
-}));
-
-jest.mock('@visx/text', () => ({
-  Text: ({ children }: { children: React.ReactNode }) => <span>{children}</span>,
-}));
-
-jest.mock('@visx/wordcloud', () => ({
-  Wordcloud: ({ children }: { children: (words: never[]) => React.ReactNode }) => <div>{children([])}</div>,
 }));
 
 jest.mock('../../shared/settings', () => ({
