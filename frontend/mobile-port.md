@@ -45,3 +45,13 @@
 
 - [done] port browser-like trend flow to mobile: interactive `TrendTagCloud` with selected-term drill-down into `TrendDetails` tabs (`Lifecycle`, `Context`, `Articles`)
 - [done] add mobile trend components and details-tab behavior (`TrendTagCloudPanel`, `TrendDetailsPanel`, `TrendLifecyclePanel`, `TrendContextPanel`, `TrendArticleListPanel`) including `Articles` panel placement
+
+## 11. Trend Details + Lifecycle
+
+- make `TrendDetails` panel content use full inner real estate of the container: keep existing top spacing, but remove extra inner left/right/bottom spacing from lifecycle/context/articles panels
+- implement `TrendLifecycle` in mobile based on `browser-extension/src/ndf/components/TrendLifecycleChart.tsx` using mobile components and backend lifecycle data
+- add lifecycle chart display modes for mobile: default wide mode with minimum bar width and horizontal scroll, plus compact fit mode toggled by a chart-header icon button (top-left)
+- keep lifecycle bars selectable in wide mode; compact mode can be non-clickable when needed for readability
+- show selected lifecycle details below the chart in a compact separated info area (date, frequency, velocity), similar to bottom metadata/info treatment in `mobile/src/components/ArticleTile.tsx`
+- display `TrendArticleListPanel` below the lifecycle chart when a date/bar is selected
+- when date range/domain/term changes, keep selection only if selected date is still present; otherwise clear selection safely
