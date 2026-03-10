@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ExternalLink } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Card } from '../components/Card';
@@ -152,17 +153,35 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
     return () => cancelAnimationFrame(frame);
   }, [overallY, pendingScrollTarget]);
 
+  const openOriginal = () => {
+    Linking.openURL(item.url).catch(() => undefined);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}> 
       <ScrollView ref={scrollRef} style={styles.screen} contentContainerStyle={styles.content}>
         <Card palette={palette}>
         <Pressable
-          onPress={() => {
-            Linking.openURL(item.url).catch(() => undefined);
-          }}
+          onPress={openOriginal}
           style={styles.heroPressable}
         >
-          {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : null}
+          {imageUrl ? (
+            <View style={styles.imageWrap}>
+              <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('article.btn_open_article', 'Open article')}
+                onPress={(event) => {
+                  event.stopPropagation();
+                  openOriginal();
+                }}
+                style={[styles.openButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}
+              >
+                <ExternalLink color={palette.buttonText} size={14} strokeWidth={2.2} />
+                <Text style={[styles.openButtonText, { color: palette.buttonText }]}>{t('article.btn_open_article', 'Open article')}</Text>
+              </Pressable>
+            </View>
+          ) : null}
           <View style={styles.heroTextBlock}>
             <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
             <Text style={[styles.description, { color: palette.secondaryText }]}>{description}</Text>
@@ -192,7 +211,7 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
         ) : null}
 
         {mode === 'original' || mode === 'details' ? (
-          <View style={styles.originalSection}>
+          <View style={[styles.originalSection, { borderTopColor: palette.border }]}>
             <Text style={[styles.originalHeading, { color: palette.text }]}>{t('article.original_section')}</Text>
             <Text style={[styles.originalTitle, { color: palette.text }]}>{stripHtml(item.title_original || '')}</Text>
             <Text style={[styles.originalBody, { color: palette.secondaryText }]}>{stripHtml(item.description_original || '')}</Text>
@@ -231,26 +250,41 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   screen: { flex: 1 },
   content: { padding: 24, paddingBottom: 110 },
-  heroPressable: { gap: 14 },
-  image: { width: '100%', aspectRatio: 16 / 9, borderRadius: 10 },
+  heroPressable: { gap: 0 },
+  imageWrap: { position: 'relative', marginHorizontal: -16, marginTop: -16, marginBottom: 14 },
+  image: { width: '100%', aspectRatio: 16 / 9 },
+  openButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    borderWidth: 1,
+    borderRadius: 999,
+    minHeight: 30,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  openButtonText: { fontSize: 12, fontWeight: '700' },
   heroTextBlock: { gap: 10 },
-  title: { fontSize: 34, fontWeight: '800', lineHeight: 40 },
-  description: { fontSize: 18, lineHeight: 28 },
+  title: { fontSize: 20, fontWeight: '700', lineHeight: 26 },
+  description: { fontSize: 15, lineHeight: 22 },
   metaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  metaText: { fontSize: 15, fontWeight: '500' },
-  metaDivider: { fontSize: 15, fontWeight: '700' },
+  metaText: { fontSize: 13, fontWeight: '500' },
+  metaDivider: { fontSize: 13, fontWeight: '600' },
   divider: { marginVertical: 18, borderBottomWidth: 1 },
   metricBlock: { gap: 8 },
-  metricTitle: { fontSize: 20, fontWeight: '700' },
+  metricTitle: { fontSize: 18, fontWeight: '700', lineHeight: 24 },
   metricTrack: { height: 32, borderRadius: 999, overflow: 'hidden', justifyContent: 'center' },
   metricFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  metricPercent: { paddingHorizontal: 12, fontSize: 18, fontWeight: '800' },
-  metricReason: { fontSize: 17, lineHeight: 24 },
+  metricPercent: { paddingHorizontal: 12, fontSize: 14, fontWeight: '800' },
+  metricReason: { fontSize: 15, lineHeight: 22 },
   metricsStack: { marginTop: 18, gap: 14 },
-  originalSection: { marginTop: 20, gap: 10 },
-  originalHeading: { fontSize: 30, fontWeight: '800' },
-  originalTitle: { fontSize: 26, fontWeight: '700', lineHeight: 34 },
-  originalBody: { fontSize: 20, lineHeight: 30 },
+  originalSection: { marginTop: 20, gap: 10, borderTopWidth: 1, paddingTop: 14 },
+  originalHeading: { fontSize: 18, fontWeight: '700', lineHeight: 24 },
+  originalTitle: { fontSize: 20, fontWeight: '700', lineHeight: 26 },
+  originalBody: { fontSize: 15, lineHeight: 22 },
   actionsDock: {
     position: 'absolute',
     left: 0,
@@ -271,5 +305,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
   },
-  actionButtonText: { fontSize: 18, fontWeight: '700' },
+  actionButtonText: { fontSize: 16, fontWeight: '700' },
 });

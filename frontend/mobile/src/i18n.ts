@@ -37,6 +37,7 @@ const resources = {
         original_section: 'Original',
         btn_original_title: 'Original title',
         btn_details: 'Details',
+        btn_open_article: 'Open article',
       },
       metrics: {
         framing: 'Framing',
@@ -74,6 +75,7 @@ const resources = {
         original_section: 'Original',
         btn_original_title: 'Originaltitel',
         btn_details: 'Details',
+        btn_open_article: 'Artikel öffnen',
       },
       metrics: {
         framing: 'Framing',

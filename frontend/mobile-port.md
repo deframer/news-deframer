@@ -29,14 +29,10 @@
 
 ## 7. Mobile Article Screen
 
-- replace the placeholder `mobile/src/screens/ArticleScreen.tsx` with a real mobile article view based on `browser-extension/src/ndf/pages/ArticlePage.tsx`
-- use the selected article domain as the top app header title instead of `Article`
-- keep the existing global mobile header/back behavior and do not add in-page back or hide buttons
-- remove the browser-only `view original` button and remove the bottom replacement note
-- make the image, corrected title, and corrected description a single clickable top block that opens the original URL in the platform default/system browser
-- keep metadata under the upper article block
-- show overall rating first, then support expandable detail metrics
-- add two bottom toggle buttons: `Original title` and `Details`
-- make `Details` open the full analysis section (detail metrics + original section)
-- make `Original title` open only the original title/original text section
-- button behavior: pressing the active button closes the panel; pressing the other button switches directly to that other mode
+- [done] replace the placeholder article screen with a full mobile article view that uses the article domain in the top header, keeps global back/header behavior, adds a clickable top content block with visible open action to launch the original URL in the system browser, shows metadata and ratings with expandable details/original sections, and uses sticky bottom `Original title` / `Details` toggles with close-on-active and switch-on-other behavior
+
+## 8. A11Y Font Size
+
+- add an accessibility font-size check pass across all mobile screens
+- evaluate dynamic type/text scaling for key text styles (titles, body, metadata, buttons, ratings)
+- add a font-size setting in mobile settings so users can increase/decrease text size consistently
