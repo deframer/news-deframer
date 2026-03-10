@@ -8,6 +8,9 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+def mobileVersionName = System.getenv("MOBILE_VERSION_NAME") ?: "0.0.1"
+def mobileVersionCode = (System.getenv("MOBILE_VERSION_CODE") ?: "1") as Integer
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -88,8 +91,8 @@ android {
         applicationId "com.newsdeframer.mobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode mobileVersionCode
+        versionName mobileVersionName
     }
     signingConfigs {
         debug {
