@@ -25,3 +25,17 @@
 ## 5. Mobile App Structure And Navigation
 
 - [done] add the mobile app shell with `screens`, `components`, and `services`, including cross-platform storage, a mobile API client, dashboard-first navigation with settings fallback, browser-equivalent settings/session layout, shared theme/i18n behavior, burger-menu navigation, and an About screen with back navigation
+
+## 6. Mobile Portal Screen
+
+- remove `mobile/src/screens/SessionScreen.tsx` and replace the old session flow with a new `PortalScreen.tsx`
+- rename the mobile screen flow from `session` to `portal` in app state, navigation, titles, and related copy
+- update the dashboard so selecting a domain opens the new portal screen for that domain
+- make the portal screen follow the settings/about navigation pattern: show a `<<` back icon, hide the burger menu, and return to the dashboard on close
+- show the selected domain only once at the very top as the portal hero/header title
+- use a two-tab layout labeled `Articles` and `Trend Mining`, without showing the domain in the tabs
+- make `Articles` the default tab and fetch the portal article list from the backend via `getSite(domain.domain)`
+- render the fetched results in a mobile-native article tile layout equivalent to `browser-extension/src/ndf/components/ArticleTile.tsx`
+- include loading, empty, and error states for portal article loading
+- add a `Trend Mining` placeholder view for now, to reserve the second tab without implementing trend features yet
+- keep the mobile portal layout simple and native: top title hero, tabs below it, article list underneath
