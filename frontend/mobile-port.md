@@ -39,9 +39,4 @@
 
 ## 9. Mobile Trends
 
-- rename the main portal tab label from `Trend Mining` to `Trends`
-- implement the Trends inner layout under the main tab with this order: time selector row, then subtab row, then content area
-- add a time selector chip row with `24h`, `7d`, `30d`, `90d`, `365d` and default `7d`, without a `Time/Zeit` caption
-- add Trends subtabs `Tag Cloud`, `Compare`, and `Search` as mobile components
-- for this iteration, render placeholder panels only for all three subtabs
-- keep `Articles` behavior unchanged and do not add a footer
+- [done] rename the main tab to `Trends` and implement the Trends sub-layout in portal with a time-selector row (`24h`, `7d`, `30d`, `90d`, `365d`, default `7d`), subtabs (`Tag Cloud`, `Compare`, `Search`) as mobile components, and placeholder panels only for this first iteration (no footer, `Articles` unchanged)

@@ -7,11 +7,24 @@ import { ArticleTile } from '../components/ArticleTile';
 import { Card } from '../components/Card';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SegmentedControl } from '../components/SegmentedControl';
+import { TrendComparePanel } from '../components/TrendComparePanel';
+import { TrendSearchPanel } from '../components/TrendSearchPanel';
+import { TrendTagCloudPanel } from '../components/TrendTagCloudPanel';
 import { DomainEntry, NewsDeframerClient, AnalyzedItem } from '../services/newsDeframerClient';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
 
 type PortalTab = 'articles' | 'trend-mining';
+type TrendSubview = 'cloud' | 'compare' | 'search';
+type TrendRange = '24h' | '7d' | '30d' | '90d' | '365d';
+
+const TIME_RANGES: Array<{ id: TrendRange; label: string }> = [
+  { id: '24h', label: 'trends.time_ranges.last_24h' },
+  { id: '7d', label: 'trends.time_ranges.last_7d' },
+  { id: '30d', label: 'trends.time_ranges.last_30d' },
+  { id: '90d', label: 'trends.time_ranges.last_90d' },
+  { id: '365d', label: 'trends.time_ranges.last_365d' },
+];
 
 export const PortalScreen = ({
   palette,
@@ -30,6 +43,8 @@ export const PortalScreen = ({
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reasonText, setReasonText] = useState<string | null>(null);
+  const [trendSubview, setTrendSubview] = useState<TrendSubview>('cloud');
+  const [trendRange, setTrendRange] = useState<TrendRange>('7d');
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const useNativeDriver = Platform.OS !== 'web';
@@ -129,7 +144,7 @@ export const PortalScreen = ({
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, activeTab === 'trend-mining' ? styles.contentWithBottomTabs : null]}
         scrollEnabled={!reasonText}
         stickyHeaderIndices={[0]}
       >
@@ -138,7 +153,7 @@ export const PortalScreen = ({
             palette={palette}
             value={activeTab}
             onChange={(value) => setActiveTab(value as PortalTab)}
-            options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trend_mining'), value: 'trend-mining' }]}
+            options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trends'), value: 'trend-mining' }]}
           />
         </View>
 
@@ -167,13 +182,48 @@ export const PortalScreen = ({
           </View>
         ) : (
           <View style={styles.stack}>
-            <Card palette={palette}>
-              <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.trend_mining')}</Text>
-              <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{t('mobile.trend_mining_placeholder')}</Text>
-            </Card>
+            <View style={styles.timeRow}>
+              {TIME_RANGES.map((range) => {
+                const selected = trendRange === range.id;
+                return (
+                  <Pressable
+                    key={range.id}
+                    onPress={() => setTrendRange(range.id)}
+                    style={[
+                      styles.timeChip,
+                      {
+                        borderColor: palette.buttonBorder,
+                        backgroundColor: selected ? palette.accent : palette.buttonBackground,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.timeChipText, { color: selected ? palette.accentText : palette.buttonText }]}>{t(range.label)}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {trendSubview === 'cloud' ? <TrendTagCloudPanel palette={palette} timeRangeLabel={t(TIME_RANGES.find((range) => range.id === trendRange)?.label || 'trends.time_ranges.last_7d')} /> : null}
+            {trendSubview === 'compare' ? <TrendComparePanel palette={palette} /> : null}
+            {trendSubview === 'search' ? <TrendSearchPanel palette={palette} /> : null}
           </View>
         )}
       </ScrollView>
+
+      {activeTab === 'trend-mining' ? (
+        <View style={[styles.trendSubviewDock, { backgroundColor: palette.background, borderTopColor: palette.border }]}> 
+          <SegmentedControl
+            palette={palette}
+            value={trendSubview}
+            onChange={(value) => setTrendSubview(value as TrendSubview)}
+            options={[
+              { label: t('trends.cloud'), value: 'cloud' },
+              { label: t('trends.compare_view'), value: 'compare' },
+              { label: t('trends.search'), value: 'search' },
+            ]}
+          />
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -182,6 +232,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, overflow: 'hidden' },
   scrollView: { flex: 1, overflow: 'scroll' },
   content: { paddingBottom: 24 },
+  contentWithBottomTabs: { paddingBottom: 100 },
   stickyTabs: {
     paddingHorizontal: 24,
     paddingBottom: 16,
@@ -190,6 +241,26 @@ const styles = StyleSheet.create({
   },
   spacer: { height: 16 },
   stack: { paddingHorizontal: 24, gap: 16 },
+  timeRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
+  timeChip: {
+    borderWidth: 1,
+    borderRadius: 8,
+    minHeight: 34,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  timeChipText: { fontSize: 14, fontWeight: '700' },
+  trendSubviewDock: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopWidth: 1,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
   stateTitle: { marginBottom: 8, fontSize: 20, fontWeight: '700' },
   stateBody: { fontSize: 15, lineHeight: 22 },
   actionButton: {
