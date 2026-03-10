@@ -77,6 +77,7 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	if !cfg.DisableETag {
 		handler = s.etagMiddleware(s.cacheControlMiddleware(handler))
 	}
+	handler = s.corsMiddleware(handler)
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -99,6 +100,46 @@ func (s *Server) cacheControlMiddleware(next http.Handler) http.Handler {
 				w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(config.ETagTTL.Seconds())))
 			}
 		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (s *Server) corsMiddleware(next http.Handler) http.Handler {
+	allowedOrigins := strings.TrimSpace(s.cfg.CORSAllowedOrigins)
+	if allowedOrigins == "" {
+		return next
+	}
+
+	allowedMethods := "GET, OPTIONS"
+	allowedHeaders := "Authorization, Content-Type"
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := strings.TrimSpace(r.Header.Get("Origin"))
+		if origin != "" {
+			switch {
+			case allowedOrigins == "*":
+				w.Header().Set("Access-Control-Allow-Origin", "*")
+			default:
+				for _, candidate := range strings.Split(allowedOrigins, ",") {
+					if origin == strings.TrimSpace(candidate) {
+						w.Header().Set("Access-Control-Allow-Origin", origin)
+						w.Header().Add("Vary", "Origin")
+						break
+					}
+				}
+			}
+
+			if w.Header().Get("Access-Control-Allow-Origin") != "" {
+				w.Header().Set("Access-Control-Allow-Methods", allowedMethods)
+				w.Header().Set("Access-Control-Allow-Headers", allowedHeaders)
+			}
+		}
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }
