@@ -1,6 +1,6 @@
 import './src/i18n';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Menu } from 'lucide-react-native';
 import { Appearance, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -195,7 +195,7 @@ function App() {
     setScreen(nextScreen);
   };
 
-  const handleTestConnection = async () => {
+  const handleTestConnection = useCallback(async () => {
     setStatus('loading');
     try {
       const client = new NewsDeframerClient(settings);
@@ -204,7 +204,7 @@ function App() {
     } catch {
       setStatus('error');
     }
-  };
+  }, [settings]);
 
   const renderScreen = () => {
     if (booting) {
