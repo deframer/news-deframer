@@ -8,17 +8,18 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { MenuDrawer } from './src/components/MenuDrawer';
 import { LoadingSpinner } from './src/components/LoadingSpinner';
+import { ArticleScreen } from './src/screens/ArticleScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
-import { SessionScreen } from './src/screens/SessionScreen';
+import { PortalScreen } from './src/screens/PortalScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
-import { DomainEntry, NewsDeframerClient } from './src/services/newsDeframerClient';
+import { AnalyzedItem, DomainEntry, NewsDeframerClient } from './src/services/newsDeframerClient';
 import i18n from './src/i18n';
 import { DEFAULT_SETTINGS, settingsService, Settings } from './src/services/settingsService';
 import { themeService } from './src/services/themeService';
 import { HostStatus } from './src/components/StatusBadge';
 
-type Screen = 'dashboard' | 'settings' | 'about' | 'session';
+type Screen = 'dashboard' | 'settings' | 'about' | 'portal' | 'article';
 
 const getResolvedLanguage = (language: string): string => {
   if (language !== 'default') {
@@ -45,6 +46,7 @@ function App() {
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [domainsLoading, setDomainsLoading] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DomainEntry | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
 
   useEffect(() => {
@@ -52,11 +54,50 @@ function App() {
       return;
     }
 
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlHeight = html.style.height;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousBodyHeight = body.style.height;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyMargin = body.style.margin;
+
     document.body.style.backgroundColor = palette.background;
+    html.style.height = '100%';
+    html.style.overflow = 'hidden';
+    body.style.height = '100%';
+    body.style.overflow = 'hidden';
+    body.style.margin = '0';
+
     const root = document.getElementById('root');
+    const previousRootHeight = root?.style.height ?? '';
+    const previousRootOverflow = root?.style.overflow ?? '';
+    const previousRootDisplay = root?.style.display ?? '';
+    const previousRootFlexDirection = root?.style.flexDirection ?? '';
+
     if (root) {
       root.style.backgroundColor = palette.background;
+      root.style.height = '100%';
+      root.style.overflow = 'hidden';
+      root.style.display = 'flex';
+      root.style.flexDirection = 'column';
     }
+
+    return () => {
+      html.style.height = previousHtmlHeight;
+      html.style.width = previousHtmlWidth;
+      html.style.overflow = previousHtmlOverflow;
+      body.style.height = previousBodyHeight;
+      body.style.width = previousBodyWidth;
+      body.style.overflow = previousBodyOverflow;
+      body.style.margin = previousBodyMargin;
+      if (root) {
+        root.style.height = previousRootHeight;
+        root.style.overflow = previousRootOverflow;
+        root.style.display = previousRootDisplay;
+        root.style.flexDirection = previousRootFlexDirection;
+      }
+    };
   }, [palette.background]);
 
   useEffect(() => {
@@ -147,7 +188,7 @@ function App() {
     }
 
     void handleTestConnection();
-  }, [booting, screen]);
+  }, [booting, handleTestConnection, screen]);
 
   const openScreen = (nextScreen: Screen) => {
     setDrawerOpen(false);
@@ -182,8 +223,22 @@ function App() {
       return <AboutScreen palette={palette} onClose={() => setScreen('dashboard')} />;
     }
 
-    if (screen === 'session' && selectedDomain) {
-      return <SessionScreen palette={palette} domain={selectedDomain} />;
+    if (screen === 'portal' && selectedDomain) {
+      return (
+        <PortalScreen
+          palette={palette}
+          domain={selectedDomain}
+          settings={settings}
+          onOpenArticle={(item) => {
+            setSelectedArticle(item);
+            setScreen('article');
+          }}
+        />
+      );
+    }
+
+    if (screen === 'article' && selectedArticle) {
+      return <ArticleScreen palette={palette} url={selectedArticle.url} />;
     }
 
     return (
@@ -192,17 +247,25 @@ function App() {
         domains={domains}
         domainsLoading={domainsLoading}
         configured={configured}
-        onOpenSession={(domain) => {
+        onOpenPortal={(domain) => {
           setSelectedDomain(domain);
-          setScreen('session');
+          setScreen('portal');
         }}
       />
     );
   };
 
-  const showBack = screen === 'settings' || screen === 'about';
+  const showBack = screen === 'settings' || screen === 'about' || screen === 'portal' || screen === 'article';
   const showMenu = !showBack;
-  const headerTitle = screen === 'settings' ? t('options.settings_title') : screen === 'about' ? t('mobile.about_title') : screen === 'session' ? selectedDomain?.domain || t('mobile.session_title') : t('mobile.dashboard_title');
+  const headerTitle = screen === 'settings' ? t('options.settings_title') : screen === 'about' ? t('mobile.about_title') : screen === 'portal' ? selectedDomain?.domain || t('mobile.portal_title') : screen === 'article' ? t('article.screen_title', 'Article') : t('mobile.dashboard_title');
+  const handleBack = () => {
+    if (screen === 'article') {
+      setScreen('portal');
+      return;
+    }
+
+    setScreen('dashboard');
+  };
 
   return (
     <SafeAreaProvider>
@@ -211,7 +274,7 @@ function App() {
         <View style={[styles.appBar, { borderBottomColor: palette.border, backgroundColor: palette.background }]}> 
           <View style={styles.appBarLeft}>
             {showBack ? (
-              <Pressable onPress={() => setScreen('dashboard')} style={styles.iconButton}>
+              <Pressable onPress={handleBack} style={styles.iconButton}>
                 <ArrowLeft color={palette.text} size={22} strokeWidth={2.25} />
               </Pressable>
             ) : null}
@@ -225,7 +288,9 @@ function App() {
           <View style={styles.appBarSpacer} />
         </View>
 
-        {renderScreen()}
+        <View style={styles.screen}>
+          {renderScreen()}
+        </View>
 
         <MenuDrawer
           visible={drawerOpen}
@@ -244,8 +309,11 @@ function App() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: { flex: 1, overflow: 'hidden' },
   appBar: {
+    position: 'sticky',
+    top: 0,
+    zIndex: 20,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -257,6 +325,7 @@ const styles = StyleSheet.create({
   appBarSpacer: { minWidth: 48 },
   iconButton: { paddingHorizontal: 8, paddingVertical: 6 },
   appBarTitle: { fontSize: 18, fontWeight: '700' },
+  screen: { flex: 1, overflow: 'hidden' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });
 
