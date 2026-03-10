@@ -82,7 +82,7 @@ export const Popup = () => {
           labels={{
             connected: t('options.status_connected'),
             error: t('options.status_error'),
-            checking: t('options.status_checking'),
+            checking: t('options.status_loading'),
             disabled: t('options.status_disabled', 'Disabled'),
           }}
         />

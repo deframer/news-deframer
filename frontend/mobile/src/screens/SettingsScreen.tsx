@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Card } from '../components/Card';
 import { SECTION_HEADER_GAP } from '../components/formStyles';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { SelectField } from '../components/SelectField';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { HostStatus, StatusBadge } from '../components/StatusBadge';
@@ -41,7 +42,7 @@ export const SettingsScreen = ({
                 labels={{
                   connected: t('options.status_connected'),
                   error: t('options.status_error'),
-                  checking: t('options.status_checking'),
+                  checking: t('options.status_loading'),
                 }}
               />
             </View>
@@ -49,7 +50,11 @@ export const SettingsScreen = ({
             <TextField label={t('options.label_username')} optional={t('options.label_optional')} value={settings.username} onChangeText={(username) => onSettingsChange({ ...settings, username })} palette={palette} />
             <TextField label={t('options.label_password')} optional={t('options.label_optional')} value={settings.password} onChangeText={(password) => onSettingsChange({ ...settings, password })} palette={palette} secureTextEntry />
             <Pressable onPress={onTestConnection} disabled={isLoading} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
-              <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}</Text>
+              {isLoading ? (
+                <LoadingSpinner palette={palette} label={t('options.btn_testing')} center />
+              ) : (
+                <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('options.btn_test_connection')}</Text>
+              )}
             </Pressable>
           </Card>
           <Card palette={palette}>
@@ -96,6 +101,6 @@ const styles = StyleSheet.create({
   cardHeader: { marginBottom: SECTION_HEADER_GAP, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
   sectionTitle: { fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '700' },
   sectionGap: { marginBottom: SECTION_HEADER_GAP },
-  actionButton: { borderWidth: 1, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
+  actionButton: { borderWidth: 1, borderRadius: 8, minHeight: 54, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   actionButtonText: { fontSize: 18, fontWeight: '600' },
 });

@@ -3,17 +3,20 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { Card } from '../components/Card';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { AppPalette } from '../theme';
 import { DomainEntry } from '../services/newsDeframerClient';
 
 export const DashboardScreen = ({
   palette,
   domains,
+  domainsLoading,
   configured,
   onOpenSession,
 }: {
   palette: AppPalette;
   domains: DomainEntry[];
+  domainsLoading: boolean;
   configured: boolean;
   onOpenSession: (domain: DomainEntry) => void;
 }) => {
@@ -24,12 +27,12 @@ export const DashboardScreen = ({
       <View style={styles.headerBlock}>
         <Text style={[styles.eyebrow, { color: palette.secondaryText }]}>NEWS DEFRAMER</Text>
         <Text style={[styles.title, { color: palette.text }]}>{t('mobile.dashboard_title')}</Text>
-        <Text style={[styles.subtitle, { color: palette.secondaryText }]}>
-          {configured ? t('mobile.pick_domain') : t('mobile.missing_config')}
-        </Text>
+        {!configured ? <Text style={[styles.subtitle, { color: palette.secondaryText }]}>{t('mobile.missing_config')}</Text> : null}
       </View>
       <Card palette={palette}>
-        {domains.length === 0 ? (
+        {domainsLoading ? (
+          <LoadingSpinner palette={palette} label={t('options.status_loading')} />
+        ) : domains.length === 0 ? (
           <Text style={[styles.empty, { color: palette.secondaryText }]}>{t('mobile.no_domains')}</Text>
         ) : (
           domains.map((domain, index) => (

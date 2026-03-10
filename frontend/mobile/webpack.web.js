@@ -15,6 +15,7 @@ module.exports = {
       'react-native$': 'react-native-web',
     },
     extensions: ['.web.js', '.web.ts', '.web.tsx', '.js', '.ts', '.tsx', '.json'],
+    modules: [path.resolve(__dirname, 'node_modules'), 'node_modules'],
   },
   module: {
     rules: [
@@ -35,11 +36,27 @@ module.exports = {
           loader: 'babel-loader',
         },
       },
+      {
+        test: /\.svg$/,
+        include: [
+          path.resolve(__dirname, 'src'),
+          path.resolve(__dirname, '../shared/assets'),
+        ],
+        use: [
+          {
+            loader: '@svgr/webpack',
+            options: {
+              native: true,
+            },
+          },
+        ],
+      },
     ],
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, 'web/index.html'),
+      favicon: path.resolve(__dirname, '../shared/assets/web/favicon-32.png'),
     }),
   ],
   devServer: {

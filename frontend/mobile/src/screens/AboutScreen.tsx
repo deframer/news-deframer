@@ -1,9 +1,10 @@
 import React from 'react';
 import { Github } from 'lucide-react-native';
-import { Linking, Pressable, ScrollView, StyleSheet, Text } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { APP_VERSION } from '../appInfo';
+import { AppLogo } from '../components/AppLogo';
 import { Card } from '../components/Card';
 import { AppPalette } from '../theme';
 
@@ -13,7 +14,11 @@ export const AboutScreen = ({ palette, onClose }: { palette: AppPalette; onClose
   return (
     <ScrollView style={{ flex: 1, backgroundColor: palette.background }} contentContainerStyle={styles.content}>
       <Card palette={palette}>
+        <View style={styles.logoWrap}>
+          <AppLogo size={72} />
+        </View>
         <Text style={[styles.title, { color: palette.text }]}>News Deframer</Text>
+        <Text style={[styles.subtitle, { color: palette.secondaryText }]}>Mobile</Text>
         <Text style={[styles.version, { color: palette.secondaryText }]}>{APP_VERSION}</Text>
         <Pressable onPress={() => Linking.openURL('https://deframer.github.io/')} style={styles.linkRow}> 
           <Github color={palette.accent} size={18} strokeWidth={2.1} />
@@ -29,7 +34,9 @@ export const AboutScreen = ({ palette, onClose }: { palette: AppPalette; onClose
 
 const styles = StyleSheet.create({
   content: { flexGrow: 1, padding: 24, alignItems: 'center', justifyContent: 'center' },
-  title: { marginBottom: 8, fontSize: 32, fontWeight: '700', textAlign: 'center' },
+  logoWrap: { alignItems: 'center', marginBottom: 12 },
+  title: { marginBottom: 4, fontSize: 32, fontWeight: '700', textAlign: 'center' },
+  subtitle: { marginBottom: 2, fontSize: 18, fontWeight: '600', textAlign: 'center' },
   version: { marginBottom: 18, fontSize: 16, textAlign: 'center' },
   linkRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 20 },
   linkText: { fontSize: 18, fontWeight: '600', textDecorationLine: 'underline' },

@@ -29,7 +29,7 @@ const resources = {
       article: { back: 'Back' },
       footer: { github_link: 'News Deframer on GitHub' },
       options: {
-        settings_title: 'Settings', language_label: 'Language', theme_label: 'Theme', theme_light: 'Light', theme_dark: 'Dark', theme_system: 'System', default: 'Default', loading: 'Loading...', status_connected: 'Connected', status_error: 'Error', status_checking: 'Checking...', section_connection: 'Connection', label_server_url: 'Server URL', label_username: 'Username', label_password: 'Password', label_optional: '(Optional)', btn_test_connection: 'Test Connection', btn_testing: 'Testing...', label_search_engine: 'Search Engine', error_https_only: 'URL must start with https://',
+        settings_title: 'Settings', language_label: 'Language', theme_label: 'Theme', theme_light: 'Light', theme_dark: 'Dark', theme_system: 'System', default: 'Default', loading: 'Loading...', status_connected: 'Connected', status_error: 'Error', status_loading: 'Loading...', section_connection: 'Connection', label_server_url: 'Server URL', label_username: 'Username', label_password: 'Password', label_optional: '(Optional)', btn_test_connection: 'Test Connection', btn_testing: 'Testing...', label_search_engine: 'Search Engine', error_https_only: 'URL must start with https://',
       },
       mobile: {
         dashboard_title: 'Dashboard', about_title: 'About', about_body: 'News Deframer', menu_dashboard: 'Dashboard', menu_settings: 'Settings', menu_about: 'About', no_domains: 'No domains available.', pick_domain: 'Choose a domain to open a session.', missing_config: 'Add your server settings to continue.', session_title: 'Session', open_project: 'News Deframer on GitHub', ok: 'OK',
@@ -45,7 +45,7 @@ const resources = {
       article: { back: 'Zurück' },
       footer: { github_link: 'News Deframer auf GitHub' },
       options: {
-        settings_title: 'Einstellungen', language_label: 'Sprache', theme_label: 'Design', theme_light: 'Hell', theme_dark: 'Dunkel', theme_system: 'System', default: 'Standard', loading: 'Laden...', status_connected: 'Verbunden', status_error: 'Fehler', status_checking: 'Prüfen...', section_connection: 'Verbindung', label_server_url: 'Server-URL', label_username: 'Benutzername', label_password: 'Passwort', label_optional: '(Optional)', btn_test_connection: 'Verbindung testen', btn_testing: 'Teste...', label_search_engine: 'Suchmaschine', error_https_only: 'URL muss mit https:// beginnen',
+        settings_title: 'Einstellungen', language_label: 'Sprache', theme_label: 'Design', theme_light: 'Hell', theme_dark: 'Dunkel', theme_system: 'System', default: 'Standard', loading: 'Laden...', status_connected: 'Verbunden', status_error: 'Fehler', status_loading: 'Laden...', section_connection: 'Verbindung', label_server_url: 'Server-URL', label_username: 'Benutzername', label_password: 'Passwort', label_optional: '(Optional)', btn_test_connection: 'Verbindung testen', btn_testing: 'Teste...', label_search_engine: 'Suchmaschine', error_https_only: 'URL muss mit https:// beginnen',
       },
       mobile: {
         dashboard_title: 'Dashboard', about_title: 'Über', about_body: 'News Deframer', menu_dashboard: 'Dashboard', menu_settings: 'Einstellungen', menu_about: 'Über', no_domains: 'Keine Domains verfügbar.', pick_domain: 'Wählen Sie eine Domain, um eine Sitzung zu öffnen.', missing_config: 'Fügen Sie Ihre Server-Einstellungen hinzu, um fortzufahren.', session_title: 'Sitzung', open_project: 'News Deframer auf GitHub', ok: 'OK',

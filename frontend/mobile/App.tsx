@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { MenuDrawer } from './src/components/MenuDrawer';
+import { LoadingSpinner } from './src/components/LoadingSpinner';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { SessionScreen } from './src/screens/SessionScreen';
@@ -42,6 +43,7 @@ function App() {
   const [screen, setScreen] = useState<Screen>('settings');
   const [status, setStatus] = useState<HostStatus>('idle');
   const [domains, setDomains] = useState<DomainEntry[]>([]);
+  const [domainsLoading, setDomainsLoading] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DomainEntry | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
 
@@ -105,6 +107,7 @@ function App() {
   useEffect(() => {
     if (booting || !configured) {
       setDomains([]);
+      setDomainsLoading(false);
       return;
     }
 
@@ -112,7 +115,10 @@ function App() {
     const client = new NewsDeframerClient(settings);
 
     const loadDomains = async () => {
+      setDomainsLoading(true);
       try {
+        // used for debuging the loading spinner
+        // await new Promise((resolve) => setTimeout(resolve, 10000));
         const loadedDomains = await client.getDomains();
         if (mounted) {
           setDomains(loadedDomains);
@@ -120,6 +126,10 @@ function App() {
       } catch {
         if (mounted) {
           setDomains([]);
+        }
+      } finally {
+        if (mounted) {
+          setDomainsLoading(false);
         }
       }
     };
@@ -157,7 +167,11 @@ function App() {
 
   const renderScreen = () => {
     if (booting) {
-      return <View style={styles.loading}><Text style={{ color: palette.text }}>{t('options.loading')}</Text></View>;
+      return (
+        <View style={styles.loading}>
+          <LoadingSpinner palette={palette} label={t('options.loading')} center />
+        </View>
+      );
     }
 
     if (screen === 'settings') {
@@ -172,7 +186,18 @@ function App() {
       return <SessionScreen palette={palette} domain={selectedDomain} />;
     }
 
-    return <DashboardScreen palette={palette} domains={domains} configured={configured} onOpenSession={(domain) => { setSelectedDomain(domain); setScreen('session'); }} />;
+    return (
+      <DashboardScreen
+        palette={palette}
+        domains={domains}
+        domainsLoading={domainsLoading}
+        configured={configured}
+        onOpenSession={(domain) => {
+          setSelectedDomain(domain);
+          setScreen('session');
+        }}
+      />
+    );
   };
 
   const showBack = screen === 'settings' || screen === 'about';
