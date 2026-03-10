@@ -24,16 +24,4 @@
 
 ## 5. Mobile App Structure And Navigation
 
-- build the mobile app with `screens`, `components`, and `services`
-- add a cross-platform storage service for iOS, Android, and web via `@react-native-async-storage/async-storage`
-- add a mobile API client service equivalent to `browser-extension/src/ndf/client.ts`
-- start on a Dashboard screen that lists domains; this screen does not exist in the browser extension yet
-- if required configuration is missing, open Settings first instead of Dashboard
-- keep the session page layout equivalent to the browser version
-- keep the settings layout equivalent to the browser settings cards and form sections
-- support the same `light`, `dark`, and `system` theme modes as the browser version
-- support i18n on mobile too and reuse the same texts and translation keys as the browser version
-- add a Material-style burger menu with entries for Dashboard, Settings, and About
-- remove mobile-unneeded browser controls from Settings: no enable/disable and no Apply button
-- in About, show `News Deframer` and the open-project link; the About layout can differ from the current browser options page
-- add a `<<` back button on Settings and About to return to Dashboard
+- [done] add the mobile app shell with `screens`, `components`, and `services`, including cross-platform storage, a mobile API client, dashboard-first navigation with settings fallback, browser-equivalent settings/session layout, shared theme/i18n behavior, burger-menu navigation, and an About screen with back navigation
