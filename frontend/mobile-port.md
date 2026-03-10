@@ -12,22 +12,23 @@ Before introducing a real shared frontend layout, the current browser code needs
 
 - [done] browser code is consolidated under `frontend/browser-extension/`, shared browser/mobile primitives live under `frontend/shared/`, and the old debug/browser-plugin leftovers are removed
 
-### 3. Reserve a future mobile host structure, but do not build it yet
+### 3. Hello World App
 
-We do not want to implement the mobile app structure now.
+- [done] a super simple News Deframer React Native app now lives in `frontend/mobile/`, shows `News Deframer` and `Hello world`, and includes local-build make targets for install, Metro, Android, iOS, web, and APK builds
+
+### 4. Reserve a future mobile host structure, but do not build it yet
+
+We do not want to implement the future mobile app structure yet.
 
 We only want to document a likely future shape so it can be used later for prompting and planning.
 
-For now, the actual repository change is only:
-
-- create `frontend/mobile/README.md`
-
-Later, if and when mobile work starts, a reasonable target could look like this:
+After the hello world app exists, a reasonable target could look like this:
 
 ```text
 frontend/
   mobile/
     README.md
+    Makefile
     app/
     src/
       index.tsx

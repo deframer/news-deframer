@@ -11,6 +11,9 @@ __debug_bin*
 /*.pem
 *.db
 *.xml
+!frontend/mobile/android/app/src/main/AndroidManifest.xml
+!frontend/mobile/android/app/src/main/res/**/*.xml
+!frontend/mobile/ios/**/*.xml
 developer-sqlite.db
 developer-source.json
 .python-venv
