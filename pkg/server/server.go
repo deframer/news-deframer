@@ -63,14 +63,11 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	mux.HandleFunc("/ping", s.handlePing)
 	mux.HandleFunc("/hostname", s.handleHostname)
 	mux.Handle("/rss", s.basicAuthMiddleware(s.handleRSSProxy))
-	mux.Handle("/api/item", s.basicAuthMiddleware(s.handleItem))
-	mux.Handle("/api/site", s.basicAuthMiddleware(s.handleSite))
-	mux.Handle("/api/articles", s.basicAuthMiddleware(s.handleArticles))
-	mux.Handle("/api/domains", s.basicAuthMiddleware(s.handleDomains))
-	mux.Handle("/api/trends/topbydomain", s.basicAuthMiddleware(s.handleTopTrendsByDomain))
-	mux.Handle("/api/trends/contextbydomain", s.basicAuthMiddleware(s.handleContextByDomain))
-	mux.Handle("/api/trends/lifecyclebydomain", s.basicAuthMiddleware(s.handleLifecycleByDomain))
-	mux.Handle("/api/trends/comparedomains", s.basicAuthMiddleware(s.handleDomainComparison))
+	s.registerAPIEndpoints(mux, "/api")
+	// Expose the same handlers under /mobile/api as a convenience alias for
+	// mobile clients today, while keeping room to diverge later if mobile needs
+	// domain-specific behavior without changing the existing /api contract.
+	s.registerAPIEndpoints(mux, "/mobile/api")
 
 	// Chain middlewares: etag -> cache-control -> mux
 	var handler http.Handler = mux
@@ -90,13 +87,24 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	return s
 }
 
+func (s *Server) registerAPIEndpoints(mux *http.ServeMux, prefix string) {
+	mux.Handle(prefix+"/item", s.basicAuthMiddleware(s.handleItem))
+	mux.Handle(prefix+"/site", s.basicAuthMiddleware(s.handleSite))
+	mux.Handle(prefix+"/articles", s.basicAuthMiddleware(s.handleArticles))
+	mux.Handle(prefix+"/domains", s.basicAuthMiddleware(s.handleDomains))
+	mux.Handle(prefix+"/trends/topbydomain", s.basicAuthMiddleware(s.handleTopTrendsByDomain))
+	mux.Handle(prefix+"/trends/contextbydomain", s.basicAuthMiddleware(s.handleContextByDomain))
+	mux.Handle(prefix+"/trends/lifecyclebydomain", s.basicAuthMiddleware(s.handleLifecycleByDomain))
+	mux.Handle(prefix+"/trends/comparedomains", s.basicAuthMiddleware(s.handleDomainComparison))
+}
+
 func (s *Server) cacheControlMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
 			maxAge := int(config.PollingInterval.Seconds() / 2)
 			if strings.HasPrefix(r.URL.Path, "/rss") {
 				w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", maxAge))
-			} else if strings.HasPrefix(r.URL.Path, "/api/") {
+			} else if strings.HasPrefix(r.URL.Path, "/api/") || strings.HasPrefix(r.URL.Path, "/mobile/api/") {
 				w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", int(config.ETagTTL.Seconds())))
 			}
 		}

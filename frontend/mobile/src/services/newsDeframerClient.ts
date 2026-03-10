@@ -94,6 +94,9 @@ export interface AnalyzedArticle {
 export class NewsDeframerClient {
   constructor(private config: Settings) {}
 
+  // Mobile must use the top-level /mobile/api namespace for every backend endpoint.
+  private readonly apiBase = '/mobile/api';
+
   private async request<T>(endpoint: string, params: Record<string, string>): Promise<T | null> {
     const headers: Record<string, string> = {};
 
@@ -116,11 +119,11 @@ export class NewsDeframerClient {
   }
 
   async getDomains(): Promise<DomainEntry[]> {
-    return (await this.request<DomainEntry[]>('/api/domains', {})) ?? [];
+    return (await this.request<DomainEntry[]>(`${this.apiBase}/domains`, {})) ?? [];
   }
 
   async getItem(url: string): Promise<AnalyzedItem | null> {
-    return this.request<AnalyzedItem>('/api/item', { url });
+    return this.request<AnalyzedItem>(`${this.apiBase}/item`, { url });
   }
 
   async getSite(root: string, maxScore?: number): Promise<AnalyzedItem[]> {
@@ -128,11 +131,11 @@ export class NewsDeframerClient {
     if (maxScore !== undefined) {
       params.max_score = String(maxScore);
     }
-    return (await this.request<AnalyzedItem[]>('/api/site', params)) ?? [];
+    return (await this.request<AnalyzedItem[]>(`${this.apiBase}/site`, params)) ?? [];
   }
 
   async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
-    return (await this.request<TrendMetric[]>('/api/trends/topbydomain', {
+    return (await this.request<TrendMetric[]>(`${this.apiBase}/trends/topbydomain`, {
       domain,
       lang: language,
       days: String(daysInPast),
@@ -140,7 +143,7 @@ export class NewsDeframerClient {
   }
 
   async getContextByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<TrendContext[]> {
-    return (await this.request<TrendContext[]>('/api/trends/contextbydomain', {
+    return (await this.request<TrendContext[]>(`${this.apiBase}/trends/contextbydomain`, {
       term,
       domain,
       lang: language,
@@ -149,7 +152,7 @@ export class NewsDeframerClient {
   }
 
   async getLifecycleByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<Lifecycle[]> {
-    return (await this.request<Lifecycle[]>('/api/trends/lifecyclebydomain', {
+    return (await this.request<Lifecycle[]>(`${this.apiBase}/trends/lifecyclebydomain`, {
       term,
       domain,
       lang: language,
@@ -158,7 +161,7 @@ export class NewsDeframerClient {
   }
 
   async getDomainComparison(domainA: string, domainB: string, language: string, daysInPast: number): Promise<DomainComparison[]> {
-    return (await this.request<DomainComparison[]>('/api/trends/comparedomains', {
+    return (await this.request<DomainComparison[]>(`${this.apiBase}/trends/comparedomains`, {
       domain_a: domainA,
       domain_b: domainB,
       lang: language,
@@ -172,6 +175,6 @@ export class NewsDeframerClient {
     if (days !== undefined) params.days = String(days);
     if (offset !== undefined) params.offset = String(offset);
     if (limit !== undefined) params.limit = String(limit);
-    return (await this.request<AnalyzedArticle[]>('/api/articles', params)) ?? [];
+    return (await this.request<AnalyzedArticle[]>(`${this.apiBase}/articles`, params)) ?? [];
   }
 }

@@ -163,6 +163,31 @@ func TestHandleItem(t *testing.T) {
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe","John Roe"]`)
 	})
+
+	t.Run("mobile api alias", func(t *testing.T) {
+		mockF := &mockFacade{
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+				assert.Equal(t, "https://example.com/a", u.String())
+				return &facade.AnalyzedItem{
+					Hash:    "hash1",
+					URL:     "https://example.com/a",
+					Authors: database.StringArray{"Jane Doe"},
+					ThinkResult: database.ThinkResult{
+						TitleCorrected: "Corrected Title",
+					},
+				}, nil
+			},
+		}
+
+		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		req := httptest.NewRequest(http.MethodGet, "/mobile/api/item?url=https://example.com/a", nil)
+		rr := httptest.NewRecorder()
+
+		s.httpServer.Handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe"]`)
+	})
 }
 
 func TestHandleSite(t *testing.T) {
