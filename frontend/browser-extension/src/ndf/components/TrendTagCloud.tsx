@@ -1,8 +1,8 @@
 import { Dispatch, SetStateAction, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { buildWordCloudWords, getWordCloudColor, layoutWordCloud, MeasureWordOptions, WordCloudWord } from '../../shared/wordcloud';
 import { getSettings } from '../../shared/settings';
+import { buildWordCloudWords, getWordCloudColor, layoutWordCloud, MeasureWordOptions, WordCloudWord } from '../../shared/wordcloud';
 import { DomainEntry, NewsDeframerClient, TrendMetric } from '../client';
 import { TrendDetails } from './TrendDetails';
 
