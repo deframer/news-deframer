@@ -10,7 +10,12 @@
 - [done] React Native does not reuse browser extension components that render pure HTML or DOM elements such as `div`, `input`, `select`, `button`, and `a`
 - [done] mobile is built independently from the browser extension UI
 
-## 3. Shared Colors
+## 3. Shared Wordcloud
+
+- [done] create our own shared wordcloud in `frontend/shared/wordcloud/`
+- [done] keep the layout logic shared and render it separately for browser and mobile
+
+## 4. Shared Colors
 
 - create `frontend/shared/` for shared colors
 - move the browser extension theme colors there
