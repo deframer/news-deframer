@@ -16,29 +16,73 @@ Before introducing a real shared frontend layout, the current browser code needs
 
 - [done] a super simple News Deframer React Native app now lives in `frontend/mobile/`, shows `News Deframer` and `Hello world`, and includes local-build make targets for install, Metro, Android, iOS, web, and APK builds
 
-### 4. Reserve a future mobile host structure, but do not build it yet
+### 4. Plan the first real mobile host
 
-We do not want to implement the future mobile app structure yet.
+After the hello world app, the next mobile step should be a small but real host shell.
 
-We only want to document a likely future shape so it can be used later for prompting and planning.
+The mobile app should have native primary navigation with a mobile menu so `Settings` is always reachable.
 
-After the hello world app exists, a reasonable target could look like this:
+Startup flow:
+
+- if required settings are missing, open the `Settings` screen first
+- if settings already exist, open the `Dashboard` screen
+
+The `Settings` screen should use the same settings fields as the browser extension:
+
+- backend URL
+- username
+- password
+- enabled
+- theme
+- search engine URL
+- language
+
+Those settings should not be handled directly inside screens.
+
+Instead, define a shared settings storage interface similar to the shared API interface:
+
+- `SettingsStore.load(): Promise<Settings>`
+- `SettingsStore.save(settings: Settings): Promise<void>`
+
+For mobile, the first implementation should use one shared React settings store for the whole app with persistent native storage under it. `zustand` with persistence is a good fit here. The native storage backend can be AsyncStorage first, while browser web can use localStorage behind the same store shape later.
+
+After settings are available, the default mobile screen should be a `Dashboard` page.
+
+The first dashboard can be very simple:
+
+- load the domain list from `NewsDeframerApi.getDomains()`
+- cache the result behind a cache interface
+- show the domains as a tappable list
+- selecting a domain can open the next domain-focused flow later
+
+It is reasonable to introduce a settings-facing shared interface alongside the existing API interfaces so host screens depend on typed settings and typed persistence instead of direct storage calls.
+
+A reasonable future target could look like this:
 
 ```text
 frontend/
   mobile/
-    README.md
-    Makefile
     app/
     src/
       index.tsx
       navigation/
       screens/
+        SettingsScreen.tsx
+        DashboardScreen.tsx
       host/
+        storage/
+          native-settings-storage.ts
+          web-settings-storage.ts
+          mobile-cache-store.ts
       services/
+        settings/
+          settings-store.ts
+          settings-selectors.ts
+        cache/
+          domain-cache-store.ts
 ```
 
-This is intentionally deferred.
+This is intentionally deferred, but this is the next real mobile direction.
 
 ## Goal
 
