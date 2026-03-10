@@ -1,18 +1,18 @@
-import { getSettings, Settings } from '@browser/host/lib/settings-store';
-import i18n from '@browser/i18n';
-import { AnalyzedItem, DomainEntry, NewsDeframerClient } from '@browser/ndf/ndf-api';
-import { Spinner } from '@frontend-shared/components/Spinner';
-import log from '@frontend-shared/logger';
-import { getThemeCss, globalStyles, Theme } from '@frontend-shared/theme';
 import { useEffect,useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { getDomain } from 'tldts';
 
-import { purgeOverlayElements, resetElementAttributes, shouldKeepNode } from '../host/lib/dom-guard';
-import { ArticlePage } from '../ndf/pages/ArticlePage';
-import { PortalPage } from '../ndf/pages/PortalPage';
-import { ndfStyles } from '../ndf/styles';
-import { classifyUrl, PageType } from '../ndf/utils/url-classifier';
+import i18n from '../shared/i18n';
+import log from '../shared/logger';
+import { getSettings, Settings } from '../shared/settings';
+import { getThemeCss, globalStyles, Theme } from '../shared/theme';
+import { AnalyzedItem, DomainEntry, NewsDeframerClient } from './client';
+import { Spinner } from './components/Spinner';
+import { purgeOverlayElements, resetElementAttributes, shouldKeepNode } from './domGuard';
+import { ArticlePage } from './pages/ArticlePage';
+import { PortalPage } from './pages/PortalPage';
+import { ndfStyles } from './styles';
+import { classifyUrl, PageType } from './utils/url-classifier';
 
 const App = ({ theme }: { theme: string }) => {
   const [pageType, setPageType] = useState<PageType | null>(null);
@@ -22,7 +22,6 @@ const App = ({ theme }: { theme: string }) => {
   const [currentDomain, setCurrentDomain] = useState<DomainEntry | null>(null);
   const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
   const [searchEngineUrl, setSearchEngineUrl] = useState<string>('https://search.brave.com');
-  const [api, setApi] = useState<NewsDeframerClient | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,7 +61,6 @@ const App = ({ theme }: { theme: string }) => {
           setSearchEngineUrl(settings.searchEngineUrl);
         }
         const client = new NewsDeframerClient(settings);
-        setApi(client);
         const allDomains = await client.getDomains();
         setAvailableDomains(allDomains);
 
@@ -139,7 +137,7 @@ const App = ({ theme }: { theme: string }) => {
     return null; // Render nothing while we reload
   }
 
-  if (!pageType || !data || !api) {
+  if (!pageType || !data) {
     // Render a loading state, as the page is currently blank.
     return <Spinner />;
   }
@@ -158,7 +156,7 @@ const App = ({ theme }: { theme: string }) => {
       return (
         <>
           <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
-          <PortalPage api={api} items={data as AnalyzedItem[]} domain={currentDomain!} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />
+          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain!} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />
         </>
       );
     default:

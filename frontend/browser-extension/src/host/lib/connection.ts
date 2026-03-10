@@ -1,8 +1,7 @@
-import { DomainEntry } from '@frontend-shared/ndf-api-interfaces';
-import type { Settings } from '@frontend-shared/settings';
-
-import { invalidateDomainCache } from '../../domain-cache';
-import { ProxyResponse } from '../../types';
+import { DomainEntry } from '../../ndf/client';
+import { invalidateDomainCache } from '../../shared/domain-cache';
+import { Settings } from '../../shared/settings';
+import { ProxyResponse } from '../../shared/types';
 
 export const testConnection = async (settings: Settings): Promise<{ connected: boolean; domains: DomainEntry[] }> => {
   const headers: HeadersInit = {};

@@ -1,12 +1,7 @@
 import { render } from '@testing-library/react';
 
 import { AnalyzedItem } from '../client';
-import { ArticlePage } from '../pages/ArticlePage';
-
-jest.mock('../../shared/logger', () => ({
-  info: jest.fn(),
-  error: jest.fn(),
-}));
+import { ArticleTile } from './ArticleTile';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -22,7 +17,7 @@ jest.mock('react-i18next', () => ({
   },
 }));
 
-describe('ArticlePage', () => {
+describe('ArticleTile', () => {
   const mockItem: AnalyzedItem = {
     url: 'http://example.com/article1',
     hash: 'test-hash',
@@ -32,7 +27,7 @@ describe('ArticlePage', () => {
   };
 
   it('renders without crashing', () => {
-    const { container } = render(<ArticlePage item={mockItem} />);
+    const { container } = render(<ArticleTile item={mockItem} />);
     expect(container).not.toBeNull();
   });
 });

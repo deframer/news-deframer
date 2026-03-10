@@ -1,50 +1,39 @@
-# News Deframer Browser Extension
+# News Deframer
 
-Browser extension host package for News Deframer.
+Browser extension to deframe news sites.
 
 ## Developer Setup
 
 ### 1. Installation
-1. Clone repository.
-2. `cd frontend/browser-extension`
-3. `npm install`
-4. `cd ../shared && make icons`
-5. `cd ../browser-extension && make dist`
+1.  Clone repository.
+2.  `npm install`
+3.  `make dist` (Builds everything and creates `extension.zip`)
 
 ### 2. Load in Browser
-1. Open Chrome/Brave -> Extensions (`chrome://extensions`).
-2. Enable Developer Mode.
-3. Click Load unpacked.
-4. Select `frontend/browser-extension/dist/host`.
+1.  Open Chrome/Brave -> Extensions (`chrome://extensions`).
+2.  Enable **Developer Mode**.
+3.  Click **Load unpacked**.
+4.  Select the `dist/host` directory (created by the build).
+    *   Alternatively, you can drag and drop `extension.zip` if supported, or use it for distribution.
 
-### 3. Development Workflow
-1. Start the backend from the project root if needed.
-2. Run:
+### 3. Recommended Tools
+*   **Extensions Reloader:** [Chrome Web Store](https://chromewebstore.google.com/detail/extensions-reloader/fimgfedafeadlieiabdeeaodndnlbhid)
+    *   Useful for quickly reloading the extension without going to the extensions page.
 
-```bash
-cd frontend/browser-extension && npm run dev
-```
+### 4. Development Workflow
 
-3. Reload the extension in the browser after rebuilds.
+1.  **Start the Backend:**
+    Ensure the Go backend is running (e.g., run `make start` in the project root).
+
+2.  **Start the Extension Builder:**
+    ```bash
+    npm run dev
+    ```
+    (This runs Webpack in watch mode to automatically rebuild the extension on file changes. **It does not reload Chrome automatically.**)
+3.  Reload the extension in `chrome://extensions` or use the Extensions Reloader tool.
 
 ## Project Structure
 
-- `src/host/`: browser-only entrypoints, popup, settings page shell, content script, background script, DOM/browser wiring
-- `src/ndf/`: News Deframer product pages and feature flow that still live in the browser package
-- `src/shared/`: browser-local support code such as settings, theme, i18n, logger, and browser-only types
-- `../shared/components/`: reusable NDF components shared across host and product surfaces
-- `../shared/settings/`: reusable settings UI rendered inside the browser settings shell
-- `../shared/assets/`: shared assets copied into the built extension
-
-## Common Commands
-
-```bash
-npm run dev
-npm run build
-npm run lint
-npm run test
-```
-
-Build output is written to `dist/host/`.
-
-Refresh shared browser extension icons with `cd ../shared && make icons` when `../shared/assets/icons/icon.svg` changes.
+*   `src/host`: The Extension shell (Manifest, Loader, React Settings).
+*   `src/library`: The "Guest" library containing the actual logic.
+*   `webpack.config.js`: Builds the extension.

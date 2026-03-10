@@ -6,6 +6,7 @@
   },
   "exclude": [
     "node_modules",
+    "src/debug",
     "**/*.test.ts",
     "**/*.test.tsx"
   ]

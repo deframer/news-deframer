@@ -1,25 +1,23 @@
-import '@browser/i18n';
+import '../../shared/i18n';
 
-import { Footer } from '@frontend-shared/components/Footer';
-import { TabPortal } from '@frontend-shared/components/TabPortal';
-import { TabTrend } from '@frontend-shared/components/TabTrend';
-import log from '@frontend-shared/logger';
-import { NewsDeframerApi } from '@frontend-shared/ndf-api-interfaces';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
-import { AnalyzedItem, DomainEntry } from '../ndf-api';
+import log from '../../shared/logger';
+import { AnalyzedItem, DomainEntry } from '../client';
+import { Footer } from '../components/Footer';
+import { TabPortal } from '../components/TabPortal';
+import { TabTrend } from '../components/TabTrend';
 
 interface PortalPageProps {
   items: AnalyzedItem[];
   domain: DomainEntry;
   availableDomains: DomainEntry[];
   searchEngineUrl: string;
-  api: NewsDeframerApi;
 }
 
-export const PortalPage = ({ items, domain, availableDomains, searchEngineUrl, api }: PortalPageProps) => {
+export const PortalPage = ({ items, domain, availableDomains, searchEngineUrl }: PortalPageProps) => {
   const { t } = useTranslation();
   const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
   const [activeTab, setActiveTab] = useState<'portal' | 'trends'>('portal');
@@ -57,7 +55,7 @@ export const PortalPage = ({ items, domain, availableDomains, searchEngineUrl, a
           </button>
         </div>
 
-        {activeTab === 'portal' ? <TabPortal items={items} /> : <TabTrend api={api} domain={domain} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />}
+        {activeTab === 'portal' ? <TabPortal items={items} /> : <TabTrend domain={domain} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />}
 
         <div className={`footer-container ${activeTab}`}>
           <Footer />
