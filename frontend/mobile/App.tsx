@@ -1,32 +1,36 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import { StatusBar, StyleSheet, Text } from 'react-native';
 
-export default function App() {
+function App() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>News Deframer</Text>
-      <Text style={styles.subtitle}>Hello world</Text>
-      <StatusBar style="dark" />
-    </View>
+    <SafeAreaProvider>
+      <StatusBar barStyle="dark-content" backgroundColor="#f6f3ea" />
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.title}>News Deframer</Text>
+        <Text style={styles.subtitle}>Hello world</Text>
+      </SafeAreaView>
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f6f3ea',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#f6f3ea',
     paddingHorizontal: 24,
   },
   title: {
+    marginBottom: 8,
+    color: '#1f2937',
     fontSize: 32,
     fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 18,
     color: '#4b5563',
+    fontSize: 18,
   },
 });
+
+export default App;

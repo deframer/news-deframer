@@ -14,7 +14,7 @@ Before introducing a real shared frontend layout, the current browser code needs
 
 ### 3. Hello World App
 
-- [done] a super simple News Deframer Expo app now lives in `frontend/mobile/`, shows `News Deframer` and `Hello world`, and includes `make install`, `make start`, `make android`, `make ios`, `make web`, and `make clean`
+- [done] a super simple News Deframer React Native app now lives in `frontend/mobile/`, shows `News Deframer` and `Hello world`, and includes local-build make targets for install, Metro, Android, iOS, and APK builds
 
 ### 4. Reserve a future mobile host structure, but do not build it yet
 
