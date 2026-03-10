@@ -1,10 +1,5 @@
 .PHONY: install build clean dev dev-react test dist lint lint-fix icons
 
-ICONS_DIR := src/host/assets/icons
-ICON_SVG := $(ICONS_DIR)/icon.svg
-ICON_SIZES := 16 32 48 128
-ICON_PNGS := $(foreach size,$(ICON_SIZES),$(ICONS_DIR)/icon$(size).png)
-
 install:
 	npm install
 
@@ -17,7 +12,7 @@ build: icons
 clean:
 	npm run clean
 	rm -rf debug-build
-	rm -f $(ICON_PNGS)
+	$(MAKE) -C ../shared clean-icons
 
 # Development mode for the Browser Extension (Webpack watch)
 # Loads the extension in the browser, watching for file changes.
@@ -42,7 +37,5 @@ lint-fix:
 
 fix: lint-fix
 
-icons: $(ICON_PNGS)
-
-$(ICONS_DIR)/icon%.png: $(ICON_SVG)
-	convert -background none -resize $*x$* $< $@
+icons:
+	$(MAKE) -C ../shared icons

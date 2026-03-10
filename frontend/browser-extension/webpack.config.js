@@ -65,7 +65,8 @@ module.exports = {
                         return JSON.stringify(manifest, null, 2);
                     }
                 },
-                { from: 'src/host/assets', to: 'assets', noErrorOnMissing: true },
+                { from: '../shared/assets/icons', to: 'assets/icons', noErrorOnMissing: true },
+                { from: 'src/host/assets', to: 'assets', noErrorOnMissing: true, globOptions: { ignore: ['**/icons/**'] } },
                 { from: 'src/ndf/assets', to: 'assets', noErrorOnMissing: true },
             ],
         }),
