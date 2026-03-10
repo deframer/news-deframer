@@ -23,7 +23,7 @@ export const DashboardScreen = ({
   const { t } = useTranslation();
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: palette.background }} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.screen, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
       {!configured ? <Text style={[styles.subtitle, { color: palette.secondaryText }]}>{t('mobile.missing_config')}</Text> : null}
       <Card palette={palette}>
         {domainsLoading ? (
@@ -35,7 +35,7 @@ export const DashboardScreen = ({
             <Pressable
               key={domain.domain}
               onPress={() => onOpenPortal(domain)}
-              style={[styles.domainRow, index > 0 ? { borderTopWidth: 1, borderTopColor: palette.border } : null]}
+              style={[styles.domainRow, index > 0 ? [styles.domainRowDivider, { borderTopColor: palette.border }] : null]}
             >
               <Text style={[styles.domainName, { color: palette.text }]}>{domain.domain}</Text>
               <Text style={[styles.domainMeta, { color: palette.secondaryText }]}>{domain.language.toUpperCase()}</Text>
@@ -48,10 +48,12 @@ export const DashboardScreen = ({
 };
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: 24, gap: 16 },
   subtitle: { fontSize: 16, lineHeight: 22 },
   empty: { fontSize: 16 },
   domainRow: { paddingVertical: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  domainRowDivider: { borderTopWidth: 1 },
   domainName: { fontSize: 18, fontWeight: '600' },
   domainMeta: { fontSize: 14, fontWeight: '500' },
 });

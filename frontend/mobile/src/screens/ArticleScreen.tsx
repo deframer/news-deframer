@@ -9,7 +9,7 @@ export const ArticleScreen = ({ palette, url }: { palette: AppPalette; url: stri
   const { t } = useTranslation();
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: palette.background }} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.screen, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
       <Card palette={palette}>
         <Text style={[styles.title, { color: palette.text }]}>{t('article.placeholder_title', 'Article screen placeholder')}</Text>
         <Text style={[styles.body, { color: palette.secondaryText }]}>{t('article.selected_url', 'Selected URL')}</Text>
@@ -21,6 +21,7 @@ export const ArticleScreen = ({ palette, url }: { palette: AppPalette; url: stri
 };
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: 24 },
   title: { marginBottom: 12, fontSize: 24, fontWeight: '700' },
   body: { fontSize: 15, lineHeight: 22 },

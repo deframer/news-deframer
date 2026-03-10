@@ -30,7 +30,7 @@ export const SettingsScreen = ({
   const isSearchUrlValid = settings.searchEngineUrl.startsWith('https://');
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: palette.background }} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.screen, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
       <View style={styles.grid}>
         <View style={styles.column}>
           <Card palette={palette}>
@@ -95,6 +95,7 @@ export const SettingsScreen = ({
 };
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { padding: 24, gap: 16 },
   grid: { gap: 16 },
   column: { gap: 16 },

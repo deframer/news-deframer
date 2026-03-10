@@ -51,7 +51,7 @@ export const PortalScreen = ({
   }, [client, domain.domain, t]);
 
   useEffect(() => {
-    void loadItems();
+    loadItems();
   }, [loadItems]);
 
   useEffect(() => {
@@ -149,7 +149,7 @@ export const PortalScreen = ({
               <Card palette={palette}>
                 <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_load_error_title')}</Text>
                 <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{error}</Text>
-                <Pressable onPress={() => void loadItems()} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
+                <Pressable onPress={loadItems} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
                   <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('mobile.retry')}</Text>
                 </Pressable>
               </Card>

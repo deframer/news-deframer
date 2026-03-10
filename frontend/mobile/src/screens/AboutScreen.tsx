@@ -12,7 +12,7 @@ export const AboutScreen = ({ palette, onClose }: { palette: AppPalette; onClose
   const { t } = useTranslation();
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: palette.background }} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.screen, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
       <Card palette={palette}>
         <View style={styles.logoWrap}>
           <AppLogo size={72} />
@@ -33,6 +33,7 @@ export const AboutScreen = ({ palette, onClose }: { palette: AppPalette; onClose
 };
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   content: { flexGrow: 1, padding: 24, alignItems: 'center', justifyContent: 'center' },
   logoWrap: { alignItems: 'center', marginBottom: 12 },
   title: { marginBottom: 4, fontSize: 32, fontWeight: '700', textAlign: 'center' },

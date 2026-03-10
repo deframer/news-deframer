@@ -57,12 +57,14 @@ function App() {
     const html = document.documentElement;
     const body = document.body;
     const previousHtmlHeight = html.style.height;
+    const previousHtmlWidth = html.style.width;
     const previousHtmlOverflow = html.style.overflow;
     const previousBodyHeight = body.style.height;
+    const previousBodyWidth = body.style.width;
     const previousBodyOverflow = body.style.overflow;
     const previousBodyMargin = body.style.margin;
 
-    document.body.style.backgroundColor = palette.background;
+    body.style.backgroundColor = palette.background;
     html.style.height = '100%';
     html.style.overflow = 'hidden';
     body.style.height = '100%';
@@ -124,7 +126,7 @@ function App() {
       setBooting(false);
     };
 
-    void boot();
+    boot();
 
     return () => {
       mounted = false;
@@ -137,8 +139,8 @@ function App() {
     }
 
     const handle = setTimeout(() => {
-      void settingsService.saveSettings(settings);
-      void i18n.changeLanguage(getResolvedLanguage(settings.language));
+      settingsService.saveSettings(settings);
+      i18n.changeLanguage(getResolvedLanguage(settings.language));
       setConfigured(settingsService.hasRequiredConfiguration(settings));
     }, 150);
 
@@ -175,7 +177,7 @@ function App() {
       }
     };
 
-    void loadDomains();
+    loadDomains();
 
     return () => {
       mounted = false;
@@ -187,7 +189,7 @@ function App() {
       return;
     }
 
-    void handleTestConnection();
+    handleTestConnection();
   }, [booting, handleTestConnection, screen]);
 
   const openScreen = (nextScreen: Screen) => {

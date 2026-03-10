@@ -14,7 +14,7 @@ export const SegmentedControl = ({
   onChange: (value: string) => void;
   palette: AppPalette;
 }) => (
-  <View style={[styles.wrapper, styles.group, { borderColor: palette.border, backgroundColor: palette.buttonBackground }]}> 
+  <View style={[styles.wrapper, styles.group, { borderColor: palette.border, backgroundColor: palette.buttonBackground }]}>
     {options.map((option, index) => {
       const active = option.value === value;
       return (
@@ -23,7 +23,7 @@ export const SegmentedControl = ({
           onPress={() => onChange(option.value)}
           style={[
             styles.button,
-            index < options.length - 1 ? { borderRightWidth: 1, borderRightColor: palette.border } : null,
+            index < options.length - 1 ? [styles.buttonWithDivider, { borderRightColor: palette.border }] : null,
             active ? { backgroundColor: palette.accent } : null,
           ]}
         >
