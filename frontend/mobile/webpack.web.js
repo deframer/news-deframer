@@ -23,9 +23,13 @@ module.exports = {
         include: [
           path.resolve(__dirname, 'App.tsx'),
           path.resolve(__dirname, 'index.js'),
+          path.resolve(__dirname, 'src'),
           path.resolve(__dirname, 'web'),
           path.resolve(__dirname, 'node_modules/react-native'),
           path.resolve(__dirname, 'node_modules/react-native-safe-area-context'),
+          path.resolve(__dirname, 'node_modules/@react-native-async-storage/async-storage'),
+          path.resolve(__dirname, 'node_modules/lucide-react-native'),
+          path.resolve(__dirname, 'node_modules/react-native-svg'),
         ],
         use: {
           loader: 'babel-loader',

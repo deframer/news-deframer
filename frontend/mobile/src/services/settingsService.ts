@@ -1,0 +1,41 @@
+import { ThemeMode } from '../theme';
+import { storageService } from './storageService';
+
+export interface Settings {
+  backendUrl: string;
+  username: string;
+  password: string;
+  theme: ThemeMode;
+  searchEngineUrl: string;
+  language: string;
+}
+
+const SETTINGS_KEY = 'news-deframer.mobile.settings';
+export const DEFAULT_BACKEND_URL = 'http://localhost:8080';
+
+export const DEFAULT_SETTINGS: Settings = {
+  backendUrl: DEFAULT_BACKEND_URL,
+  username: '',
+  password: '',
+  theme: 'system',
+  searchEngineUrl: 'https://search.brave.com',
+  language: 'default',
+};
+
+export const settingsService = {
+  async loadSettings(): Promise<{ settings: Settings; configured: boolean }> {
+    const stored = await storageService.getJson<Settings>(SETTINGS_KEY);
+    return {
+      settings: { ...DEFAULT_SETTINGS, ...(stored ?? {}) },
+      configured: stored !== null,
+    };
+  },
+
+  async saveSettings(settings: Settings): Promise<void> {
+    await storageService.setJson(SETTINGS_KEY, settings);
+  },
+
+  hasRequiredConfiguration(settings: Settings): boolean {
+    return settings.backendUrl.trim().length > 0;
+  },
+};

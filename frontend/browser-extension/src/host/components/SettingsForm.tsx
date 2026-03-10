@@ -46,8 +46,8 @@ export const SettingsForm = ({ settings, lang, status, onSettingsChange, onLangu
         </div>
 
         <div className="card">
+          <h3 className="section-title">{t('options.label_search_engine')}</h3>
           <div className="form-group-last">
-            <label className="input-label">{t('options.label_search_engine')}</label>
             <input type="text" className={`text-input ${!isSearchUrlValid ? 'error' : ''}`} value={settings.searchEngineUrl || ''} onChange={(e) => onSettingsChange({ ...settings, searchEngineUrl: e.target.value })} />
             {!isSearchUrlValid && <div className="input-error-message">{t('options.error_https_only')}</div>}
           </div>
