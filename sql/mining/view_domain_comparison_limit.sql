@@ -21,7 +21,7 @@ WITH domain_a_unique AS (
         WHERE root_domain = 'spiegel.de'
           AND "language" = 'de'
           AND stem_type = 'NOUN'          -- <--- Thesis: Focus on Triggers/Topics [1][2]
-          AND time_slice >= NOW() - INTERVAL '7 DAYS'
+          AND time_slice >= NOW() - INTERVAL '30 DAYS'
           AND utility >= 1
           AND outlier_ratio > 1.5
     )
@@ -47,7 +47,7 @@ domain_b_unique AS (
         WHERE root_domain = 'tagesschau.de'
           AND "language" = 'de'
           AND stem_type = 'NOUN'
-          AND time_slice >= NOW() - INTERVAL '7 DAYS'
+          AND time_slice >= NOW() - INTERVAL '30 DAYS'
           AND utility >= 1
           AND outlier_ratio > 1.5
     )
