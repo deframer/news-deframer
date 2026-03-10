@@ -116,8 +116,8 @@ func (s *Server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		origin := strings.TrimSpace(r.Header.Get("Origin"))
 		if origin != "" {
-			switch {
-			case allowedOrigins == "*":
+			switch allowedOrigins {
+			case "*":
 				w.Header().Set("Access-Control-Allow-Origin", "*")
 			default:
 				for _, candidate := range strings.Split(allowedOrigins, ",") {
