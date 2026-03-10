@@ -43,7 +43,5 @@
 
 ## 10. Mobile Trend Tag Cloud + Trend Details
 
-- [done] implement browser-like `TrendTagCloud` + `TrendDetails` structure in mobile: selecting a cloud term opens detail tabs (`Lifecycle`, `Context`, `Articles`) under the selected term
-- [done] add mobile trend components: `TrendTagCloudPanel`, `TrendDetailsPanel`, `TrendLifecyclePanel`, `TrendContextPanel`, and `TrendArticleListPanel`
-- [done] add Trend Details tab header behavior equivalent to `browser-extension/src/ndf/components/TrendDetails.tsx`
-- [done] add `TrendArticleListPanel` in the `Articles` detail tab with browser-like placement/header structure
+- [done] port browser-like trend flow to mobile: interactive `TrendTagCloud` with selected-term drill-down into `TrendDetails` tabs (`Lifecycle`, `Context`, `Articles`)
+- [done] add mobile trend components and details-tab behavior (`TrendTagCloudPanel`, `TrendDetailsPanel`, `TrendLifecyclePanel`, `TrendContextPanel`, `TrendArticleListPanel`) including `Articles` panel placement

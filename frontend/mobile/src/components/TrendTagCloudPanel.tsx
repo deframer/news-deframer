@@ -69,6 +69,7 @@ export const TrendTagCloudPanel = ({
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
+  const [isCloudCollapsed, setIsCloudCollapsed] = useState(false);
   const [activeDetailTab, setActiveDetailTab] = useState<TrendDetailTab>('lifecycle');
   const [cloudWidth, setCloudWidth] = useState<number>(DEFAULT_WIDTH);
 
@@ -150,18 +151,26 @@ export const TrendTagCloudPanel = ({
     );
   }, [positionedWords]);
 
-  const isSelectedTermVisible = useMemo(() => {
+  const isSelectedTermPresent = useMemo(() => {
     if (!selectedTerm) {
       return false;
     }
 
-    return positionedWords.some((word) => word.text === selectedTerm);
-  }, [positionedWords, selectedTerm]);
+    return items.some((item) => item.trend_topic === selectedTerm);
+  }, [items, selectedTerm]);
 
   useEffect(() => {
-    setSelectedTerm(null);
-    setActiveDetailTab('lifecycle');
-  }, [daysInPast, domain, language]);
+    if (!selectedTerm) {
+      return;
+    }
+
+    if (!isSelectedTermPresent) {
+      logger.info('TrendTagCloud selected term disappeared after refresh', { selectedTerm, daysInPast });
+      setSelectedTerm(null);
+      setActiveDetailTab('lifecycle');
+      setIsCloudCollapsed(false);
+    }
+  }, [daysInPast, isSelectedTermPresent, selectedTerm]);
 
   const handleCloudLayout = (event: LayoutChangeEvent) => {
     const width = Math.round(event.nativeEvent.layout.width);
@@ -175,61 +184,92 @@ export const TrendTagCloudPanel = ({
     setSelectedTerm((current) => {
       const next = current === term ? null : term;
       logger.info('TrendTagCloud term selection changed', { previous: current, next });
+      setIsCloudCollapsed(Boolean(next));
+      if (!next) {
+        setActiveDetailTab('lifecycle');
+      }
       return next;
     });
   };
 
+  const handleShowCloudAgain = () => {
+    logger.info('TrendTagCloud reopen requested; clearing selection');
+    setSelectedTerm(null);
+    setActiveDetailTab('lifecycle');
+    setIsCloudCollapsed(false);
+  };
+
   return (
     <View style={styles.stack}>
-      <Card palette={palette}>
-        <View style={[styles.cloudFrame, { height: cloudHeight }]} onLayout={handleCloudLayout}>
-          {isLoading ? <LoadingSpinner palette={palette} center label={t('options.loading')} /> : null}
-          {!isLoading && hasError ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('mobile.portal_load_error')}</Text> : null}
-          {!isLoading && !hasError && items.length === 0 ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text> : null}
+      {selectedTerm && isCloudCollapsed ? (
+        <Pressable
+          onPress={handleShowCloudAgain}
+          style={[styles.collapsedContainer, { backgroundColor: palette.card, borderColor: palette.border }]}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('mobile.change_term')}: ${selectedTerm}`}
+        >
+          <Text
+            style={[
+              styles.term,
+              styles.termSelected,
+              styles.collapsedTermText,
+              { color: palette.accent },
+            ]}
+          >
+            {selectedTerm}
+          </Text>
+        </Pressable>
+      ) : (
+        <Card palette={palette}>
+          <View style={[styles.cloudFrame, { height: cloudHeight }]} onLayout={handleCloudLayout}>
+            {isLoading ? <LoadingSpinner palette={palette} center label={t('options.loading')} /> : null}
+            {!isLoading && hasError ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('mobile.portal_load_error')}</Text> : null}
+            {!isLoading && !hasError && items.length === 0 ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text> : null}
 
-          {!isLoading && !hasError && cloudBounds ? (
-            <View
-              style={[
-                styles.cloudWrap,
-                {
-                  width: cloudBounds.right - cloudBounds.left,
-                  height: cloudBounds.bottom - cloudBounds.top,
-                },
-              ]}
-            >
-              {positionedWords.map((word) => {
-                const selected = selectedTerm === word.text;
-                const toneStyle = selected ? styles.termSelected : styles.termDefault;
-                const placementStyle = {
-                  left: word.x - cloudBounds.left - Math.ceil(word.width) / 2,
-                  top: word.y - cloudBounds.top - Math.ceil(word.height) / 2,
-                };
-                const colorStyle = {
-                  color: selected ? palette.accent : word.color,
-                  fontSize: word.fontSize,
-                  lineHeight: Math.ceil(word.fontSize * 1.12),
-                };
-                const tooltipLabel = `${t('trends.rank')}: ${word.rank}. ${t('trends.trend')}: ${word.data.outlier_ratio.toFixed(2)}x. ${t('trends.vol')}: ${word.data.frequency}.`;
+            {!isLoading && !hasError && cloudBounds ? (
+              <View
+                style={[
+                  styles.cloudWrap,
+                  {
+                    width: cloudBounds.right - cloudBounds.left,
+                    height: cloudBounds.bottom - cloudBounds.top,
+                  },
+                ]}
+              >
+                {positionedWords.map((word) => {
+                  const selected = selectedTerm === word.text;
+                  const toneStyle = selected ? styles.termSelected : styles.termDefault;
+                  const placementStyle = {
+                    left: word.x - cloudBounds.left - Math.ceil(word.width) / 2,
+                    top: word.y - cloudBounds.top - Math.ceil(word.height) / 2,
+                  };
+                  const colorStyle = {
+                    color: selected ? palette.accent : word.color,
+                    fontSize: word.fontSize,
+                    lineHeight: Math.ceil(word.fontSize * 1.12),
+                  };
+                  const tooltipLabel = `${t('trends.rank')}: ${word.rank}. ${t('trends.trend')}: ${word.data.outlier_ratio.toFixed(2)}x. ${t('trends.vol')}: ${word.data.frequency}.`;
 
-                return (
-                  <Pressable
-                    key={word.text}
-                    onPress={() => handleSelectTerm(word.text)}
-                    style={[styles.termHitBox, styles.termAbsolute, placementStyle]}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    accessibilityLabel={`${word.text}. ${tooltipLabel}`}
-                  >
-                    <Text style={[styles.term, toneStyle, colorStyle]}>{word.text}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : null}
-        </View>
-      </Card>
+                  return (
+                    <Pressable
+                      key={word.text}
+                      onPress={() => handleSelectTerm(word.text)}
+                      style={[styles.termHitBox, styles.termAbsolute, placementStyle]}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={`${word.text}. ${tooltipLabel}`}
+                    >
+                      <Text style={[styles.term, toneStyle, colorStyle]}>{word.text}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            ) : null}
+          </View>
+        </Card>
+      )}
 
-      {selectedTerm && isSelectedTermVisible ? (
+      {selectedTerm && isSelectedTermPresent ? (
         <TrendDetailsPanel
           palette={palette}
           term={selectedTerm}
@@ -258,11 +298,22 @@ const styles = StyleSheet.create({
     fontSize: 15,
     textAlign: 'center',
   },
+  collapsedContainer: {
+    borderWidth: 1,
+    borderRadius: 8,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  collapsedTermText: {
+    fontSize: 20,
+    lineHeight: 26,
+  },
   termHitBox: { alignItems: 'flex-start', justifyContent: 'flex-start', padding: 0, margin: 0 },
   termAbsolute: {
     position: 'absolute',
   },
   term: { lineHeight: 24 },
   termDefault: { fontWeight: '500' },
-  termSelected: { textDecorationLine: 'underline', fontWeight: '700' },
+  termSelected: { fontWeight: '700' },
 });
