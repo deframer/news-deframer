@@ -36,3 +36,12 @@
 - add an accessibility font-size check pass across all mobile screens
 - evaluate dynamic type/text scaling for key text styles (titles, body, metadata, buttons, ratings)
 - add a font-size setting in mobile settings so users can increase/decrease text size consistently
+
+## 9. Mobile Trends
+
+- rename the main portal tab label from `Trend Mining` to `Trends`
+- implement the Trends inner layout under the main tab with this order: time selector row, then subtab row, then content area
+- add a time selector chip row with `24h`, `7d`, `30d`, `90d`, `365d` and default `7d`, without a `Time/Zeit` caption
+- add Trends subtabs `Tag Cloud`, `Compare`, and `Search` as mobile components
+- for this iteration, render placeholder panels only for all three subtabs
+- keep `Articles` behavior unchanged and do not add a footer
