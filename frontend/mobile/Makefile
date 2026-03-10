@@ -1,4 +1,4 @@
-.PHONY: install pods start android ios web android-apk android-apk-release android-bundle-release ios-build clean
+.PHONY: install pods start android ios web android-apk android-apk-release android-bundle-release ios-build clean test lint check lint-fix fix
 
 install:
 	npm install
@@ -17,6 +17,19 @@ ios:
 
 web:
 	npm run web
+
+test:
+	npm run test
+
+lint:
+	npm run lint
+
+check: test lint
+
+lint-fix:
+	npm run lint -- --fix
+
+fix: lint-fix
 
 android-apk:
 	cd android && ./gradlew assembleDebug
