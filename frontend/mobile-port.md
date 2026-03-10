@@ -17,10 +17,7 @@
 
 ## 4. Shared Colors
 
-- create `frontend/shared/` for shared colors
-- move the browser extension theme colors there
-- move the icons there too
-- add a `frontend/shared/Makefile` to generate the shared icons
+- [done] move shared colors and icons into `frontend/shared/` and add the shared icon-generation make target
 
 ## 5. Mobile App Structure And Navigation
 
@@ -28,14 +25,18 @@
 
 ## 6. Mobile Portal Screen
 
-- remove `mobile/src/screens/SessionScreen.tsx` and replace the old session flow with a new `PortalScreen.tsx`
-- rename the mobile screen flow from `session` to `portal` in app state, navigation, titles, and related copy
-- update the dashboard so selecting a domain opens the new portal screen for that domain
-- make the portal screen follow the settings/about navigation pattern: show a `<<` back icon, hide the burger menu, and return to the dashboard on close
-- show the selected domain only once at the very top as the portal hero/header title
-- use a two-tab layout labeled `Articles` and `Trend Mining`, without showing the domain in the tabs
-- make `Articles` the default tab and fetch the portal article list from the backend via `getSite(domain.domain)`
-- render the fetched results in a mobile-native article tile layout equivalent to `browser-extension/src/ndf/components/ArticleTile.tsx`
-- include loading, empty, and error states for portal article loading
-- add a `Trend Mining` placeholder view for now, to reserve the second tab without implementing trend features yet
-- keep the mobile portal layout simple and native: top title hero, tabs below it, article list underneath
+- [done] replace the old session flow with a mobile portal screen that opens from the dashboard, keeps the top header/back navigation, loads portal articles from `/mobile/api`, renders native article tiles with loading/error/empty states, and includes sticky `Articles` / `Trend Mining` tabs with a placeholder trend-mining view
+
+## 7. Mobile Article Screen
+
+- replace the placeholder `mobile/src/screens/ArticleScreen.tsx` with a real mobile article view based on `browser-extension/src/ndf/pages/ArticlePage.tsx`
+- use the selected article domain as the top app header title instead of `Article`
+- keep the existing global mobile header/back behavior and do not add in-page back or hide buttons
+- remove the browser-only `view original` button and remove the bottom replacement note
+- make the image, corrected title, and corrected description a single clickable top block that opens the original URL in the platform default/system browser
+- keep metadata under the upper article block
+- show overall rating first, then support expandable detail metrics
+- add two bottom toggle buttons: `Original title` and `Details`
+- make `Details` toggle the full analysis section (detail metrics + original section)
+- make `Original title` toggle only the original title/original text section
+- pressing an already-active toggle closes everything again
