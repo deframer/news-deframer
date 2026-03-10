@@ -1,5 +1,6 @@
 import { encode as encodeBase64 } from 'base-64';
 
+import { logger } from './logger';
 import { Settings } from './settingsService';
 
 export interface DomainEntry {
@@ -107,6 +108,8 @@ export class NewsDeframerClient {
     const url = new URL(this.config.backendUrl.replace(/\/$/, '') + endpoint);
     Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value));
 
+    logger.info('API request', { endpoint, params });
+
     const response = await fetch(url.toString(), { headers });
     if (response.status === 404) {
       return null;
@@ -135,6 +138,7 @@ export class NewsDeframerClient {
   }
 
   async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
+    logger.info('Fetching top trends by domain', { domain, language, daysInPast });
     return (await this.request<TrendMetric[]>(`${this.apiBase}/trends/topbydomain`, {
       domain,
       lang: language,

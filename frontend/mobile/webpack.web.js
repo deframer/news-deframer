@@ -26,6 +26,7 @@ module.exports = {
           path.resolve(__dirname, 'index.js'),
           path.resolve(__dirname, 'src'),
           path.resolve(__dirname, 'web'),
+          path.resolve(__dirname, '../shared'),
           path.resolve(__dirname, 'node_modules/react-native'),
           path.resolve(__dirname, 'node_modules/react-native-safe-area-context'),
           path.resolve(__dirname, 'node_modules/@react-native-async-storage/async-storage'),

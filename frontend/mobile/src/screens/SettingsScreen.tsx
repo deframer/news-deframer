@@ -27,7 +27,6 @@ export const SettingsScreen = ({
 }) => {
   const { t } = useTranslation();
   const isLoading = status === 'loading';
-  const isSearchUrlValid = settings.searchEngineUrl.startsWith('https://');
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
@@ -56,10 +55,6 @@ export const SettingsScreen = ({
                 <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('options.btn_test_connection')}</Text>
               )}
             </Pressable>
-          </Card>
-          <Card palette={palette}>
-            <Text style={[styles.sectionTitle, styles.sectionGap, { color: palette.secondaryText }]}>{t('options.label_search_engine')}</Text>
-            <TextField label={t('options.label_search_engine')} value={settings.searchEngineUrl} onChangeText={(searchEngineUrl) => onSettingsChange({ ...settings, searchEngineUrl })} palette={palette} error={isSearchUrlValid ? undefined : t('options.error_https_only')} hideLabel />
           </Card>
         </View>
 

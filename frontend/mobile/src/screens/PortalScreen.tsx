@@ -18,12 +18,12 @@ type PortalTab = 'articles' | 'trend-mining';
 type TrendSubview = 'cloud' | 'compare' | 'search';
 type TrendRange = '24h' | '7d' | '30d' | '90d' | '365d';
 
-const TIME_RANGES: Array<{ id: TrendRange; label: string }> = [
-  { id: '24h', label: 'trends.time_ranges.last_24h' },
-  { id: '7d', label: 'trends.time_ranges.last_7d' },
-  { id: '30d', label: 'trends.time_ranges.last_30d' },
-  { id: '90d', label: 'trends.time_ranges.last_90d' },
-  { id: '365d', label: 'trends.time_ranges.last_365d' },
+const TIME_RANGES: Array<{ id: TrendRange; label: string; days: number }> = [
+  { id: '24h', label: 'trends.time_ranges.last_24h', days: 1 },
+  { id: '7d', label: 'trends.time_ranges.last_7d', days: 7 },
+  { id: '30d', label: 'trends.time_ranges.last_30d', days: 30 },
+  { id: '90d', label: 'trends.time_ranges.last_90d', days: 90 },
+  { id: '365d', label: 'trends.time_ranges.last_365d', days: 365 },
 ];
 
 export const PortalScreen = ({
@@ -203,7 +203,15 @@ export const PortalScreen = ({
               })}
             </View>
 
-            {trendSubview === 'cloud' ? <TrendTagCloudPanel palette={palette} timeRangeLabel={t(TIME_RANGES.find((range) => range.id === trendRange)?.label || 'trends.time_ranges.last_7d')} /> : null}
+            {trendSubview === 'cloud' ? (
+              <TrendTagCloudPanel
+                palette={palette}
+                domain={domain.domain}
+                language={domain.language}
+                daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
+                settings={settings}
+              />
+            ) : null}
             {trendSubview === 'compare' ? <TrendComparePanel palette={palette} /> : null}
             {trendSubview === 'search' ? <TrendSearchPanel palette={palette} /> : null}
           </View>

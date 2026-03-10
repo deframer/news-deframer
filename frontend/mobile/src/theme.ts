@@ -22,6 +22,9 @@ export interface AppPalette {
   danger: string;
   secondaryBackground: string;
   badgeBackground: string;
+  trendUp: string;
+  trendDown: string;
+  trendSteady: string;
 }
 
 const lightPalette: AppPalette = {
@@ -44,6 +47,9 @@ const lightPalette: AppPalette = {
   danger: '#b02a37',
   secondaryBackground: '#f7f8fa',
   badgeBackground: '#e9ecef',
+  trendUp: '#0056b3',
+  trendDown: '#000000',
+  trendSteady: '#767676',
 };
 
 const darkPalette: AppPalette = {
@@ -66,6 +72,9 @@ const darkPalette: AppPalette = {
   danger: '#f44336',
   secondaryBackground: '#18191a',
   badgeBackground: '#3a3b3c',
+  trendUp: '#2d88ff',
+  trendDown: '#ffffff',
+  trendSteady: '#959595',
 };
 
 export const resolveThemeMode = (theme: ThemeMode, colorScheme: ColorSchemeName): Exclude<ThemeMode, 'system'> => {

@@ -6,7 +6,6 @@ export interface Settings {
   username: string;
   password: string;
   theme: ThemeMode;
-  searchEngineUrl: string;
   language: string;
 }
 
@@ -18,7 +17,6 @@ export const DEFAULT_SETTINGS: Settings = {
   username: '',
   password: '',
   theme: 'system',
-  searchEngineUrl: 'https://search.brave.com',
   language: 'default',
 };
 

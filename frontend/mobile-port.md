@@ -40,3 +40,10 @@
 ## 9. Mobile Trends
 
 - [done] rename the main tab to `Trends` and implement the Trends sub-layout in portal with a time-selector row (`24h`, `7d`, `30d`, `90d`, `365d`, default `7d`), subtabs (`Tag Cloud`, `Compare`, `Search`) as mobile components, and placeholder panels only for this first iteration (no footer, `Articles` unchanged)
+
+## 10. Mobile Trend Tag Cloud + Trend Details
+
+- [done] implement browser-like `TrendTagCloud` + `TrendDetails` structure in mobile: selecting a cloud term opens detail tabs (`Lifecycle`, `Context`, `Articles`) under the selected term
+- [done] add mobile trend components: `TrendTagCloudPanel`, `TrendDetailsPanel`, `TrendLifecyclePanel`, `TrendContextPanel`, and `TrendArticleListPanel`
+- [done] add Trend Details tab header behavior equivalent to `browser-extension/src/ndf/components/TrendDetails.tsx`
+- [done] add `TrendArticleListPanel` in the `Articles` detail tab with browser-like placement/header structure
