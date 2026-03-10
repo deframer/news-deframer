@@ -21,6 +21,18 @@ import { HostStatus } from './src/components/StatusBadge';
 
 type Screen = 'dashboard' | 'settings' | 'about' | 'portal' | 'article';
 
+const getUrlHost = (url?: string): string => {
+  if (!url) {
+    return '';
+  }
+
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return url.replace(/^https?:\/\//, '').split('/')[0] || '';
+  }
+};
+
 const getResolvedLanguage = (language: string): string => {
   if (language !== 'default') {
     return language;
@@ -240,7 +252,7 @@ function App() {
     }
 
     if (screen === 'article' && selectedArticle) {
-      return <ArticleScreen palette={palette} url={selectedArticle.url} />;
+      return <ArticleScreen palette={palette} item={selectedArticle} />;
     }
 
     return (
@@ -259,7 +271,15 @@ function App() {
 
   const showBack = screen === 'settings' || screen === 'about' || screen === 'portal' || screen === 'article';
   const showMenu = !showBack;
-  const headerTitle = screen === 'settings' ? t('options.settings_title') : screen === 'about' ? t('mobile.about_title') : screen === 'portal' ? selectedDomain?.domain || t('mobile.portal_title') : screen === 'article' ? t('article.screen_title', 'Article') : t('mobile.dashboard_title');
+  const headerTitle = screen === 'settings'
+    ? t('options.settings_title')
+    : screen === 'about'
+      ? t('mobile.about_title')
+      : screen === 'portal'
+        ? selectedDomain?.domain || t('mobile.portal_title')
+        : screen === 'article'
+          ? getUrlHost(selectedArticle?.url) || t('article.screen_title', 'Article')
+          : t('mobile.dashboard_title');
   const handleBack = () => {
     if (screen === 'article') {
       setScreen('portal');

@@ -37,6 +37,6 @@
 - keep metadata under the upper article block
 - show overall rating first, then support expandable detail metrics
 - add two bottom toggle buttons: `Original title` and `Details`
-- make `Details` toggle the full analysis section (detail metrics + original section)
-- make `Original title` toggle only the original title/original text section
-- pressing an already-active toggle closes everything again
+- make `Details` open the full analysis section (detail metrics + original section)
+- make `Original title` open only the original title/original text section
+- button behavior: pressing the active button closes the panel; pressing the other button switches directly to that other mode
