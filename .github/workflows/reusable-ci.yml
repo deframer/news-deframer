@@ -121,7 +121,7 @@ jobs:
     if: ${{ inputs.force_all || startsWith(github.ref, 'refs/tags/v') || needs.changes.outputs.browser == 'true' }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
     steps:
       - uses: actions/checkout@v6
 
