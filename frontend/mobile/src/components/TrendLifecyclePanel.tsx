@@ -14,6 +14,20 @@ const toIsoDay = (value: string) => new Date(value).toISOString().split('T')[0];
 
 const formatVelocity = (value: number) => `${value > 0 ? '+' : ''}${value}`;
 
+const getTextColorForHex = (hex: string) => {
+  const normalized = hex.replace('#', '');
+  if (normalized.length !== 6) {
+    return '#ffffff';
+  }
+
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  return luminance > 0.62 ? '#000000' : '#ffffff';
+};
+
 export const TrendLifecyclePanel = ({
   palette,
   term,
@@ -187,6 +201,7 @@ export const TrendLifecyclePanel = ({
                 const barHeight = Math.max(8, Math.round((heightPercent / 100) * 180));
                 const tone = item.velocity > 0 ? palette.trendUp : item.velocity < 0 ? palette.trendDown : palette.trendSteady;
                 const icon = item.velocity > 0 ? '▲' : item.velocity < 0 ? '▼' : '▶';
+                const barTextTone = getTextColorForHex(tone);
                 const selected = selectedDate === item.time_slice;
                 const showLabel = data.length < 15 || idx % Math.ceil(data.length / 10) === 0;
                 const showDate = showLabel && wideBarWidth >= 44;
@@ -209,8 +224,9 @@ export const TrendLifecyclePanel = ({
                       <Text style={[styles.barTopMetaText, { color: palette.secondaryText }]}>{t('trends.vel', 'Vel')}: {formatVelocity(item.velocity)}</Text>
                     </View>
                     <Text style={[styles.barIcon, { color: tone }]}>{icon}</Text>
-                    <View style={[styles.barBody, { height: barHeight, backgroundColor: tone }]} />
-                    {showDate ? <Text style={[styles.barLabel, { color: palette.text }]} numberOfLines={1}>{dateLabel}</Text> : null}
+                    <View style={[styles.barBody, styles.barBodyContent, { height: barHeight, backgroundColor: tone }]}> 
+                      {showDate ? <Text style={[styles.barDateText, { color: barTextTone }]} numberOfLines={1}>{dateLabel}</Text> : null}
+                    </View>
                   </Pressable>
                 );
               })}
@@ -301,6 +317,18 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     minHeight: 8,
   },
+  barBodyContent: {
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    paddingBottom: 6,
+  },
+  barDateText: {
+    fontSize: 11,
+    fontWeight: '700',
+    lineHeight: 13,
+    textAlign: 'center',
+  },
   barTopMeta: {
     minHeight: 28,
     width: '100%',
@@ -312,10 +340,5 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 11,
     textAlign: 'center',
-  },
-  barLabel: {
-    marginTop: 6,
-    fontSize: 12,
-    fontWeight: '600',
   },
 });
