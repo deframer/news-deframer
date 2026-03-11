@@ -18,6 +18,7 @@ const config = {
   resolver: {
     assetExts: assetExts.filter((ext) => ext !== 'svg'),
     sourceExts: [...sourceExts, 'svg'],
+    nodeModulesPaths: [path.resolve(__dirname, 'node_modules')],
   },
 };
 
