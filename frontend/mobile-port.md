@@ -59,3 +59,18 @@
 
 - [done] implement mobile `TrendSearch` layout aligned with browser behavior and current mobile Trends spacing: search input + search icon button in the top row
 - [done] reuse the same lower details stack as Tag Cloud by rendering `TrendDetailsPanel` (`Lifecycle`, `Context`, `Articles`) for the searched term below the search row, with shared time-range/domain/language/settings wiring
+
+## 14. Mobile Trend Compare Panel
+
+- replace the dummy `TrendComparePanel` with a full mobile compare implementation wired to `getDomainComparison(domainA, domainB, language, daysInPast)`
+- keep compare behavior aligned with browser semantics: `BLINDSPOT_A`, `BLINDSPOT_B`, and `INTERSECT`, with column B driven by a selectable comparison-domain dropdown
+- remove the current OpenIcon behavior entirely from mobile compare UI, both in the compare header and inside trend rows/lists
+- use a mobile-first navigation pattern for the three compare areas with tabs for `A`, `B`, and `Shared` instead of trying to render three desktop columns side by side
+- keep the compare-domain picker visible at the top of the panel so the B-side domain can be changed quickly without leaving the current compare view
+- show rank in each trend row (`#1`, `#2`, ...) and keep the score visible in a compact mobile row layout
+- replace desktop-style domain pills with a simpler mobile metadata pattern that stays readable on small screens
+- allow tapping a trend to toggle its matching `TrendArticleListPanel` directly below the active `A`, `B`, or `Shared` list
+- for shared trends, support selecting the domain context explicitly before opening articles so the user can choose whether to inspect A-side or B-side coverage
+- clear stale selection safely when the time range, current domain, or compare domain changes and the previously selected trend is no longer valid
+- include loading, error, and empty states consistent with the other mobile trend panels
+- add tests for classification mapping, compare-domain switching, selection toggle behavior, shared-trend domain selection, and article-list placement below the active mobile compare list
