@@ -146,7 +146,6 @@ export const PortalScreen = ({
         style={styles.scrollView}
         contentContainerStyle={[styles.content, activeTab === 'trend-mining' ? styles.contentWithBottomTabs : null]}
         scrollEnabled={!reasonText}
-        stickyHeaderIndices={[0]}
       >
         <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
           <SegmentedControl

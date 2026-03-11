@@ -98,6 +98,12 @@ export class NewsDeframerClient {
   // Mobile must use the top-level /mobile/api namespace for every backend endpoint.
   private readonly apiBase = '/mobile/api';
 
+  private getBackendBaseUrl(): string {
+    return this.config.backendUrl
+      .trim()
+      .replace(/\/$/, '');
+  }
+
   private async request<T>(endpoint: string, params: Record<string, string>): Promise<T | null> {
     const headers: Record<string, string> = {};
 
@@ -105,16 +111,27 @@ export class NewsDeframerClient {
       headers.Authorization = `Basic ${encodeBase64(`${this.config.username}:${this.config.password}`)}`;
     }
 
-    const url = new URL(this.config.backendUrl.replace(/\/$/, '') + endpoint);
-    Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value));
+    const baseUrl = this.getBackendBaseUrl().replace(/\/+$/, '');
+    const endpointPath = endpoint.replace(/^\/+/, '');
+    const searchParams = new URLSearchParams(params);
+    const queryString = searchParams.toString();
+    const requestUrl = queryString ? `${baseUrl}/${endpointPath}?${queryString}` : `${baseUrl}/${endpointPath}`;
 
-    logger.info('API request', { endpoint, params });
+    logger.info('API request', { endpoint, params, url: requestUrl });
 
-    const response = await fetch(url.toString(), { headers });
+    let response: Response;
+    try {
+      response = await fetch(requestUrl, { headers });
+    } catch (error) {
+      logger.error('API network error', { endpoint, url: requestUrl, error: String(error) });
+      throw error;
+    }
     if (response.status === 404) {
+      logger.warn('API returned 404', { endpoint, url: requestUrl });
       return null;
     }
     if (!response.ok) {
+      logger.error('API non-ok response', { endpoint, url: requestUrl, status: response.status });
       throw new Error(`API Error: ${response.status}`);
     }
 
@@ -122,7 +139,11 @@ export class NewsDeframerClient {
   }
 
   async getDomains(): Promise<DomainEntry[]> {
-    return (await this.request<DomainEntry[]>(`${this.apiBase}/domains`, {})) ?? [];
+    const response = await this.request<DomainEntry[]>(`${this.apiBase}/domains`, {});
+    if (response === null) {
+      throw new Error('Domains endpoint returned 404');
+    }
+    return response;
   }
 
   async getItem(url: string): Promise<AnalyzedItem | null> {

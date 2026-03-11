@@ -18,6 +18,7 @@ import i18n from './src/i18n';
 import { DEFAULT_SETTINGS, settingsService, Settings } from './src/services/settingsService';
 import { themeService } from './src/services/themeService';
 import { HostStatus } from './src/components/StatusBadge';
+import { logger } from './src/services/logger';
 
 type Screen = 'dashboard' | 'settings' | 'about' | 'portal' | 'article';
 
@@ -39,11 +40,30 @@ const getResolvedLanguage = (language: string): string => {
   }
 
   if (typeof navigator !== 'undefined') {
-    const detected = navigator.language.split('-')[0];
+    const rawLanguage =
+      (typeof navigator.language === 'string' && navigator.language) ||
+      (Array.isArray(navigator.languages) && typeof navigator.languages[0] === 'string' ? navigator.languages[0] : '') ||
+      'en';
+    const detected = rawLanguage.split('-')[0];
     return ['de', 'en'].includes(detected) ? detected : 'en';
   }
 
   return 'en';
+};
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutHandle = setTimeout(() => reject(new Error(`Timeout after ${timeoutMs}ms`)), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutHandle) {
+      clearTimeout(timeoutHandle);
+    }
+  }
 };
 
 function App() {
@@ -60,6 +80,18 @@ function App() {
   const [selectedDomain, setSelectedDomain] = useState<DomainEntry | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
+
+  useEffect(() => {
+    if (status !== 'loading') {
+      return;
+    }
+
+    const timeoutHandle = setTimeout(() => {
+      setStatus((current) => (current === 'loading' ? 'error' : current));
+    }, 5500);
+
+    return () => clearTimeout(timeoutHandle);
+  }, [status]);
 
   useEffect(() => {
     if (typeof document === 'undefined') {
@@ -126,16 +158,31 @@ function App() {
     let mounted = true;
 
     const boot = async () => {
-      const result = await settingsService.loadSettings();
-      if (!mounted) {
-        return;
+      try {
+        const result = await withTimeout(settingsService.loadSettings(), 3000);
+        if (!mounted) {
+          return;
+        }
+
+        setSettings(result.settings);
+        setConfigured(result.configured && settingsService.hasRequiredConfiguration(result.settings));
+        setScreen(result.configured && settingsService.hasRequiredConfiguration(result.settings) ? 'dashboard' : 'settings');
+
+        const lang = getResolvedLanguage(result.settings.language);
+        await withTimeout(i18n.changeLanguage(lang), 2000);
+      } catch {
+        if (!mounted) {
+          return;
+        }
+
+        setSettings(DEFAULT_SETTINGS);
+        setConfigured(false);
+        setScreen('settings');
+      } finally {
+        if (mounted) {
+          setBooting(false);
+        }
       }
-      setSettings(result.settings);
-      setConfigured(result.configured && settingsService.hasRequiredConfiguration(result.settings));
-      setScreen(result.configured && settingsService.hasRequiredConfiguration(result.settings) ? 'dashboard' : 'settings');
-      const lang = getResolvedLanguage(result.settings.language);
-      await i18n.changeLanguage(lang);
-      setBooting(false);
     };
 
     boot();
@@ -172,14 +219,13 @@ function App() {
     const loadDomains = async () => {
       setDomainsLoading(true);
       try {
-        // used for debuging the loading spinner
-        // await new Promise((resolve) => setTimeout(resolve, 10000));
-        const loadedDomains = await client.getDomains();
+        const loadedDomains = await withTimeout(client.getDomains(), 5000);
         if (mounted) {
           setDomains(loadedDomains);
         }
       } catch {
         if (mounted) {
+          logger.error('Failed to load domains', { backendUrl: settings.backendUrl });
           setDomains([]);
         }
       } finally {
@@ -196,14 +242,6 @@ function App() {
     };
   }, [booting, configured, settings]);
 
-  useEffect(() => {
-    if (booting || screen !== 'settings') {
-      return;
-    }
-
-    handleTestConnection();
-  }, [booting, handleTestConnection, screen]);
-
   const openScreen = (nextScreen: Screen) => {
     setDrawerOpen(false);
     setScreen(nextScreen);
@@ -211,11 +249,30 @@ function App() {
 
   const handleTestConnection = useCallback(async () => {
     setStatus('loading');
+
+    const backendUrl = settings.backendUrl.trim();
+    if (!backendUrl) {
+      setStatus('error');
+      return;
+    }
+
+    try {
+      const parsed = new URL(backendUrl);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        setStatus('error');
+        return;
+      }
+    } catch {
+      setStatus('error');
+      return;
+    }
+
     try {
       const client = new NewsDeframerClient(settings);
-      await client.getDomains();
+      await withTimeout(client.getDomains(), 5000);
       setStatus('success');
     } catch {
+      logger.error('Test connection failed', { backendUrl: settings.backendUrl });
       setStatus('error');
     }
   }, [settings]);
