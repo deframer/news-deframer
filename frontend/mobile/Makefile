@@ -75,6 +75,9 @@ android-metro-reverse:
 		fi; \
 	fi
 
+android-apk-clean:
+	cd android && ./gradlew clean
+
 android-apk-release:
 	cd android && ./gradlew assembleRelease
 
