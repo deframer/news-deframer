@@ -1,9 +1,9 @@
-import { AnalyzedItem, NewsDeframerApi } from '@frontend-shared/ndf-api-interfaces';
 import { render } from '@testing-library/react';
 
+import { AnalyzedItem } from '../client';
 import { PortalPage } from '../pages/PortalPage';
 
-jest.mock('@frontend-shared/logger', () => ({
+jest.mock('../../shared/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
 }));
@@ -41,10 +41,8 @@ describe('PortalPage', () => {
   ];
 
   it('renders without crashing', () => {
-    const api = {} as NewsDeframerApi;
     const { container } = render(
       <PortalPage 
-        api={api}
         items={mockItems} 
         domain={{ domain: 'example.com', portal_url: 'https://example.com', language: 'en' }}
         availableDomains={[]}

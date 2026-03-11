@@ -1,14 +1,45 @@
 export type Theme = 'light' | 'dark' | 'system';
 
+export const colorTokens = {
+  white: 'var(--static-white)',
+  black: 'var(--static-black)',
+} as const;
+
+export const colorValues = {
+  white: '#ffffff',
+  black: '#000000',
+  spinner: {
+    outerRing: '#FFFFFF',
+    innerRing: '#1F2937',
+    slices: ['#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151'],
+    hub: '#ffffff',
+  },
+} as const;
+
+export const effectValues = {
+  ratingTextShadow: '0 0 3px rgba(0,0,0,0.7)',
+} as const;
+
 export const cssVariables = {
   light: `
+    --static-white: #ffffff;
+    --static-black: #000000;
     --bg-color: #f0f2f5;
     --text-color: #333333;
     --card-bg: #ffffff;
     --card-shadow: 0 4px 6px rgba(0,0,0,0.1);
     --card-shadow-hover: 0 8px 12px rgba(0,0,0,0.15);
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-medium: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-medium-strong: 0 2px 4px rgba(0,0,0,0.2);
+    --shadow-panel: 0 2px 5px rgba(0,0,0,0.1);
+    --shadow-floating: 0 -2px 10px rgba(0,0,0,0.1);
+    --shadow-control: 0 1px 3px rgba(0,0,0,0.2);
+    --text-shadow-contrast: 0 0 3px rgba(0,0,0,0.7);
     --header-bg: #ffffff;
     --border-color: #eeeeee;
+    --border-subtle: #dddddd;
+    --border-strong: #cccccc;
     --secondary-text: #666666;
     --btn-bg: #ffffff;
     --btn-text: #333333;
@@ -24,8 +55,14 @@ export const cssVariables = {
     --tooltip-bg: rgba(0,0,0,0.85);
     --tooltip-text: #ffffff;
     --bg-color-secondary: #f7f8fa;
+    --bg-color-tertiary: #f5f5f5;
     --hover-bg: rgba(0,0,0,0.05);
+    --hover-bg-subtle: rgba(0,0,0,0.02);
+    --hover-bg-strong: rgba(0,0,0,0.06);
     --badge-bg: #e9ecef;
+    --control-knob-bg: #ffffff;
+    --focus-ring-accent: inset 0 0 0 1px rgba(59, 130, 246, 0.55);
+    --overlay-divider: rgba(255,255,255,0.2);
     --primary-color: #0056b3;
     --primary-color-dark: #004494;
     --trend-up: #0056b3;
@@ -34,13 +71,24 @@ export const cssVariables = {
     --trend-text: #ffffff;
   `,
   dark: `
+    --static-white: #ffffff;
+    --static-black: #000000;
     --bg-color: #18191a;
     --text-color: #e4e6eb;
     --card-bg: #242526;
     --card-shadow: 0 4px 6px rgba(0,0,0,0.3);
     --card-shadow-hover: 0 8px 12px rgba(0,0,0,0.4);
+    --shadow-soft: 0 1px 2px rgba(0,0,0,0.25);
+    --shadow-medium: 0 2px 4px rgba(0,0,0,0.3);
+    --shadow-medium-strong: 0 2px 4px rgba(0,0,0,0.4);
+    --shadow-panel: 0 2px 5px rgba(0,0,0,0.35);
+    --shadow-floating: 0 -2px 10px rgba(0,0,0,0.35);
+    --shadow-control: 0 1px 3px rgba(0,0,0,0.45);
+    --text-shadow-contrast: 0 0 3px rgba(0,0,0,0.7);
     --header-bg: #242526;
     --border-color: #3e4042;
+    --border-subtle: #4a4c4e;
+    --border-strong: #5b5d60;
     --secondary-text: #b0b3b8;
     --btn-bg: #3a3b3c;
     --btn-text: #e4e6eb;
@@ -56,8 +104,14 @@ export const cssVariables = {
     --tooltip-bg: rgba(255,255,255,0.9);
     --tooltip-text: #000000;
     --bg-color-secondary: #18191a;
+    --bg-color-tertiary: #202224;
     --hover-bg: rgba(255,255,255,0.05);
+    --hover-bg-subtle: rgba(255,255,255,0.03);
+    --hover-bg-strong: rgba(255,255,255,0.08);
     --badge-bg: #3a3b3c;
+    --control-knob-bg: #ffffff;
+    --focus-ring-accent: inset 0 0 0 1px rgba(107, 168, 255, 0.7);
+    --overlay-divider: rgba(255,255,255,0.2);
     --primary-color: #2d88ff;
     --primary-color-dark: #4599ff;
     --trend-up: #2d88ff;

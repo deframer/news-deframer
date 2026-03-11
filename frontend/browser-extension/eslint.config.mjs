@@ -6,12 +6,12 @@ import simpleImportSort from "eslint-plugin-simple-import-sort";
 
 export default tseslint.config(
     {
-        ignores: ["dist", "node_modules", "promo_assets/dest"],
+        ignores: ["dist", "node_modules"],
     },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
-        files: ["src/**/*.{ts,tsx}", "../shared/**/*.{ts,tsx}"],
+        files: ["**/*.{ts,tsx}"],
         plugins: {
             react,
             'simple-import-sort': simpleImportSort,

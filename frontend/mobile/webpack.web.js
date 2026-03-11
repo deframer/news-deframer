@@ -15,6 +15,7 @@ module.exports = {
       'react-native$': 'react-native-web',
     },
     extensions: ['.web.js', '.web.ts', '.web.tsx', '.js', '.ts', '.tsx', '.json'],
+    modules: [path.resolve(__dirname, 'node_modules'), 'node_modules'],
   },
   module: {
     rules: [
@@ -23,19 +24,40 @@ module.exports = {
         include: [
           path.resolve(__dirname, 'App.tsx'),
           path.resolve(__dirname, 'index.js'),
+          path.resolve(__dirname, 'src'),
           path.resolve(__dirname, 'web'),
+          path.resolve(__dirname, '../shared'),
           path.resolve(__dirname, 'node_modules/react-native'),
           path.resolve(__dirname, 'node_modules/react-native-safe-area-context'),
+          path.resolve(__dirname, 'node_modules/@react-native-async-storage/async-storage'),
+          path.resolve(__dirname, 'node_modules/lucide-react-native'),
+          path.resolve(__dirname, 'node_modules/react-native-svg'),
         ],
         use: {
           loader: 'babel-loader',
         },
+      },
+      {
+        test: /\.svg$/,
+        include: [
+          path.resolve(__dirname, 'src'),
+          path.resolve(__dirname, '../shared/assets'),
+        ],
+        use: [
+          {
+            loader: '@svgr/webpack',
+            options: {
+              native: true,
+            },
+          },
+        ],
       },
     ],
   },
   plugins: [
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, 'web/index.html'),
+      favicon: path.resolve(__dirname, '../shared/assets/web/favicon-32.png'),
     }),
   ],
   devServer: {

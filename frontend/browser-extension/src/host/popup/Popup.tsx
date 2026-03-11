@@ -1,19 +1,19 @@
-import '@browser/i18n';
+import '../../shared/i18n';
 
-import { ConnectionStatus, StatusBadge } from '@frontend-shared/settings/StatusBadge';
-import { ToggleSwitch } from '@frontend-shared/settings/ToggleSwitch';
-import { getThemeCss, globalStyles, Theme } from '@frontend-shared/theme';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { getSettings, Settings } from '../../shared/settings';
+import { getThemeCss, globalStyles, Theme } from '../../shared/theme';
 import { QuickActions } from '../components/QuickActions';
+import { HostStatus,StatusBadge } from '../components/StatusBadge';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 import { testConnection } from '../lib/connection';
-import { getSettings, Settings } from '../lib/settings-store';
 
 export const Popup = () => {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<Settings | null>(null);
-  const [status, setStatus] = useState<ConnectionStatus>('idle');
+  const [status, setStatus] = useState<HostStatus>('idle');
 
   useEffect(() => {
     const styleId = 'ndf-theme-styles';
@@ -64,7 +64,7 @@ export const Popup = () => {
   };
 
   const handleOpenSettings = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('settings.html') });
+    chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
     window.close();
   };
 
@@ -82,7 +82,7 @@ export const Popup = () => {
           labels={{
             connected: t('options.status_connected'),
             error: t('options.status_error'),
-            checking: t('options.status_checking'),
+            checking: t('options.status_loading'),
             disabled: t('options.status_disabled', 'Disabled'),
           }}
         />

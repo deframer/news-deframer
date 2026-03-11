@@ -1,14 +1,14 @@
-import '@browser/i18n';
+import '../../shared/i18n';
 
-import { Footer } from '@frontend-shared/components/Footer';
-import { MetaData } from '@frontend-shared/components/MetaData';
-import { RatingBar } from '@frontend-shared/components/RatingBar';
-import log from '@frontend-shared/logger';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
-import { AnalyzedItem } from '../ndf-api';
+import log from '../../shared/logger';
+import { AnalyzedItem } from '../client';
+import { Footer } from '../components/Footer';
+import { MetaData } from '../components/MetaData';
+import { RatingBar } from '../components/RatingBar';
 import { stripHtml } from '../utils/html-utils';
 
 interface ArticlePageProps {

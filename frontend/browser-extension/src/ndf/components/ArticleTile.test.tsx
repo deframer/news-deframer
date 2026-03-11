@@ -1,0 +1,33 @@
+import { render } from '@testing-library/react';
+
+import { AnalyzedItem } from '../client';
+import { ArticleTile } from './ArticleTile';
+
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: {
+      language: 'en',
+      changeLanguage: jest.fn(),
+    },
+  }),
+  initReactI18next: {
+    type: '3rdParty',
+    init: jest.fn(),
+  },
+}));
+
+describe('ArticleTile', () => {
+  const mockItem: AnalyzedItem = {
+    url: 'http://example.com/article1',
+    hash: 'test-hash',
+    title_original: 'Original Title',
+    description_original: 'Original Description',
+    rating: 0.85,
+  };
+
+  it('renders without crashing', () => {
+    const { container } = render(<ArticleTile item={mockItem} />);
+    expect(container).not.toBeNull();
+  });
+});

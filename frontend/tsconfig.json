@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./mobile" },
+    { "path": "./browser-extension" },
+    { "path": "./shared" }
+  ]
+}

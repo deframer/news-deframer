@@ -1,9 +1,9 @@
-import { AnalyzedItem } from '@frontend-shared/ndf-api-interfaces';
 import { render } from '@testing-library/react';
 
+import { AnalyzedItem } from '../client';
 import { ArticlePage } from '../pages/ArticlePage';
 
-jest.mock('@frontend-shared/logger', () => ({
+jest.mock('../../shared/logger', () => ({
   info: jest.fn(),
   error: jest.fn(),
 }));

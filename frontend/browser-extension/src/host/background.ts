@@ -1,6 +1,5 @@
-import log from '@frontend-shared/logger';
-
-import { ProxyResponse } from '../types';
+import log from '../shared/logger';
+import { ProxyResponse } from '../shared/types';
 
 log.info('Background script running');
 

@@ -20,7 +20,7 @@ body { margin: 0; overflow-y: auto; overflow-x: hidden; }
 .content-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .settings-column { display: flex; flex-direction: column; gap: 16px; }
 .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: var(--card-shadow); }
-.section-title { margin-top: 0; margin-bottom: 16px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-text); }
+.section-title { margin-top: 0; margin-bottom: 16px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-text); }
 .form-group { margin-bottom: 16px; }
 .form-group-last { margin-bottom: 20px; }
 .input-label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; }

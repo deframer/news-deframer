@@ -8,7 +8,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
     mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
     entry: {
-        settings: './src/host/settings/index.tsx',
+        options: './src/host/pages/index.tsx',
         popup: './src/host/popup/index.tsx',
         content: './src/host/content.ts',
         background: './src/host/background.ts'
@@ -25,7 +25,7 @@ module.exports = {
                         transpileOnly: true
                     }
                 }],
-                exclude: /node_modules/,
+                exclude: [/node_modules/, path.resolve(__dirname, 'src/debug')],
             },
             {
                 test: /\.css$/i,
@@ -35,11 +35,6 @@ module.exports = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
-        modules: [path.resolve(__dirname, 'node_modules'), 'node_modules'],
-        alias: {
-            '@browser': path.resolve(__dirname, 'src'),
-            '@frontend-shared': path.resolve(__dirname, '../shared'),
-        },
     },
     output: {
         filename: '[name].js',
@@ -54,7 +49,7 @@ module.exports = {
         process.env.NODE_ENV !== 'production' && new webpack.NormalModuleReplacementPlugin(
             /\.\/loglevel$/,
             (resource) => {
-                if (resource.context.endsWith(path.join('frontend', 'shared'))) {
+                if (resource.context.endsWith('shared')) {
                     resource.request = './loglevel-dev';
                 }
             }
@@ -70,13 +65,15 @@ module.exports = {
                         return JSON.stringify(manifest, null, 2);
                     }
                 },
-                { from: '../shared/assets', to: 'assets', noErrorOnMissing: true },
+                { from: '../shared/assets/browser-extension', to: 'assets/browser-extension', noErrorOnMissing: true },
+                { from: 'src/host/assets', to: 'assets', noErrorOnMissing: true, globOptions: { ignore: ['**/icons/**', '**/browser-extension/**'] } },
+                { from: 'src/ndf/assets', to: 'assets', noErrorOnMissing: true },
             ],
         }),
         new HtmlWebpackPlugin({
             template: 'src/host/index.html',
-            filename: 'settings.html',
-            chunks: ['settings'],
+            filename: 'options.html',
+            chunks: ['options'],
         }),
         new HtmlWebpackPlugin({
             template: 'src/host/popup.html',

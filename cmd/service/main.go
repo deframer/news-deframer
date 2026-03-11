@@ -64,6 +64,9 @@ func main() {
 
 	hostname, _ := os.Hostname()
 	slog.Info("Service", "level", lvl, "hostname", hostname, "etag_disabled", cfg.DisableETag)
+	if cfg.CORSAllowedOrigins != "" {
+		slog.Info("CORS enabled", "origins", cfg.CORSAllowedOrigins)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

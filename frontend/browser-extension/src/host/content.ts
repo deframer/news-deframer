@@ -1,8 +1,7 @@
-import log from '@frontend-shared/logger';
-
+import { installPreemptiveDomGuard } from '../ndf/domGuard';
 import * as ndf from '../ndf/index';
-import { installPreemptiveDomGuard } from './lib/dom-guard';
-import { getSettings } from './lib/settings-store';
+import log from '../shared/logger';
+import { getSettings } from '../shared/settings';
 
 const readEnabledFlag = (): Promise<boolean> => {
   return new Promise((resolve) => {

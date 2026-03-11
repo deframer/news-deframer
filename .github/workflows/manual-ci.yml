@@ -1,0 +1,14 @@
+name: Manual CI
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ci:
+    permissions:
+      contents: write
+      packages: write
+    uses: ./.github/workflows/reusable-ci.yml
+    with:
+      force_all: true
+    secrets: inherit
