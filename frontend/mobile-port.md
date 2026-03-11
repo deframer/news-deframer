@@ -54,3 +54,8 @@
 ## 12. Mobile Trend Context
 
 - [done] implement mobile `TrendContext` equivalent to `browser-extension/src/ndf/components/TrendContext.tsx` with `getContextByDomain` data fetch, loading/empty states, and context chips including frequency
+
+## 13. Mobile Trend Search
+
+- [done] implement mobile `TrendSearch` layout aligned with browser behavior and current mobile Trends spacing: search input + search icon button in the top row
+- [done] reuse the same lower details stack as Tag Cloud by rendering `TrendDetailsPanel` (`Lifecycle`, `Context`, `Articles`) for the searched term below the search row, with shared time-range/domain/language/settings wiring

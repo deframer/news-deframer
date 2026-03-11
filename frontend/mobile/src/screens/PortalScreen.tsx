@@ -213,7 +213,15 @@ export const PortalScreen = ({
               />
             ) : null}
             {trendSubview === 'compare' ? <TrendComparePanel palette={palette} /> : null}
-            {trendSubview === 'search' ? <TrendSearchPanel palette={palette} /> : null}
+            {trendSubview === 'search' ? (
+              <TrendSearchPanel
+                palette={palette}
+                domain={domain.domain}
+                language={domain.language}
+                daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
+                settings={settings}
+              />
+            ) : null}
           </View>
         )}
       </ScrollView>
