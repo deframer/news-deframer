@@ -170,24 +170,31 @@ jobs:
       - name: Install mobile dependencies
         run: npm ci
 
-      - name: Build Android debug APK
-        run: cd android && ./gradlew assembleDebug
+      - name: Build Android APK
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            cd android && ./gradlew assembleRelease
+          else
+            cd android && ./gradlew assembleDebug
+          fi
 
       - name: Prepare Android artifact name
         shell: bash
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            ARTIFACT_NAME="news-deframer-android-debug-${MOBILE_VERSION_NAME}.apk"
+            ARTIFACT_NAME="news-deframer-android-${MOBILE_VERSION_NAME}.apk"
+            cp android/app/build/outputs/apk/release/app-release.apk "${ARTIFACT_NAME}"
           else
             ARTIFACT_NAME="news-deframer-android-debug.apk"
+            cp android/app/build/outputs/apk/debug/app-debug.apk "${ARTIFACT_NAME}"
           fi
-          cp android/app/build/outputs/apk/debug/app-debug.apk "${ARTIFACT_NAME}"
           echo "ANDROID_ARTIFACT=${ARTIFACT_NAME}" >> "$GITHUB_ENV"
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v7
         with:
-          name: android-debug-apk
+          name: android-apk
           path: frontend/mobile/${{ env.ANDROID_ARTIFACT }}
 
   frontend-mobile-ios-simulator:
@@ -297,7 +304,7 @@ jobs:
       - name: Download Android artifact
         uses: actions/download-artifact@v8
         with:
-          name: android-debug-apk
+          name: android-apk
           path: .
 
       - name: Create GitHub Release
@@ -305,4 +312,4 @@ jobs:
         with:
           files: |
             news-deframer-extension-${{ env.VERSION }}.zip
-            news-deframer-android-debug-${{ env.VERSION }}.apk
+            news-deframer-android-${{ env.VERSION }}.apk
