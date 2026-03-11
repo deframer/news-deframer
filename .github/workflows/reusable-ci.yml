@@ -13,36 +13,47 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
-      browser: ${{ steps.filter.outputs.browser }}
-      mobile: ${{ steps.filter.outputs.mobile }}
-      server: ${{ steps.filter.outputs.server }}
-      any: ${{ steps.filter.outputs.any }}
+      browser: ${{ steps.force-all.outputs.browser || steps.filter.outputs.browser_any_changed }}
+      mobile: ${{ steps.force-all.outputs.mobile || steps.filter.outputs.mobile_any_changed }}
+      server: ${{ steps.force-all.outputs.server || steps.filter.outputs.server_any_changed }}
+      any: ${{ steps.force-all.outputs.any || steps.filter.outputs.any_changed }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Force all areas
+        id: force-all
+        if: ${{ inputs.force_all }}
+        shell: bash
+        run: |
+          echo "any=true" >> "$GITHUB_OUTPUT"
+          echo "browser=true" >> "$GITHUB_OUTPUT"
+          echo "mobile=true" >> "$GITHUB_OUTPUT"
+          echo "server=true" >> "$GITHUB_OUTPUT"
 
       - name: Detect changed areas
         id: filter
-        uses: dorny/paths-filter@v3
+        if: ${{ !inputs.force_all }}
+        uses: tj-actions/changed-files@22103cc46bda19c2b464ffe86db46df6922fd323
         with:
-          filters: |
-            any:
-              - '**'
+          files_yaml: |
             browser:
-              - 'frontend/browser-extension/**'
-              - 'frontend/shared/**'
+              - frontend/browser-extension/**
+              - frontend/shared/**
             mobile:
-              - 'frontend/mobile/**'
-              - 'frontend/shared/**'
+              - frontend/mobile/**
+              - frontend/shared/**
             server:
-              - 'cmd/**'
-              - 'pkg/**'
-              - 'build/package/**'
-              - 'sql/**'
-              - 'go.mod'
-              - 'go.sum'
-              - 'Makefile'
-              - 'docker-compose.yml'
-              - 'docker-compose-lb.yml'
+              - cmd/**
+              - pkg/**
+              - build/package/**
+              - sql/**
+              - go.mod
+              - go.sum
+              - Makefile
+              - docker-compose.yml
+              - docker-compose-lb.yml
 
   test:
     needs: changes
