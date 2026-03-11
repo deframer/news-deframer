@@ -21,6 +21,8 @@ ios:
 web:
 	npm run web
 
+dev: web
+
 test:
 	npm run test
 
