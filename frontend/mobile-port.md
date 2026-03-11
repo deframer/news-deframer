@@ -74,3 +74,5 @@
 - clear stale selection safely when the time range, current domain, or compare domain changes and the previously selected trend is no longer valid
 - include loading, error, and empty states consistent with the other mobile trend panels
 - add tests for classification mapping, compare-domain switching, selection toggle behavior, shared-trend domain selection, and article-list placement below the active mobile compare list
+
+Probably we need a better concept for this similar to the tag cloud.
