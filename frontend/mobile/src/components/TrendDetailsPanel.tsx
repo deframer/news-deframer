@@ -49,7 +49,7 @@ export const TrendDetailsPanel = ({
       </View>
 
       {activeTab === 'lifecycle' ? <TrendLifecyclePanel palette={palette} term={term} domain={domain} language={language} daysInPast={daysInPast} settings={settings} /> : null}
-      {activeTab === 'context' ? <TrendContextPanel palette={palette} term={term} /> : null}
+      {activeTab === 'context' ? <TrendContextPanel palette={palette} term={term} domain={domain} language={language} daysInPast={daysInPast} settings={settings} /> : null}
       {activeTab === 'articles' ? <TrendArticleListPanel palette={palette} term={term} /> : null}
     </Card>
   );

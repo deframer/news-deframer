@@ -50,3 +50,7 @@
 
 - [done] finalize `TrendDetails` layout to use full inner panel real estate (top spacing kept, extra side/bottom inset removed)
 - [done] implement mobile `TrendLifecycle` parity with browser behavior: backend lifecycle bars with wide/compact modes, selection-safe refresh handling, and `TrendArticleListPanel` shown below selected bars
+
+## 12. Mobile Trend Context
+
+- [done] implement mobile `TrendContext` equivalent to `browser-extension/src/ndf/components/TrendContext.tsx` with `getContextByDomain` data fetch, loading/empty states, and context chips including frequency

@@ -24,7 +24,7 @@ const resources = {
     translation: {
       portal: { title: 'News Deframer', trends: 'Trends', hide: 'Hide' },
       trends: {
-        cloud: 'Tag Cloud', compare_view: 'Compare', lifecycle: 'Lifecycle', context: 'Context', articles: 'Articles', search: 'Search', no_data: 'No trending topics found for this period.', rank: 'Rank', trend: 'Trend', vol: 'Vol', freq: 'Freq', vel: 'Vel', lifecycle_no_data: 'No lifecycle data available for this topic.', search_aria_label: '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', rating_caption: 'Rating', date_caption: 'Date', author_caption: 'Author', article_caption: 'Article', time_ranges: { last_24h: '24h', last_7d: '7d', last_30d: '30d', last_90d: '90d', last_365d: '365d' },
+        cloud: 'Tag Cloud', compare_view: 'Compare', lifecycle: 'Lifecycle', context: 'Context', articles: 'Articles', search: 'Search', no_data: 'No trending topics found for this period.', rank: 'Rank', trend: 'Trend', vol: 'Vol', freq: 'Freq', vel: 'Vel', lifecycle_no_data: 'No lifecycle data available for this topic.', context_no_data: 'No context data available for this topic.', context_header: 'How is "{{topic}}" being described?', frequency_label: 'Frequency', verb_label: 'Verb', search_aria_label: '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}', rating_caption: 'Rating', date_caption: 'Date', author_caption: 'Author', article_caption: 'Article', time_ranges: { last_24h: '24h', last_7d: '7d', last_30d: '30d', last_90d: '90d', last_365d: '365d' },
       },
       article: {
         back: 'Back',
@@ -62,7 +62,7 @@ const resources = {
     translation: {
       portal: { title: 'News Deframer', trends: 'Trends', hide: 'Ausblenden' },
       trends: {
-        cloud: 'Tag Cloud', compare_view: 'Vergleich', lifecycle: 'Verlauf', context: 'Kontext', articles: 'Artikel', search: 'Suche', no_data: 'Keine Trendthemen für diesen Zeitraum gefunden.', rank: 'Rang', trend: 'Trend', vol: 'Vol', freq: 'Hfg', vel: 'Vel', lifecycle_no_data: 'Keine Verlaufsdaten für dieses Thema verfügbar.', search_aria_label: '{{date}}: Häufigkeit {{frequency}}, Geschwindigkeit {{velocity}}', rating_caption: 'Bewertung', date_caption: 'Datum', author_caption: 'Autor', article_caption: 'Artikel', time_ranges: { last_24h: '24h', last_7d: '7 T.', last_30d: '30 T.', last_90d: '90 T.', last_365d: '365 T.' },
+        cloud: 'Tag Cloud', compare_view: 'Vergleich', lifecycle: 'Verlauf', context: 'Kontext', articles: 'Artikel', search: 'Suche', no_data: 'Keine Trendthemen für diesen Zeitraum gefunden.', rank: 'Rang', trend: 'Trend', vol: 'Vol', freq: 'Hfg', vel: 'Vel', lifecycle_no_data: 'Keine Verlaufsdaten für dieses Thema verfügbar.', context_no_data: 'Keine Kontextdaten für dieses Thema verfügbar.', context_header: 'Wie wird "{{topic}}" beschrieben?', frequency_label: 'Häufigkeit', verb_label: 'Verb', search_aria_label: '{{date}}: Häufigkeit {{frequency}}, Geschwindigkeit {{velocity}}', rating_caption: 'Bewertung', date_caption: 'Datum', author_caption: 'Autor', article_caption: 'Artikel', time_ranges: { last_24h: '24h', last_7d: '7 T.', last_30d: '30 T.', last_90d: '90 T.', last_365d: '365 T.' },
       },
       article: {
         back: 'Zurück',

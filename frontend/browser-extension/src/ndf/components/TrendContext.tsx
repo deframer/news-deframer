@@ -50,7 +50,7 @@ export const TrendContextChart = ({ topic, className, days, domain }: TrendConte
   return (
     <div className={`trend-context ${className || ''}`}>
       <div className="context-header">
-        {t('trends.context_header', 'Context: How is "{{topic}}" being described?', { topic })}
+        {t('trends.context_header', 'How is "{{topic}}" being described?', { topic })}
       </div>
       <div className="context-list">
         {items.map((item) => (
