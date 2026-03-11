@@ -1,4 +1,4 @@
-.PHONY: icons clean-icons icons-browser-extension icons-android icons-ios icons-web
+.PHONY: icons clean-icons icons-browser-extension icons-android icons-ios icons-web sync-mobile-android-icons icons-mobile
 
 ASSETS_DIR := assets
 ICON_SVG := $(ASSETS_DIR)/icon.svg
@@ -17,6 +17,8 @@ IOS_PNGS := $(IOS_DIR)/icon-1024.png
 WEB_DIR := $(ASSETS_DIR)/web
 WEB_PNGS := $(WEB_DIR)/favicon-16.png $(WEB_DIR)/favicon-32.png $(WEB_DIR)/apple-touch-icon.png
 
+MOBILE_ANDROID_RES_DIR := ../mobile/android/app/src/main/res
+
 icons: icons-browser-extension icons-android icons-ios icons-web
 
 icons-browser-extension: $(BROWSER_EXTENSION_PNGS)
@@ -26,6 +28,20 @@ icons-android: $(ANDROID_PNGS)
 icons-ios: $(IOS_PNGS)
 
 icons-web: $(WEB_PNGS)
+
+sync-mobile-android-icons: icons-android
+	install -Dm644 $(ANDROID_DIR)/icon-48.png $(MOBILE_ANDROID_RES_DIR)/mipmap-mdpi/ic_launcher.png
+	install -Dm644 $(ANDROID_DIR)/icon-48.png $(MOBILE_ANDROID_RES_DIR)/mipmap-mdpi/ic_launcher_round.png
+	install -Dm644 $(ANDROID_DIR)/icon-72.png $(MOBILE_ANDROID_RES_DIR)/mipmap-hdpi/ic_launcher.png
+	install -Dm644 $(ANDROID_DIR)/icon-72.png $(MOBILE_ANDROID_RES_DIR)/mipmap-hdpi/ic_launcher_round.png
+	install -Dm644 $(ANDROID_DIR)/icon-96.png $(MOBILE_ANDROID_RES_DIR)/mipmap-xhdpi/ic_launcher.png
+	install -Dm644 $(ANDROID_DIR)/icon-96.png $(MOBILE_ANDROID_RES_DIR)/mipmap-xhdpi/ic_launcher_round.png
+	install -Dm644 $(ANDROID_DIR)/icon-144.png $(MOBILE_ANDROID_RES_DIR)/mipmap-xxhdpi/ic_launcher.png
+	install -Dm644 $(ANDROID_DIR)/icon-144.png $(MOBILE_ANDROID_RES_DIR)/mipmap-xxhdpi/ic_launcher_round.png
+	install -Dm644 $(ANDROID_DIR)/icon-192.png $(MOBILE_ANDROID_RES_DIR)/mipmap-xxxhdpi/ic_launcher.png
+	install -Dm644 $(ANDROID_DIR)/icon-192.png $(MOBILE_ANDROID_RES_DIR)/mipmap-xxxhdpi/ic_launcher_round.png
+
+icons-mobile: sync-mobile-android-icons
 
 clean-icons:
 	rm -f $(BROWSER_EXTENSION_PNGS) $(ANDROID_PNGS) $(IOS_PNGS) $(WEB_PNGS)
