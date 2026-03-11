@@ -3,6 +3,7 @@ import { View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { AppPalette } from '../theme';
+import { Settings } from '../services/settingsService';
 import { Card } from './Card';
 import { SegmentedControl } from './SegmentedControl';
 import { TrendArticleListPanel } from './TrendArticleListPanel';
@@ -14,11 +15,19 @@ type TrendDetailTab = 'lifecycle' | 'context' | 'articles';
 export const TrendDetailsPanel = ({
   palette,
   term,
+  domain,
+  language,
+  daysInPast,
+  settings,
   activeTab,
   setActiveTab,
 }: {
   palette: AppPalette;
   term: string;
+  domain: string;
+  language: string;
+  daysInPast: number;
+  settings: Settings;
   activeTab: TrendDetailTab;
   setActiveTab: (tab: TrendDetailTab) => void;
 }) => {
@@ -39,7 +48,7 @@ export const TrendDetailsPanel = ({
         />
       </View>
 
-      {activeTab === 'lifecycle' ? <TrendLifecyclePanel palette={palette} term={term} /> : null}
+      {activeTab === 'lifecycle' ? <TrendLifecyclePanel palette={palette} term={term} domain={domain} language={language} daysInPast={daysInPast} settings={settings} /> : null}
       {activeTab === 'context' ? <TrendContextPanel palette={palette} term={term} /> : null}
       {activeTab === 'articles' ? <TrendArticleListPanel palette={palette} term={term} /> : null}
     </Card>

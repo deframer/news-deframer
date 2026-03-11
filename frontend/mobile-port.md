@@ -48,10 +48,5 @@
 
 ## 11. Trend Details + Lifecycle
 
-- make `TrendDetails` panel content use full inner real estate of the container: keep existing top spacing, but remove extra inner left/right/bottom spacing from lifecycle/context/articles panels
-- implement `TrendLifecycle` in mobile based on `browser-extension/src/ndf/components/TrendLifecycleChart.tsx` using mobile components and backend lifecycle data
-- add lifecycle chart display modes for mobile: default wide mode with minimum bar width and horizontal scroll, plus compact fit mode toggled by a chart-header icon button (top-left)
-- keep lifecycle bars selectable in wide mode; compact mode can be non-clickable when needed for readability
-- show selected lifecycle details below the chart in a compact separated info area (date, frequency, velocity), similar to bottom metadata/info treatment in `mobile/src/components/ArticleTile.tsx`
-- display `TrendArticleListPanel` below the lifecycle chart when a date/bar is selected
-- when date range/domain/term changes, keep selection only if selected date is still present; otherwise clear selection safely
+- [done] finalize `TrendDetails` layout to use full inner panel real estate (top spacing kept, extra side/bottom inset removed)
+- [done] implement mobile `TrendLifecycle` parity with browser behavior: backend lifecycle bars with wide/compact modes, selection-safe refresh handling, and `TrendArticleListPanel` shown below selected bars

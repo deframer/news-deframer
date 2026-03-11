@@ -8,7 +8,7 @@ export const TrendContextPanel = ({ palette, term }: { palette: AppPalette; term
   const { t } = useTranslation();
 
   return (
-    <View style={[styles.container, { borderColor: palette.border, backgroundColor: palette.secondaryBackground }]}> 
+    <View style={styles.container}> 
       <Text style={[styles.title, { color: palette.text }]}>{t('trends.context')}</Text>
       <Text style={[styles.body, { color: palette.secondaryText }]}>{t('mobile.trends_context_placeholder', { term })}</Text>
     </View>
@@ -18,9 +18,6 @@ export const TrendContextPanel = ({ palette, term }: { palette: AppPalette; term
 const styles = StyleSheet.create({
   container: {
     marginTop: 14,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
   },
   title: { fontSize: 15, fontWeight: '700' },
   body: { marginTop: 6, fontSize: 14, lineHeight: 20 },

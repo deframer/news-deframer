@@ -273,6 +273,10 @@ export const TrendTagCloudPanel = ({
         <TrendDetailsPanel
           palette={palette}
           term={selectedTerm}
+          domain={domain}
+          language={language}
+          daysInPast={daysInPast}
+          settings={settings}
           activeTab={activeDetailTab}
           setActiveTab={setActiveDetailTab}
         />
