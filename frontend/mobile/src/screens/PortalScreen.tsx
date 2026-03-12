@@ -31,11 +31,13 @@ export const PortalScreen = ({
   palette,
   domain,
   settings,
+  onBackRequestChange,
   onOpenArticle,
 }: {
   palette: AppPalette;
   domain: DomainEntry;
   settings: Settings;
+  onBackRequestChange: (handler: (() => boolean) | null) => void;
   onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t } = useTranslation();
@@ -47,6 +49,7 @@ export const PortalScreen = ({
   const [trendSubview, setTrendSubview] = useState<TrendSubview>('cloud');
   const [trendRange, setTrendRange] = useState<TrendRange>('7d');
   const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
+  const [trendSubviewBackHandler, setTrendSubviewBackHandler] = useState<(() => boolean) | null>(null);
   const portalScrollRef = useRef<ScrollView>(null);
   const scrollOffsetRef = useRef(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -170,6 +173,40 @@ export const PortalScreen = ({
     });
   }, []);
 
+  useEffect(() => {
+    if (reasonText) {
+      onBackRequestChange(() => {
+        setReasonText(null);
+        return true;
+      });
+      return () => onBackRequestChange(null);
+    }
+
+    if (trendSubviewBackHandler) {
+      onBackRequestChange(() => trendSubviewBackHandler());
+      return () => onBackRequestChange(null);
+    }
+
+    if (activeTab === 'trend-mining' && trendSubview !== 'cloud') {
+      onBackRequestChange(() => {
+        setTrendSubview('cloud');
+        return true;
+      });
+      return () => onBackRequestChange(null);
+    }
+
+    if (activeTab === 'trend-mining') {
+      onBackRequestChange(() => {
+        setActiveTab('articles');
+        return true;
+      });
+      return () => onBackRequestChange(null);
+    }
+
+    onBackRequestChange(null);
+    return () => onBackRequestChange(null);
+  }, [activeTab, onBackRequestChange, reasonText, trendSubview, trendSubviewBackHandler]);
+
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}> 
       <Modal animationType="none" transparent visible={Boolean(reasonText)} onRequestClose={() => setReasonText(null)}>
@@ -262,6 +299,7 @@ export const PortalScreen = ({
                 language={domain.language}
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
+                onBackRequestChange={setTrendSubviewBackHandler}
               />
             ) : null}
             {trendSubview === 'compare' ? (
@@ -276,6 +314,7 @@ export const PortalScreen = ({
                 onSelectDomain={setCompareDomain}
                 getScrollOffset={() => scrollOffsetRef.current}
                 onRestoreScrollOffset={restorePortalScroll}
+                onBackRequestChange={setTrendSubviewBackHandler}
               />
             ) : null}
             {trendSubview === 'search' ? (
@@ -285,6 +324,7 @@ export const PortalScreen = ({
                 language={domain.language}
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
+                onBackRequestChange={setTrendSubviewBackHandler}
               />
             ) : null}
           </View>

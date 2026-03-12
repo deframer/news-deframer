@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ExternalLink } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -102,6 +102,7 @@ export const TrendComparePanel = ({
   onSelectDomain,
   getScrollOffset,
   onRestoreScrollOffset,
+  onBackRequestChange,
 }: {
   palette: AppPalette;
   domain: string;
@@ -113,6 +114,7 @@ export const TrendComparePanel = ({
   onSelectDomain: (domain: string) => void;
   getScrollOffset: () => number;
   onRestoreScrollOffset: (offset: number) => void;
+  onBackRequestChange: (handler: (() => boolean) | null) => void;
 }) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<DomainComparison[]>([]);
@@ -156,17 +158,17 @@ export const TrendComparePanel = ({
     });
   }, [domain, items, selectedCompareDomain, selectedItem]);
 
-  const handleSelectItem = (selection: SelectedCompareItem) => {
+  const handleSelectItem = useCallback((selection: SelectedCompareItem) => {
     setSavedScrollOffset(getScrollOffset());
     setSelectedItem(selection);
-  };
+  }, [getScrollOffset]);
 
-  const handleCloseSelection = () => {
+  const handleCloseSelection = useCallback(() => {
     setSelectedItem(null);
     if (savedScrollOffset !== null) {
       onRestoreScrollOffset(savedScrollOffset);
     }
-  };
+  }, [onRestoreScrollOffset, savedScrollOffset]);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,6 +225,20 @@ export const TrendComparePanel = ({
     setSelectedItem(null);
     setSavedScrollOffset(null);
   }, [domain, selectedCompareDomain, daysInPast]);
+
+  useEffect(() => {
+    if (selectedItem) {
+      onBackRequestChange(() => {
+        handleCloseSelection();
+        return true;
+      });
+      return;
+    }
+
+    onBackRequestChange(null);
+
+    return () => onBackRequestChange(null);
+  }, [handleCloseSelection, onBackRequestChange, selectedItem]);
 
   return (
     <View style={styles.stack}>
