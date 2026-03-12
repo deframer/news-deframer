@@ -365,22 +365,27 @@ function App() {
       return <AboutScreen palette={palette} onClose={() => setScreen('dashboard')} />;
     }
 
-    if (screen === 'portal' && selectedDomain) {
+    if ((screen === 'portal' || screen === 'article') && selectedDomain) {
       return (
-        <PortalScreen
-          palette={palette}
-          domain={selectedDomain}
-          settings={settings}
-          onOpenArticle={(item) => {
-            setSelectedArticle(item);
-            setScreen('article');
-          }}
-        />
+        <View style={styles.screenStack}>
+          <View style={[styles.screenLayer, screen === 'article' ? styles.hiddenLayer : null]}>
+            <PortalScreen
+              palette={palette}
+              domain={selectedDomain}
+              settings={settings}
+              onOpenArticle={(item) => {
+                setSelectedArticle(item);
+                setScreen('article');
+              }}
+            />
+          </View>
+          {screen === 'article' && selectedArticle ? (
+            <View style={styles.screenLayer}>
+              <ArticleScreen palette={palette} item={selectedArticle} />
+            </View>
+          ) : null}
+        </View>
       );
-    }
-
-    if (screen === 'article' && selectedArticle) {
-      return <ArticleScreen palette={palette} item={selectedArticle} />;
     }
 
     return (
@@ -410,6 +415,7 @@ function App() {
           : t('mobile.dashboard_title');
   const handleBack = useCallback(() => {
     if (screen === 'article') {
+      setSelectedArticle(null);
       setScreen('portal');
       return;
     }
@@ -489,6 +495,9 @@ const styles = StyleSheet.create({
   appBarTitle: { fontSize: 18, fontWeight: '700' },
   screen: { flex: 1, overflow: 'hidden' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  screenStack: { flex: 1 },
+  screenLayer: { flex: 1 },
+  hiddenLayer: { display: 'none' },
 });
 
 export default App;

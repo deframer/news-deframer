@@ -4,6 +4,7 @@ import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useTranslation } from 'react-i18next';
 
 import { Lifecycle, NewsDeframerClient } from '../services/newsDeframerClient';
+import { AnalyzedItem } from '../services/newsDeframerClient';
 import { logger } from '../services/logger';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
@@ -35,6 +36,7 @@ export const TrendLifecyclePanel = ({
   language,
   daysInPast,
   settings,
+  onOpenArticle,
 }: {
   palette: AppPalette;
   term: string;
@@ -42,6 +44,7 @@ export const TrendLifecyclePanel = ({
   language: string;
   daysInPast: number;
   settings: Settings;
+  onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<Lifecycle[]>([]);
@@ -235,7 +238,7 @@ export const TrendLifecyclePanel = ({
         </View>
       )}
 
-      {selectedEntry ? <TrendArticleListPanel palette={palette} term={term} selectedDate={toIsoDay(selectedEntry.time_slice)} /> : null}
+      {selectedEntry ? <TrendArticleListPanel palette={palette} term={term} domain={domain} settings={settings} selectedDate={toIsoDay(selectedEntry.time_slice)} onOpenArticle={onOpenArticle} /> : null}
     </View>
   );
 };

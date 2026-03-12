@@ -296,6 +296,7 @@ export const PortalScreen = ({
                 language={domain.language}
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
+                onOpenArticle={onOpenArticle}
               />
             ) : null}
             {trendSubview === 'compare' ? (
@@ -310,6 +311,7 @@ export const PortalScreen = ({
                 onSelectDomain={setCompareDomain}
                 getScrollOffset={() => scrollOffsetRef.current}
                 onRestoreScrollOffset={restorePortalScroll}
+                onOpenArticle={onOpenArticle}
               />
             ) : null}
             {trendSubview === 'search' ? (
@@ -319,6 +321,7 @@ export const PortalScreen = ({
                 language={domain.language}
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
+                onOpenArticle={onOpenArticle}
               />
             ) : null}
           </View>

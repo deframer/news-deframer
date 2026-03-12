@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { buildWordCloudWords, getWordCloudColor, layoutWordCloud, MeasureWordOptions } from '../../../shared/wordcloud';
 
 import { TrendMetric, NewsDeframerClient } from '../services/newsDeframerClient';
+import { AnalyzedItem } from '../services/newsDeframerClient';
 import { logger } from '../services/logger';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
@@ -57,12 +58,14 @@ export const TrendTagCloudPanel = ({
   language,
   daysInPast,
   settings,
+  onOpenArticle,
 }: {
   palette: AppPalette;
   domain: string;
   language: string;
   daysInPast: number;
   settings: Settings;
+  onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<TrendMetric[]>([]);
@@ -279,6 +282,7 @@ export const TrendTagCloudPanel = ({
           settings={settings}
           activeTab={activeDetailTab}
           setActiveTab={setActiveDetailTab}
+          onOpenArticle={onOpenArticle}
         />
       ) : null}
     </View>

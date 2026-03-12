@@ -8,7 +8,7 @@ import { colorValues } from '../../../shared/theme';
 import { Card } from './Card';
 import { LoadingSpinner } from './LoadingSpinner';
 import { TrendArticleListPanel } from './TrendArticleListPanel';
-import { DomainComparison, NewsDeframerClient } from '../services/newsDeframerClient';
+import { AnalyzedItem, DomainComparison, NewsDeframerClient } from '../services/newsDeframerClient';
 import { logger } from '../services/logger';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
@@ -102,6 +102,7 @@ export const TrendComparePanel = ({
   onSelectDomain,
   getScrollOffset,
   onRestoreScrollOffset,
+  onOpenArticle,
 }: {
   palette: AppPalette;
   domain: string;
@@ -113,6 +114,7 @@ export const TrendComparePanel = ({
   onSelectDomain: (domain: string) => void;
   getScrollOffset: () => number;
   onRestoreScrollOffset: (offset: number) => void;
+  onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<DomainComparison[]>([]);
@@ -301,7 +303,7 @@ export const TrendComparePanel = ({
             </View>
           ) : null}
 
-          {selectedItem && !isLoading && !hasError ? <TrendArticleListPanel palette={palette} term={selectedItem.term} domain={selectedItem.domain} /> : null}
+          {selectedItem && !isLoading && !hasError ? <TrendArticleListPanel palette={palette} term={selectedItem.term} domain={selectedItem.domain} settings={settings} daysInPast={daysInPast} headerTitle={t('trends.article_caption', 'Article')} onOpenArticle={onOpenArticle} /> : null}
           </Card>
         </View>
       )}

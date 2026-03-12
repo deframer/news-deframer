@@ -83,3 +83,11 @@
 - [done] do not add extra nested back-state handling beyond what the current header back already does
 - [done] use built-in React Native back handling only where needed for Android hardware back
 - [done] keep the implementation minimal and screen-based, not a global back-state system
+
+## 17. Mobile Trend Article List Panel
+
+- [done] replace the placeholder `TrendArticleListPanel.tsx` with a real mobile article list oriented on `browser-extension/src/ndf/components/ArticleList.tsx`, shared across `TrendDetailsPanel`, `TrendLifecyclePanel`, and `TrendComparePanel`
+- [done] fetch articles with browser-aligned `getArticlesByTrend(root, term, date, days, offset, limit)` rules, including loading, empty, and error states
+- [done] render compact mobile rows with rating, date, author, and article, allowing multiline article titles without a desktop-style table layout
+- [done] support per-context headers and date behavior: no header in `TrendDetailsPanel`, `Article / <the date>` in `TrendLifecyclePanel` fixed-date mode, and `Article` with visible date in `TrendComparePanel`
+- [done] use a mobile `Load more` pattern with backend `offset/limit` batching and an end-of-list info box about deframed titles

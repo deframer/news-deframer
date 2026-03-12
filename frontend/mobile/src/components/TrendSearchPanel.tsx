@@ -3,6 +3,7 @@ import { Search } from 'lucide-react-native';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { AnalyzedItem } from '../services/newsDeframerClient';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
 import { Card } from './Card';
@@ -16,12 +17,14 @@ export const TrendSearchPanel = ({
   language,
   daysInPast,
   settings,
+  onOpenArticle,
 }: {
   palette: AppPalette;
   domain: string;
   language: string;
   daysInPast: number;
   settings: Settings;
+  onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t } = useTranslation();
   const [term, setTerm] = useState('');
@@ -71,6 +74,7 @@ export const TrendSearchPanel = ({
           settings={settings}
           activeTab={activeDetailTab}
           setActiveTab={setActiveDetailTab}
+          onOpenArticle={onOpenArticle}
         />
       ) : null}
     </View>
