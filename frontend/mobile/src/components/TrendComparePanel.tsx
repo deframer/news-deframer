@@ -1,22 +1,90 @@
-import React from 'react';
-import { StyleSheet, Text } from 'react-native';
-import { useTranslation } from 'react-i18next';
+import React, { useMemo } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
 
 import { AppPalette } from '../theme';
-import { Card } from './Card';
 
-export const TrendComparePanel = ({ palette }: { palette: AppPalette }) => {
-  const { t } = useTranslation();
+type DomainOption = { id: string; name: string };
+
+export const TrendComparePanel = ({
+  palette,
+  availableDomains,
+  compareDomain,
+  onSelectDomain,
+}: {
+  palette: AppPalette;
+  availableDomains: DomainOption[];
+  compareDomain: string | null;
+  onSelectDomain: (domain: string) => void;
+}) => {
+  const data = useMemo(() => availableDomains.map((option) => ({ label: option.name, value: option.id })), [availableDomains]);
 
   return (
-    <Card palette={palette}>
-      <Text style={[styles.title, { color: palette.text }]}>{t('mobile.trends_compare_title')}</Text>
-      <Text style={[styles.body, { color: palette.secondaryText }]}>{t('mobile.trends_compare_body')}</Text>
-    </Card>
+    <View>
+      <Text style={[styles.label, { color: palette.secondaryText }]}>Compare to</Text>
+      <Dropdown
+        mode="modal"
+        data={data}
+        search
+        disable={data.length === 0}
+        labelField="label"
+        valueField="value"
+        value={compareDomain}
+        placeholder={data.length === 0 ? 'No domains available.' : 'Select domain'}
+        searchPlaceholder="Search..."
+        onChange={(item) => onSelectDomain(item.value)}
+        style={[styles.dropdown, { borderColor: palette.buttonBorder, backgroundColor: palette.background }]}
+        containerStyle={[styles.container, { backgroundColor: palette.card, borderColor: palette.border }]}
+        placeholderStyle={[styles.placeholder, { color: palette.secondaryText }]}
+        selectedTextStyle={[styles.selectedText, { color: palette.text }]}
+        itemTextStyle={[styles.itemText, { color: palette.text }]}
+        inputSearchStyle={[styles.inputSearch, { color: palette.text, borderColor: palette.buttonBorder, backgroundColor: palette.background }]}
+        activeColor={palette.accent}
+        iconColor={palette.text}
+        backgroundColor="rgba(0,0,0,0.35)"
+        maxHeight={320}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  title: { marginBottom: 8, fontSize: 20, fontWeight: '700' },
-  body: { fontSize: 15, lineHeight: 22 },
+  label: {
+    marginBottom: 8,
+    fontSize: 14,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+  },
+  dropdown: {
+    minHeight: 54,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 16,
+  },
+  container: {
+    borderWidth: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  placeholder: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  selectedText: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  itemText: {
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  inputSearch: {
+    minHeight: 46,
+    borderWidth: 1,
+    borderRadius: 8,
+    margin: 12,
+    paddingHorizontal: 14,
+    fontSize: 16,
+  },
 });

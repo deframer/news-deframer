@@ -17,6 +17,7 @@ import { AppPalette } from '../theme';
 type PortalTab = 'articles' | 'trend-mining';
 type TrendSubview = 'cloud' | 'compare' | 'search';
 type TrendRange = '24h' | '7d' | '30d' | '90d' | '365d';
+type DomainOption = { id: string; name: string };
 
 const TIME_RANGES: Array<{ id: TrendRange; label: string; days: number }> = [
   { id: '24h', label: 'trends.time_ranges.last_24h', days: 1 },
@@ -45,11 +46,14 @@ export const PortalScreen = ({
   const [reasonText, setReasonText] = useState<string | null>(null);
   const [trendSubview, setTrendSubview] = useState<TrendSubview>('cloud');
   const [trendRange, setTrendRange] = useState<TrendRange>('7d');
+  const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const useNativeDriver = Platform.OS !== 'web';
 
   const client = useMemo(() => new NewsDeframerClient(settings), [settings]);
+  const domainOptions = useMemo<DomainOption[]>(() => availableDomains.filter((d) => d.domain !== domain.domain && d.language === domain.language).map((d) => ({ id: d.domain, name: d.domain })), [availableDomains, domain.domain, domain.language]);
+  const [compareDomain, setCompareDomain] = useState<string | null>(null);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
@@ -69,6 +73,40 @@ export const PortalScreen = ({
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadDomains = async () => {
+      try {
+        const domains = await client.getDomains();
+        if (!cancelled) {
+          setAvailableDomains(domains);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableDomains([]);
+        }
+      }
+    };
+
+    loadDomains();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [client]);
+
+  useEffect(() => {
+    if (domainOptions.length === 0) {
+      setCompareDomain(null);
+      return;
+    }
+
+    if (!compareDomain || !domainOptions.some((option) => option.id === compareDomain)) {
+      setCompareDomain(domainOptions[0].id);
+    }
+  }, [compareDomain, domainOptions]);
 
   useEffect(() => {
     if (!reasonText) {
@@ -211,7 +249,14 @@ export const PortalScreen = ({
                 settings={settings}
               />
             ) : null}
-            {trendSubview === 'compare' ? <TrendComparePanel palette={palette} /> : null}
+            {trendSubview === 'compare' ? (
+              <TrendComparePanel
+                palette={palette}
+                availableDomains={domainOptions}
+                compareDomain={compareDomain}
+                onSelectDomain={setCompareDomain}
+              />
+            ) : null}
             {trendSubview === 'search' ? (
               <TrendSearchPanel
                 palette={palette}
