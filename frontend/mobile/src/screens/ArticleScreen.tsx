@@ -160,9 +160,9 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
 
         {timeAgo || author ? (
           <View style={styles.metaRow}>
-            {timeAgo ? <Text style={[styles.metaText, { color: palette.secondaryText }]}>{timeAgo}</Text> : null}
+            {timeAgo ? <Text style={[styles.metaText, styles.metaTimeText, { color: palette.secondaryText }]}>{timeAgo}</Text> : null}
             {timeAgo && author ? <Text style={[styles.metaDivider, { color: palette.secondaryText }]}>|</Text> : null}
-            {author ? <Text style={[styles.metaText, { color: palette.secondaryText }]}>{author}</Text> : null}
+            {author ? <Text style={[styles.metaText, styles.metaAuthorText, { color: palette.secondaryText }]} numberOfLines={1}>{author}</Text> : null}
           </View>
         ) : null}
 
@@ -257,8 +257,10 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 20, fontWeight: '700', lineHeight: 26 },
   description: { fontSize: 15, lineHeight: 22 },
-  metaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
   metaText: { fontSize: 13, fontWeight: '500' },
+  metaTimeText: { flexShrink: 0 },
+  metaAuthorText: { flex: 1, minWidth: 140 },
   metaDivider: { fontSize: 13, fontWeight: '600' },
   divider: { marginVertical: 18, borderBottomWidth: 1 },
   metricBlock: { gap: 8 },
