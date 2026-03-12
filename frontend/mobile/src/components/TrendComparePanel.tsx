@@ -7,14 +7,16 @@ import { useTranslation } from 'react-i18next';
 import { colorValues } from '../../../shared/theme';
 import { Card } from './Card';
 import { LoadingSpinner } from './LoadingSpinner';
+import { TrendArticleListPanel } from './TrendArticleListPanel';
 import { DomainComparison, NewsDeframerClient } from '../services/newsDeframerClient';
 import { logger } from '../services/logger';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
 
 type DomainOption = { id: string; name: string };
+type SelectedCompareItem = { term: string; domain: string };
 
-const COMPARE_DOMAIN_COLOR = colorValues.compareDomain;
+const BULLET_DELIMITER = '•';
 
 const getTrendActions = (classification: DomainComparison['classification']) => {
   switch (classification) {
@@ -30,16 +32,27 @@ const getTrendActions = (classification: DomainComparison['classification']) => 
 const renderSectionRows = ({
   items,
   palette,
+  mode,
+  currentDomain,
+  compareDomain,
+  onSelectItem,
 }: {
   items: DomainComparison[];
   palette: AppPalette;
+  mode: 'current' | 'compare' | 'shared';
+  currentDomain: string;
+  compareDomain: string;
+  onSelectItem: (selection: SelectedCompareItem) => void;
 }) =>
   items.map((item, index) => {
     const actions = getTrendActions(item.classification);
+    const rowSelection = mode === 'current' ? { term: item.trend_topic, domain: currentDomain } : mode === 'compare' ? { term: item.trend_topic, domain: compareDomain } : null;
 
     return (
-      <View
+      <Pressable
         key={`${item.classification}-${item.trend_topic}-${item.rank_group}`}
+        disabled={mode === 'shared'}
+        onPress={rowSelection ? () => onSelectItem(rowSelection) : undefined}
         style={[
           styles.row,
           { borderBottomColor: palette.border },
@@ -52,20 +65,29 @@ const renderSectionRows = ({
         <View style={styles.actions}>
           {actions.map((action) => {
             const isCompare = action === 'compare';
+            const compareColor = palette.accent;
             const buttonColor = isCompare ? colorValues.white : palette.background;
             const actionButtonStyle = {
-              borderColor: isCompare ? COMPARE_DOMAIN_COLOR : palette.text,
-              backgroundColor: isCompare ? COMPARE_DOMAIN_COLOR : palette.text,
+              borderColor: isCompare ? compareColor : palette.text,
+              backgroundColor: isCompare ? compareColor : palette.text,
+            };
+            const actionSelection = {
+              term: item.trend_topic,
+              domain: isCompare ? compareDomain : currentDomain,
             };
 
             return (
-              <Pressable key={`${item.trend_topic}-${action}`} disabled style={[styles.actionButton, actionButtonStyle]}>
+              <Pressable
+                key={`${item.trend_topic}-${action}`}
+                onPress={() => onSelectItem(actionSelection)}
+                style={[styles.actionButton, actionButtonStyle]}
+              >
                 <ExternalLink color={buttonColor} size={14} strokeWidth={2.2} />
               </Pressable>
             );
           })}
         </View>
-      </View>
+      </Pressable>
     );
   });
 
@@ -78,6 +100,8 @@ export const TrendComparePanel = ({
   availableDomains,
   compareDomain,
   onSelectDomain,
+  getScrollOffset,
+  onRestoreScrollOffset,
 }: {
   palette: AppPalette;
   domain: string;
@@ -87,11 +111,15 @@ export const TrendComparePanel = ({
   availableDomains: DomainOption[];
   compareDomain: string | null;
   onSelectDomain: (domain: string) => void;
+  getScrollOffset: () => number;
+  onRestoreScrollOffset: (offset: number) => void;
 }) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<DomainComparison[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<SelectedCompareItem | null>(null);
+  const [savedScrollOffset, setSavedScrollOffset] = useState<number | null>(null);
 
   const client = useMemo(() => new NewsDeframerClient(settings), [settings]);
   const data = useMemo(() => availableDomains.map((option) => ({ label: option.name, value: option.id })), [availableDomains]);
@@ -102,6 +130,43 @@ export const TrendComparePanel = ({
   const currentOnlyItems = useMemo(() => sortedItems.filter((item) => item.classification === 'BLINDSPOT_A'), [sortedItems]);
   const compareOnlyItems = useMemo(() => sortedItems.filter((item) => item.classification === 'BLINDSPOT_B'), [sortedItems]);
   const sharedItems = useMemo(() => sortedItems.filter((item) => item.classification === 'INTERSECT'), [sortedItems]);
+
+  const selectedCompareDomain = compareDomain ?? '';
+  const compareColor = palette.accent;
+
+  const isSelectedItemPresent = useMemo(() => {
+    if (!selectedItem) {
+      return false;
+    }
+
+    return items.some((item) => {
+      if (item.trend_topic !== selectedItem.term) {
+        return false;
+      }
+
+      if (selectedItem.domain === domain) {
+        return item.classification === 'BLINDSPOT_A' || item.classification === 'INTERSECT';
+      }
+
+      if (selectedItem.domain === selectedCompareDomain) {
+        return item.classification === 'BLINDSPOT_B' || item.classification === 'INTERSECT';
+      }
+
+      return false;
+    });
+  }, [domain, items, selectedCompareDomain, selectedItem]);
+
+  const handleSelectItem = (selection: SelectedCompareItem) => {
+    setSavedScrollOffset(getScrollOffset());
+    setSelectedItem(selection);
+  };
+
+  const handleCloseSelection = () => {
+    setSelectedItem(null);
+    if (savedScrollOffset !== null) {
+      onRestoreScrollOffset(savedScrollOffset);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -143,65 +208,102 @@ export const TrendComparePanel = ({
     };
   }, [client, compareDomain, daysInPast, domain, language]);
 
+  useEffect(() => {
+    if (!selectedItem) {
+      return;
+    }
+
+    if (!isSelectedItemPresent) {
+      setSelectedItem(null);
+      setSavedScrollOffset(null);
+    }
+  }, [isSelectedItemPresent, selectedItem]);
+
+  useEffect(() => {
+    setSelectedItem(null);
+    setSavedScrollOffset(null);
+  }, [domain, selectedCompareDomain, daysInPast]);
+
   return (
     <View style={styles.stack}>
-      <View>
-        <Text style={[styles.label, { color: palette.secondaryText }]}>Compare to</Text>
-        <Dropdown
-          mode="modal"
-          data={data}
-          search
-          disable={data.length === 0}
-          labelField="label"
-          valueField="value"
-          value={compareDomain}
-          placeholder={data.length === 0 ? 'No domains available.' : 'Select domain'}
-          searchPlaceholder="Search..."
-          onChange={(item) => onSelectDomain(item.value)}
-          style={[styles.dropdown, { borderColor: palette.buttonBorder, backgroundColor: palette.background }]}
-          containerStyle={[styles.dropdownContainer, { backgroundColor: palette.card, borderColor: palette.border }]}
-          placeholderStyle={[styles.placeholder, { color: palette.secondaryText }]}
-          selectedTextStyle={[styles.selectedText, { color: palette.text }]}
-          itemTextStyle={[styles.itemText, { color: palette.text }]}
-          inputSearchStyle={[styles.inputSearch, { color: palette.text, borderColor: palette.buttonBorder, backgroundColor: palette.background }]}
-          activeColor={palette.accent}
-          iconColor={palette.text}
-          backgroundColor="rgba(0,0,0,0.35)"
-          maxHeight={320}
-        />
-      </View>
+      {!selectedItem ? (
+        <View>
+          <Text style={[styles.label, { color: palette.secondaryText }]}>{t('mobile.compare_with_label', 'Compare with')}</Text>
+          <Dropdown
+            mode="modal"
+            data={data}
+            search
+            disable={data.length === 0}
+            labelField="label"
+            valueField="value"
+            value={compareDomain}
+            placeholder={data.length === 0 ? 'No domains available.' : 'Select domain'}
+            searchPlaceholder="Search..."
+            onChange={(item) => onSelectDomain(item.value)}
+            style={[styles.dropdown, { borderColor: palette.buttonBorder, backgroundColor: palette.background }]}
+            containerStyle={[styles.dropdownContainer, { backgroundColor: palette.card, borderColor: palette.border }]}
+            placeholderStyle={[styles.placeholder, { color: palette.secondaryText }]}
+            selectedTextStyle={[styles.selectedText, { color: palette.accent }]}
+            itemTextStyle={[styles.itemText, { color: palette.text }]}
+            inputSearchStyle={[styles.inputSearch, { color: palette.text, borderColor: palette.buttonBorder, backgroundColor: palette.background }]}
+            activeColor={palette.accent}
+            iconColor={palette.text}
+            backgroundColor="rgba(0,0,0,0.35)"
+            maxHeight={320}
+          />
+        </View>
+      ) : null}
 
       {!compareDomain ? null : (
-        <Card palette={palette}>
+        <View style={styles.stack}>
+          {!selectedItem ? <View style={[styles.divider, { borderBottomColor: palette.border }]} /> : null}
+
+          {selectedItem ? (
+            <Pressable
+              onPress={handleCloseSelection}
+              style={[styles.selectedTrendPill, { backgroundColor: palette.card, borderColor: palette.border }]}
+              accessibilityRole="button"
+              accessibilityLabel={`${t('mobile.change_term')}: ${selectedItem.term} ${BULLET_DELIMITER} ${selectedItem.domain}`}
+            >
+              <Text style={[styles.selectedTrendText, { color: colorValues.white }]}>
+                {selectedItem.term} {BULLET_DELIMITER} {selectedItem.domain}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          <Card palette={palette}>
           {isLoading ? <LoadingSpinner palette={palette} center label={t('options.loading')} /> : null}
           {!isLoading && hasError ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('mobile.portal_load_error')}</Text> : null}
           {!isLoading && !hasError && sortedItems.length === 0 ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text> : null}
 
-          {!isLoading && !hasError && sortedItems.length > 0 ? (
+          {!selectedItem && !isLoading && !hasError && sortedItems.length > 0 ? (
             <View style={styles.list}>
               <View style={styles.section}>
                 <View style={[styles.sectionHeader, { backgroundColor: palette.text }]}> 
                   <Text style={[styles.sectionTitle, { color: palette.background }]}>{domain}</Text>
                 </View>
-                {currentOnlyItems.length > 0 ? renderSectionRows({ items: currentOnlyItems, palette }) : <Text style={[styles.emptySectionText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text>}
+                {currentOnlyItems.length > 0 ? renderSectionRows({ items: currentOnlyItems, palette, mode: 'current', currentDomain: domain, compareDomain: selectedCompareDomain, onSelectItem: handleSelectItem }) : <Text style={[styles.emptySectionText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text>}
               </View>
 
               <View style={styles.section}>
-                <View style={[styles.sectionHeader, styles.compareSectionHeader, { backgroundColor: COMPARE_DOMAIN_COLOR }]}>
+                <View style={[styles.sectionHeader, styles.compareSectionHeader, { backgroundColor: compareColor }]}> 
                   <Text style={[styles.sectionTitle, styles.compareSectionTitle, { color: colorValues.white }]}>{compareDomain}</Text>
                 </View>
-                {compareOnlyItems.length > 0 ? renderSectionRows({ items: compareOnlyItems, palette }) : <Text style={[styles.emptySectionText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text>}
+                {compareOnlyItems.length > 0 ? renderSectionRows({ items: compareOnlyItems, palette, mode: 'compare', currentDomain: domain, compareDomain: selectedCompareDomain, onSelectItem: handleSelectItem }) : <Text style={[styles.emptySectionText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text>}
               </View>
 
               <View style={styles.section}>
                 <View style={[styles.sectionHeader, { backgroundColor: palette.text }]}> 
                   <Text style={[styles.sectionTitle, { color: palette.background }]}>{t('trends.compare.shared', 'Shared Trends')}</Text>
                 </View>
-                {sharedItems.length > 0 ? renderSectionRows({ items: sharedItems, palette }) : <Text style={[styles.emptySectionText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text>}
+                {sharedItems.length > 0 ? renderSectionRows({ items: sharedItems, palette, mode: 'shared', currentDomain: domain, compareDomain: selectedCompareDomain, onSelectItem: handleSelectItem }) : <Text style={[styles.emptySectionText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text>}
               </View>
             </View>
           ) : null}
-        </Card>
+
+          {selectedItem && !isLoading && !hasError ? <TrendArticleListPanel palette={palette} term={selectedItem.term} domain={selectedItem.domain} /> : null}
+          </Card>
+        </View>
       )}
     </View>
   );
@@ -254,9 +356,27 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  divider: {
+    borderBottomWidth: 1,
+  },
   list: {
     margin: -16,
     gap: 16,
+  },
+  selectedTrendPill: {
+    borderWidth: 1,
+    borderRadius: 8,
+    minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedTrendText: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontWeight: '700',
+    textAlign: 'center',
   },
   section: {
     gap: 0,

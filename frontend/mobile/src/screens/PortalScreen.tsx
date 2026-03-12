@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Info } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -47,6 +47,8 @@ export const PortalScreen = ({
   const [trendSubview, setTrendSubview] = useState<TrendSubview>('cloud');
   const [trendRange, setTrendRange] = useState<TrendRange>('7d');
   const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
+  const portalScrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const useNativeDriver = Platform.OS !== 'web';
@@ -158,6 +160,16 @@ export const PortalScreen = ({
     };
   }, [reasonText]);
 
+  const handlePortalScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+  }, []);
+
+  const restorePortalScroll = useCallback((offset: number) => {
+    requestAnimationFrame(() => {
+      portalScrollRef.current?.scrollTo({ y: offset, animated: false });
+    });
+  }, []);
+
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}> 
       <Modal animationType="none" transparent visible={Boolean(reasonText)} onRequestClose={() => setReasonText(null)}>
@@ -181,9 +193,12 @@ export const PortalScreen = ({
       </Modal>
 
       <ScrollView
+        ref={portalScrollRef}
         style={styles.scrollView}
         contentContainerStyle={[styles.content, activeTab === 'trend-mining' ? styles.contentWithBottomTabs : null]}
         scrollEnabled={!reasonText}
+        onScroll={handlePortalScroll}
+        scrollEventThrottle={16}
       >
         <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
           <SegmentedControl
@@ -259,6 +274,8 @@ export const PortalScreen = ({
                 availableDomains={domainOptions}
                 compareDomain={compareDomain}
                 onSelectDomain={setCompareDomain}
+                getScrollOffset={() => scrollOffsetRef.current}
+                onRestoreScrollOffset={restorePortalScroll}
               />
             ) : null}
             {trendSubview === 'search' ? (

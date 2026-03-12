@@ -4,8 +4,19 @@ import { useTranslation } from 'react-i18next';
 
 import { AppPalette } from '../theme';
 
-export const TrendArticleListPanel = ({ palette, term, selectedDate }: { palette: AppPalette; term: string; selectedDate?: string }) => {
+export const TrendArticleListPanel = ({
+  palette,
+  term,
+  domain,
+  selectedDate,
+}: {
+  palette: AppPalette;
+  term: string;
+  domain?: string;
+  selectedDate?: string;
+}) => {
   const { t } = useTranslation();
+  const placeholderTerm = domain ? `${domain} / ${term}` : term;
 
   return (
     <View style={[styles.container, { borderColor: palette.border }]}> 
@@ -19,8 +30,8 @@ export const TrendArticleListPanel = ({ palette, term, selectedDate }: { palette
       <View style={[styles.placeholderBody, { backgroundColor: palette.secondaryBackground }]}> 
         <Text style={[styles.placeholderText, { color: palette.secondaryText }]}>
           {selectedDate
-            ? t('mobile.trends_article_list_placeholder_date', { term, date: selectedDate })
-            : t('mobile.trends_article_list_placeholder', { term })}
+            ? t('mobile.trends_article_list_placeholder_date', { term: placeholderTerm, date: selectedDate })
+            : t('mobile.trends_article_list_placeholder', { term: placeholderTerm })}
         </Text>
       </View>
     </View>

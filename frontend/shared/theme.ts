@@ -8,7 +8,6 @@ export const colorTokens = {
 export const colorValues = {
   white: '#ffffff',
   black: '#000000',
-  compareDomain: '#b35f00',
   spinner: {
     outerRing: '#FFFFFF',
     innerRing: '#1F2937',

@@ -63,7 +63,7 @@
 ## 14. Mobile Trend Compare Panel
 
 - [done] replace the dummy `TrendComparePanel` with a compare panel wired to `getDomainComparison(domainA, domainB, language, daysInPast)`
-- [done] keep the `Compare to` dropdown at the top, using the same compare-domain filtering/naming as the browser version
+- [done] keep the `Compare with` dropdown at the top, using the same compare-domain filtering/naming as the browser version
 - [done] split compare results into 3 readable sections: current domain, selected compare domain, and `Shared Trends`
 - [done] show only the topic plus article-open buttons in each row; do not show badges, scores, or `A` / `B`
 - [done] use the default color for the current-domain action button and a fixed compare color for the selected-domain action button
@@ -71,15 +71,7 @@
 
 ## 15. Compare Panel UX Article List
 
-- when the user taps a row in section A, select that term for the current domain
-- when the user taps a row in section B, select that term for the selected compare domain
-- when the user taps a domain indicator in `Shared Trends`, select that term together with the tapped domain
-- once a term/domain is selected, hide the compare list
-- once a term/domain is selected, hide the `Compare to` dropdown
-- show the selected trend as a pill button, similar to the selected tag pattern in the tag cloud
-- place the article list directly below that selected trend pill
-- tapping the selected trend pill again closes the article list
-- when the article list closes, restore the compare list and the `Compare to` dropdown
-- keep or restore the compare-list scroll position when the compare list is shown again
-- keep the selection model explicit as `{ term, domain }` so shared trends can open the correct domain side
-- clear stale selection when current domain, compare domain, time range, or compare data changes and the selected term/domain is no longer valid
+- [done] keep `mobile/src/screens/ArticleScreen.tsx` untouched and handle compare article UX inside the compare panel only
+- [done] tap a row in section A/B or a domain indicator in `Shared Trends` to select `{ term, domain }`, hide the compare list and `Compare with` dropdown, show a selected-term pill, and render the article list below it
+- [done] tapping the selected trend pill closes the article list and restores the compare list plus the `Compare with` dropdown
+- [done] keep or restore the compare-list scroll position when the compare list is shown again, and clear stale selection when current domain, compare domain, time range, or compare data changes invalidate it

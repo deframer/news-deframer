@@ -306,12 +306,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   collapsedTermText: {
     fontSize: 20,
     lineHeight: 26,
+    textAlign: 'center',
   },
   termHitBox: { alignItems: 'flex-start', justifyContent: 'flex-start', padding: 0, margin: 0 },
   termAbsolute: {
