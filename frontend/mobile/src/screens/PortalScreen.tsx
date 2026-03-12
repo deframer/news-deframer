@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, FlatList, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Info } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -26,6 +26,8 @@ const TIME_RANGES: Array<{ id: TrendRange; label: string; days: number }> = [
   { id: '90d', label: 'trends.time_ranges.last_90d', days: 90 },
   { id: '365d', label: 'trends.time_ranges.last_365d', days: 365 },
 ];
+
+const ArticleSeparator = () => <View style={styles.articleSeparator} />;
 
 export const PortalScreen = ({
   palette,
@@ -170,6 +172,36 @@ export const PortalScreen = ({
     });
   }, []);
 
+  const renderArticleItem = useCallback(
+    ({ item }: { item: AnalyzedItem }) => <ArticleTile item={item} palette={palette} onOpenArticle={onOpenArticle} onShowReason={setReasonText} />,
+    [onOpenArticle, palette],
+  );
+
+  const renderArticleListEmpty = useCallback(() => {
+    if (isLoading) {
+      return <LoadingSpinner palette={palette} label={t('options.loading')} />;
+    }
+
+    if (error) {
+      return (
+        <Card palette={palette}>
+          <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_load_error_title')}</Text>
+          <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{error}</Text>
+          <Pressable onPress={loadItems} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
+            <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('mobile.retry')}</Text>
+          </Pressable>
+        </Card>
+      );
+    }
+
+    return (
+      <Card palette={palette}>
+        <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_empty_title')}</Text>
+        <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{t('mobile.portal_empty_body')}</Text>
+      </Card>
+    );
+  }, [error, isLoading, loadItems, palette, t]);
+
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}> 
       <Modal animationType="none" transparent visible={Boolean(reasonText)} onRequestClose={() => setReasonText(null)}>
@@ -192,47 +224,49 @@ export const PortalScreen = ({
         </Animated.View>
       </Modal>
 
-      <ScrollView
-        ref={portalScrollRef}
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, activeTab === 'trend-mining' ? styles.contentWithBottomTabs : null]}
-        scrollEnabled={!reasonText}
-        onScroll={handlePortalScroll}
-        scrollEventThrottle={16}
-      >
-        <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
-          <SegmentedControl
-            palette={palette}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as PortalTab)}
-            options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trends'), value: 'trend-mining' }]}
-          />
-        </View>
-
-        {activeTab === 'articles' ? (
-          <View style={styles.stack}>
-            {isLoading ? <LoadingSpinner palette={palette} label={t('options.loading')} /> : null}
-
-            {!isLoading && error ? (
-              <Card palette={palette}>
-                <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_load_error_title')}</Text>
-                <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{error}</Text>
-                <Pressable onPress={loadItems} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
-                  <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('mobile.retry')}</Text>
-                </Pressable>
-              </Card>
-            ) : null}
-
-            {!isLoading && !error && items.length === 0 ? (
-              <Card palette={palette}>
-                <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_empty_title')}</Text>
-                <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{t('mobile.portal_empty_body')}</Text>
-              </Card>
-            ) : null}
-
-            {!isLoading && !error ? items.map((item) => <ArticleTile key={item.url} item={item} palette={palette} onOpenArticle={onOpenArticle} onShowReason={setReasonText} />) : null}
+      {activeTab === 'articles' ? (
+        <FlatList
+          data={!isLoading && !error ? items : []}
+          keyExtractor={(item) => item.url}
+          renderItem={renderArticleItem}
+          ListHeaderComponent={
+            <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
+              <SegmentedControl
+                palette={palette}
+                value={activeTab}
+                onChange={(value) => setActiveTab(value as PortalTab)}
+                options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trends'), value: 'trend-mining' }]}
+              />
+            </View>
+          }
+          ListEmptyComponent={renderArticleListEmpty}
+          contentContainerStyle={styles.articleListContent}
+          style={styles.scrollView}
+          scrollEnabled={!reasonText}
+          ItemSeparatorComponent={ArticleSeparator}
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={5}
+        />
+      ) : (
+        <ScrollView
+          ref={portalScrollRef}
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, styles.contentWithBottomTabs]}
+          scrollEnabled={!reasonText}
+          onScroll={handlePortalScroll}
+          scrollEventThrottle={16}
+        >
+          <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
+            <SegmentedControl
+              palette={palette}
+              value={activeTab}
+              onChange={(value) => setActiveTab(value as PortalTab)}
+              options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trends'), value: 'trend-mining' }]}
+            />
           </View>
-        ) : (
+
           <View style={styles.stack}>
             <View style={styles.timeRow}>
               {TIME_RANGES.map((range) => {
@@ -288,8 +322,8 @@ export const PortalScreen = ({
               />
             ) : null}
           </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
 
       {activeTab === 'trend-mining' ? (
         <View style={[styles.trendSubviewDock, { backgroundColor: palette.background, borderTopColor: palette.border }]}> 
@@ -314,10 +348,12 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1, overflow: 'scroll' },
   content: { paddingBottom: 24 },
   contentWithBottomTabs: { paddingBottom: 100 },
+  articleListContent: { paddingBottom: 24, paddingHorizontal: 24 },
+  articleSeparator: { height: 16 },
   stickyTabs: {
-    paddingHorizontal: 24,
     paddingBottom: 16,
     paddingTop: 16,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
   },
   spacer: { height: 16 },
