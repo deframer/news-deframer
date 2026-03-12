@@ -2,7 +2,7 @@ import './src/i18n';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Menu } from 'lucide-react-native';
-import { Appearance, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Appearance, NativeModules, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -37,7 +37,49 @@ const getUrlHost = (url?: string): string => {
 
 const getResolvedLanguage = (language: string): string => {
   if (language !== 'default') {
-    return language;
+    const normalized = language.toLowerCase().split(/[-_]/)[0];
+    return ['de', 'en'].includes(normalized) ? normalized : 'en';
+  }
+
+  const nativeLocale = (() => {
+    if (Platform.OS === 'ios') {
+      const settings = NativeModules.SettingsManager?.settings;
+      const locale = settings?.AppleLocale;
+      const languages = settings?.AppleLanguages;
+
+      if (typeof locale === 'string' && locale.length > 0) {
+        return locale;
+      }
+
+      if (Array.isArray(languages) && typeof languages[0] === 'string') {
+        return languages[0];
+      }
+    }
+
+    if (Platform.OS === 'android') {
+      const locales = NativeModules.I18nManager?.localeIdentifier || NativeModules.I18nManager?.locale;
+      if (typeof locales === 'string' && locales.length > 0) {
+        return locales;
+      }
+
+      const platformLocales = NativeModules.PlatformConstants?.locales;
+      if (Array.isArray(platformLocales) && typeof platformLocales[0] === 'string') {
+        return platformLocales[0];
+      }
+    }
+
+    return '';
+  })();
+
+  if (nativeLocale) {
+    const detected = nativeLocale.toLowerCase().split(/[-_]/)[0];
+    return ['de', 'en'].includes(detected) ? detected : 'en';
+  }
+
+  const intlLocale = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().locale : '';
+  if (intlLocale) {
+    const detected = intlLocale.toLowerCase().split(/[-_]/)[0];
+    return ['de', 'en'].includes(detected) ? detected : 'en';
   }
 
   if (typeof navigator !== 'undefined') {
@@ -81,6 +123,7 @@ function App() {
   const [selectedDomain, setSelectedDomain] = useState<DomainEntry | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
   const [portalBackHandler, setPortalBackHandler] = useState<(() => boolean) | null>(null);
+  const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
 
   useEffect(() => {
@@ -250,6 +293,14 @@ function App() {
     }
   }, [screen]);
 
+  useEffect(() => {
+    if (booting || screen !== 'settings') {
+      return;
+    }
+
+    handleTestConnection();
+  }, [booting, handleTestConnection, screen]);
+
   const openScreen = (nextScreen: Screen) => {
     setDrawerOpen(false);
     setScreen(nextScreen);
@@ -257,10 +308,12 @@ function App() {
 
   const handleTestConnection = useCallback(async () => {
     setStatus('loading');
+    setSettingsErrorMessage(null);
 
     const backendUrl = settings.backendUrl.trim();
     if (!backendUrl) {
       setStatus('error');
+      setSettingsErrorMessage(t('mobile.connection_error_missing_url', 'Please enter a server URL before testing the connection.'));
       return;
     }
 
@@ -268,10 +321,12 @@ function App() {
       const parsed = new URL(backendUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) {
         setStatus('error');
+        setSettingsErrorMessage(t('mobile.connection_error_invalid_url', 'The server URL must start with http:// or https://.'));
         return;
       }
     } catch {
       setStatus('error');
+      setSettingsErrorMessage(t('mobile.connection_error_invalid_url', 'The server URL must start with http:// or https://.'));
       return;
     }
 
@@ -279,11 +334,13 @@ function App() {
       const client = new NewsDeframerClient(settings);
       await withTimeout(client.getDomains(), 5000);
       setStatus('success');
-    } catch {
+      setSettingsErrorMessage(null);
+    } catch (error) {
       logger.error('Test connection failed', { backendUrl: settings.backendUrl });
       setStatus('error');
+      setSettingsErrorMessage(error instanceof Error ? error.message : String(error));
     }
-  }, [settings]);
+  }, [settings, t]);
 
   const renderScreen = () => {
     if (booting) {
@@ -295,7 +352,21 @@ function App() {
     }
 
     if (screen === 'settings') {
-      return <SettingsScreen palette={palette} settings={settings} status={status} onSettingsChange={setSettings} onTestConnection={handleTestConnection} />;
+      return (
+        <SettingsScreen
+          palette={palette}
+          settings={settings}
+          status={status}
+          errorMessage={settingsErrorMessage}
+          onSettingsChange={(nextSettings) => {
+            setSettings(nextSettings);
+            if (settingsErrorMessage) {
+              setSettingsErrorMessage(null);
+            }
+          }}
+          onTestConnection={handleTestConnection}
+        />
+      );
     }
 
     if (screen === 'about') {

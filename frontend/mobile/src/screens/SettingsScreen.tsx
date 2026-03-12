@@ -16,12 +16,14 @@ export const SettingsScreen = ({
   palette,
   settings,
   status,
+  errorMessage,
   onSettingsChange,
   onTestConnection,
 }: {
   palette: AppPalette;
   settings: Settings;
   status: HostStatus;
+  errorMessage: string | null;
   onSettingsChange: (settings: Settings) => void;
   onTestConnection: () => void;
 }) => {
@@ -45,6 +47,12 @@ export const SettingsScreen = ({
                 }}
               />
             </View>
+            {errorMessage ? (
+              <View style={[styles.errorBox, { borderColor: palette.border, backgroundColor: palette.card }]}> 
+                <Text style={[styles.errorTitle, { color: palette.text }]}>{t('options.status_error')}</Text>
+                <Text style={[styles.errorBody, { color: palette.secondaryText }]}>{errorMessage}</Text>
+              </View>
+            ) : null}
             <TextField label={t('options.label_server_url')} value={settings.backendUrl} onChangeText={(backendUrl) => onSettingsChange({ ...settings, backendUrl })} palette={palette} />
             <TextField label={t('options.label_username')} optional={t('options.label_optional')} value={settings.username} onChangeText={(username) => onSettingsChange({ ...settings, username })} palette={palette} />
             <TextField label={t('options.label_password')} optional={t('options.label_optional')} value={settings.password} onChangeText={(password) => onSettingsChange({ ...settings, password })} palette={palette} secureTextEntry />
@@ -95,6 +103,16 @@ const styles = StyleSheet.create({
   grid: { gap: 16 },
   column: { gap: 16 },
   cardHeader: { marginBottom: SECTION_HEADER_GAP, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
+  errorBox: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 12,
+    gap: 6,
+  },
+  errorTitle: { fontSize: 16, fontWeight: '700' },
+  errorBody: { fontSize: 15, lineHeight: 22 },
   sectionTitle: { fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '700' },
   sectionGap: { marginBottom: SECTION_HEADER_GAP },
   actionButton: { borderWidth: 1, borderRadius: 8, minHeight: 54, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
