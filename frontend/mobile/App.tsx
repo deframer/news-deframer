@@ -121,6 +121,7 @@ function App() {
   const [domainsLoading, setDomainsLoading] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DomainEntry | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
+  const [portalBackAction, setPortalBackAction] = useState<(() => void) | null>(null);
   const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
 
@@ -293,6 +294,10 @@ function App() {
     handleTestConnection();
   }, [booting, handleTestConnection, screen]);
 
+  const handlePortalBackActionChange = useCallback((action: (() => void) | null) => {
+    setPortalBackAction(() => action);
+  }, []);
+
   const openScreen = (nextScreen: Screen) => {
     setDrawerOpen(false);
     setScreen(nextScreen);
@@ -365,22 +370,22 @@ function App() {
       return <AboutScreen palette={palette} onClose={() => setScreen('dashboard')} />;
     }
 
-    if ((screen === 'portal' || screen === 'article') && selectedDomain) {
+    if (screen === 'portal' && selectedDomain) {
       return (
         <View style={styles.screenStack}>
-          <View style={[styles.screenLayer, screen === 'article' ? styles.hiddenLayer : null]}>
+          <View style={styles.screenLayer}>
             <PortalScreen
               palette={palette}
               domain={selectedDomain}
               settings={settings}
+              onBackRequestChange={handlePortalBackActionChange}
               onOpenArticle={(item) => {
                 setSelectedArticle(item);
-                setScreen('article');
               }}
             />
           </View>
-          {screen === 'article' && selectedArticle ? (
-            <View style={styles.screenLayer}>
+          {selectedArticle ? (
+            <View style={styles.screenOverlay}>
               <ArticleScreen palette={palette} item={selectedArticle} />
             </View>
           ) : null}
@@ -402,26 +407,31 @@ function App() {
     );
   };
 
-  const showBack = screen === 'settings' || screen === 'about' || screen === 'portal' || screen === 'article';
+  const showBack = screen === 'settings' || screen === 'about' || screen === 'portal' || Boolean(selectedArticle);
   const showMenu = !showBack;
   const headerTitle = screen === 'settings'
     ? t('options.settings_title')
     : screen === 'about'
       ? t('mobile.about_title')
-      : screen === 'portal'
+      : selectedArticle
+        ? getUrlHost(selectedArticle?.url) || t('article.screen_title', 'Article')
+        : screen === 'portal'
         ? selectedDomain?.domain || t('mobile.portal_title')
-        : screen === 'article'
-          ? getUrlHost(selectedArticle?.url) || t('article.screen_title', 'Article')
-          : t('mobile.dashboard_title');
+        : t('mobile.dashboard_title');
   const handleBack = useCallback(() => {
-    if (screen === 'article') {
+    if (selectedArticle || screen === 'article') {
       setSelectedArticle(null);
       setScreen('portal');
       return;
     }
 
+    if (screen === 'portal' && portalBackAction) {
+      portalBackAction();
+      return;
+    }
+
     setScreen('dashboard');
-  }, [screen]);
+  }, [portalBackAction, screen, selectedArticle]);
 
   useEffect(() => {
     if (Platform.OS !== 'android' || !showBack) {
@@ -435,6 +445,12 @@ function App() {
 
     return () => subscription.remove();
   }, [handleBack, showBack]);
+
+  useEffect(() => {
+    if (screen !== 'portal') {
+      setPortalBackAction(null);
+    }
+  }, [screen]);
 
   return (
     <SafeAreaProvider>
@@ -495,9 +511,12 @@ const styles = StyleSheet.create({
   appBarTitle: { fontSize: 18, fontWeight: '700' },
   screen: { flex: 1, overflow: 'hidden' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  screenStack: { flex: 1 },
+  screenStack: { flex: 1, position: 'relative' },
   screenLayer: { flex: 1 },
-  hiddenLayer: { display: 'none' },
+  screenOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
+  },
 });
 
 export default App;

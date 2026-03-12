@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ExternalLink } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
@@ -103,6 +103,7 @@ export const TrendComparePanel = ({
   getScrollOffset,
   onRestoreScrollOffset,
   onOpenArticle,
+  onBackRequestChange,
 }: {
   palette: AppPalette;
   domain: string;
@@ -115,6 +116,7 @@ export const TrendComparePanel = ({
   getScrollOffset: () => number;
   onRestoreScrollOffset: (offset: number) => void;
   onOpenArticle: (item: AnalyzedItem) => void;
+  onBackRequestChange: (action: (() => void) | null) => void;
 }) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<DomainComparison[]>([]);
@@ -163,12 +165,12 @@ export const TrendComparePanel = ({
     setSelectedItem(selection);
   };
 
-  const handleCloseSelection = () => {
+  const handleCloseSelection = useCallback(() => {
     setSelectedItem(null);
     if (savedScrollOffset !== null) {
       onRestoreScrollOffset(savedScrollOffset);
     }
-  };
+  }, [onRestoreScrollOffset, savedScrollOffset]);
 
   useEffect(() => {
     let cancelled = false;
@@ -225,6 +227,12 @@ export const TrendComparePanel = ({
     setSelectedItem(null);
     setSavedScrollOffset(null);
   }, [domain, selectedCompareDomain, daysInPast]);
+
+  useEffect(() => {
+    onBackRequestChange(selectedItem ? handleCloseSelection : null);
+
+    return () => onBackRequestChange(null);
+  }, [handleCloseSelection, onBackRequestChange, selectedItem]);
 
   return (
     <View style={styles.stack}>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react-native';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ export const TrendSearchPanel = ({
   daysInPast,
   settings,
   onOpenArticle,
+  onBackRequestChange,
 }: {
   palette: AppPalette;
   domain: string;
@@ -25,11 +26,18 @@ export const TrendSearchPanel = ({
   daysInPast: number;
   settings: Settings;
   onOpenArticle: (item: AnalyzedItem) => void;
+  onBackRequestChange: (action: (() => void) | null) => void;
 }) => {
   const { t } = useTranslation();
   const [term, setTerm] = useState('');
   const [activeTerm, setActiveTerm] = useState('');
   const [activeDetailTab, setActiveDetailTab] = useState<TrendDetailTab>('lifecycle');
+
+  useEffect(() => {
+    onBackRequestChange(null);
+
+    return () => onBackRequestChange(null);
+  }, [onBackRequestChange]);
 
   const handleSearch = () => {
     const normalized = term.trim();

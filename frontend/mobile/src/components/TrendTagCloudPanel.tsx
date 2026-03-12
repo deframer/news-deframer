@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -59,6 +59,7 @@ export const TrendTagCloudPanel = ({
   daysInPast,
   settings,
   onOpenArticle,
+  onBackRequestChange,
 }: {
   palette: AppPalette;
   domain: string;
@@ -66,6 +67,7 @@ export const TrendTagCloudPanel = ({
   daysInPast: number;
   settings: Settings;
   onOpenArticle: (item: AnalyzedItem) => void;
+  onBackRequestChange: (action: (() => void) | null) => void;
 }) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<TrendMetric[]>([]);
@@ -195,12 +197,18 @@ export const TrendTagCloudPanel = ({
     });
   };
 
-  const handleShowCloudAgain = () => {
+  const handleShowCloudAgain = useCallback(() => {
     logger.info('TrendTagCloud reopen requested; clearing selection');
     setSelectedTerm(null);
     setActiveDetailTab('lifecycle');
     setIsCloudCollapsed(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    onBackRequestChange(selectedTerm && isCloudCollapsed ? handleShowCloudAgain : null);
+
+    return () => onBackRequestChange(null);
+  }, [handleShowCloudAgain, isCloudCollapsed, onBackRequestChange, selectedTerm]);
 
   return (
     <View style={styles.stack}>

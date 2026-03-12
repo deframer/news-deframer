@@ -33,11 +33,13 @@ export const PortalScreen = ({
   palette,
   domain,
   settings,
+  onBackRequestChange,
   onOpenArticle,
 }: {
   palette: AppPalette;
   domain: DomainEntry;
   settings: Settings;
+  onBackRequestChange: (action: (() => void) | null) => void;
   onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t } = useTranslation();
@@ -49,6 +51,7 @@ export const PortalScreen = ({
   const [trendSubview, setTrendSubview] = useState<TrendSubview>('cloud');
   const [trendRange, setTrendRange] = useState<TrendRange>('7d');
   const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
+  const [trendSubviewBackAction, setTrendSubviewBackAction] = useState<(() => void) | null>(null);
   const portalScrollRef = useRef<ScrollView>(null);
   const scrollOffsetRef = useRef(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -172,6 +175,10 @@ export const PortalScreen = ({
     });
   }, []);
 
+  const handleTrendSubviewBackActionChange = useCallback((action: (() => void) | null) => {
+    setTrendSubviewBackAction(() => action);
+  }, []);
+
   const renderArticleItem = useCallback(
     ({ item }: { item: AnalyzedItem }) => <ArticleTile item={item} palette={palette} onOpenArticle={onOpenArticle} onShowReason={setReasonText} />,
     [onOpenArticle, palette],
@@ -201,6 +208,12 @@ export const PortalScreen = ({
       </Card>
     );
   }, [error, isLoading, loadItems, palette, t]);
+
+  useEffect(() => {
+    onBackRequestChange(activeTab === 'trend-mining' ? trendSubviewBackAction : null);
+
+    return () => onBackRequestChange(null);
+  }, [activeTab, onBackRequestChange, trendSubviewBackAction]);
 
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}> 
@@ -297,6 +310,7 @@ export const PortalScreen = ({
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
                 onOpenArticle={onOpenArticle}
+                onBackRequestChange={handleTrendSubviewBackActionChange}
               />
             ) : null}
             {trendSubview === 'compare' ? (
@@ -312,6 +326,7 @@ export const PortalScreen = ({
                 getScrollOffset={() => scrollOffsetRef.current}
                 onRestoreScrollOffset={restorePortalScroll}
                 onOpenArticle={onOpenArticle}
+                onBackRequestChange={handleTrendSubviewBackActionChange}
               />
             ) : null}
             {trendSubview === 'search' ? (
@@ -322,6 +337,7 @@ export const PortalScreen = ({
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
                 onOpenArticle={onOpenArticle}
+                onBackRequestChange={handleTrendSubviewBackActionChange}
               />
             ) : null}
           </View>
