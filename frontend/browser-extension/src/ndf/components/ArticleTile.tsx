@@ -28,7 +28,7 @@ export const ArticleTile = ({ item }: ArticleTileProps) => {
           <h3>{title}</h3>
           <p>{description}</p>
         </div>
-        <div className="tile-footer">
+        <div className="tile-footer" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           <MetaData
             pubDate={(item as AnalyzedItem & { pubDate?: string | Date }).pubDate}
             author={item.authors?.join(', ')}

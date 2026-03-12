@@ -35,6 +35,7 @@ module.exports = {
     },
     resolve: {
         extensions: ['.tsx', '.ts', '.js'],
+        modules: [path.resolve(__dirname, 'node_modules'), 'node_modules'],
     },
     output: {
         filename: '[name].js',

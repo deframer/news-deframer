@@ -87,9 +87,6 @@ const resources = {
         text_post: ' browser plugin.',
         github_link: 'News Deframer on GitHub',
       },
-      metadata: {
-        just_now: 'a moment ago',
-      },
       options: {
         title: 'Options',
         settings_title: 'Settings',
@@ -205,9 +202,6 @@ const resources = {
         text_pre: 'Dieser Inhalt wurde durch das ',
         text_post: ' Browser-Plugin ersetzt.',
         github_link: 'News Deframer auf GitHub',
-      },
-      metadata: {
-        just_now: 'vor einem Augenblick',
       },
       options: {
         title: 'Einstellungen',

@@ -3,9 +3,9 @@ import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { ExternalLink } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatTime } from '../../../shared/formatTime';
 import { Card } from '../components/Card';
 import { getRatingColors, stripHtml, toPercent } from '../lib/articleFormat';
-import { getRelativeTime } from '../lib/getRelativeTime';
 import { AnalyzedItem } from '../services/newsDeframerClient';
 import { AppPalette } from '../theme';
 
@@ -50,7 +50,7 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
   const description = item.description_corrected || stripHtml(item.description_original) || t('article.no_description', 'No Description');
   const imageUrl = item.media?.medium === 'image' ? item.media.url : undefined;
   const author = item.authors?.join(', ');
-  const timeAgo = item.pubDate ? getRelativeTime(item.pubDate, i18n.language) || t('metadata.just_now') : '';
+  const timeAgo = item.pubDate ? formatTime(item.pubDate, i18n.language) : '';
 
   const metrics = useMemo(
     () => [
@@ -138,7 +138,21 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
               </Pressable>
             </View>
           ) : null}
-          <View style={styles.heroTextBlock}>
+          <View style={[styles.heroTextBlock, !imageUrl ? styles.heroTextBlockNoImage : null]}>
+            {!imageUrl ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('article.btn_open_article', 'Open article')}
+                onPress={(event) => {
+                  event?.stopPropagation?.();
+                  openOriginal();
+                }}
+                style={[styles.openButtonNoImage, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}
+              >
+                <ExternalLink color={palette.buttonText} size={14} strokeWidth={2.2} />
+                <Text style={[styles.openButtonText, { color: palette.buttonText }]}>{t('article.btn_open_article', 'Open article')}</Text>
+              </Pressable>
+            ) : null}
             <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
             <Text style={[styles.description, { color: palette.secondaryText }]}>{description}</Text>
           </View>
@@ -146,9 +160,9 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
 
         {timeAgo || author ? (
           <View style={styles.metaRow}>
-            {timeAgo ? <Text style={[styles.metaText, { color: palette.secondaryText }]}>{timeAgo}</Text> : null}
+            {timeAgo ? <Text style={[styles.metaText, styles.metaTimeText, { color: palette.secondaryText }]}>{timeAgo}</Text> : null}
             {timeAgo && author ? <Text style={[styles.metaDivider, { color: palette.secondaryText }]}>|</Text> : null}
-            {author ? <Text style={[styles.metaText, { color: palette.secondaryText }]}>{author}</Text> : null}
+            {author ? <Text style={[styles.metaText, styles.metaAuthorText, { color: palette.secondaryText }]} numberOfLines={1}>{author}</Text> : null}
           </View>
         ) : null}
 
@@ -223,12 +237,32 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   openButtonText: { fontSize: 12, fontWeight: '700' },
+  openButtonNoImage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 999,
+    minHeight: 30,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
   heroTextBlock: { gap: 10 },
+  heroTextBlockNoImage: {
+    position: 'relative',
+    paddingTop: 40,
+  },
   title: { fontSize: 20, fontWeight: '700', lineHeight: 26 },
   description: { fontSize: 15, lineHeight: 22 },
-  metaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  metaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 8, flexWrap: 'wrap' },
   metaText: { fontSize: 13, fontWeight: '500' },
+  metaTimeText: { flexShrink: 0 },
+  metaAuthorText: { flex: 1, minWidth: 140 },
   metaDivider: { fontSize: 13, fontWeight: '600' },
+  metaAuthorText: { flexShrink: 1 },
   divider: { marginVertical: 18, borderBottomWidth: 1 },
   metricBlock: { gap: 8 },
   metricTitle: { fontSize: 18, fontWeight: '700', lineHeight: 24 },

@@ -3,9 +3,10 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Info } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatTime } from '../../../shared/formatTime';
 import { getRatingColors, stripHtml, toPercent } from '../lib/articleFormat';
 import { AnalyzedItem } from '../services/newsDeframerClient';
-import { getRelativeTime } from '../lib/getRelativeTime';
+import { logger } from '../services/logger';
 import { AppPalette } from '../theme';
 
 export const ArticleTile = ({
@@ -26,43 +27,52 @@ export const ArticleTile = ({
   const rating = toPercent(item.rating);
   const ratingColors = getRatingColors(rating, palette);
   const ratingReason = item.overall_reason || t('rating.no_reason', 'No reason provided');
-  const timeAgo = item.pubDate ? getRelativeTime(item.pubDate, i18n.language) || t('metadata.just_now', 'a moment ago') : '';
+  const timeAgo = item.pubDate ? formatTime(item.pubDate, i18n.language) : '';
   const author = item.authors?.join(', ');
+  const openArticle = () => {
+    logger.info('ArticleTile open article pressed', { url: item.url, title });
+    onOpenArticle(item);
+  };
+  const showReason = () => {
+    logger.info('ArticleTile reason pressed', { url: item.url, title, hasReason: Boolean(item.overall_reason) });
+    onShowReason(ratingReason);
+  };
 
   return (
-    <Pressable onPress={() => onOpenArticle(item)} style={[styles.tile, { backgroundColor: palette.card, borderColor: palette.border }]}>
+    <View style={[styles.tile, { backgroundColor: palette.card, borderColor: palette.border }]}> 
       <View style={styles.ratingRow}>
-        <View style={[styles.ratingTrack, { backgroundColor: palette.ratingBackground }]}>
-          <View style={[styles.ratingFill, { width: `${rating}%`, backgroundColor: ratingColors.backgroundColor }]} />
-          <Text style={[styles.ratingText, { color: ratingColors.textColor }]}>{rating}%</Text>
-        </View>
+        <Pressable onPress={openArticle} style={styles.ratingTrackWrap}>
+          <View style={[styles.ratingTrack, { backgroundColor: palette.ratingBackground }]}> 
+            <View style={[styles.ratingFill, { width: `${rating}%`, backgroundColor: ratingColors.backgroundColor }]} />
+            <Text style={[styles.ratingText, { color: ratingColors.textColor }]}>{rating}%</Text>
+          </View>
+        </Pressable>
         <Pressable
           accessibilityLabel={t('rating.info_aria_label', 'Show rating reason')}
-          onPress={(event) => {
-            event.stopPropagation();
-            onShowReason(ratingReason);
-          }}
+          onPress={showReason}
           style={[styles.infoButton, { borderColor: palette.border, backgroundColor: palette.buttonBackground }]}
         >
           <Info color={palette.text} size={18} strokeWidth={2.2} />
         </Pressable>
       </View>
 
-      {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : null}
+      <Pressable onPress={openArticle}>
+        {imageUrl ? <Image source={{ uri: imageUrl }} style={styles.image} resizeMode="cover" /> : null}
 
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
-        <Text style={[styles.description, { color: palette.secondaryText }]} numberOfLines={4}>{description}</Text>
-      </View>
-
-      {timeAgo || author ? (
-        <View style={styles.metaRow}>
-          {timeAgo ? <Text style={[styles.metaText, { color: palette.secondaryText }]}>{timeAgo}</Text> : null}
-          {timeAgo && author ? <Text style={[styles.metaSeparator, { color: palette.secondaryText }]}>|</Text> : null}
-          {author ? <Text style={[styles.metaText, { color: palette.secondaryText }]} numberOfLines={1}>{author}</Text> : null}
+        <View style={styles.content}>
+          <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
+          <Text style={[styles.description, { color: palette.secondaryText }]} numberOfLines={4}>{description}</Text>
         </View>
-      ) : null}
-    </Pressable>
+
+        {timeAgo || author ? (
+          <View style={styles.metaRow}>
+            {timeAgo ? <Text style={[styles.metaText, { color: palette.secondaryText }]}>{timeAgo}</Text> : null}
+            {timeAgo && author ? <Text style={[styles.metaSeparator, { color: palette.secondaryText }]}>|</Text> : null}
+            {author ? <Text style={[styles.metaText, styles.metaAuthorText, { color: palette.secondaryText }]} numberOfLines={1}>{author}</Text> : null}
+          </View>
+        ) : null}
+      </Pressable>
+    </View>
   );
 };
 
@@ -79,8 +89,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  ratingTrack: {
+  ratingTrackWrap: {
     flex: 1,
+  },
+  ratingTrack: {
     height: 22,
     borderRadius: 999,
     overflow: 'hidden',
@@ -141,5 +153,8 @@ const styles = StyleSheet.create({
   metaSeparator: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  metaAuthorText: {
+    flexShrink: 1,
   },
 });

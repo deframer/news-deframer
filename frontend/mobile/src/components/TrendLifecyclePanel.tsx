@@ -3,7 +3,9 @@ import { ArrowLeftRight } from 'lucide-react-native';
 import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatShortDate } from '../../../shared/formatTime';
 import { Lifecycle, NewsDeframerClient } from '../services/newsDeframerClient';
+import { AnalyzedItem } from '../services/newsDeframerClient';
 import { logger } from '../services/logger';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
@@ -35,6 +37,7 @@ export const TrendLifecyclePanel = ({
   language,
   daysInPast,
   settings,
+  onOpenArticle,
 }: {
   palette: AppPalette;
   term: string;
@@ -42,11 +45,12 @@ export const TrendLifecyclePanel = ({
   language: string;
   daysInPast: number;
   settings: Settings;
+  onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t, i18n } = useTranslation();
   const [data, setData] = useState<Lifecycle[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedEntryKey, setSelectedEntryKey] = useState<string | null>(null);
   const [compactMode, setCompactMode] = useState(false);
   const [chartWidth, setChartWidth] = useState(320);
 
@@ -89,21 +93,20 @@ export const TrendLifecyclePanel = ({
   }, [client, daysInPast, domain, language, term]);
 
   useEffect(() => {
-    setSelectedDate(null);
+    setSelectedEntryKey(null);
   }, [term, domain]);
 
   useEffect(() => {
-    if (!selectedDate || loading) {
+    if (!selectedEntryKey || loading) {
       return;
     }
 
-    const selectedDay = toIsoDay(selectedDate);
-    const isStillInRange = data.some((entry) => toIsoDay(entry.time_slice) === selectedDay);
+    const isStillInRange = data.some((entry, index) => `${entry.time_slice}-${index}` === selectedEntryKey);
 
     if (!isStillInRange) {
-      setSelectedDate(null);
+      setSelectedEntryKey(null);
     }
-  }, [data, loading, selectedDate]);
+  }, [data, loading, selectedEntryKey]);
 
   const maxFreq = data.length > 0 ? Math.max(...data.map((entry) => entry.frequency)) : 0;
   const barCount = Math.max(data.length, 1);
@@ -113,12 +116,12 @@ export const TrendLifecyclePanel = ({
   const compactBarWidth = Math.max(8, Math.floor((chartWidth - compactGap * Math.max(barCount - 1, 0)) / barCount));
 
   const selectedEntry = useMemo(() => {
-    if (!selectedDate) {
+    if (!selectedEntryKey) {
       return null;
     }
 
-    return data.find((entry) => entry.time_slice === selectedDate) ?? null;
-  }, [data, selectedDate]);
+    return data.find((entry, index) => `${entry.time_slice}-${index}` === selectedEntryKey) ?? null;
+  }, [data, selectedEntryKey]);
 
   if (loading) {
     return (
@@ -159,18 +162,19 @@ export const TrendLifecyclePanel = ({
       {compactMode ? (
         <View style={styles.chartFrame} onLayout={handleChartLayout}>
           <View style={styles.compactRow}>
-            {data.map((item) => {
-              const dateLabel = new Date(item.time_slice).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
+            {data.map((item, index) => {
+              const dateLabel = formatShortDate(item.time_slice, i18n.language);
               const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
               const barHeight = Math.max(8, Math.round((heightPercent / 100) * 180));
               const tone = item.velocity > 0 ? palette.trendUp : item.velocity < 0 ? palette.trendDown : palette.trendSteady;
               const icon = item.velocity > 0 ? '▲' : item.velocity < 0 ? '▼' : '▶';
-              const selected = selectedDate === item.time_slice;
+              const entryKey = `${item.time_slice}-${index}`;
+              const selected = selectedEntryKey === entryKey;
 
               return (
                 <Pressable
-                  key={item.time_slice}
-                  onPress={() => setSelectedDate((current) => (current === item.time_slice ? null : item.time_slice))}
+                  key={entryKey}
+                  onPress={() => setSelectedEntryKey((current) => (current === entryKey ? null : entryKey))}
                   style={[
                     styles.compactBarWrap,
                     { width: compactBarWidth },
@@ -196,20 +200,21 @@ export const TrendLifecyclePanel = ({
           <ScrollView horizontal showsHorizontalScrollIndicator style={styles.chartScroll} contentContainerStyle={{ minWidth: wideChartWidth }}>
             <View style={styles.wideRow}>
               {data.map((item, idx) => {
-                const dateLabel = new Date(item.time_slice).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
+                const dateLabel = formatShortDate(item.time_slice, i18n.language);
                 const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
                 const barHeight = Math.max(8, Math.round((heightPercent / 100) * 180));
                 const tone = item.velocity > 0 ? palette.trendUp : item.velocity < 0 ? palette.trendDown : palette.trendSteady;
                 const icon = item.velocity > 0 ? '▲' : item.velocity < 0 ? '▼' : '▶';
                 const barTextTone = getTextColorForHex(tone);
-                const selected = selectedDate === item.time_slice;
+                const entryKey = `${item.time_slice}-${idx}`;
+                const selected = selectedEntryKey === entryKey;
                 const showLabel = data.length < 15 || idx % Math.ceil(data.length / 10) === 0;
                 const showDate = showLabel && wideBarWidth >= 44;
 
                 return (
                   <Pressable
-                    key={item.time_slice}
-                    onPress={() => setSelectedDate((current) => (current === item.time_slice ? null : item.time_slice))}
+                    key={entryKey}
+                    onPress={() => setSelectedEntryKey((current) => (current === entryKey ? null : entryKey))}
                     style={[styles.wideBarWrap, selected ? [styles.selectedWrap, { borderColor: palette.accent }] : null]}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
@@ -235,7 +240,7 @@ export const TrendLifecyclePanel = ({
         </View>
       )}
 
-      {selectedEntry ? <TrendArticleListPanel palette={palette} term={term} selectedDate={toIsoDay(selectedEntry.time_slice)} /> : null}
+      {selectedEntry ? <TrendArticleListPanel palette={palette} term={term} domain={domain} settings={settings} selectedDate={toIsoDay(selectedEntry.time_slice)} onOpenArticle={onOpenArticle} /> : null}
     </View>
   );
 };
@@ -315,9 +320,10 @@ const styles = StyleSheet.create({
   barBody: {
     width: '100%',
     borderRadius: 4,
-    minHeight: 8,
+    minHeight: 30,
   },
   barBodyContent: {
+    minHeight: 30,
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 4,

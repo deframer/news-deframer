@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { formatShortDate } from '../../../../shared/formatTime';
 import { getSettings } from '../../shared/settings';
 import { AnalyzedArticle, DomainEntry, NewsDeframerClient } from '../client';
 import { RatingBar } from './RatingBar';
@@ -109,9 +110,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
     setCurrentPage(prev => Math.max(1, prev - 1));
   };
 
-  const formatPubDate = (pubDate: string) => {
-    return new Date(pubDate).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
-  };
+  const formatPubDate = (pubDate: string) => formatShortDate(pubDate, i18n.language);
 
   const formatAuthors = (authors?: string[]) => {
     if (!authors || authors.length === 0) return '';

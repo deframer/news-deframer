@@ -2,7 +2,7 @@ import './src/i18n';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Menu } from 'lucide-react-native';
-import { Appearance, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Appearance, BackHandler, NativeModules, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -22,6 +22,14 @@ import { logger } from './src/services/logger';
 
 type Screen = 'dashboard' | 'settings' | 'about' | 'portal' | 'article';
 
+const SUPPORTED_LANGUAGES = ['de', 'en'] as const;
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+const resolveSupportedLanguage = (rawLocale?: string): SupportedLanguage => {
+  const normalized = rawLocale?.toLowerCase().split(/[-_]/)[0];
+  return SUPPORTED_LANGUAGES.includes(normalized as SupportedLanguage) ? (normalized as SupportedLanguage) : 'en';
+};
+
 const getUrlHost = (url?: string): string => {
   if (!url) {
     return '';
@@ -36,7 +44,46 @@ const getUrlHost = (url?: string): string => {
 
 const getResolvedLanguage = (language: string): string => {
   if (language !== 'default') {
-    return language;
+    return resolveSupportedLanguage(language);
+  }
+
+  const nativeLocale = (() => {
+    if (Platform.OS === 'ios') {
+      const settings = NativeModules.SettingsManager?.settings;
+      const locale = settings?.AppleLocale;
+      const languages = settings?.AppleLanguages;
+
+      if (typeof locale === 'string' && locale.length > 0) {
+        return locale;
+      }
+
+      if (Array.isArray(languages) && typeof languages[0] === 'string') {
+        return languages[0];
+      }
+    }
+
+    if (Platform.OS === 'android') {
+      const locales = NativeModules.I18nManager?.localeIdentifier || NativeModules.I18nManager?.locale;
+      if (typeof locales === 'string' && locales.length > 0) {
+        return locales;
+      }
+
+      const platformLocales = NativeModules.PlatformConstants?.locales;
+      if (Array.isArray(platformLocales) && typeof platformLocales[0] === 'string') {
+        return platformLocales[0];
+      }
+    }
+
+    return '';
+  })();
+
+  if (nativeLocale) {
+    return resolveSupportedLanguage(nativeLocale);
+  }
+
+  const intlLocale = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().locale : '';
+  if (intlLocale) {
+    return resolveSupportedLanguage(intlLocale);
   }
 
   if (typeof navigator !== 'undefined') {
@@ -44,8 +91,7 @@ const getResolvedLanguage = (language: string): string => {
       (typeof navigator.language === 'string' && navigator.language) ||
       (Array.isArray(navigator.languages) && typeof navigator.languages[0] === 'string' ? navigator.languages[0] : '') ||
       'en';
-    const detected = rawLanguage.split('-')[0];
-    return ['de', 'en'].includes(detected) ? detected : 'en';
+    return resolveSupportedLanguage(rawLanguage);
   }
 
   return 'en';
@@ -79,6 +125,8 @@ function App() {
   const [domainsLoading, setDomainsLoading] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DomainEntry | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
+  const [portalBackAction, setPortalBackAction] = useState<(() => void) | null>(null);
+  const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
 
   useEffect(() => {
@@ -242,6 +290,18 @@ function App() {
     };
   }, [booting, configured, settings]);
 
+  useEffect(() => {
+    if (booting || screen !== 'settings') {
+      return;
+    }
+
+    handleTestConnection();
+  }, [booting, handleTestConnection, screen]);
+
+  const handlePortalBackActionChange = useCallback((action: (() => void) | null) => {
+    setPortalBackAction(() => action);
+  }, []);
+
   const openScreen = (nextScreen: Screen) => {
     setDrawerOpen(false);
     setScreen(nextScreen);
@@ -249,10 +309,12 @@ function App() {
 
   const handleTestConnection = useCallback(async () => {
     setStatus('loading');
+    setSettingsErrorMessage(null);
 
     const backendUrl = settings.backendUrl.trim();
     if (!backendUrl) {
       setStatus('error');
+      setSettingsErrorMessage(t('mobile.connection_error_missing_url', 'Please enter a server URL before testing the connection.'));
       return;
     }
 
@@ -260,10 +322,12 @@ function App() {
       const parsed = new URL(backendUrl);
       if (!['http:', 'https:'].includes(parsed.protocol)) {
         setStatus('error');
+        setSettingsErrorMessage(t('mobile.connection_error_invalid_url', 'The server URL must start with http:// or https://.'));
         return;
       }
     } catch {
       setStatus('error');
+      setSettingsErrorMessage(t('mobile.connection_error_invalid_url', 'The server URL must start with http:// or https://.'));
       return;
     }
 
@@ -271,11 +335,13 @@ function App() {
       const client = new NewsDeframerClient(settings);
       await withTimeout(client.getDomains(), 5000);
       setStatus('success');
-    } catch {
+      setSettingsErrorMessage(null);
+    } catch (error) {
       logger.error('Test connection failed', { backendUrl: settings.backendUrl });
       setStatus('error');
+      setSettingsErrorMessage(error instanceof Error ? error.message : String(error));
     }
-  }, [settings]);
+  }, [settings, t]);
 
   const renderScreen = () => {
     if (booting) {
@@ -287,7 +353,21 @@ function App() {
     }
 
     if (screen === 'settings') {
-      return <SettingsScreen palette={palette} settings={settings} status={status} onSettingsChange={setSettings} onTestConnection={handleTestConnection} />;
+      return (
+        <SettingsScreen
+          palette={palette}
+          settings={settings}
+          status={status}
+          errorMessage={settingsErrorMessage}
+          onSettingsChange={(nextSettings) => {
+            setSettings(nextSettings);
+            if (settingsErrorMessage) {
+              setSettingsErrorMessage(null);
+            }
+          }}
+          onTestConnection={handleTestConnection}
+        />
+      );
     }
 
     if (screen === 'about') {
@@ -296,20 +376,25 @@ function App() {
 
     if (screen === 'portal' && selectedDomain) {
       return (
-        <PortalScreen
-          palette={palette}
-          domain={selectedDomain}
-          settings={settings}
-          onOpenArticle={(item) => {
-            setSelectedArticle(item);
-            setScreen('article');
-          }}
-        />
+        <View style={styles.screenStack}>
+          <View style={styles.screenLayer}>
+            <PortalScreen
+              palette={palette}
+              domain={selectedDomain}
+              settings={settings}
+              onBackRequestChange={handlePortalBackActionChange}
+              onOpenArticle={(item) => {
+                setSelectedArticle(item);
+              }}
+            />
+          </View>
+          {selectedArticle ? (
+            <View style={styles.screenOverlay}>
+              <ArticleScreen palette={palette} item={selectedArticle} />
+            </View>
+          ) : null}
+        </View>
       );
-    }
-
-    if (screen === 'article' && selectedArticle) {
-      return <ArticleScreen palette={palette} item={selectedArticle} />;
     }
 
     return (
@@ -326,25 +411,50 @@ function App() {
     );
   };
 
-  const showBack = screen === 'settings' || screen === 'about' || screen === 'portal' || screen === 'article';
+  const showBack = screen === 'settings' || screen === 'about' || screen === 'portal' || Boolean(selectedArticle);
   const showMenu = !showBack;
   const headerTitle = screen === 'settings'
     ? t('options.settings_title')
     : screen === 'about'
       ? t('mobile.about_title')
-      : screen === 'portal'
+      : selectedArticle
+        ? getUrlHost(selectedArticle?.url) || t('article.screen_title', 'Article')
+        : screen === 'portal'
         ? selectedDomain?.domain || t('mobile.portal_title')
-        : screen === 'article'
-          ? getUrlHost(selectedArticle?.url) || t('article.screen_title', 'Article')
-          : t('mobile.dashboard_title');
-  const handleBack = () => {
-    if (screen === 'article') {
+        : t('mobile.dashboard_title');
+  const handleBack = useCallback(() => {
+    if (selectedArticle || screen === 'article') {
+      setSelectedArticle(null);
       setScreen('portal');
       return;
     }
 
+    if (screen === 'portal' && portalBackAction) {
+      portalBackAction();
+      return;
+    }
+
     setScreen('dashboard');
-  };
+  }, [portalBackAction, screen, selectedArticle]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !showBack) {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [handleBack, showBack]);
+
+  useEffect(() => {
+    if (screen !== 'portal') {
+      setPortalBackAction(null);
+    }
+  }, [screen]);
 
   return (
     <SafeAreaProvider>
@@ -377,7 +487,6 @@ function App() {
           onClose={() => setDrawerOpen(false)}
           onNavigate={(nextScreen) => openScreen(nextScreen)}
           labels={{
-            dashboard: t('mobile.menu_dashboard'),
             settings: t('mobile.menu_settings'),
             about: t('mobile.menu_about'),
           }}
@@ -406,6 +515,12 @@ const styles = StyleSheet.create({
   appBarTitle: { fontSize: 18, fontWeight: '700' },
   screen: { flex: 1, overflow: 'hidden' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  screenStack: { flex: 1, position: 'relative' },
+  screenLayer: { flex: 1 },
+  screenOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 5,
+  },
 });
 
 export default App;

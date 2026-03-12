@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Animated, FlatList, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Info } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -17,6 +17,7 @@ import { AppPalette } from '../theme';
 type PortalTab = 'articles' | 'trend-mining';
 type TrendSubview = 'cloud' | 'compare' | 'search';
 type TrendRange = '24h' | '7d' | '30d' | '90d' | '365d';
+type DomainOption = { id: string; name: string };
 
 const TIME_RANGES: Array<{ id: TrendRange; label: string; days: number }> = [
   { id: '24h', label: 'trends.time_ranges.last_24h', days: 1 },
@@ -26,15 +27,19 @@ const TIME_RANGES: Array<{ id: TrendRange; label: string; days: number }> = [
   { id: '365d', label: 'trends.time_ranges.last_365d', days: 365 },
 ];
 
+const ArticleSeparator = () => <View style={styles.articleSeparator} />;
+
 export const PortalScreen = ({
   palette,
   domain,
   settings,
+  onBackRequestChange,
   onOpenArticle,
 }: {
   palette: AppPalette;
   domain: DomainEntry;
   settings: Settings;
+  onBackRequestChange: (action: (() => void) | null) => void;
   onOpenArticle: (item: AnalyzedItem) => void;
 }) => {
   const { t } = useTranslation();
@@ -45,11 +50,17 @@ export const PortalScreen = ({
   const [reasonText, setReasonText] = useState<string | null>(null);
   const [trendSubview, setTrendSubview] = useState<TrendSubview>('cloud');
   const [trendRange, setTrendRange] = useState<TrendRange>('7d');
+  const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
+  const [trendSubviewBackAction, setTrendSubviewBackAction] = useState<(() => void) | null>(null);
+  const portalScrollRef = useRef<ScrollView>(null);
+  const scrollOffsetRef = useRef(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.96)).current;
   const useNativeDriver = Platform.OS !== 'web';
 
   const client = useMemo(() => new NewsDeframerClient(settings), [settings]);
+  const domainOptions = useMemo<DomainOption[]>(() => availableDomains.filter((d) => d.domain !== domain.domain && d.language === domain.language).map((d) => ({ id: d.domain, name: d.domain })), [availableDomains, domain.domain, domain.language]);
+  const [compareDomain, setCompareDomain] = useState<string | null>(null);
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
@@ -69,6 +80,40 @@ export const PortalScreen = ({
   useEffect(() => {
     loadItems();
   }, [loadItems]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadDomains = async () => {
+      try {
+        const domains = await client.getDomains();
+        if (!cancelled) {
+          setAvailableDomains(domains);
+        }
+      } catch {
+        if (!cancelled) {
+          setAvailableDomains([]);
+        }
+      }
+    };
+
+    loadDomains();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [client]);
+
+  useEffect(() => {
+    if (domainOptions.length === 0) {
+      setCompareDomain(null);
+      return;
+    }
+
+    if (!compareDomain || !domainOptions.some((option) => option.id === compareDomain)) {
+      setCompareDomain(domainOptions[0].id);
+    }
+  }, [compareDomain, domainOptions]);
 
   useEffect(() => {
     if (!reasonText) {
@@ -120,6 +165,56 @@ export const PortalScreen = ({
     };
   }, [reasonText]);
 
+  const handlePortalScroll = useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollOffsetRef.current = event.nativeEvent.contentOffset.y;
+  }, []);
+
+  const restorePortalScroll = useCallback((offset: number) => {
+    requestAnimationFrame(() => {
+      portalScrollRef.current?.scrollTo({ y: offset, animated: false });
+    });
+  }, []);
+
+  const handleTrendSubviewBackActionChange = useCallback((action: (() => void) | null) => {
+    setTrendSubviewBackAction(() => action);
+  }, []);
+
+  const renderArticleItem = useCallback(
+    ({ item }: { item: AnalyzedItem }) => <ArticleTile item={item} palette={palette} onOpenArticle={onOpenArticle} onShowReason={setReasonText} />,
+    [onOpenArticle, palette],
+  );
+
+  const renderArticleListEmpty = useCallback(() => {
+    if (isLoading) {
+      return <LoadingSpinner palette={palette} label={t('options.loading')} />;
+    }
+
+    if (error) {
+      return (
+        <Card palette={palette}>
+          <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_load_error_title')}</Text>
+          <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{error}</Text>
+          <Pressable onPress={loadItems} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
+            <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('mobile.retry')}</Text>
+          </Pressable>
+        </Card>
+      );
+    }
+
+    return (
+      <Card palette={palette}>
+        <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_empty_title')}</Text>
+        <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{t('mobile.portal_empty_body')}</Text>
+      </Card>
+    );
+  }, [error, isLoading, loadItems, palette, t]);
+
+  useEffect(() => {
+    onBackRequestChange(activeTab === 'trend-mining' ? trendSubviewBackAction : null);
+
+    return () => onBackRequestChange(null);
+  }, [activeTab, onBackRequestChange, trendSubviewBackAction]);
+
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}> 
       <Modal animationType="none" transparent visible={Boolean(reasonText)} onRequestClose={() => setReasonText(null)}>
@@ -142,44 +237,49 @@ export const PortalScreen = ({
         </Animated.View>
       </Modal>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.content, activeTab === 'trend-mining' ? styles.contentWithBottomTabs : null]}
-        scrollEnabled={!reasonText}
-      >
-        <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
-          <SegmentedControl
-            palette={palette}
-            value={activeTab}
-            onChange={(value) => setActiveTab(value as PortalTab)}
-            options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trends'), value: 'trend-mining' }]}
-          />
-        </View>
-
-        {activeTab === 'articles' ? (
-          <View style={styles.stack}>
-            {isLoading ? <LoadingSpinner palette={palette} label={t('options.loading')} /> : null}
-
-            {!isLoading && error ? (
-              <Card palette={palette}>
-                <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_load_error_title')}</Text>
-                <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{error}</Text>
-                <Pressable onPress={loadItems} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
-                  <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('mobile.retry')}</Text>
-                </Pressable>
-              </Card>
-            ) : null}
-
-            {!isLoading && !error && items.length === 0 ? (
-              <Card palette={palette}>
-                <Text style={[styles.stateTitle, { color: palette.text }]}>{t('mobile.portal_empty_title')}</Text>
-                <Text style={[styles.stateBody, { color: palette.secondaryText }]}>{t('mobile.portal_empty_body')}</Text>
-              </Card>
-            ) : null}
-
-            {!isLoading && !error ? items.map((item) => <ArticleTile key={item.url} item={item} palette={palette} onOpenArticle={onOpenArticle} onShowReason={setReasonText} />) : null}
+      {activeTab === 'articles' ? (
+        <FlatList
+          data={!isLoading && !error ? items : []}
+          keyExtractor={(item) => item.url}
+          renderItem={renderArticleItem}
+          ListHeaderComponent={
+            <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
+              <SegmentedControl
+                palette={palette}
+                value={activeTab}
+                onChange={(value) => setActiveTab(value as PortalTab)}
+                options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trends'), value: 'trend-mining' }]}
+              />
+            </View>
+          }
+          ListEmptyComponent={renderArticleListEmpty}
+          contentContainerStyle={styles.articleListContent}
+          style={styles.scrollView}
+          scrollEnabled={!reasonText}
+          ItemSeparatorComponent={ArticleSeparator}
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={5}
+        />
+      ) : (
+        <ScrollView
+          ref={portalScrollRef}
+          style={styles.scrollView}
+          contentContainerStyle={[styles.content, styles.contentWithBottomTabs]}
+          scrollEnabled={!reasonText}
+          onScroll={handlePortalScroll}
+          scrollEventThrottle={16}
+        >
+          <View style={[styles.stickyTabs, { backgroundColor: palette.background }]}> 
+            <SegmentedControl
+              palette={palette}
+              value={activeTab}
+              onChange={(value) => setActiveTab(value as PortalTab)}
+              options={[{ label: t('trends.articles'), value: 'articles' }, { label: t('mobile.trends'), value: 'trend-mining' }]}
+            />
           </View>
-        ) : (
+
           <View style={styles.stack}>
             <View style={styles.timeRow}>
               {TIME_RANGES.map((range) => {
@@ -209,9 +309,26 @@ export const PortalScreen = ({
                 language={domain.language}
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
+                onOpenArticle={onOpenArticle}
+                onBackRequestChange={handleTrendSubviewBackActionChange}
               />
             ) : null}
-            {trendSubview === 'compare' ? <TrendComparePanel palette={palette} /> : null}
+            {trendSubview === 'compare' ? (
+              <TrendComparePanel
+                palette={palette}
+                domain={domain.domain}
+                language={domain.language}
+                daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
+                settings={settings}
+                availableDomains={domainOptions}
+                compareDomain={compareDomain}
+                onSelectDomain={setCompareDomain}
+                getScrollOffset={() => scrollOffsetRef.current}
+                onRestoreScrollOffset={restorePortalScroll}
+                onOpenArticle={onOpenArticle}
+                onBackRequestChange={handleTrendSubviewBackActionChange}
+              />
+            ) : null}
             {trendSubview === 'search' ? (
               <TrendSearchPanel
                 palette={palette}
@@ -219,11 +336,13 @@ export const PortalScreen = ({
                 language={domain.language}
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
+                onOpenArticle={onOpenArticle}
+                onBackRequestChange={handleTrendSubviewBackActionChange}
               />
             ) : null}
           </View>
-        )}
-      </ScrollView>
+        </ScrollView>
+      )}
 
       {activeTab === 'trend-mining' ? (
         <View style={[styles.trendSubviewDock, { backgroundColor: palette.background, borderTopColor: palette.border }]}> 
@@ -248,10 +367,12 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1, overflow: 'scroll' },
   content: { paddingBottom: 24 },
   contentWithBottomTabs: { paddingBottom: 100 },
+  articleListContent: { paddingBottom: 24, paddingHorizontal: 24 },
+  articleSeparator: { height: 16 },
   stickyTabs: {
-    paddingHorizontal: 24,
     paddingBottom: 16,
     paddingTop: 16,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
   },
   spacer: { height: 16 },

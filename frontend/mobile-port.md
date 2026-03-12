@@ -62,15 +62,32 @@
 
 ## 14. Mobile Trend Compare Panel
 
-- replace the dummy `TrendComparePanel` with a full mobile compare implementation wired to `getDomainComparison(domainA, domainB, language, daysInPast)`
-- keep compare behavior aligned with browser semantics: `BLINDSPOT_A`, `BLINDSPOT_B`, and `INTERSECT`, with column B driven by a selectable comparison-domain dropdown
-- remove the current OpenIcon behavior entirely from mobile compare UI, both in the compare header and inside trend rows/lists
-- use a mobile-first navigation pattern for the three compare areas with tabs for `A`, `B`, and `Shared` instead of trying to render three desktop columns side by side
-- keep the compare-domain picker visible at the top of the panel so the B-side domain can be changed quickly without leaving the current compare view
-- show rank in each trend row (`#1`, `#2`, ...) and keep the score visible in a compact mobile row layout
-- replace desktop-style domain pills with a simpler mobile metadata pattern that stays readable on small screens
-- allow tapping a trend to toggle its matching `TrendArticleListPanel` directly below the active `A`, `B`, or `Shared` list
-- for shared trends, support selecting the domain context explicitly before opening articles so the user can choose whether to inspect A-side or B-side coverage
-- clear stale selection safely when the time range, current domain, or compare domain changes and the previously selected trend is no longer valid
-- include loading, error, and empty states consistent with the other mobile trend panels
-- add tests for classification mapping, compare-domain switching, selection toggle behavior, shared-trend domain selection, and article-list placement below the active mobile compare list
+- [done] replace the dummy `TrendComparePanel` with a compare panel wired to `getDomainComparison(domainA, domainB, language, daysInPast)`
+- [done] keep the `Compare with` dropdown at the top, using the same compare-domain filtering/naming as the browser version
+- [done] split compare results into 3 readable sections: current domain, selected compare domain, and `Shared Trends`
+- [done] show only the topic plus article-open buttons in each row; do not show badges, scores, or `A` / `B`
+- [done] use the default color for the current-domain action button and a fixed compare color for the selected-domain action button
+- [done] use the section headers and action buttons as the main visual indicator so the compare UI stays compact on phone screens
+
+## 15. Compare Panel UX Article List
+
+- [done] keep `mobile/src/screens/ArticleScreen.tsx` untouched and handle compare article UX inside the compare panel only
+- [done] tap a row in section A/B or a domain indicator in `Shared Trends` to select `{ term, domain }`, hide the compare list and `Compare with` dropdown, show a selected-term pill, and render the article list below it
+- [done] tapping the selected trend pill closes the article list and restores the compare list plus the `Compare with` dropdown
+- [done] keep or restore the compare-list scroll position when the compare list is shown again, and clear stale selection when current domain, compare domain, time range, or compare data changes invalidate it
+
+## 16. Mobile Back Button / System Back Handling
+
+- [done] on every mobile screen that shows a visible back button in the header, make Android hardware back do the same thing
+- [done] keep the existing iOS header-back behavior aligned with that same screen-level behavior
+- [done] do not add extra nested back-state handling beyond what the current header back already does
+- [done] use built-in React Native back handling only where needed for Android hardware back
+- [done] keep the implementation minimal and screen-based, not a global back-state system
+
+## 17. Mobile Trend Article List Panel
+
+- [done] replace the placeholder `TrendArticleListPanel.tsx` with a real mobile article list oriented on `browser-extension/src/ndf/components/ArticleList.tsx`, shared across `TrendDetailsPanel`, `TrendLifecyclePanel`, and `TrendComparePanel`
+- [done] fetch articles with browser-aligned `getArticlesByTrend(root, term, date, days, offset, limit)` rules, including loading, empty, and error states
+- [done] render compact mobile rows with rating, date, author, and article, allowing multiline article titles without a desktop-style table layout
+- [done] support per-context headers and date behavior: no header in `TrendDetailsPanel`, `Article / <the date>` in `TrendLifecyclePanel` fixed-date mode, and `Article` with visible date in `TrendComparePanel`
+- [done] use a mobile `Load more` pattern with backend `offset/limit` batching and an end-of-list info box about deframed titles

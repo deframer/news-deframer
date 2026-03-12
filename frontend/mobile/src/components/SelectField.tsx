@@ -77,8 +77,6 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: SECTION_HEADER_GAP,
     fontSize: 14,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
     fontWeight: '700',
   },
   trigger: {

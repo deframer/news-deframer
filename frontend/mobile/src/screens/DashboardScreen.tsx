@@ -38,7 +38,7 @@ export const DashboardScreen = ({
               style={[styles.domainRow, index > 0 ? [styles.domainRowDivider, { borderTopColor: palette.border }] : null]}
             >
               <Text style={[styles.domainName, { color: palette.text }]}>{domain.domain}</Text>
-              <Text style={[styles.domainMeta, { color: palette.secondaryText }]}>{domain.language.toUpperCase()}</Text>
+              <Text style={[styles.domainMeta, { color: palette.secondaryText }]}>{domain.language}</Text>
             </Pressable>
           ))
         )}

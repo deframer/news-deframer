@@ -1,4 +1,4 @@
 {
-  "js/ts.tsdk.path": "mobile/node_modules/typescript/lib",
-  "js/ts.tsdk.promptToUseWorkspaceVersion": true
+  "typescript.tsdk": "mobile/node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }

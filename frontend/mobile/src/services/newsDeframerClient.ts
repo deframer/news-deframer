@@ -124,7 +124,8 @@ export class NewsDeframerClient {
       response = await fetch(requestUrl, { headers });
     } catch (error) {
       logger.error('API network error', { endpoint, url: requestUrl, error: String(error) });
-      throw error;
+      const rawMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`GET ${requestUrl} failed: ${rawMessage}`);
     }
     if (response.status === 404) {
       logger.warn('API returned 404', { endpoint, url: requestUrl });

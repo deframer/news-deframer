@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import { buildWordCloudWords, getWordCloudColor, layoutWordCloud, MeasureWordOptions } from '../../../shared/wordcloud';
 
 import { TrendMetric, NewsDeframerClient } from '../services/newsDeframerClient';
+import { AnalyzedItem } from '../services/newsDeframerClient';
 import { logger } from '../services/logger';
 import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
@@ -57,12 +58,16 @@ export const TrendTagCloudPanel = ({
   language,
   daysInPast,
   settings,
+  onOpenArticle,
+  onBackRequestChange,
 }: {
   palette: AppPalette;
   domain: string;
   language: string;
   daysInPast: number;
   settings: Settings;
+  onOpenArticle: (item: AnalyzedItem) => void;
+  onBackRequestChange: (action: (() => void) | null) => void;
 }) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<TrendMetric[]>([]);
@@ -192,12 +197,18 @@ export const TrendTagCloudPanel = ({
     });
   };
 
-  const handleShowCloudAgain = () => {
+  const handleShowCloudAgain = useCallback(() => {
     logger.info('TrendTagCloud reopen requested; clearing selection');
     setSelectedTerm(null);
     setActiveDetailTab('lifecycle');
     setIsCloudCollapsed(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    onBackRequestChange(selectedTerm && isCloudCollapsed ? handleShowCloudAgain : null);
+
+    return () => onBackRequestChange(null);
+  }, [handleShowCloudAgain, isCloudCollapsed, onBackRequestChange, selectedTerm]);
 
   return (
     <View style={styles.stack}>
@@ -279,6 +290,7 @@ export const TrendTagCloudPanel = ({
           settings={settings}
           activeTab={activeDetailTab}
           setActiveTab={setActiveDetailTab}
+          onOpenArticle={onOpenArticle}
         />
       ) : null}
     </View>
@@ -306,12 +318,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 8,
     minHeight: 44,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },
   collapsedTermText: {
     fontSize: 20,
     lineHeight: 26,
+    textAlign: 'center',
   },
   termHitBox: { alignItems: 'flex-start', justifyContent: 'flex-start', padding: 0, margin: 0 },
   termAbsolute: {
