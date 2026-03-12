@@ -68,7 +68,7 @@ export const ArticleTile = ({
           <View style={styles.metaRow}>
             {timeAgo ? <Text style={[styles.metaText, { color: palette.secondaryText }]}>{timeAgo}</Text> : null}
             {timeAgo && author ? <Text style={[styles.metaSeparator, { color: palette.secondaryText }]}>|</Text> : null}
-            {author ? <Text style={[styles.metaText, { color: palette.secondaryText }]} numberOfLines={1}>{author}</Text> : null}
+            {author ? <Text style={[styles.metaText, styles.metaAuthorText, { color: palette.secondaryText }]} numberOfLines={1}>{author}</Text> : null}
           </View>
         ) : null}
       </Pressable>
@@ -153,5 +153,8 @@ const styles = StyleSheet.create({
   metaSeparator: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  metaAuthorText: {
+    flexShrink: 1,
   },
 });

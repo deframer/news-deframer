@@ -36,7 +36,7 @@ export const MetaData = ({ pubDate, author, category }: MetaDataProps) => {
         {showSeparator && <span className="meta-separator">|</span>}
 
         {author && (
-          <div className="meta-item">
+          <div className="meta-author">
             <span>{author}</span>
           </div>
         )}

@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
   metaTimeText: { flexShrink: 0 },
   metaAuthorText: { flex: 1, minWidth: 140 },
   metaDivider: { fontSize: 13, fontWeight: '600' },
+  metaAuthorText: { flexShrink: 1 },
   divider: { marginVertical: 18, borderBottomWidth: 1 },
   metricBlock: { gap: 8 },
   metricTitle: { fontSize: 18, fontWeight: '700', lineHeight: 24 },

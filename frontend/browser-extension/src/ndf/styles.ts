@@ -907,7 +907,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .meta-data {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   font-size: 0.85em;
   color: var(--secondary-text);
@@ -920,6 +920,15 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   align-items: center;
   gap: 4px;
   white-space: nowrap;
+  flex-shrink: 0;
+}
+.meta-author {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .meta-separator {
   color: var(--secondary-text);
