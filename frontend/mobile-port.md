@@ -60,33 +60,11 @@
 - [done] implement mobile `TrendSearch` layout aligned with browser behavior and current mobile Trends spacing: search input + search icon button in the top row
 - [done] reuse the same lower details stack as Tag Cloud by rendering `TrendDetailsPanel` (`Lifecycle`, `Context`, `Articles`) for the searched term below the search row, with shared time-range/domain/language/settings wiring
 
-## 14. Mobile Trend Compare Panel "Old Version"
+## 14. Mobile Trend Compare Panel
 
-- replace the dummy `TrendComparePanel` with a full mobile compare implementation wired to `getDomainComparison(domainA, domainB, language, daysInPast)`
-- keep compare behavior aligned with browser semantics: `BLINDSPOT_A`, `BLINDSPOT_B`, and `INTERSECT`, with column B driven by a selectable comparison-domain dropdown
-- remove the current OpenIcon behavior entirely from mobile compare UI, both in the compare header and inside trend rows/lists
-- use a mobile-first navigation pattern for the three compare areas with tabs for `A`, `B`, and `Shared` instead of trying to render three desktop columns side by side
-- keep the compare-domain picker visible at the top of the panel so the B-side domain can be changed quickly without leaving the current compare view
-- show rank in each trend row (`#1`, `#2`, ...) and keep the score visible in a compact mobile row layout
-- replace desktop-style domain pills with a simpler mobile metadata pattern that stays readable on small screens
-- allow tapping a trend to toggle its matching `TrendArticleListPanel` directly below the active `A`, `B`, or `Shared` list
-- for shared trends, support selecting the domain context explicitly before opening articles so the user can choose whether to inspect A-side or B-side coverage
-- clear stale selection safely when the time range, current domain, or compare domain changes and the previously selected trend is no longer valid
-- include loading, error, and empty states consistent with the other mobile trend panels
-- add tests for classification mapping, compare-domain switching, selection toggle behavior, shared-trend domain selection, and article-list placement below the active mobile compare list
-
-Probably we need a better concept for this similar to the tag cloud.
-
-## 15. Mobile Trend Compare Panel
-
-- keep the `Compare to` dropdown at the top
-- use one feed below it, not 3 columns or extra tabs
-- each row shows only the topic plus article-open buttons
-- do not show badges, scores, or `A` / `B`
-- use the current blue color for the current domain
-- use a second fixed color for the selected compare domain
-- use these two colors on the row buttons/icons
-- one blue button means the topic is only on the current domain
-- one compare-color button means the topic is only on the selected compare domain
-- two buttons mean the topic exists on both domains
-- keep the compare UI clean and compact for phone screens
+- [done] replace the dummy `TrendComparePanel` with a compare panel wired to `getDomainComparison(domainA, domainB, language, daysInPast)`
+- [done] keep the `Compare to` dropdown at the top, using the same compare-domain filtering/naming as the browser version
+- [done] split compare results into 3 readable sections: current domain, selected compare domain, and `Shared Trends`
+- [done] show only the topic plus article-open buttons in each row; do not show badges, scores, or `A` / `B`
+- [done] use the default color for the current-domain action button and a fixed compare color for the selected-domain action button
+- [done] use the section headers and action buttons as the main visual indicator so the compare UI stays compact on phone screens

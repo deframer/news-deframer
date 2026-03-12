@@ -252,6 +252,10 @@ export const PortalScreen = ({
             {trendSubview === 'compare' ? (
               <TrendComparePanel
                 palette={palette}
+                domain={domain.domain}
+                language={domain.language}
+                daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
+                settings={settings}
                 availableDomains={domainOptions}
                 compareDomain={compareDomain}
                 onSelectDomain={setCompareDomain}
