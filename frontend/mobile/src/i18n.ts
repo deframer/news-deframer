@@ -48,7 +48,7 @@ const resources = {
         overall_rating: 'Overall rating',
       },
       metadata: { just_now: 'a moment ago' },
-      rating: { no_reason: 'No reason provided', reason_title: 'Rating reason', info_aria_label: 'Show rating reason' },
+      rating: { no_reason: 'No reason provided', reason_title: 'Reason', info_aria_label: 'Show rating reason' },
       footer: { github_link: 'News Deframer on GitHub' },
       options: {
         settings_title: 'Settings', language_label: 'Language', theme_label: 'Theme', theme_light: 'Light', theme_dark: 'Dark', theme_system: 'System', default: 'Default', loading: 'Loading...', status_connected: 'Connected', status_error: 'Error', status_loading: 'Loading...', section_connection: 'Connection', label_server_url: 'Server URL', label_username: 'Username', label_password: 'Password', label_optional: '(Optional)', btn_test_connection: 'Test Connection', btn_testing: 'Testing...',
@@ -86,7 +86,7 @@ const resources = {
         overall_rating: 'Gesamtbewertung',
       },
       metadata: { just_now: 'gerade eben' },
-      rating: { no_reason: 'Keine Begründung vorhanden', reason_title: 'Bewertung Begründung', info_aria_label: 'Bewertungsbegründung anzeigen' },
+      rating: { no_reason: 'Keine Begründung vorhanden', reason_title: 'Begründung', info_aria_label: 'Bewertungsbegründung anzeigen' },
       footer: { github_link: 'News Deframer auf GitHub' },
       options: {
         settings_title: 'Einstellungen', language_label: 'Sprache', theme_label: 'Design', theme_light: 'Hell', theme_dark: 'Dunkel', theme_system: 'System', default: 'Standard', loading: 'Laden...', status_connected: 'Verbunden', status_error: 'Fehler', status_loading: 'Laden...', section_connection: 'Verbindung', label_server_url: 'Server-URL', label_username: 'Benutzername', label_password: 'Passwort', label_optional: '(Optional)', btn_test_connection: 'Verbindung testen', btn_testing: 'Teste...',

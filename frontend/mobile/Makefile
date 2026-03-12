@@ -123,7 +123,7 @@ android-apk-clean:
 	cd android && ./gradlew clean
 
 android-apk-release:
-	cd android && ./gradlew assembleRelease --rerun-tasks
+	cd android && ./gradlew app:createBundleReleaseJsAndAssets --rerun-tasks && ./gradlew assembleRelease
 
 android-bundle-release:
 	cd android && ./gradlew bundleRelease

@@ -2,7 +2,7 @@ import './src/i18n';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Menu } from 'lucide-react-native';
-import { Appearance, NativeModules, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { Appearance, BackHandler, NativeModules, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
@@ -408,14 +408,27 @@ function App() {
         : screen === 'article'
           ? getUrlHost(selectedArticle?.url) || t('article.screen_title', 'Article')
           : t('mobile.dashboard_title');
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (screen === 'article') {
       setScreen('portal');
       return;
     }
 
     setScreen('dashboard');
-  };
+  }, [screen]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !showBack) {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [handleBack, showBack]);
 
   return (
     <SafeAreaProvider>
@@ -448,7 +461,6 @@ function App() {
           onClose={() => setDrawerOpen(false)}
           onNavigate={(nextScreen) => openScreen(nextScreen)}
           labels={{
-            dashboard: t('mobile.menu_dashboard'),
             settings: t('mobile.menu_settings'),
             about: t('mobile.menu_about'),
           }}

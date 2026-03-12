@@ -14,10 +14,9 @@ export const MenuDrawer = ({
   palette: AppPalette;
   onClose: () => void;
   onNavigate: (screen: 'dashboard' | 'settings' | 'about') => void;
-  labels: { dashboard: string; settings: string; about: string };
+  labels: { settings: string; about: string };
 }) => {
-  const items: Array<{ screen: 'dashboard' | 'settings' | 'about'; label: string }> = [
-    { screen: 'dashboard', label: labels.dashboard },
+  const items: Array<{ screen: 'settings' | 'about'; label: string }> = [
     { screen: 'settings', label: labels.settings },
     { screen: 'about', label: labels.about },
   ];

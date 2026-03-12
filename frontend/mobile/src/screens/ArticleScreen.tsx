@@ -138,7 +138,21 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
               </Pressable>
             </View>
           ) : null}
-          <View style={styles.heroTextBlock}>
+          <View style={[styles.heroTextBlock, !imageUrl ? styles.heroTextBlockNoImage : null]}>
+            {!imageUrl ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t('article.btn_open_article', 'Open article')}
+                onPress={(event) => {
+                  event?.stopPropagation?.();
+                  openOriginal();
+                }}
+                style={[styles.openButtonNoImage, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}
+              >
+                <ExternalLink color={palette.buttonText} size={14} strokeWidth={2.2} />
+                <Text style={[styles.openButtonText, { color: palette.buttonText }]}>{t('article.btn_open_article', 'Open article')}</Text>
+              </Pressable>
+            ) : null}
             <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
             <Text style={[styles.description, { color: palette.secondaryText }]}>{description}</Text>
           </View>
@@ -223,7 +237,24 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   openButtonText: { fontSize: 12, fontWeight: '700' },
+  openButtonNoImage: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    borderWidth: 1,
+    borderRadius: 999,
+    minHeight: 30,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
   heroTextBlock: { gap: 10 },
+  heroTextBlockNoImage: {
+    position: 'relative',
+    paddingTop: 40,
+  },
   title: { fontSize: 20, fontWeight: '700', lineHeight: 26 },
   description: { fontSize: 15, lineHeight: 22 },
   metaRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },

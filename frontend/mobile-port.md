@@ -78,15 +78,8 @@
 
 ## 16. Mobile Back Button / System Back Handling
 
-- make back close the current mobile UI state before leaving the screen
-- support Android hardware back for overlays, selected trend/detail states, and compare article-list state
-- keep iOS back behavior aligned with the existing header/back flow
-- handle keyboard-open back behavior correctly on Android
-- verify the behavior with accessibility enabled
-- add one shared back-priority helper if needed
-- use React Native built-in back handling, not an extra library, for the current app structure
-- follow one shared back-priority flow instead of ad hoc per-component back logic
-- close temporary UI state first, then leave the screen
-- keep the same back-priority order for Android hardware back and iOS header/swipe back
-- let keyboard dismissal happen before screen exit where the platform expects it
-- make temporary UI states register and unregister their back handlers cleanly
+- [done] on every mobile screen that shows a visible back button in the header, make Android hardware back do the same thing
+- [done] keep the existing iOS header-back behavior aligned with that same screen-level behavior
+- [done] do not add extra nested back-state handling beyond what the current header back already does
+- [done] use built-in React Native back handling only where needed for Android hardware back
+- [done] keep the implementation minimal and screen-based, not a global back-state system
