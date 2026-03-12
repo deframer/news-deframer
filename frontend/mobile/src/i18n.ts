@@ -84,10 +84,7 @@ const resources = {
         "speculative": "Speculative",
         "overall_rating": "Overall rating"
       },
-      "metadata": {
-        "just_now": "a moment ago"
-      },
-      "rating": {
+            "rating": {
         "no_reason": "No reason provided",
         "reason_title": "Reason",
         "info_aria_label": "Show rating reason"
@@ -224,9 +221,6 @@ const resources = {
         "hyper_stimulus": "Reizüberflutung",
         "speculative": "Spekulativ",
         "overall_rating": "Gesamtbewertung"
-      },
-      "metadata": {
-        "just_now": "gerade eben"
       },
       "rating": {
         "no_reason": "Keine Begründung vorhanden",

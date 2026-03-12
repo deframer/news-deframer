@@ -3,9 +3,9 @@ import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { ExternalLink } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatTime } from '../../../shared/formatTime';
 import { Card } from '../components/Card';
 import { getRatingColors, stripHtml, toPercent } from '../lib/articleFormat';
-import { getRelativeTime } from '../lib/getRelativeTime';
 import { AnalyzedItem } from '../services/newsDeframerClient';
 import { AppPalette } from '../theme';
 
@@ -50,7 +50,7 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
   const description = item.description_corrected || stripHtml(item.description_original) || t('article.no_description', 'No Description');
   const imageUrl = item.media?.medium === 'image' ? item.media.url : undefined;
   const author = item.authors?.join(', ');
-  const timeAgo = item.pubDate ? getRelativeTime(item.pubDate, i18n.language) || t('metadata.just_now') : '';
+  const timeAgo = item.pubDate ? formatTime(item.pubDate, i18n.language) : '';
 
   const metrics = useMemo(
     () => [

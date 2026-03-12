@@ -3,6 +3,7 @@ import { ArrowLeftRight } from 'lucide-react-native';
 import { LayoutChangeEvent, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatShortDate } from '../../../shared/formatTime';
 import { Lifecycle, NewsDeframerClient } from '../services/newsDeframerClient';
 import { AnalyzedItem } from '../services/newsDeframerClient';
 import { logger } from '../services/logger';
@@ -162,7 +163,7 @@ export const TrendLifecyclePanel = ({
         <View style={styles.chartFrame} onLayout={handleChartLayout}>
           <View style={styles.compactRow}>
             {data.map((item, index) => {
-              const dateLabel = new Date(item.time_slice).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
+              const dateLabel = formatShortDate(item.time_slice, i18n.language);
               const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
               const barHeight = Math.max(8, Math.round((heightPercent / 100) * 180));
               const tone = item.velocity > 0 ? palette.trendUp : item.velocity < 0 ? palette.trendDown : palette.trendSteady;
@@ -199,7 +200,7 @@ export const TrendLifecyclePanel = ({
           <ScrollView horizontal showsHorizontalScrollIndicator style={styles.chartScroll} contentContainerStyle={{ minWidth: wideChartWidth }}>
             <View style={styles.wideRow}>
               {data.map((item, idx) => {
-                const dateLabel = new Date(item.time_slice).toLocaleDateString(i18n.language, { month: 'short', day: 'numeric' });
+                const dateLabel = formatShortDate(item.time_slice, i18n.language);
                 const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
                 const barHeight = Math.max(8, Math.round((heightPercent / 100) * 180));
                 const tone = item.velocity > 0 ? palette.trendUp : item.velocity < 0 ? palette.trendDown : palette.trendSteady;
@@ -319,9 +320,10 @@ const styles = StyleSheet.create({
   barBody: {
     width: '100%',
     borderRadius: 4,
-    minHeight: 8,
+    minHeight: 30,
   },
   barBodyContent: {
+    minHeight: 30,
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 4,

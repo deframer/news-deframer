@@ -3,6 +3,7 @@ import { ChevronDown } from 'lucide-react-native';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatShortDate } from '../../../shared/formatTime';
 import { getRatingColors, stripHtml, toPercent } from '../lib/articleFormat';
 import { LoadingSpinner } from './LoadingSpinner';
 import { AnalyzedArticle, AnalyzedItem, NewsDeframerClient } from '../services/newsDeframerClient';
@@ -11,24 +12,6 @@ import { Settings } from '../services/settingsService';
 import { AppPalette } from '../theme';
 
 const ARTICLES_PER_BATCH = 10;
-
-const formatFixedDate = (value: string, locale: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-};
-
-const formatArticleDate = (value: string, locale: string) => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
-};
 
 export const TrendArticleListPanel = ({
   palette,
@@ -67,7 +50,7 @@ export const TrendArticleListPanel = ({
     }
 
     if (selectedDate) {
-      return `${t('trends.article_caption', 'Article')} / ${formatFixedDate(selectedDate, i18n.language)}`;
+      return `${t('trends.article_caption', 'Article')} / ${formatShortDate(selectedDate, i18n.language)}`;
     }
 
     return t('trends.article_caption', 'Article');
@@ -205,7 +188,7 @@ export const TrendArticleListPanel = ({
                       <Text style={[styles.ratingText, { color: ratingColors.textColor }]}>{rating}%</Text>
                     </View>
                     {!isFixedDateMode ? (
-                      article.pub_date ? <Text style={[styles.metaText, styles.dateText, { color: palette.secondaryText }]}>{formatArticleDate(article.pub_date, i18n.language)}</Text> : <View style={styles.dateSpacer} />
+                      article.pub_date ? <Text style={[styles.metaText, styles.dateText, { color: palette.secondaryText }]}>{formatShortDate(article.pub_date, i18n.language)}</Text> : <View style={styles.dateSpacer} />
                     ) : null}
                     {authors ? <Text style={[styles.metaText, styles.authorTextInline, { color: palette.secondaryText }]} numberOfLines={1}>{authors}</Text> : null}
                   </View>

@@ -3,9 +3,9 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Info } from 'lucide-react-native';
 import { useTranslation } from 'react-i18next';
 
+import { formatTime } from '../../../shared/formatTime';
 import { getRatingColors, stripHtml, toPercent } from '../lib/articleFormat';
 import { AnalyzedItem } from '../services/newsDeframerClient';
-import { getRelativeTime } from '../lib/getRelativeTime';
 import { logger } from '../services/logger';
 import { AppPalette } from '../theme';
 
@@ -27,7 +27,7 @@ export const ArticleTile = ({
   const rating = toPercent(item.rating);
   const ratingColors = getRatingColors(rating, palette);
   const ratingReason = item.overall_reason || t('rating.no_reason', 'No reason provided');
-  const timeAgo = item.pubDate ? getRelativeTime(item.pubDate, i18n.language) || t('metadata.just_now', 'a moment ago') : '';
+  const timeAgo = item.pubDate ? formatTime(item.pubDate, i18n.language) : '';
   const author = item.authors?.join(', ');
   const openArticle = () => {
     logger.info('ArticleTile open article pressed', { url: item.url, title });
