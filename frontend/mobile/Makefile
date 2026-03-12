@@ -81,7 +81,7 @@ lint-fix:
 fix: lint-fix
 
 android-apk:
-	cd android && ./gradlew assembleDebug
+	cd android && ./gradlew assembleDebug --rerun-tasks
 
 android-apk-install: android-apk
 	@if [ -n "$(ADB_DEVICE)" ]; then adb -s "$(ADB_DEVICE)" install -r "$(DEBUG_APK)"; \
@@ -123,7 +123,7 @@ android-apk-clean:
 	cd android && ./gradlew clean
 
 android-apk-release:
-	cd android && ./gradlew assembleRelease
+	cd android && ./gradlew assembleRelease --rerun-tasks
 
 android-bundle-release:
 	cd android && ./gradlew bundleRelease
