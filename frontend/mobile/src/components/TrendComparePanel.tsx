@@ -316,8 +316,6 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 8,
     fontSize: 14,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
     fontWeight: '700',
   },
   dropdown: {

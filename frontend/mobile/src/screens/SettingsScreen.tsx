@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: { fontSize: 16, fontWeight: '700' },
   errorBody: { fontSize: 15, lineHeight: 22 },
-  sectionTitle: { fontSize: 14, letterSpacing: 1, textTransform: 'uppercase', fontWeight: '700' },
+  sectionTitle: { fontSize: 14, fontWeight: '700' },
   sectionGap: { marginBottom: SECTION_HEADER_GAP },
   actionButton: { borderWidth: 1, borderRadius: 8, minHeight: 54, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   actionButtonText: { fontSize: 18, fontWeight: '600' },

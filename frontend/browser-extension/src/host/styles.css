@@ -10,7 +10,7 @@ body { margin: 0; overflow-y: auto; overflow-x: hidden; }
 .compact-header { align-items: flex-start; justify-content: space-between; flex-direction: row; }
 .popup-container .header { align-items: flex-start; justify-content: space-between; flex-direction: row; }
 .header h1, .header h2 { margin: 0; }
-.eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--secondary-text); }
+.eyebrow { margin: 0 0 6px; font-size: 12px; color: var(--secondary-text); }
 .settings-actions { display: flex; justify-content: flex-end; margin-top: 16px; }
 .status-badge { display: flex; align-items: center; font-size: 12px; font-weight: 600; background-color: var(--bg-color); padding: 4px 8px; border-radius: 12px; border: 1px solid var(--border-color); color: var(--secondary-text); white-space: nowrap; }
 .status-badge.connected { color: var(--success-color); border-color: var(--success-color); box-shadow: 0 0 8px var(--success-color); }
@@ -20,7 +20,7 @@ body { margin: 0; overflow-y: auto; overflow-x: hidden; }
 .content-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; align-items: start; }
 .settings-column { display: flex; flex-direction: column; gap: 16px; }
 .card { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: var(--card-shadow); }
-.section-title { margin-top: 0; margin-bottom: 16px; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--secondary-text); }
+.section-title { margin-top: 0; margin-bottom: 16px; font-size: 14px; font-weight: 700; color: var(--secondary-text); }
 .form-group { margin-bottom: 16px; }
 .form-group-last { margin-bottom: 20px; }
 .input-label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; }
