@@ -8,12 +8,6 @@ export const colorTokens = {
 export const colorValues = {
   white: '#ffffff',
   black: '#000000',
-  spinner: {
-    outerRing: '#FFFFFF',
-    innerRing: '#1F2937',
-    slices: ['#4B5563', '#6B7280', '#9CA3AF', '#D1D5DB', '#9CA3AF', '#6B7280', '#4B5563', '#374151'],
-    hub: '#ffffff',
-  },
 } as const;
 
 export const effectValues = {
