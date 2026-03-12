@@ -183,7 +183,7 @@ jobs:
       run:
         working-directory: frontend/mobile
     env:
-      MOBILE_VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || format('0.0.1-dev-{0}', github.run_number) }}
+      MOBILE_VERSION_NAME: ${{ startsWith(github.ref, 'refs/tags/v') && replace(github.ref_name, 'v', '') || format('0.0.1-dev-{0}', github.run_number) }}
     steps:
       - uses: actions/checkout@v6
 
@@ -232,7 +232,8 @@ jobs:
         shell: bash
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
-            ARTIFACT_NAME="news-deframer-android-${MOBILE_VERSION_NAME}.apk"
+            VERSION="${GITHUB_REF#refs/tags/v}"
+            ARTIFACT_NAME="news-deframer-android-${VERSION}.apk"
           else
             ARTIFACT_NAME="news-deframer-android-release-${GITHUB_SHA::7}.apk"
           fi
