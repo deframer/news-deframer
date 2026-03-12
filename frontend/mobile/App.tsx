@@ -22,6 +22,14 @@ import { logger } from './src/services/logger';
 
 type Screen = 'dashboard' | 'settings' | 'about' | 'portal' | 'article';
 
+const SUPPORTED_LANGUAGES = ['de', 'en'] as const;
+type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number];
+
+const resolveSupportedLanguage = (rawLocale?: string): SupportedLanguage => {
+  const normalized = rawLocale?.toLowerCase().split(/[-_]/)[0];
+  return SUPPORTED_LANGUAGES.includes(normalized as SupportedLanguage) ? (normalized as SupportedLanguage) : 'en';
+};
+
 const getUrlHost = (url?: string): string => {
   if (!url) {
     return '';
@@ -36,8 +44,7 @@ const getUrlHost = (url?: string): string => {
 
 const getResolvedLanguage = (language: string): string => {
   if (language !== 'default') {
-    const normalized = language.toLowerCase().split(/[-_]/)[0];
-    return ['de', 'en'].includes(normalized) ? normalized : 'en';
+    return resolveSupportedLanguage(language);
   }
 
   const nativeLocale = (() => {
@@ -71,14 +78,12 @@ const getResolvedLanguage = (language: string): string => {
   })();
 
   if (nativeLocale) {
-    const detected = nativeLocale.toLowerCase().split(/[-_]/)[0];
-    return ['de', 'en'].includes(detected) ? detected : 'en';
+    return resolveSupportedLanguage(nativeLocale);
   }
 
   const intlLocale = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().locale : '';
   if (intlLocale) {
-    const detected = intlLocale.toLowerCase().split(/[-_]/)[0];
-    return ['de', 'en'].includes(detected) ? detected : 'en';
+    return resolveSupportedLanguage(intlLocale);
   }
 
   if (typeof navigator !== 'undefined') {
@@ -86,8 +91,7 @@ const getResolvedLanguage = (language: string): string => {
       (typeof navigator.language === 'string' && navigator.language) ||
       (Array.isArray(navigator.languages) && typeof navigator.languages[0] === 'string' ? navigator.languages[0] : '') ||
       'en';
-    const detected = rawLanguage.split('-')[0];
-    return ['de', 'en'].includes(detected) ? detected : 'en';
+    return resolveSupportedLanguage(rawLanguage);
   }
 
   return 'en';

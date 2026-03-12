@@ -8,7 +8,6 @@
     "ios:sim": "react-native run-ios",
     "ios:sim:list": "react-native run-ios --list-devices",
     "lint": "eslint .",
-    "postinstall": "node scripts/sync-react-native-renderer-version.js",
     "start": "react-native start",
     "test": "jest",
     "web": "webpack serve --config webpack.web.js",
