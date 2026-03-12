@@ -1,7 +1,42 @@
-.PHONY: install pods start android ios web android-apk android-apk-install android-apk-release android-bundle-release android-remote android-remote-pair android-remote-usb-bootstrap android-metro-reverse ios-build clean test lint check lint-fix fix
+.PHONY: install pods start android ios ios-preflight ios-sim ios-sim-list web android-apk android-apk-install android-apk-release android-bundle-release android-remote android-remote-pair android-remote-usb-bootstrap android-metro-reverse ios-build ios-sim-build clean test lint check lint-fix fix
 
 ADB_PORT ?= 5555
 DEBUG_APK := android/app/build/outputs/apk/debug/app-debug.apk
+SIMULATOR ?=
+IOS_DERIVED_DATA ?= ios/build
+IOS_PROJECT := ios/NewsDeframerMobile.xcodeproj
+
+define check_xcode_ready
+	@mkdir -p ios/build
+	@rm -f ios/build/xcode-preflight.log
+	@xcodebuild -list -project "$(IOS_PROJECT)" >/dev/null 2>ios/build/xcode-preflight.log || { \
+		if grep -q "runFirstLaunch" ios/build/xcode-preflight.log; then \
+			echo "Xcode is not fully initialized for simulator builds."; \
+			echo "Run this once with admin privileges, then retry:"; \
+			echo "  sudo xcodebuild -runFirstLaunch"; \
+			echo; \
+			echo "Raw xcodebuild error:"; \
+			cat ios/build/xcode-preflight.log; \
+		else \
+			cat ios/build/xcode-preflight.log; \
+		fi; \
+		exit 1; \
+	}
+endef
+
+define resolve_simulator
+	resolved_simulator="$(SIMULATOR)"; \
+	if [ -z "$$resolved_simulator" ]; then \
+		resolved_simulator=$$(xcrun simctl list devices available | perl -ne 'if (/^\s+(iPhone[^\(]+?) \([0-9A-F-]+\) \((?:Shutdown|Booted)\)\s*$$/) { print $$1; exit }'); \
+	fi; \
+	if [ -z "$$resolved_simulator" ]; then \
+		echo "No available iPhone simulator found."; \
+		echo "Use 'make ios-sim-list' to inspect devices or pass SIMULATOR=\"...\"."; \
+		exit 1; \
+	fi; \
+	echo "Using simulator: $$resolved_simulator"; \
+	$(1)
+endef
 
 install:
 	npm install
@@ -16,7 +51,16 @@ android:
 	npm run android
 
 ios:
-	npm run ios
+	$(MAKE) ios-sim
+
+ios-preflight:
+	$(call check_xcode_ready)
+
+ios-sim: ios-preflight
+	bundle install && bundle exec pod install --project-directory=ios && $(call resolve_simulator,npm run ios:sim -- --simulator="$$resolved_simulator")
+
+ios-sim-list:
+	npm run ios:sim:list
 
 web:
 	npm run web
@@ -102,7 +146,10 @@ android-remote-usb-bootstrap:
 	adb devices
 
 ios-build:
-	bundle install && bundle exec pod install --project-directory=ios && xcodebuild -workspace ios/NewsDeframerMobile.xcworkspace -scheme NewsDeframerMobile -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build
+	$(MAKE) ios-sim-build
+
+ios-sim-build: ios-preflight
+	bundle install && bundle exec pod install --project-directory=ios && $(call resolve_simulator,xcodebuild -workspace ios/NewsDeframerMobile.xcworkspace -scheme NewsDeframerMobile -configuration Debug -sdk iphonesimulator -destination "platform=iOS Simulator,name=$$resolved_simulator" -derivedDataPath $(IOS_DERIVED_DATA))
 
 clean:
 	rm -rf node_modules ios/build android/app/build android/build web/dist

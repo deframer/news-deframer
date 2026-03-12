@@ -17,8 +17,22 @@ For iOS on a Mac:
 
 ```sh
 make pods
-make ios
+make ios-sim
 ```
+
+If Xcode reports that a required plug-in failed to load or suggests `xcodebuild -runFirstLaunch`, finish Xcode setup once with admin privileges:
+
+```sh
+sudo xcodebuild -runFirstLaunch
+```
+
+Choose a specific simulator:
+
+```sh
+make ios-sim SIMULATOR="iPhone SE (3rd generation)"
+```
+
+If `SIMULATOR` is not set, the Make target picks the first available iPhone simulator automatically.
 
 ## Local builds
 
@@ -33,8 +47,16 @@ make android-bundle-release
 iOS:
 
 ```sh
-make ios-build
+make ios-sim-build
 ```
+
+List available iOS simulators:
+
+```sh
+make ios-sim-list
+```
+
+`make ios` and `make ios-build` still work as compatibility aliases for the simulator run/build flow.
 
 ## Android release signing
 
