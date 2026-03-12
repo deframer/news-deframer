@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Search } from 'lucide-react-native';
 import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
@@ -16,14 +16,12 @@ export const TrendSearchPanel = ({
   language,
   daysInPast,
   settings,
-  onBackRequestChange,
 }: {
   palette: AppPalette;
   domain: string;
   language: string;
   daysInPast: number;
   settings: Settings;
-  onBackRequestChange: (handler: (() => boolean) | null) => void;
 }) => {
   const { t } = useTranslation();
   const [term, setTerm] = useState('');
@@ -38,21 +36,6 @@ export const TrendSearchPanel = ({
 
     setActiveTerm(normalized);
   };
-
-  useEffect(() => {
-    if (activeTerm) {
-      onBackRequestChange(() => {
-        setActiveTerm('');
-        setActiveDetailTab('lifecycle');
-        return true;
-      });
-      return;
-    }
-
-    onBackRequestChange(null);
-
-    return () => onBackRequestChange(null);
-  }, [activeTerm, onBackRequestChange]);
 
   return (
     <View style={styles.stack}>

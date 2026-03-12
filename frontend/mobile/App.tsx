@@ -8,7 +8,6 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { MenuDrawer } from './src/components/MenuDrawer';
 import { LoadingSpinner } from './src/components/LoadingSpinner';
-import { useAndroidBackHandler } from './src/hooks/useAndroidBackHandler';
 import { ArticleScreen } from './src/screens/ArticleScreen';
 import { AboutScreen } from './src/screens/AboutScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
@@ -122,7 +121,6 @@ function App() {
   const [domainsLoading, setDomainsLoading] = useState(false);
   const [selectedDomain, setSelectedDomain] = useState<DomainEntry | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
-  const [portalBackHandler, setPortalBackHandler] = useState<(() => boolean) | null>(null);
   const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
 
@@ -288,12 +286,6 @@ function App() {
   }, [booting, configured, settings]);
 
   useEffect(() => {
-    if (screen !== 'portal') {
-      setPortalBackHandler(null);
-    }
-  }, [screen]);
-
-  useEffect(() => {
     if (booting || screen !== 'settings') {
       return;
     }
@@ -379,7 +371,6 @@ function App() {
           palette={palette}
           domain={selectedDomain}
           settings={settings}
-          onBackRequestChange={setPortalBackHandler}
           onOpenArticle={(item) => {
             setSelectedArticle(item);
             setScreen('article');
@@ -417,35 +408,14 @@ function App() {
         : screen === 'article'
           ? getUrlHost(selectedArticle?.url) || t('article.screen_title', 'Article')
           : t('mobile.dashboard_title');
-
-  const handleAppBack = useCallback(() => {
-    if (drawerOpen) {
-      setDrawerOpen(false);
-      return true;
-    }
-
-    if (screen === 'portal' && portalBackHandler?.()) {
-      return true;
-    }
-
+  const handleBack = () => {
     if (screen === 'article') {
       setScreen('portal');
-      return true;
+      return;
     }
 
-    if (screen === 'settings' || screen === 'about' || screen === 'portal') {
-      setScreen('dashboard');
-      return true;
-    }
-
-    return false;
-  }, [drawerOpen, portalBackHandler, screen]);
-
-  const handleBack = () => {
-    handleAppBack();
+    setScreen('dashboard');
   };
-
-  useAndroidBackHandler(handleAppBack);
 
   return (
     <SafeAreaProvider>
