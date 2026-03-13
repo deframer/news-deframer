@@ -12,5 +12,6 @@ WHERE
     AND i.think_error_count = 0
     AND f.root_domain IS NOT NULL
     AND f.root_domain <> ''
+    -- AND f.root_domain in ( 'apollo-news.net', 'nius.de', 'tagesschau.de', 'faz.net', 'welt.de' )
 GROUP BY f.root_domain
 ORDER BY f.root_domain ASC;

@@ -44,4 +44,5 @@ SELECT
     b.speculative
 FROM base b
 LEFT JOIN known_authors a ON a.domain = b.domain
+-- WHERE b.domain in ( 'apollo-news.net', 'nius.de', 'tagesschau.de', 'faz.net', 'welt.de'    )
 ORDER BY b.domain ASC;
