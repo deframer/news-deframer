@@ -189,7 +189,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         run: |
-          BUILD_GRADLE="frontend/mobile/android/app/build.gradle"
+          BUILD_GRADLE="android/app/build.gradle"
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
 
           SOURCE_VERSION_NAME=$(sed -n 's/.*System.getenv("MOBILE_VERSION_NAME") ?: "\([^"]*\)".*/\1/p' "$BUILD_GRADLE")
@@ -205,7 +205,7 @@ jobs:
             exit 1
           fi
 
-          CHANGELOG_PATH="frontend/mobile/fastlane/metadata/android/en-US/changelogs/${SOURCE_VERSION_CODE}.txt"
+          CHANGELOG_PATH="fastlane/metadata/android/en-US/changelogs/${SOURCE_VERSION_CODE}.txt"
           if [[ ! -f "$CHANGELOG_PATH" ]]; then
             echo "Missing Android changelog for versionCode $SOURCE_VERSION_CODE: $CHANGELOG_PATH"
             exit 1
