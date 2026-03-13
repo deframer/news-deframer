@@ -1,0 +1,17 @@
+An ad blocker removes ads. News Deframer removes clickbait.
+
+News Deframer analyzes journalistic neutrality and framing in news articles. It rewrites sensational or emotionally manipulative wording into more neutral language, helping reduce the mental impact of clickbait headlines and loaded phrasing.
+
+The app highlights key signals in news coverage, including:
+- Framing: ideological or political bias
+- Clickbait: emotional triggers and headline manipulation
+- Persuasion: promotional or agenda-driven language
+- Hyper-stimulus: aggressive, attention-maximizing wording
+- Speculation: rumors or weakly supported claims
+
+News Deframer also provides a summary score to help you judge whether an article is worth reading or whether another source may be more reliable or balanced.
+
+Privacy first:
+News Deframer can run fully on your own local hardware, without depending on a cloud service. A Mac Mini M1 or a PC with an RTX 3060 (8 GB) is sufficient for local execution.
+
+This is not a fake news detector. It is a transparent language analysis tool designed to make framing and manipulation easier to see.

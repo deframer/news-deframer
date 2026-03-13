@@ -1,4 +1,4 @@
-.PHONY: icons clean-icons icons-browser-extension icons-android icons-ios icons-web sync-mobile-android-icons sync-mobile-ios-icons icons-mobile
+.PHONY: icons clean-icons icons-browser-extension icons-android icons-ios icons-web sync-mobile-android-icons sync-mobile-ios-icons icons-mobile fdroid-icon
 
 ASSETS_DIR := assets
 ICON_SVG := $(ASSETS_DIR)/icon.svg
@@ -19,6 +19,8 @@ WEB_DIR := $(ASSETS_DIR)/web
 WEB_PNGS := $(WEB_DIR)/favicon-16.png $(WEB_DIR)/favicon-32.png $(WEB_DIR)/apple-touch-icon.png
 
 MOBILE_ANDROID_RES_DIR := ../mobile/android/app/src/main/res
+FDROID_METADATA_DIR := ../mobile/fastlane/metadata/android/en-US/images
+FDROID_ICON := $(FDROID_METADATA_DIR)/icon.png
 
 icons: icons-browser-extension icons-android icons-ios icons-web
 
@@ -29,6 +31,8 @@ icons-android: $(ANDROID_PNGS)
 icons-ios: $(IOS_PNGS)
 
 icons-web: $(WEB_PNGS)
+
+fdroid-icon: $(FDROID_ICON)
 
 sync-mobile-android-icons: icons-android
 	install -Dm644 $(ANDROID_DIR)/icon-48.png $(MOBILE_ANDROID_RES_DIR)/mipmap-mdpi/ic_launcher.png
@@ -84,3 +88,7 @@ $(WEB_DIR)/favicon-32.png: $(ICON_SVG)
 $(WEB_DIR)/apple-touch-icon.png: $(ICON_SVG)
 	@mkdir -p $(WEB_DIR)
 	rsvg-convert -w 180 -h 180 $< -o $@
+
+$(FDROID_ICON): $(ICON_SVG)
+	@mkdir -p $(FDROID_METADATA_DIR)
+	rsvg-convert -w 1024 -h 1024 $< -o $@
