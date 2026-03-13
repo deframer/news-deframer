@@ -16,7 +16,10 @@ domain_a_unique AS (
             stem,
             outlier_ratio,
             utility,
-            ROW_NUMBER() OVER (PARTITION BY stem ORDER BY outlier_ratio DESC) as rn
+            ROW_NUMBER() OVER (
+                PARTITION BY stem
+                ORDER BY outlier_ratio DESC, utility DESC, stem ASC
+            ) as rn
         FROM view_trend_metrics_by_domain
         WHERE root_domain = CAST(@domain_a AS text)
           AND "language" = CAST(@language AS text)
@@ -49,7 +52,10 @@ domain_b_unique AS (
             stem,
             outlier_ratio,
             utility,
-            ROW_NUMBER() OVER (PARTITION BY stem ORDER BY outlier_ratio DESC) as rn
+            ROW_NUMBER() OVER (
+                PARTITION BY stem
+                ORDER BY outlier_ratio DESC, utility DESC, stem ASC
+            ) as rn
         FROM view_trend_metrics_by_domain
         WHERE root_domain = CAST(@domain_b AS text)
           AND "language" = CAST(@language AS text)
@@ -94,6 +100,11 @@ all_joined AS (
 ranked_trends AS (
     SELECT
         *,
+        CASE
+            WHEN classification = 'INTERSECT' THEN (score_a + score_b)
+            WHEN classification = 'BLINDSPOT_A' THEN score_a
+            WHEN classification = 'BLINDSPOT_B' THEN score_b
+        END as ranking_score,
         ROW_NUMBER() OVER (
             PARTITION BY classification
             ORDER BY
@@ -102,7 +113,8 @@ ranked_trends AS (
                     WHEN classification = 'INTERSECT' THEN (score_a + score_b) -- Combined heat
                     WHEN classification = 'BLINDSPOT_A' THEN score_a           -- A's heat
                     WHEN classification = 'BLINDSPOT_B' THEN score_b           -- B's heat
-                END DESC
+                END DESC,
+                trend_topic ASC
         ) as rank_group
     FROM all_joined
 )

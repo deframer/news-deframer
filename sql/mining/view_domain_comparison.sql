@@ -3,19 +3,39 @@ SET duckdb.force_execution = true;
 
 WITH domain_a AS (
     SELECT stem, outlier_ratio
-    FROM view_trend_metrics_by_domain
-    WHERE root_domain = 'spiegel.de'       -- Source A
-      AND "language" = 'de'             -- Mandatory Language Filter
-      AND time_slice = DATE_TRUNC('day', NOW())
-      AND outlier_ratio > 1.5           -- Threshold for "Trending"
+    FROM (
+        SELECT
+            stem,
+            outlier_ratio,
+            ROW_NUMBER() OVER (
+                PARTITION BY stem
+                ORDER BY outlier_ratio DESC, stem ASC
+            ) AS rn
+        FROM view_trend_metrics_by_domain
+        WHERE root_domain = 'spiegel.de'       -- Source A
+          AND "language" = 'de'               -- Mandatory Language Filter
+          AND time_slice = DATE_TRUNC('day', NOW())
+          AND outlier_ratio > 1.5              -- Threshold for "Trending"
+    )
+    WHERE rn = 1
 ),
 domain_b AS (
     SELECT stem, outlier_ratio
-    FROM view_trend_metrics_by_domain
-    WHERE root_domain = 'tagesschau.de'   -- Source B
-      AND "language" = 'de'
-      AND time_slice = DATE_TRUNC('day', NOW())
-      AND outlier_ratio > 1.5
+    FROM (
+        SELECT
+            stem,
+            outlier_ratio,
+            ROW_NUMBER() OVER (
+                PARTITION BY stem
+                ORDER BY outlier_ratio DESC, stem ASC
+            ) AS rn
+        FROM view_trend_metrics_by_domain
+        WHERE root_domain = 'tagesschau.de'   -- Source B
+          AND "language" = 'de'
+          AND time_slice = DATE_TRUNC('day', NOW())
+          AND outlier_ratio > 1.5
+    )
+    WHERE rn = 1
 )
 SELECT
     -- Get the word from whichever side has it
@@ -37,4 +57,4 @@ SELECT
 
 FROM domain_a a
 FULL OUTER JOIN domain_b b ON a.stem = b.stem
-ORDER BY classification, score_A DESC;
+ORDER BY classification, score_A DESC, score_B DESC, trend_topic ASC;
