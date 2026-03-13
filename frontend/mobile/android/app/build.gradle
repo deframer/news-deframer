@@ -8,7 +8,7 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
-def mobileVersionName = System.getenv("MOBILE_VERSION_NAME") ?: "0.0.1"
+def mobileVersionName = System.getenv("MOBILE_VERSION_NAME") ?: "0.0.8"
 def mobileVersionCode = (System.getenv("MOBILE_VERSION_CODE") ?: "1") as Integer
 
 /**
