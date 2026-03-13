@@ -179,6 +179,36 @@ func (item *Item) BeforeCreate(tx *gorm.DB) error {
 	return nil
 }
 
+// Sentiment represents the psychological language analysis.
+// This struct is used to map the content of the Sentiments jsonb column.
+type Sentiment struct {
+	Valence   float64 `json:"v,omitempty"`
+	Arousal   float64 `json:"a,omitempty"`
+	Dominance float64 `json:"d,omitempty"`
+	Joy       float64 `json:"j,omitempty"`
+	Anger     float64 `json:"a_n,omitempty"`
+	Sadness   float64 `json:"s,omitempty"`
+	Fear      float64 `json:"f,omitempty"`
+	Disgust   float64 `json:"d_g,omitempty"`
+}
+
+// Value implements the driver.Valuer interface for Sentiment.
+func (j Sentiment) Value() (driver.Value, error) {
+	return json.Marshal(j)
+}
+
+// Scan implements the sql.Scanner interface for Sentiment.
+func (j *Sentiment) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, j)
+}
+
 type Trend struct {
 	ItemID         uuid.UUID   `gorm:"primaryKey;type:uuid"` // FK to ItemID
 	FeedID         uuid.UUID   `gorm:"type:uuid;not null"`   // FK to FeedID
@@ -189,4 +219,5 @@ type Trend struct {
 	VerbStems      StringArray `gorm:"type:text[]"`
 	AdjectiveStems StringArray `gorm:"type:text[]"`
 	RootDomain     string      `gorm:"not null"`
+	Sentiments     *Sentiment  `gorm:"type:jsonb;not null;default:'{}'"`
 }
