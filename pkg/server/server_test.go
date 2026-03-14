@@ -19,7 +19,7 @@ type mockFacade struct {
 	getItemsForRootDomain func(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error)
 	getFirstItemForUrl    func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error)
 	getArticlesByTrend    func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
-	getSentimentsByTrend  func(ctx context.Context, term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error)
+	getSentimentsByTrend  func(ctx context.Context, term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
 }
 
 func (m *mockFacade) GetRssProxyFeed(ctx context.Context, filter *facade.RSSProxyFilter) (string, error) {
@@ -67,9 +67,9 @@ func (m *mockFacade) GetArticlesByTrend(ctx context.Context, term string, domain
 	return nil, nil
 }
 
-func (m *mockFacade) GetSentimentsByTrend(ctx context.Context, term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error) {
+func (m *mockFacade) GetSentimentsByTrend(ctx context.Context, term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
 	if m.getSentimentsByTrend != nil {
-		return m.getSentimentsByTrend(ctx, term, domain, date, days, variant)
+		return m.getSentimentsByTrend(ctx, term, domain, date, days)
 	}
 	return nil, nil
 }
@@ -155,13 +155,13 @@ func TestHandleSentiments(t *testing.T) {
 		joy := 0.9
 
 		mockF := &mockFacade{
-			getSentimentsByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error) {
+			getSentimentsByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
 				assert.Equal(t, "ai", term)
 				assert.Equal(t, "example.com", domain)
 				assert.Equal(t, todayPtr, date)
 				assert.Equal(t, 1, days)
-				assert.Equal(t, database.SentimentRegular, variant)
-				return &database.SentimentItem{Valence: &valence, Joy: &joy}, nil
+
+				return &database.SentimentItem{Sentiments: &database.SentimentScores{Valence: &valence, Joy: &joy}}, nil
 			},
 		}
 
@@ -173,28 +173,6 @@ func TestHandleSentiments(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), `"valence":0.7`)
-	})
-
-	t.Run("success deframed", func(t *testing.T) {
-		todayPtr, err := parseOptionalDateParam(today)
-		assert.NoError(t, err)
-		valence := 0.7
-
-		mockF := &mockFacade{
-			getSentimentsByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error) {
-				assert.Equal(t, todayPtr, date)
-				assert.Equal(t, database.SentimentDeframed, variant)
-				return &database.SentimentItem{Valence: &valence}, nil
-			},
-		}
-
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
-		req := httptest.NewRequest(http.MethodGet, "/api/sentiments?root=example.com&term=ai&date="+today+"&deframed=true", nil)
-		rr := httptest.NewRecorder()
-
-		s.httpServer.Handler.ServeHTTP(rr, req)
-
-		assert.Equal(t, http.StatusOK, rr.Code)
 	})
 
 	t.Run("missing params", func(t *testing.T) {
@@ -217,19 +195,9 @@ func TestHandleSentiments(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rr.Code)
 	})
 
-	t.Run("invalid deframed", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true}, &mockFacade{})
-		req := httptest.NewRequest(http.MethodGet, "/api/sentiments?root=example.com&term=ai&deframed=yes", nil)
-		rr := httptest.NewRecorder()
-
-		s.httpServer.Handler.ServeHTTP(rr, req)
-
-		assert.Equal(t, http.StatusBadRequest, rr.Code)
-	})
-
 	t.Run("facade error", func(t *testing.T) {
 		mockF := &mockFacade{
-			getSentimentsByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error) {
+			getSentimentsByTrend: func(ctx context.Context, term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
 				return nil, errors.New("boom")
 			},
 		}

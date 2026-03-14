@@ -36,9 +36,6 @@ var articlesByTrendQuery string
 //go:embed sql/statement/sentiments_by_trend.sql
 var sentimentsByTrendQuery string
 
-//go:embed sql/statement/sentiments_deframed_by_trend.sql
-var sentimentsDeframedByTrendQuery string
-
 const DomainComparisonUtilityThreshold = 1.0
 const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
@@ -78,7 +75,7 @@ type AnalyzedArticle struct {
 	PubDate time.Time   `gorm:"column:pub_date" json:"pub_date"`
 }
 
-type SentimentItem struct {
+type SentimentScores struct {
 	Valence   *float64 `gorm:"column:valence" json:"valence,omitempty"`
 	Arousal   *float64 `gorm:"column:arousal" json:"arousal,omitempty"`
 	Dominance *float64 `gorm:"column:dominance" json:"dominance,omitempty"`
@@ -87,6 +84,11 @@ type SentimentItem struct {
 	Sadness   *float64 `gorm:"column:sadness" json:"sadness,omitempty"`
 	Fear      *float64 `gorm:"column:fear" json:"fear,omitempty"`
 	Disgust   *float64 `gorm:"column:disgust" json:"disgust,omitempty"`
+}
+
+type SentimentItem struct {
+	Sentiments         *SentimentScores `json:"sentiments,omitempty"`
+	SentimentsDeframed *SentimentScores `json:"sentiments_deframed,omitempty"`
 }
 
 type Repository interface {
@@ -124,7 +126,7 @@ type Repository interface {
 	GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]Lifecycle, error)
 	GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
 	GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error)
-	GetSentimentsByTrend(term string, domain string, date *time.Time, days int, variant SentimentVariant) (*SentimentItem, error)
+	GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error)
 }
 
 type repository struct {
@@ -825,26 +827,71 @@ func (r *repository) GetArticlesByTrend(term string, domain string, date *time.T
 	return items, nil
 }
 
-func (r *repository) GetSentimentsByTrend(term string, domain string, date *time.Time, days int, variant SentimentVariant) (*SentimentItem, error) {
-	var item SentimentItem
+func (r *repository) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error) {
 	days = normalizeDays(days, 365)
-	query := sentimentsByTrendQuery
-	if variant == SentimentDeframed {
-		query = sentimentsDeframedByTrendQuery
+
+	var flat struct {
+		Valence           *float64 `gorm:"column:valence"`
+		Arousal           *float64 `gorm:"column:arousal"`
+		Dominance         *float64 `gorm:"column:dominance"`
+		Joy               *float64 `gorm:"column:joy"`
+		Anger             *float64 `gorm:"column:anger"`
+		Sadness           *float64 `gorm:"column:sadness"`
+		Fear              *float64 `gorm:"column:fear"`
+		Disgust           *float64 `gorm:"column:disgust"`
+		DeframedValence   *float64 `gorm:"column:deframed_valence"`
+		DeframedArousal   *float64 `gorm:"column:deframed_arousal"`
+		DeframedDominance *float64 `gorm:"column:deframed_dominance"`
+		DeframedJoy       *float64 `gorm:"column:deframed_joy"`
+		DeframedAnger     *float64 `gorm:"column:deframed_anger"`
+		DeframedSadness   *float64 `gorm:"column:deframed_sadness"`
+		DeframedFear      *float64 `gorm:"column:deframed_fear"`
+		DeframedDisgust   *float64 `gorm:"column:deframed_disgust"`
 	}
 
-	if err := r.db.Raw(query,
+	if err := r.db.Raw(sentimentsByTrendQuery,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
 		sql.Named("date", normalizeDateParam(date)),
 		sql.Named("days", days),
-	).Scan(&item).Error; err != nil {
+	).Scan(&flat).Error; err != nil {
 		return nil, err
 	}
 
-	if item.Valence == nil && item.Arousal == nil && item.Dominance == nil && item.Joy == nil && item.Anger == nil && item.Sadness == nil && item.Fear == nil && item.Disgust == nil {
+	var reg *SentimentScores
+	if flat.Valence != nil || flat.Arousal != nil || flat.Dominance != nil || flat.Joy != nil || flat.Anger != nil || flat.Sadness != nil || flat.Fear != nil || flat.Disgust != nil {
+		reg = &SentimentScores{
+			Valence:   flat.Valence,
+			Arousal:   flat.Arousal,
+			Dominance: flat.Dominance,
+			Joy:       flat.Joy,
+			Anger:     flat.Anger,
+			Sadness:   flat.Sadness,
+			Fear:      flat.Fear,
+			Disgust:   flat.Disgust,
+		}
+	}
+
+	var def *SentimentScores
+	if flat.DeframedValence != nil || flat.DeframedArousal != nil || flat.DeframedDominance != nil || flat.DeframedJoy != nil || flat.DeframedAnger != nil || flat.DeframedSadness != nil || flat.DeframedFear != nil || flat.DeframedDisgust != nil {
+		def = &SentimentScores{
+			Valence:   flat.DeframedValence,
+			Arousal:   flat.DeframedArousal,
+			Dominance: flat.DeframedDominance,
+			Joy:       flat.DeframedJoy,
+			Anger:     flat.DeframedAnger,
+			Sadness:   flat.DeframedSadness,
+			Fear:      flat.DeframedFear,
+			Disgust:   flat.DeframedDisgust,
+		}
+	}
+
+	if reg == nil && def == nil {
 		return nil, nil
 	}
 
-	return &item, nil
+	return &SentimentItem{
+		Sentiments:         reg,
+		SentimentsDeframed: def,
+	}, nil
 }

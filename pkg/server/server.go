@@ -621,18 +621,12 @@ func (s *Server) handleSentiments(w http.ResponseWriter, r *http.Request) {
 		days = v
 	}
 
-	variant, err := parseSentimentVariantParam(q.Get("deframed"))
-	if err != nil {
-		http.Error(w, "invalid deframed format, expected 1 or true", http.StatusBadRequest)
-		return
-	}
-
 	if rootDomain == "" || term == "" {
 		http.Error(w, "missing root or term", http.StatusBadRequest)
 		return
 	}
 
-	item, err := s.facade.GetSentimentsByTrend(r.Context(), term, rootDomain, date, days, variant)
+	item, err := s.facade.GetSentimentsByTrend(r.Context(), term, rootDomain, date, days)
 	if err != nil || item == nil {
 		if err != nil {
 			s.logger.Error("GetSentimentsByTrend failed", "error", err)
@@ -659,17 +653,6 @@ func parseOptionalDateParam(raw string) (*time.Time, error) {
 	}
 	normalized := time.Date(parsed.Year(), parsed.Month(), parsed.Day(), 0, 0, 0, 0, time.UTC)
 	return &normalized, nil
-}
-
-func parseSentimentVariantParam(raw string) (database.SentimentVariant, error) {
-	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "", "0", "false":
-		return database.SentimentRegular, nil
-	case "1", "true":
-		return database.SentimentDeframed, nil
-	default:
-		return "", fmt.Errorf("invalid deframed value: %s", raw)
-	}
 }
 
 func formatOptionalDate(date *time.Time) string {

@@ -2,7 +2,8 @@ import { CSSProperties, useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { getSettings } from '../../shared/settings';
-import { DomainEntry, NewsDeframerClient, SentimentItem } from '../client';
+import { DomainEntry, NewsDeframerClient, SentimentItem, SentimentScores } from '../client';
+import log from '../../shared/logger';
 
 interface TrendSentimentsProps {
   term: string;
@@ -95,7 +96,7 @@ const be5Metrics: SentimentMetric[] = [
   },
 ];
 
-const fallbackSentiments: Required<SentimentItem> = {
+const fallbackSentiments: Required<SentimentScores> = {
   valence: 5.14,
   arousal: 3.91,
   dominance: 5.3,
@@ -135,6 +136,7 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
         const settings = await getSettings();
         const client = new NewsDeframerClient(settings);
         const result = await client.getSentimentsByTrend(domain.domain, term, date, days);
+        log.debug('Sentiment API result:', result);
 
         if (mounted) {
           setSentiments(result);
@@ -161,14 +163,14 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
   }, [date, days, domain.domain, term]);
 
   const metricValues = useMemo(() => ({
-    valence: getMetricValue(sentiments?.valence, fallbackSentiments.valence),
-    arousal: getMetricValue(sentiments?.arousal, fallbackSentiments.arousal),
-    dominance: getMetricValue(sentiments?.dominance, fallbackSentiments.dominance),
-    joy: getMetricValue(sentiments?.joy, fallbackSentiments.joy),
-    anger: getMetricValue(sentiments?.anger, fallbackSentiments.anger),
-    sadness: getMetricValue(sentiments?.sadness, fallbackSentiments.sadness),
-    fear: getMetricValue(sentiments?.fear, fallbackSentiments.fear),
-    disgust: getMetricValue(sentiments?.disgust, fallbackSentiments.disgust),
+    valence: getMetricValue(sentiments?.sentiments?.valence, fallbackSentiments.valence),
+    arousal: getMetricValue(sentiments?.sentiments?.arousal, fallbackSentiments.arousal),
+    dominance: getMetricValue(sentiments?.sentiments?.dominance, fallbackSentiments.dominance),
+    joy: getMetricValue(sentiments?.sentiments?.joy, fallbackSentiments.joy),
+    anger: getMetricValue(sentiments?.sentiments?.anger, fallbackSentiments.anger),
+    sadness: getMetricValue(sentiments?.sentiments?.sadness, fallbackSentiments.sadness),
+    fear: getMetricValue(sentiments?.sentiments?.fear, fallbackSentiments.fear),
+    disgust: getMetricValue(sentiments?.sentiments?.disgust, fallbackSentiments.disgust),
   }), [sentiments]);
 
   const showTooltip = (target: HTMLElement, description: string) => {
@@ -197,7 +199,7 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
     );
   }
 
-  if (hasLoaded && !sentiments) {
+  if (hasLoaded && (!sentiments || !sentiments.sentiments)) {
     return (
       <div className={`sentiment-panel ${className || ''}`}>
           <div className="sentiment-panel-state sentiment-panel-empty">

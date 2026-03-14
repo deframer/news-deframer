@@ -691,7 +691,7 @@ func (m *MockRepo) GetArticlesByTrend(term string, domain string, date *time.Tim
 	return nil, nil
 }
 
-func (m *MockRepo) GetSentimentsByTrend(term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error) {
+func (m *MockRepo) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
 	return nil, nil
 }
 

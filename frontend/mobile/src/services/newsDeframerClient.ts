@@ -92,7 +92,7 @@ export interface AnalyzedArticle {
   pub_date: string;
 }
 
-export interface SentimentItem {
+export interface SentimentScores {
   valence?: number | null;
   arousal?: number | null;
   dominance?: number | null;
@@ -101,6 +101,11 @@ export interface SentimentItem {
   sadness?: number | null;
   fear?: number | null;
   disgust?: number | null;
+}
+
+export interface SentimentItem {
+  sentiments?: SentimentScores;
+  sentiments_deframed?: SentimentScores;
 }
 
 export class NewsDeframerClient {
