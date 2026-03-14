@@ -92,6 +92,17 @@ export interface AnalyzedArticle {
   pub_date: string;
 }
 
+export interface SentimentItem {
+  valence?: number | null;
+  arousal?: number | null;
+  dominance?: number | null;
+  joy?: number | null;
+  anger?: number | null;
+  sadness?: number | null;
+  fear?: number | null;
+  disgust?: number | null;
+}
+
 export class NewsDeframerClient {
   constructor(private config: Settings) {}
 
@@ -202,5 +213,12 @@ export class NewsDeframerClient {
     if (offset !== undefined) params.offset = String(offset);
     if (limit !== undefined) params.limit = String(limit);
     return (await this.request<AnalyzedArticle[]>(`${this.apiBase}/articles`, params)) ?? [];
+  }
+
+  async getSentimentsByTrend(root: string, term: string, date?: string, days?: number): Promise<SentimentItem | null> {
+    const params: Record<string, string> = { root, term };
+    if (date) params.date = date;
+    if (days !== undefined) params.days = String(days);
+    return this.request<SentimentItem>(`${this.apiBase}/sentiments`, params);
   }
 }

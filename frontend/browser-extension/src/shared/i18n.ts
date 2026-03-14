@@ -16,6 +16,7 @@ const resources = {
         lifecycle: 'Lifecycle',
         context: 'Context',
         articles: 'Articles',
+        sentiments: 'Sentiments',
         search: 'Search',
         search_placeholder: 'Enter term to analyze...',
         analyze: 'Search',
@@ -23,6 +24,7 @@ const resources = {
         no_data: 'No trending topics found for this period.',
         context_no_data: 'No context data available for this topic.',
         lifecycle_no_data: 'No lifecycle data available for this topic.',
+        sentiments_no_data: 'No sentiment data available for this topic.',
         date_caption: 'Date',
         rating_caption: 'Rating',
         author_caption: 'Author',
@@ -42,6 +44,45 @@ const resources = {
         vel: 'Vel',
         frequency_label: 'Frequency',
         verb_label: 'Verb',
+        sentiments_vad: 'VAD',
+        sentiments_vad_scale: 'Scale 1-9, neutral at 5',
+        sentiments_be5: 'BE5',
+        sentiments_be5_scale: 'Scale 1-5, absent to max',
+        sentiments_disclaimer: 'These scores describe the emotional meaning of the selected article set. They are lexical estimates based on word usage, not direct measurements of what authors, readers, or the public feel.',
+        sentiments_metrics: {
+          valence: {
+            label: 'Valence',
+            description: 'How pleasant or unpleasant the language is.',
+          },
+          arousal: {
+            label: 'Arousal',
+            description: 'How calm or activated the language feels.',
+          },
+          dominance: {
+            label: 'Dominance',
+            description: 'How much control, strength, or power the language conveys.',
+          },
+          joy: {
+            label: 'Joy',
+            description: 'The strongest positive uplift signaled by the language.',
+          },
+          anger: {
+            label: 'Anger',
+            description: 'The strongest hostility or outrage signaled by the language.',
+          },
+          sadness: {
+            label: 'Sadness',
+            description: 'The strongest sorrow or loss signaled by the language.',
+          },
+          fear: {
+            label: 'Fear',
+            description: 'The strongest anxiety or threat signaled by the language.',
+          },
+          disgust: {
+            label: 'Disgust',
+            description: 'The strongest revulsion or aversion signaled by the language.',
+          },
+        },
         search_aria_label: '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}',
         compare: {
           trending_on: 'Trending {{domain}}',
@@ -132,6 +173,7 @@ const resources = {
         lifecycle: 'Verlauf',
         context: 'Kontext',
         articles: 'Artikel',
+        sentiments: 'Sentiments',
         search: 'Suche',
         search_placeholder: 'Begriff eingeben...',
         analyze: 'Suche',
@@ -139,6 +181,7 @@ const resources = {
         no_data: 'Keine Trendthemen für diesen Zeitraum gefunden.',
         context_no_data: 'Keine Kontextdaten für dieses Thema verfügbar.',
         lifecycle_no_data: 'Keine Verlaufsdaten für dieses Thema verfügbar.',
+        sentiments_no_data: 'Keine Sentimentdaten für dieses Thema verfügbar.',
         date_caption: 'Datum',
         rating_caption: 'Bewertung',
         author_caption: 'Autor',
@@ -158,6 +201,45 @@ const resources = {
         vel: 'Vel',
         frequency_label: 'Häufigkeit',
         verb_label: 'Verb',
+        sentiments_vad: 'VAD',
+        sentiments_vad_scale: 'Skala 1-9, neutral bei 5',
+        sentiments_be5: 'BE5',
+        sentiments_be5_scale: 'Skala 1-5, von abwesend bis maximal',
+        sentiments_disclaimer: 'Diese Werte beschreiben den Emotionsgehalt der ausgewählten Artikel. Es sind lexikalische Schätzungen auf Basis der verwendeten Wörter, keine direkten Aussagen darüber, was Autorinnen und Autoren, Leserinnen und Leser oder die Öffentlichkeit fühlen.',
+        sentiments_metrics: {
+          valence: {
+            label: 'Valenz',
+            description: 'Wie angenehm oder unangenehm die Sprache wirkt.',
+          },
+          arousal: {
+            label: 'Aktivierung',
+            description: 'Wie ruhig oder angeregt die Sprache wirkt.',
+          },
+          dominance: {
+            label: 'Dominanz',
+            description: 'Wie viel Kontrolle, Stärke oder Macht die Sprache vermittelt.',
+          },
+          joy: {
+            label: 'Freude',
+            description: 'Das stärkste positive Hochgefühl, das die Sprache signalisiert.',
+          },
+          anger: {
+            label: 'Wut',
+            description: 'Die stärkste Feindseligkeit oder Empörung, die die Sprache signalisiert.',
+          },
+          sadness: {
+            label: 'Traurigkeit',
+            description: 'Die stärkste Trauer oder Verluststimmung, die die Sprache signalisiert.',
+          },
+          fear: {
+            label: 'Angst',
+            description: 'Die stärkste Angst oder Bedrohung, die die Sprache signalisiert.',
+          },
+          disgust: {
+            label: 'Ekel',
+            description: 'Der stärkste Widerwille oder die stärkste Abneigung, die die Sprache signalisiert.',
+          },
+        },
         search_aria_label: '{{date}}: Häufigkeit {{frequency}}, Geschwindigkeit {{velocity}}',
         compare: {
           trending_on: 'Trends auf {{domain}}',

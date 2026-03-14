@@ -274,9 +274,148 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   min-width: 16px;
   text-align: center;
 }
+.sentiment-panel {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+}
+.sentiment-panel-state {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sentiment-panel-empty {
+  color: var(--secondary-text);
+}
+.sentiment-section {
+  display: grid;
+  gap: 12px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.sentiment-section + .sentiment-section {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--bg-color-secondary);
+}
+.sentiment-section:first-child {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 14px;
+  background: var(--bg-color-secondary);
+}
+.sentiment-section-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--secondary-text);
+  font-size: 0.82em;
+}
+.sentiment-section-header strong {
+  color: var(--text-color);
+  font-size: 1.05em;
+  letter-spacing: 0.06em;
+}
+.sentiment-rows {
+  display: grid;
+  gap: 10px;
+}
+.sentiment-metric {
+  display: grid;
+  gap: 0;
+}
+.sentiment-metric-row {
+  display: grid;
+  grid-template-columns: 88px 44px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 8px;
+  min-height: 20px;
+}
+.sentiment-label {
+  color: var(--text-color);
+  font-size: 0.92em;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.sentiment-value {
+  color: var(--secondary-text);
+  font-size: 0.88em;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  text-align: right;
+}
+.sentiment-track-wrap {
+  min-width: 0;
+}
+.sentiment-vad-track {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: linear-gradient(90deg, var(--hover-bg-strong), var(--hover-bg-subtle));
+  overflow: hidden;
+}
+.sentiment-vad-baseline {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  background: var(--text-color);
+  opacity: 0.65;
+}
+.sentiment-vad-fill {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  border-radius: 999px;
+  opacity: 0.88;
+}
+.sentiment-be5-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.sentiment-be5-box {
+  position: relative;
+  height: 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-color-secondary);
+  overflow: hidden;
+}
+.sentiment-be5-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  opacity: 0.88;
+}
+.sentiment-footnote {
+  color: var(--secondary-text);
+  font-size: 0.82em;
+  line-height: 1.4;
+}
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 799px) {
+  .sentiment-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .sentiment-metric-row {
+    grid-template-columns: 78px 42px minmax(0, 1fr) 20px;
+    gap: 6px;
+  }
 }
 
 /* RatingBar.tsx */
