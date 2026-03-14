@@ -1,9 +1,9 @@
 import { CSSProperties, useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import log from '../../shared/logger';
 import { getSettings } from '../../shared/settings';
 import { DomainEntry, NewsDeframerClient, SentimentItem, SentimentScores } from '../client';
-import log from '../../shared/logger';
 
 interface TrendSentimentsProps {
   term: string;
