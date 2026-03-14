@@ -687,6 +687,10 @@ func (m *MockRepo) GetArticlesByTrend(term string, domain string, date *time.Tim
 	return nil, nil
 }
 
+func (m *MockRepo) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
+	return nil, nil
+}
+
 func captureOutput(f func()) string {
 	old := os.Stdout
 	r, w, _ := os.Pipe()

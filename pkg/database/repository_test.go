@@ -1498,6 +1498,25 @@ func TestGetArticlesByTrend(t *testing.T) {
 	})
 }
 
+func TestGetSentimentsByTrend(t *testing.T) {
+	_, baseDB := mustOpenTestRepo(t)
+
+	t.Run("QueryEmbedded", func(t *testing.T) {
+		assert.NotEmpty(t, sentimentsByTrendQuery, "Embedded SQL query should not be empty")
+	})
+
+	t.Run("BasicExecution", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+		date := time.Date(2026, time.March, 3, 0, 0, 0, 0, time.UTC)
+
+		item, err := repo.GetSentimentsByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), &date, 0)
+		assert.NoError(t, err)
+		assert.Nil(t, item)
+	})
+}
+
 func TestEnqueueMine(t *testing.T) {
 	_, baseDB := mustOpenTestRepo(t)
 

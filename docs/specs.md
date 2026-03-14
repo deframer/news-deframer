@@ -87,6 +87,21 @@ GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}&off
     - `200 OK`: Returns JSON object/array.
     - `404 Not Found`: Domain or term unknown.
 
+```bash
+GET /api/sentiments?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
+```
+**Behavior**:
+- Used to return sentiment data for the selected trend term within the given root domain and time window.
+- **Temporal Parameters**:
+    - `date` is optional (`YYYY-MM-DD`).
+    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
+    - `days` (optional, default `1`) defines window size.
+    - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
+    - Without `date`: effective window is `[NOW() - days, NOW())`.
+- **Status Codes**:
+    - `200 OK`: Returns JSON object.
+    - `404 Not Found`: Domain or term unknown.
+
 #### C. Temporal Query Convention (Planned Refactor)
 
 For trend-oriented endpoints currently using `daysInPast`, we will move to a unified temporal contract:

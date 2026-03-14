@@ -33,6 +33,9 @@ var compareDomainsQuery string
 //go:embed sql/statement/articles_by_trend.sql
 var articlesByTrendQuery string
 
+//go:embed sql/statement/sentiments_by_trend.sql
+var sentimentsByTrendQuery string
+
 const DomainComparisonUtilityThreshold = 1.0
 const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
@@ -72,6 +75,17 @@ type AnalyzedArticle struct {
 	PubDate time.Time   `gorm:"column:pub_date" json:"pub_date"`
 }
 
+type SentimentItem struct {
+	Valence   *float64 `gorm:"column:valence" json:"valence,omitempty"`
+	Arousal   *float64 `gorm:"column:arousal" json:"arousal,omitempty"`
+	Dominance *float64 `gorm:"column:dominance" json:"dominance,omitempty"`
+	Joy       *float64 `gorm:"column:joy" json:"joy,omitempty"`
+	Anger     *float64 `gorm:"column:anger" json:"anger,omitempty"`
+	Sadness   *float64 `gorm:"column:sadness" json:"sadness,omitempty"`
+	Fear      *float64 `gorm:"column:fear" json:"fear,omitempty"`
+	Disgust   *float64 `gorm:"column:disgust" json:"disgust,omitempty"`
+}
+
 type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
 	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
@@ -106,6 +120,7 @@ type Repository interface {
 	GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]Lifecycle, error)
 	GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
 	GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error)
+	GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error)
 }
 
 type repository struct {
@@ -784,4 +799,24 @@ func (r *repository) GetArticlesByTrend(term string, domain string, date *time.T
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error) {
+	var item SentimentItem
+	days = normalizeDays(days, 365)
+
+	if err := r.db.Raw(sentimentsByTrendQuery,
+		sql.Named("term", term),
+		sql.Named("domain", domain),
+		sql.Named("date", normalizeDateParam(date)),
+		sql.Named("days", days),
+	).Scan(&item).Error; err != nil {
+		return nil, err
+	}
+
+	if item.Valence == nil && item.Arousal == nil && item.Dominance == nil && item.Joy == nil && item.Anger == nil && item.Sadness == nil && item.Fear == nil && item.Disgust == nil {
+		return nil, nil
+	}
+
+	return &item, nil
 }
