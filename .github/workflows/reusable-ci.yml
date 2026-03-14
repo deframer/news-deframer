@@ -205,7 +205,7 @@ jobs:
             exit 1
           fi
 
-          CHANGELOG_PATH="fastlane/metadata/android/en-US/changelogs/${SOURCE_VERSION_CODE}.txt"
+          CHANGELOG_PATH="android/app/fastlane/metadata/android/en-US/changelogs/${SOURCE_VERSION_CODE}.txt"
           if [[ ! -f "$CHANGELOG_PATH" ]]; then
             echo "Missing Android changelog for versionCode $SOURCE_VERSION_CODE: $CHANGELOG_PATH"
             exit 1
