@@ -30,7 +30,7 @@ type mockRepo struct {
 	getLifecycleByDomainFunc func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
 	getDomainComparisonFunc  func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
 	getArticlesByTrendFunc   func(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
-	getSentimentsByTrendFunc func(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
+	getSentimentsByTrendFunc func(term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error)
 }
 
 // Implement database.Repository interface stubs
@@ -131,9 +131,9 @@ func (m *mockRepo) GetArticlesByTrend(term string, domain string, date *time.Tim
 	return nil, nil
 }
 
-func (m *mockRepo) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
+func (m *mockRepo) GetSentimentsByTrend(term string, domain string, date *time.Time, days int, variant database.SentimentVariant) (*database.SentimentItem, error) {
 	if m.getSentimentsByTrendFunc != nil {
-		return m.getSentimentsByTrendFunc(term, domain, date, days)
+		return m.getSentimentsByTrendFunc(term, domain, date, days, variant)
 	}
 	return nil, nil
 }

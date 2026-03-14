@@ -1553,6 +1553,7 @@ func TestGetSentimentsByTrend(t *testing.T) {
 
 	t.Run("QueryEmbedded", func(t *testing.T) {
 		assert.NotEmpty(t, sentimentsByTrendQuery, "Embedded SQL query should not be empty")
+		assert.NotEmpty(t, sentimentsDeframedByTrendQuery, "Embedded deframed SQL query should not be empty")
 	})
 
 	t.Run("BasicExecution", func(t *testing.T) {
@@ -1561,7 +1562,18 @@ func TestGetSentimentsByTrend(t *testing.T) {
 		repo := NewFromDB(tx)
 		date := time.Date(2026, time.March, 3, 0, 0, 0, 0, time.UTC)
 
-		item, err := repo.GetSentimentsByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), &date, 0)
+		item, err := repo.GetSentimentsByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), &date, 0, SentimentRegular)
+		assert.NoError(t, err)
+		assert.Nil(t, item)
+	})
+
+	t.Run("BasicExecutionDeframed", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+		date := time.Date(2026, time.March, 3, 0, 0, 0, 0, time.UTC)
+
+		item, err := repo.GetSentimentsByTrend("test-term"+uuid.NewString(), "example.com"+uuid.NewString(), &date, 0, SentimentDeframed)
 		assert.NoError(t, err)
 		assert.Nil(t, item)
 	})

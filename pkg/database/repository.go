@@ -36,6 +36,9 @@ var articlesByTrendQuery string
 //go:embed sql/statement/sentiments_by_trend.sql
 var sentimentsByTrendQuery string
 
+//go:embed sql/statement/sentiments_deframed_by_trend.sql
+var sentimentsDeframedByTrendQuery string
+
 const DomainComparisonUtilityThreshold = 1.0
 const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
@@ -121,7 +124,7 @@ type Repository interface {
 	GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]Lifecycle, error)
 	GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
 	GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error)
-	GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error)
+	GetSentimentsByTrend(term string, domain string, date *time.Time, days int, variant SentimentVariant) (*SentimentItem, error)
 }
 
 type repository struct {
@@ -822,11 +825,15 @@ func (r *repository) GetArticlesByTrend(term string, domain string, date *time.T
 	return items, nil
 }
 
-func (r *repository) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error) {
+func (r *repository) GetSentimentsByTrend(term string, domain string, date *time.Time, days int, variant SentimentVariant) (*SentimentItem, error) {
 	var item SentimentItem
 	days = normalizeDays(days, 365)
+	query := sentimentsByTrendQuery
+	if variant == SentimentDeframed {
+		query = sentimentsDeframedByTrendQuery
+	}
 
-	if err := r.db.Raw(sentimentsByTrendQuery,
+	if err := r.db.Raw(query,
 		sql.Named("term", term),
 		sql.Named("domain", domain),
 		sql.Named("date", normalizeDateParam(date)),
