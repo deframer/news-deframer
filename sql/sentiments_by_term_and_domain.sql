@@ -10,7 +10,7 @@
 --   average emotional tone instead of peak emotional intensity.
 -- - Stop-word removal should happen upstream before these scores are computed.
 SELECT
-    COUNT(*) AS count,
+    COUNT(*) AS article_count,
     ROUND(AVG((t.sentiments->>'v')::double precision)::numeric, 2) AS valence,
     ROUND(AVG((t.sentiments->>'a')::double precision)::numeric, 2) AS arousal,
     ROUND(AVG((t.sentiments->>'d')::double precision)::numeric, 2) AS dominance,

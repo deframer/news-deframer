@@ -50,7 +50,7 @@ WITH term_domain_pairs(term, root_domain) AS (
 SELECT
     p.term,
     p.root_domain,
-    COUNT(*) AS count,
+    COUNT(*) AS article_count,
     ROUND(AVG((t.sentiments->>'v')::double precision)::numeric, 2) AS valence,
     ROUND(AVG((t.sentiments->>'a')::double precision)::numeric, 2) AS arousal,
     ROUND(AVG((t.sentiments->>'d')::double precision)::numeric, 2) AS dominance,
@@ -65,7 +65,7 @@ JOIN public.trends t
    AND p.root_domain = t.root_domain
 WHERE
     t."language" = 'de'
-    AND t.pub_date >= NOW() - INTERVAL '90 DAYS'
+    AND t.pub_date >= NOW() - INTERVAL '7 DAYS'
     AND t.sentiments <> '{}'::jsonb
 GROUP BY
     p.term,
