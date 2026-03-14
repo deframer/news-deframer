@@ -229,14 +229,15 @@ func (j *Sentiment) Scan(value interface{}) error {
 }
 
 type Trend struct {
-	ItemID         uuid.UUID   `gorm:"primaryKey;type:uuid"` // FK to ItemID
-	FeedID         uuid.UUID   `gorm:"type:uuid;not null"`   // FK to FeedID
-	Language       string      `gorm:"not null"`
-	PubDate        time.Time   `gorm:"not null"`
-	CategoryStems  StringArray `gorm:"type:text[]"`
-	NounStems      StringArray `gorm:"type:text[]"`
-	VerbStems      StringArray `gorm:"type:text[]"`
-	AdjectiveStems StringArray `gorm:"type:text[]"`
-	RootDomain     string      `gorm:"not null"`
-	Sentiments     *Sentiment  `gorm:"type:jsonb;not null;default:'{}'"`
+	ItemID             uuid.UUID   `gorm:"primaryKey;type:uuid"` // FK to ItemID
+	FeedID             uuid.UUID   `gorm:"type:uuid;not null"`   // FK to FeedID
+	Language           string      `gorm:"not null"`
+	PubDate            time.Time   `gorm:"not null"`
+	CategoryStems      StringArray `gorm:"type:text[]"`
+	NounStems          StringArray `gorm:"type:text[]"`
+	VerbStems          StringArray `gorm:"type:text[]"`
+	AdjectiveStems     StringArray `gorm:"type:text[]"`
+	RootDomain         string      `gorm:"not null"`
+	Sentiments         *Sentiment  `gorm:"type:jsonb;not null;default:'{}'"`
+	SentimentsDeframed *Sentiment  `gorm:"type:jsonb;not null;default:'{}'"`
 }

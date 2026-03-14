@@ -1,8 +1,9 @@
 BEGIN TRANSACTION;
 
--- SELECT * FROM trends WHERE sentiments <> '{}'::jsonb LIMIT 10;
+-- SELECT * FROM trends WHERE sentiments <> '{}'::jsonb OR sentiments_deframed <> '{}'::jsonb LIMIT 10;
 
 UPDATE trends
-SET sentiments = '{}'::jsonb;
+SET sentiments = '{}'::jsonb,
+    sentiments_deframed = '{}'::jsonb;
 
 ROLLBACK;
