@@ -88,21 +88,16 @@ GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}&off
     - `404 Not Found`: Domain or term unknown.
 
 ```bash
-GET /api/sentiments?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}&deframed=${DEFRAMED}
+GET /api/sentiments?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
 ```
 **Behavior**:
-- Used to return sentiment data for the selected trend term within the given root domain and time window.
+- Used to return sentiment data for the selected trend term within the given root domain and time window. The response includes the regular sentiments and, if available, the deframed sentiments.
 - **Temporal Parameters**:
     - `date` is optional (`YYYY-MM-DD`).
     - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
     - `days` (optional, default `1`) defines window size.
     - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
     - Without `date`: effective window is `[NOW() - days, NOW())`.
-- **Sentiment Variant Parameter**:
-    - `deframed` is optional.
-    - Accepted truthy values are `1` and `true`.
-    - If `deframed` is truthy, the API returns data from the deframed sentiment field.
-    - Otherwise, the API returns data from the regular sentiment field.
 - **Status Codes**:
     - `200 OK`: Returns JSON object.
     - `404 Not Found`: Domain or term unknown.
