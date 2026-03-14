@@ -478,6 +478,56 @@ func TestUpsertItem(t *testing.T) {
 		assert.Equal(t, "hash-2", strings.TrimSpace(stored.Hash))
 		assert.Equal(t, "content-2", stored.Content)
 	})
+
+	t.Run("WithTrendInvalidation_DeletesTrend", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://upsert-item-invalidate.test", Enabled: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		item := &Item{
+			FeedID:  feed.ID,
+			Hash:    "hash-invalidate",
+			URL:     "http://item-invalidate",
+			Content: "content-before",
+		}
+		assert.NoError(t, repo.UpsertItem(item))
+		assert.NoError(t, tx.Create(&Trend{ItemID: item.ID, FeedID: feed.ID, RootDomain: "example.com", Language: "en"}).Error)
+
+		item.Content = "content-after"
+		assert.NoError(t, repo.UpsertItemWithTrendInvalidation(item))
+
+		var count int64
+		assert.NoError(t, tx.Model(&Trend{}).Where("item_id = ?", item.ID).Count(&count).Error)
+		assert.Equal(t, int64(0), count)
+	})
+
+	t.Run("WithoutTrendInvalidation_KeepsTrend", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://upsert-item-keep-trend.test", Enabled: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		item := &Item{
+			FeedID:  feed.ID,
+			Hash:    "hash-keep-trend",
+			URL:     "http://item-keep-trend",
+			Content: "content-before",
+		}
+		assert.NoError(t, repo.UpsertItem(item))
+		assert.NoError(t, tx.Create(&Trend{ItemID: item.ID, FeedID: feed.ID, RootDomain: "example.com", Language: "en"}).Error)
+
+		item.Content = "content-after"
+		assert.NoError(t, repo.UpsertItem(item))
+
+		var count int64
+		assert.NoError(t, tx.Model(&Trend{}).Where("item_id = ?", item.ID).Count(&count).Error)
+		assert.Equal(t, int64(1), count)
+	})
 }
 
 func TestFindItemsByUrl(t *testing.T) {

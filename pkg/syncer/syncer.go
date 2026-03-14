@@ -416,7 +416,8 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 	dbItem.Categories = emptyStringArray(result.categories)
 	dbItem.Authors = emptyStringArray(result.authors)
 
-	if err := s.repo.UpsertItem(dbItem); err != nil {
+	// let the trend miner recreate it as it now has access to the thinker results
+	if err := s.repo.UpsertItemWithTrendInvalidation(dbItem); err != nil {
 		s.logger.Error("failed to update item", "error", err, "item_id", dbItem.ID)
 	}
 }

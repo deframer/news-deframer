@@ -549,6 +549,10 @@ func (m *MockRepo) UpsertItem(item *database.Item) error {
 	return nil
 }
 
+func (m *MockRepo) UpsertItemWithTrendInvalidation(item *database.Item) error {
+	return nil
+}
+
 func (m *MockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error) {
 	return nil, nil
 }

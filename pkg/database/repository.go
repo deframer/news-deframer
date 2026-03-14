@@ -111,6 +111,7 @@ type Repository interface {
 	GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item, error)
 	BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
 	UpsertItem(item *Item) error
+	UpsertItemWithTrendInvalidation(item *Item) error
 	UpsertCachedFeed(cachedFeed *CachedFeed) error
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
@@ -207,36 +208,56 @@ func (r *repository) UpsertFeed(feed *Feed) error {
 }
 
 func (r *repository) UpsertItem(item *Item) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return r.upsertItemInternal(tx, item, false)
+	})
+}
+
+func (r *repository) UpsertItemWithTrendInvalidation(item *Item) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return r.upsertItemInternal(tx, item, true)
+	})
+}
+
+func (r *repository) upsertItemInternal(tx *gorm.DB, item *Item, invalidateTrend bool) error {
 	if item.Categories == nil {
 		item.Categories = []string{}
 	}
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if item.ID == uuid.Nil {
-			var existing Item
-			if err := tx.Select("id", "created_at").Where("feed_id = ? AND hash = ?", item.FeedID, item.Hash).First(&existing).Error; err != nil {
-				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					return err
-				}
-			} else {
-				item.ID = existing.ID
-				item.CreatedAt = existing.CreatedAt
-			}
-		}
-
-		// Mitigation: check for URL conflict within the same feed (different hash)
-		var urlConflict Item
-		if err := tx.Where("feed_id = ? AND url = ? AND hash != ?", item.FeedID, item.URL, item.Hash).First(&urlConflict).Error; err == nil {
-			slog.Warn("URL conflict detected, deleting old version to allow update", "url", item.URL, "old_hash", urlConflict.Hash, "new_hash", item.Hash)
-			if err := tx.Where("item_id = ?", urlConflict.ID).Delete(&Trend{}).Error; err != nil {
+	if item.ID == uuid.Nil {
+		var existing Item
+		if err := tx.Select("id", "created_at").Where("feed_id = ? AND hash = ?", item.FeedID, item.Hash).First(&existing).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
-			if err := tx.Delete(&urlConflict).Error; err != nil {
-				return err
-			}
+		} else {
+			item.ID = existing.ID
+			item.CreatedAt = existing.CreatedAt
 		}
+	}
 
-		return tx.Save(item).Error
-	})
+	// Mitigation: check for URL conflict within the same feed (different hash)
+	var urlConflict Item
+	if err := tx.Where("feed_id = ? AND url = ? AND hash != ?", item.FeedID, item.URL, item.Hash).First(&urlConflict).Error; err == nil {
+		slog.Warn("URL conflict detected, deleting old version to allow update", "url", item.URL, "old_hash", urlConflict.Hash, "new_hash", item.Hash)
+		if err := tx.Where("item_id = ?", urlConflict.ID).Delete(&Trend{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&urlConflict).Error; err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Save(item).Error; err != nil {
+		return err
+	}
+
+	if invalidateTrend {
+		if err := tx.Where("item_id = ?", item.ID).Delete(&Trend{}).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (r *repository) EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error {

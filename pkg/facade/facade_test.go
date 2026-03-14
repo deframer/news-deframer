@@ -176,6 +176,13 @@ func (m *mockRepo) UpsertItem(item *database.Item) error {
 	return nil
 }
 
+func (m *mockRepo) UpsertItemWithTrendInvalidation(item *database.Item) error {
+	if m.upsertItem != nil {
+		return m.upsertItem(item)
+	}
+	return nil
+}
+
 func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]database.Item, error) {
 	if m.getItemsByHashes != nil {
 		return m.getItemsByHashes(feedID, hashes)

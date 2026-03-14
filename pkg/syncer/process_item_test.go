@@ -152,7 +152,7 @@ func TestProcessThinkerItem_Authors(t *testing.T) {
 	}
 
 	var capturedItem *database.Item
-	repo.upsertItemFunc = func(updated *database.Item) error {
+	repo.upsertItemInvalidateFunc = func(updated *database.Item) error {
 		capturedItem = updated
 		return nil
 	}
@@ -188,7 +188,7 @@ func TestProcessThinkerItem_EmptyAuthors(t *testing.T) {
 	}
 
 	var capturedItem *database.Item
-	repo.upsertItemFunc = func(updated *database.Item) error {
+	repo.upsertItemInvalidateFunc = func(updated *database.Item) error {
 		capturedItem = updated
 		return nil
 	}
@@ -197,6 +197,46 @@ func TestProcessThinkerItem_EmptyAuthors(t *testing.T) {
 
 	assert.NotNil(t, capturedItem)
 	assert.Equal(t, database.StringArray{}, capturedItem.Authors)
+}
+
+func TestProcessThinkerItem_UsesTrendInvalidatingUpsert(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	s.think = &mockThink{}
+	s.feeds = feeds.NewFeeds(context.Background(), cfg)
+
+	dbItem := &database.Item{
+		ID:     uuid.New(),
+		FeedID: uuid.New(),
+		URL:    "http://example.com/item",
+		Content: strings.TrimSpace(`
+			<item>
+				<title>Thinker item</title>
+				<link>http://example.com/item</link>
+				<description>hello</description>
+			</item>`),
+	}
+
+	plainCalled := false
+	invalidateCalled := false
+	repo.upsertItemFunc = func(updated *database.Item) error {
+		plainCalled = true
+		return nil
+	}
+	repo.upsertItemInvalidateFunc = func(updated *database.Item) error {
+		invalidateCalled = true
+		return nil
+	}
+
+	s.processThinkerItem(dbItem)
+
+	assert.False(t, plainCalled)
+	assert.True(t, invalidateCalled)
 }
 
 func TestProcessItemErrorHandling(t *testing.T) {

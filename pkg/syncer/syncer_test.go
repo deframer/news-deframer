@@ -24,6 +24,7 @@ type mockRepo struct {
 	lastId                   uuid.UUID
 	removeSyncCalled         bool
 	upsertItemFunc           func(item *database.Item) error
+	upsertItemInvalidateFunc func(item *database.Item) error
 	getTopTrendByDomainFunc  func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
 	getContextByDomainFunc   func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
 	getLifecycleByDomainFunc func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
@@ -61,6 +62,15 @@ func (m *mockRepo) GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries
 	return res, nil
 }
 func (m *mockRepo) UpsertItem(item *database.Item) error {
+	if m.upsertItemFunc != nil {
+		return m.upsertItemFunc(item)
+	}
+	return nil
+}
+func (m *mockRepo) UpsertItemWithTrendInvalidation(item *database.Item) error {
+	if m.upsertItemInvalidateFunc != nil {
+		return m.upsertItemInvalidateFunc(item)
+	}
 	if m.upsertItemFunc != nil {
 		return m.upsertItemFunc(item)
 	}
