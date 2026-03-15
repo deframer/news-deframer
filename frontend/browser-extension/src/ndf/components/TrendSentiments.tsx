@@ -1,7 +1,5 @@
 import { CSSProperties, useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import '../styles.css';
-
 
 import log from '../../shared/logger';
 import { getSettings } from '../../shared/settings';
