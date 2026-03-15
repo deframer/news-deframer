@@ -275,13 +275,49 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   text-align: center;
 }
 .sentiment-panel {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 12px;
   margin-top: 16px;
   padding: 16px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--card-bg);
+}
+.sentiment-panel-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+.sentiment-toggle-pill {
+  display: inline-flex;
+  background-color: var(--bg-color-secondary);
+  border-radius: 999px;
+  padding: 4px;
+  border: 1px solid var(--border-color);
+}
+.sentiment-toggle-btn {
+  background: transparent;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 500;
+  color: var(--secondary-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sentiment-toggle-btn:hover:not(:disabled) {
+  color: var(--text-color);
+}
+.sentiment-toggle-btn.active {
+  background-color: var(--accent-color);
+  color: var(--accent-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+.sentiment-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .sentiment-panel-state {
   min-height: 120px;
@@ -295,35 +331,28 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .sentiment-section {
   display: grid;
   gap: 12px;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.sentiment-section + .sentiment-section {
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 14px;
-  background: var(--bg-color-secondary);
-}
-.sentiment-section:first-child {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 14px;
   background: var(--bg-color-secondary);
 }
 .sentiment-section-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: 88px 44px minmax(0, 1fr) 20px;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   color: var(--secondary-text);
   font-size: 0.82em;
 }
-.sentiment-section-header strong {
+.sentiment-header-label {
   color: var(--text-color);
   font-size: 1.05em;
   letter-spacing: 0.06em;
+  font-weight: bold;
+}
+.sentiment-header-scale {
+  text-align: left;
+  grid-column: 2 / span 3;
 }
 .sentiment-rows {
   display: grid;
@@ -409,8 +438,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 
 @media (max-width: 799px) {
   .sentiment-section-header {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: 78px 42px minmax(0, 1fr) 20px;
   }
   .sentiment-metric-row {
     grid-template-columns: 78px 42px minmax(0, 1fr) 20px;

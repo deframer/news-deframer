@@ -196,28 +196,26 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
 
   return (
     <div className={`sentiment-panel ${className || ''}`}>
-      <div className="sentiment-toggle">
-        <label>
-          <input
-            type="radio"
-            name="sentimentType"
-            value="sentiments"
-            checked={sentimentType === 'sentiments'}
-            onChange={() => setSentimentType('sentiments')}
-          />
-          {t('trends.sentiments_original', 'Original')}
-        </label>
-        <label>
-          <input
-            type="radio"
-            name="sentimentType"
-            value="sentiments_deframed"
-            checked={sentimentType === 'sentiments_deframed'}
-            onChange={() => setSentimentType('sentiments_deframed')}
+      <div className="sentiment-panel-header">
+        <div className="sentiment-toggle-pill" role="group" aria-label={t('trends.sentiments_toggle', 'Sentiment Data Source')}>
+          <button
+            type="button"
+            className={`sentiment-toggle-btn ${sentimentType === 'sentiments' ? 'active' : ''}`}
+            aria-pressed={sentimentType === 'sentiments'}
+            onClick={() => setSentimentType('sentiments')}
+          >
+            {t('trends.sentiments_original', 'Original')}
+          </button>
+          <button
+            type="button"
+            className={`sentiment-toggle-btn ${sentimentType === 'sentiments_deframed' ? 'active' : ''}`}
+            aria-pressed={sentimentType === 'sentiments_deframed'}
+            onClick={() => setSentimentType('sentiments_deframed')}
             disabled={!sentiments?.sentiments_deframed}
-          />
-          {t('trends.sentiments_deframed', 'Deframed')}
-        </label>
+          >
+            {t('trends.sentiments_deframed', 'Deframed')}
+          </button>
+        </div>
       </div>
 
       {!hasData && hasLoaded && (
@@ -232,8 +230,8 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
         <>
           <section className="sentiment-section">
             <div className="sentiment-section-header">
-              <strong>{t('trends.sentiments_vad', 'VAD')}</strong>
-              <span>{t('trends.sentiments_vad_scale', 'Scale 1-9, neutral at 5')}</span>
+              <strong className="sentiment-header-label">{t('trends.sentiments_vad', 'VAD')}</strong>
+              <span className="sentiment-header-scale">{t('trends.sentiments_vad_scale', 'Scale 1-9, neutral at 5')}</span>
             </div>
             <div className="sentiment-rows">
               {vadMetrics.map((metric) => {
@@ -285,8 +283,8 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
 
           <section className="sentiment-section">
             <div className="sentiment-section-header">
-              <strong>{t('trends.sentiments_be5', 'BE5')}</strong>
-              <span>{t('trends.sentiments_be5_scale', 'Scale 1-5, absent to max')}</span>
+              <strong className="sentiment-header-label">{t('trends.sentiments_be5', 'BE5')}</strong>
+              <span className="sentiment-header-scale">{t('trends.sentiments_be5_scale', 'Scale 1-5, absent to max')}</span>
             </div>
             <div className="sentiment-rows">
               {be5Metrics.map((metric) => {

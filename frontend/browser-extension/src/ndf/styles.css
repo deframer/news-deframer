@@ -1101,23 +1101,5 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   font-size: 0.9em;
 }
 
-/* TrendSentiments.tsx */
-.sentiment-panel {
-  position: relative;
-}
 
-.sentiment-toggle {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  display: flex;
-  gap: 10px;
-}
-
-.sentiment-toggle label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-}
 
