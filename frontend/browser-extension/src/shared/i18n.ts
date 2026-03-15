@@ -48,6 +48,10 @@ const resources = {
         sentiments_vad_scale: 'Scale 1-9, neutral at 5',
         sentiments_be5: 'BE5',
         sentiments_be5_scale: 'Scale 1-5, absent to max',
+        sentiments_original: 'Original',
+        sentiments_deframed: 'Deframed',
+        sentiments_na: 'N/A',
+        sentiments_no_data_for_type: 'No {{type}} sentiment data available.',
         sentiments_disclaimer: 'These scores describe the emotional meaning of the selected article set. They are lexical estimates based on word usage, not direct measurements of what authors, readers, or the public feel.',
         sentiments_metrics: {
           valence: {
@@ -205,6 +209,10 @@ const resources = {
         sentiments_vad_scale: 'Skala 1-9, neutral bei 5',
         sentiments_be5: 'BE5',
         sentiments_be5_scale: 'Skala 1-5, von abwesend bis maximal',
+        sentiments_original: 'Original',
+        sentiments_deframed: 'Deframed',
+        sentiments_na: 'N/V',
+        sentiments_no_data_for_type: 'Keine {{type}} Sentiment-Daten verfügbar.',
         sentiments_disclaimer: 'Diese Werte beschreiben den Emotionsgehalt der ausgewählten Artikel. Es sind lexikalische Schätzungen auf Basis der verwendeten Wörter, keine direkten Aussagen darüber, was Autorinnen und Autoren, Leserinnen und Leser oder die Öffentlichkeit fühlen.',
         sentiments_metrics: {
           valence: {
