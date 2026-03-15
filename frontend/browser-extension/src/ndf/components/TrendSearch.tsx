@@ -7,8 +7,8 @@ import { TrendDetails } from './TrendDetails';
 interface TrendSearchProps {
   domain: DomainEntry;
   days: number;
-  activeTab: 'lifecycle' | 'context' | 'articles';
-  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles'>>;
+  activeTab: 'lifecycle' | 'context' | 'articles' | 'sentiments';
+  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles' | 'sentiments'>>;
 }
 
 export const TrendSearch = ({ domain, days, activeTab, setActiveTab }: TrendSearchProps) => {

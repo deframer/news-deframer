@@ -20,7 +20,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
-  const [detailTab, setDetailTab] = useState<'lifecycle' | 'context' | 'articles'>('lifecycle');
+  const [detailTab, setDetailTab] = useState<'lifecycle' | 'context' | 'articles' | 'sentiments'>('lifecycle');
 
   const domainOptions = availableDomains.filter(d => d.domain !== domain.domain && d.language === domain.language).map(d => ({ id: d.domain, name: d.domain }));
   const [compareDomain, setCompareDomain] = useState<string | null>(domainOptions[0]?.id || null);

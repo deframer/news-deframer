@@ -91,6 +91,7 @@ func (s *Server) registerAPIEndpoints(mux *http.ServeMux, prefix string) {
 	mux.Handle(prefix+"/item", s.basicAuthMiddleware(s.handleItem))
 	mux.Handle(prefix+"/site", s.basicAuthMiddleware(s.handleSite))
 	mux.Handle(prefix+"/articles", s.basicAuthMiddleware(s.handleArticles))
+	mux.Handle(prefix+"/sentiments", s.basicAuthMiddleware(s.handleSentiments))
 	mux.Handle(prefix+"/domains", s.basicAuthMiddleware(s.handleDomains))
 	mux.Handle(prefix+"/trends/topbydomain", s.basicAuthMiddleware(s.handleTopTrendsByDomain))
 	mux.Handle(prefix+"/trends/contextbydomain", s.basicAuthMiddleware(s.handleContextByDomain))
@@ -599,6 +600,45 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(articles); err != nil {
+		s.logger.Error("failed to write response", "error", err)
+	}
+}
+
+func (s *Server) handleSentiments(w http.ResponseWriter, r *http.Request) {
+	s.logger.Debug("handleSentiments", "url", r.URL.String())
+	q := r.URL.Query()
+
+	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
+	term := q.Get("term")
+	date, err := parseOptionalDateParam(q.Get("date"))
+	if err != nil {
+		http.Error(w, "invalid date format, expected YYYY-MM-DD", http.StatusBadRequest)
+		return
+	}
+
+	days := 1
+	if v, err := strconv.Atoi(q.Get("days")); err == nil {
+		days = v
+	}
+
+	if rootDomain == "" || term == "" {
+		http.Error(w, "missing root or term", http.StatusBadRequest)
+		return
+	}
+
+	item, err := s.facade.GetSentimentsByTrend(r.Context(), term, rootDomain, date, days)
+	if err != nil || item == nil {
+		if err != nil {
+			s.logger.Error("GetSentimentsByTrend failed", "error", err)
+		} else {
+			s.logger.Debug("no trend sentiments found", "root", rootDomain, "term", term, "date", formatOptionalDate(date), "days", days)
+		}
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(item); err != nil {
 		s.logger.Error("failed to write response", "error", err)
 	}
 }

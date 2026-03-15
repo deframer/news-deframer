@@ -549,6 +549,10 @@ func (m *MockRepo) UpsertItem(item *database.Item) error {
 	return nil
 }
 
+func (m *MockRepo) UpsertItemWithTrendInvalidation(item *database.Item) error {
+	return nil
+}
+
 func (m *MockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error) {
 	return nil, nil
 }
@@ -684,6 +688,10 @@ func (m *MockRepo) GetDomainComparison(domainA string, domainB string, language 
 }
 
 func (m *MockRepo) GetArticlesByTrend(term string, domain string, date *time.Time, days int, limit int, offset int) ([]database.AnalyzedArticle, error) {
+	return nil, nil
+}
+
+func (m *MockRepo) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
 	return nil, nil
 }
 

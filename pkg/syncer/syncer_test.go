@@ -24,11 +24,13 @@ type mockRepo struct {
 	lastId                   uuid.UUID
 	removeSyncCalled         bool
 	upsertItemFunc           func(item *database.Item) error
+	upsertItemInvalidateFunc func(item *database.Item) error
 	getTopTrendByDomainFunc  func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
 	getContextByDomainFunc   func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
 	getLifecycleByDomainFunc func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
 	getDomainComparisonFunc  func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
 	getArticlesByTrendFunc   func(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
+	getSentimentsByTrendFunc func(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
 }
 
 // Implement database.Repository interface stubs
@@ -60,6 +62,15 @@ func (m *mockRepo) GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries
 	return res, nil
 }
 func (m *mockRepo) UpsertItem(item *database.Item) error {
+	if m.upsertItemFunc != nil {
+		return m.upsertItemFunc(item)
+	}
+	return nil
+}
+func (m *mockRepo) UpsertItemWithTrendInvalidation(item *database.Item) error {
+	if m.upsertItemInvalidateFunc != nil {
+		return m.upsertItemInvalidateFunc(item)
+	}
 	if m.upsertItemFunc != nil {
 		return m.upsertItemFunc(item)
 	}
@@ -116,6 +127,13 @@ func (m *mockRepo) GetDomainComparison(domainA string, domainB string, language 
 func (m *mockRepo) GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error) {
 	if m.getArticlesByTrendFunc != nil {
 		return m.getArticlesByTrendFunc(term, domain, date, days, offset, limit)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error) {
+	if m.getSentimentsByTrendFunc != nil {
+		return m.getSentimentsByTrendFunc(term, domain, date, days)
 	}
 	return nil, nil
 }

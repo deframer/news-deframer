@@ -87,7 +87,89 @@ GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}&off
     - `200 OK`: Returns JSON object/array.
     - `404 Not Found`: Domain or term unknown.
 
-#### C. Temporal Query Convention (Planned Refactor)
+```bash
+GET /api/sentiments?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
+```
+**Behavior**:
+- Used to return sentiment data for the selected trend term within the given root domain and time window. The response includes the regular sentiments and, if available, the deframed sentiments.
+- **Temporal Parameters**:
+    - `date` is optional (`YYYY-MM-DD`).
+    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
+    - `days` (optional, default `1`) defines window size.
+    - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
+    - Without `date`: effective window is `[NOW() - days, NOW())`.
+- **Status Codes**:
+    - `200 OK`: Returns JSON object.
+    - `404 Not Found`: Domain or term unknown.
+
+#### C. Trend API Endpoints
+
+```bash
+GET /api/trends/topbydomain?domain=${ROOT_DOMAIN}&lang=${LANG}&date=${DATE}&days=${DAYS}
+```
+**Behavior**:
+- Used to return a list of the top trending terms (stems) for a specific domain and language.
+- **Query Parameters**:
+    - `domain` (or `d`): The root domain to analyze.
+    - `lang` (or `l`): The language code (e.g., `de`, `en`).
+- **Temporal Parameters**:
+    - `date` is optional (`YYYY-MM-DD`).
+    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
+    - `days` (optional, default `1`) defines window size.
+- **Status Codes**:
+    - `200 OK`: Returns JSON array of `TrendMetric`.
+    - `400 Bad Request`: Missing domain or language.
+    - `404 Not Found`: Domain unknown or no trends found.
+
+```bash
+GET /api/trends/contextbydomain?term=${TERM}&domain=${ROOT_DOMAIN}&lang=${LANG}&date=${DATE}&days=${DAYS}
+```
+**Behavior**:
+- Used to return context words frequently co-occurring with a specific trend term.
+- **Query Parameters**:
+    - `term` (or `t`): The trend term to analyze.
+    - `domain` (or `d`): The root domain to analyze.
+    - `lang` (or `l`): The language code (e.g., `de`, `en`).
+- **Temporal Parameters**:
+    - (Same as above)
+- **Status Codes**:
+    - `200 OK`: Returns JSON array of `TrendContext`.
+    - `400 Bad Request`: Missing term, domain, or language.
+    - `404 Not Found`: Domain/term unknown or no context found.
+
+```bash
+GET /api/trends/lifecyclebydomain?term=${TERM}&domain=${ROOT_DOMAIN}&lang=${LANG}&date=${DATE}&days=${DAYS}
+```
+**Behavior**:
+- Used to return a time-series view (frequency and velocity) of a specific trend term's lifecycle.
+- **Query Parameters**:
+    - `term` (or `t`): The trend term to analyze.
+    - `domain` (or `d`): The root domain to analyze.
+    - `lang` (or `l`): The language code (e.g., `de`, `en`).
+- **Temporal Parameters**:
+    - (Same as above)
+- **Status Codes**:
+    - `200 OK`: Returns JSON array of `Lifecycle`.
+    - `400 Bad Request`: Missing term, domain, or language.
+    - `404 Not Found`: Domain/term unknown or no lifecycle found.
+
+```bash
+GET /api/trends/comparedomains?domain_a=${DOMAIN_A}&domain_b=${DOMAIN_B}&lang=${LANG}&date=${DATE}&days=${DAYS}
+```
+**Behavior**:
+- Used to return a comparison of trending terms between two different domains, highlighting commonalities and outliers.
+- **Query Parameters**:
+    - `domain_a` (or `da`): The first root domain.
+    - `domain_b` (or `db`): The second root domain.
+    - `lang` (or `l`): The language code (e.g., `de`, `en`).
+- **Temporal Parameters**:
+    - (Same as above)
+- **Status Codes**:
+    - `200 OK`: Returns JSON array of `DomainComparison`.
+    - `400 Bad Request`: Missing domain_a, domain_b, or language.
+    - `404 Not Found`: Domains unknown or no comparison data found.
+
+#### D. Temporal Query Convention (Planned Refactor)
 
 For trend-oriented endpoints currently using `daysInPast`, we will move to a unified temporal contract:
 

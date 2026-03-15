@@ -33,6 +33,9 @@ var compareDomainsQuery string
 //go:embed sql/statement/articles_by_trend.sql
 var articlesByTrendQuery string
 
+//go:embed sql/statement/sentiments_by_trend.sql
+var sentimentsByTrendQuery string
+
 const DomainComparisonUtilityThreshold = 1.0
 const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
@@ -72,6 +75,22 @@ type AnalyzedArticle struct {
 	PubDate time.Time   `gorm:"column:pub_date" json:"pub_date"`
 }
 
+type SentimentScores struct {
+	Valence   *float64 `gorm:"column:valence" json:"valence,omitempty"`
+	Arousal   *float64 `gorm:"column:arousal" json:"arousal,omitempty"`
+	Dominance *float64 `gorm:"column:dominance" json:"dominance,omitempty"`
+	Joy       *float64 `gorm:"column:joy" json:"joy,omitempty"`
+	Anger     *float64 `gorm:"column:anger" json:"anger,omitempty"`
+	Sadness   *float64 `gorm:"column:sadness" json:"sadness,omitempty"`
+	Fear      *float64 `gorm:"column:fear" json:"fear,omitempty"`
+	Disgust   *float64 `gorm:"column:disgust" json:"disgust,omitempty"`
+}
+
+type SentimentItem struct {
+	Sentiments         *SentimentScores `json:"sentiments,omitempty"`
+	SentimentsDeframed *SentimentScores `json:"sentiments_deframed,omitempty"`
+}
+
 type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
 	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
@@ -97,6 +116,7 @@ type Repository interface {
 	GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item, error)
 	BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
 	UpsertItem(item *Item) error
+	UpsertItemWithTrendInvalidation(item *Item) error
 	UpsertCachedFeed(cachedFeed *CachedFeed) error
 	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
@@ -106,6 +126,7 @@ type Repository interface {
 	GetLifecycleByDomain(term string, domain string, language string, date *time.Time, days int) ([]Lifecycle, error)
 	GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
 	GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error)
+	GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error)
 }
 
 type repository struct {
@@ -192,36 +213,56 @@ func (r *repository) UpsertFeed(feed *Feed) error {
 }
 
 func (r *repository) UpsertItem(item *Item) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return r.upsertItemInternal(tx, item, false)
+	})
+}
+
+func (r *repository) UpsertItemWithTrendInvalidation(item *Item) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		return r.upsertItemInternal(tx, item, true)
+	})
+}
+
+func (r *repository) upsertItemInternal(tx *gorm.DB, item *Item, invalidateTrend bool) error {
 	if item.Categories == nil {
 		item.Categories = []string{}
 	}
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if item.ID == uuid.Nil {
-			var existing Item
-			if err := tx.Select("id", "created_at").Where("feed_id = ? AND hash = ?", item.FeedID, item.Hash).First(&existing).Error; err != nil {
-				if !errors.Is(err, gorm.ErrRecordNotFound) {
-					return err
-				}
-			} else {
-				item.ID = existing.ID
-				item.CreatedAt = existing.CreatedAt
-			}
-		}
-
-		// Mitigation: check for URL conflict within the same feed (different hash)
-		var urlConflict Item
-		if err := tx.Where("feed_id = ? AND url = ? AND hash != ?", item.FeedID, item.URL, item.Hash).First(&urlConflict).Error; err == nil {
-			slog.Warn("URL conflict detected, deleting old version to allow update", "url", item.URL, "old_hash", urlConflict.Hash, "new_hash", item.Hash)
-			if err := tx.Where("item_id = ?", urlConflict.ID).Delete(&Trend{}).Error; err != nil {
+	if item.ID == uuid.Nil {
+		var existing Item
+		if err := tx.Select("id", "created_at").Where("feed_id = ? AND hash = ?", item.FeedID, item.Hash).First(&existing).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
-			if err := tx.Delete(&urlConflict).Error; err != nil {
-				return err
-			}
+		} else {
+			item.ID = existing.ID
+			item.CreatedAt = existing.CreatedAt
 		}
+	}
 
-		return tx.Save(item).Error
-	})
+	// Mitigation: check for URL conflict within the same feed (different hash)
+	var urlConflict Item
+	if err := tx.Where("feed_id = ? AND url = ? AND hash != ?", item.FeedID, item.URL, item.Hash).First(&urlConflict).Error; err == nil {
+		slog.Warn("URL conflict detected, deleting old version to allow update", "url", item.URL, "old_hash", urlConflict.Hash, "new_hash", item.Hash)
+		if err := tx.Where("item_id = ?", urlConflict.ID).Delete(&Trend{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&urlConflict).Error; err != nil {
+			return err
+		}
+	}
+
+	if err := tx.Save(item).Error; err != nil {
+		return err
+	}
+
+	if invalidateTrend {
+		if err := tx.Where("item_id = ?", item.ID).Delete(&Trend{}).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (r *repository) EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error {
@@ -784,4 +825,73 @@ func (r *repository) GetArticlesByTrend(term string, domain string, date *time.T
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error) {
+	days = normalizeDays(days, 365)
+
+	var flat struct {
+		Valence           *float64 `gorm:"column:valence"`
+		Arousal           *float64 `gorm:"column:arousal"`
+		Dominance         *float64 `gorm:"column:dominance"`
+		Joy               *float64 `gorm:"column:joy"`
+		Anger             *float64 `gorm:"column:anger"`
+		Sadness           *float64 `gorm:"column:sadness"`
+		Fear              *float64 `gorm:"column:fear"`
+		Disgust           *float64 `gorm:"column:disgust"`
+		DeframedValence   *float64 `gorm:"column:deframed_valence"`
+		DeframedArousal   *float64 `gorm:"column:deframed_arousal"`
+		DeframedDominance *float64 `gorm:"column:deframed_dominance"`
+		DeframedJoy       *float64 `gorm:"column:deframed_joy"`
+		DeframedAnger     *float64 `gorm:"column:deframed_anger"`
+		DeframedSadness   *float64 `gorm:"column:deframed_sadness"`
+		DeframedFear      *float64 `gorm:"column:deframed_fear"`
+		DeframedDisgust   *float64 `gorm:"column:deframed_disgust"`
+	}
+
+	if err := r.db.Raw(sentimentsByTrendQuery,
+		sql.Named("term", term),
+		sql.Named("domain", domain),
+		sql.Named("date", normalizeDateParam(date)),
+		sql.Named("days", days),
+	).Scan(&flat).Error; err != nil {
+		return nil, err
+	}
+
+	var reg *SentimentScores
+	if flat.Valence != nil || flat.Arousal != nil || flat.Dominance != nil || flat.Joy != nil || flat.Anger != nil || flat.Sadness != nil || flat.Fear != nil || flat.Disgust != nil {
+		reg = &SentimentScores{
+			Valence:   flat.Valence,
+			Arousal:   flat.Arousal,
+			Dominance: flat.Dominance,
+			Joy:       flat.Joy,
+			Anger:     flat.Anger,
+			Sadness:   flat.Sadness,
+			Fear:      flat.Fear,
+			Disgust:   flat.Disgust,
+		}
+	}
+
+	var def *SentimentScores
+	if flat.DeframedValence != nil || flat.DeframedArousal != nil || flat.DeframedDominance != nil || flat.DeframedJoy != nil || flat.DeframedAnger != nil || flat.DeframedSadness != nil || flat.DeframedFear != nil || flat.DeframedDisgust != nil {
+		def = &SentimentScores{
+			Valence:   flat.DeframedValence,
+			Arousal:   flat.DeframedArousal,
+			Dominance: flat.DeframedDominance,
+			Joy:       flat.DeframedJoy,
+			Anger:     flat.DeframedAnger,
+			Sadness:   flat.DeframedSadness,
+			Fear:      flat.DeframedFear,
+			Disgust:   flat.DeframedDisgust,
+		}
+	}
+
+	if reg == nil && def == nil {
+		return nil, nil
+	}
+
+	return &SentimentItem{
+		Sentiments:         reg,
+		SentimentsDeframed: def,
+	}, nil
 }

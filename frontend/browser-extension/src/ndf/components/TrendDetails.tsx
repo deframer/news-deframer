@@ -5,14 +5,15 @@ import { DomainEntry } from '../client';
 import { ArticleList } from './ArticleList';
 import { TrendContextChart } from './TrendContext';
 import { TrendLifecycleChart } from './TrendLifecycleChart';
+import { TrendSentiments } from './TrendSentiments';
 
 interface TrendDetailsProps {
   term: string;
   domain: DomainEntry;
   days: number;
   showBorder?: boolean;
-  activeTab: 'lifecycle' | 'context' | 'articles';
-  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles'>>;
+  activeTab: 'lifecycle' | 'context' | 'articles' | 'sentiments';
+  setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles' | 'sentiments'>>;
 }
 
 export const TrendDetails = ({ term, domain, days, showBorder = true, activeTab, setActiveTab }: TrendDetailsProps) => {
@@ -39,10 +40,17 @@ export const TrendDetails = ({ term, domain, days, showBorder = true, activeTab,
         >
           {t('trends.articles', 'Articles')}
         </button>
+        <button
+          className={`sub-tab-btn ${activeTab === 'sentiments' ? 'active' : ''}`}
+          onClick={() => setActiveTab('sentiments')}
+        >
+          {t('trends.sentiments', 'Sentiments')}
+        </button>
       </div>
       {activeTab === 'context' && <TrendContextChart topic={term} days={days} domain={domain} />}
       {activeTab === 'lifecycle' && <TrendLifecycleChart domain={domain} days={days} term={term} />}
       {activeTab === 'articles' && <ArticleList term={term} domain={domain} days={days} hideTitle={true} />}
+      {activeTab === 'sentiments' && <TrendSentiments term={term} domain={domain} days={days} />}
     </div>
   );
 };
