@@ -284,24 +284,23 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   border-radius: 8px;
   background: var(--card-bg);
 }
-.sentiment-panel-header {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 4px;
-}
 .sentiment-toggle-pill {
+  position: absolute;
+  top: 10px;
+  right: 14px;
   display: inline-flex;
   background-color: var(--bg-color-secondary);
   border-radius: 999px;
   padding: 4px;
   border: 1px solid var(--border-color);
+  z-index: 5;
 }
 .sentiment-toggle-btn {
   background: transparent;
   border: none;
-  padding: 6px 16px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 0.85em;
+  font-size: 0.8em;
   font-weight: 500;
   color: var(--secondary-text);
   cursor: pointer;
@@ -329,12 +328,19 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   color: var(--secondary-text);
 }
 .sentiment-section {
+  position: relative;
   display: grid;
   gap: 12px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 14px;
   background: var(--bg-color-secondary);
+}
+.sentiment-divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 4px -14px;
+  width: calc(100% + 28px);
 }
 .sentiment-section-header {
   display: grid;
@@ -345,14 +351,15 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   font-size: 0.82em;
 }
 .sentiment-header-label {
+  grid-column: 1;
   color: var(--text-color);
   font-size: 1.05em;
   letter-spacing: 0.06em;
   font-weight: bold;
 }
 .sentiment-header-scale {
+  grid-column: 3 / span 2;
   text-align: left;
-  grid-column: 2 / span 3;
 }
 .sentiment-rows {
   display: grid;
@@ -439,6 +446,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 @media (max-width: 799px) {
   .sentiment-section-header {
     grid-template-columns: 78px 42px minmax(0, 1fr) 20px;
+    gap: 6px;
   }
   .sentiment-metric-row {
     grid-template-columns: 78px 42px minmax(0, 1fr) 20px;

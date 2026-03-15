@@ -5,7 +5,7 @@ import '../styles.css';
 
 import log from '../../shared/logger';
 import { getSettings } from '../../shared/settings';
-import { DomainEntry, NewsDeframerClient, SentimentItem, SentimentScores } from '../client';
+import { DomainEntry, NewsDeframerClient, SentimentItem } from '../client';
 
 interface TrendSentimentsProps {
   term: string;
@@ -196,28 +196,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
 
   return (
     <div className={`sentiment-panel ${className || ''}`}>
-      <div className="sentiment-panel-header">
-        <div className="sentiment-toggle-pill" role="group" aria-label={t('trends.sentiments_toggle', 'Sentiment Data Source')}>
-          <button
-            type="button"
-            className={`sentiment-toggle-btn ${sentimentType === 'sentiments' ? 'active' : ''}`}
-            aria-pressed={sentimentType === 'sentiments'}
-            onClick={() => setSentimentType('sentiments')}
-          >
-            {t('trends.sentiments_original', 'Original')}
-          </button>
-          <button
-            type="button"
-            className={`sentiment-toggle-btn ${sentimentType === 'sentiments_deframed' ? 'active' : ''}`}
-            aria-pressed={sentimentType === 'sentiments_deframed'}
-            onClick={() => setSentimentType('sentiments_deframed')}
-            disabled={!sentiments?.sentiments_deframed}
-          >
-            {t('trends.sentiments_deframed', 'Deframed')}
-          </button>
-        </div>
-      </div>
-
       {!hasData && hasLoaded && (
         <div className="sentiment-panel-state sentiment-panel-empty">
           {t('trends.sentiments_no_data_for_type', 'No {{type}} sentiment data available.', {
@@ -227,114 +205,132 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
       )}
 
       {hasData && (
-        <>
-          <section className="sentiment-section">
-            <div className="sentiment-section-header">
-              <strong className="sentiment-header-label">{t('trends.sentiments_vad', 'VAD')}</strong>
-              <span className="sentiment-header-scale">{t('trends.sentiments_vad_scale', 'Scale 1-9, neutral at 5')}</span>
-            </div>
-            <div className="sentiment-rows">
-              {vadMetrics.map((metric) => {
-                const value = metricValues[metric.key as keyof typeof metricValues];
+        <section className="sentiment-section">
+          <div className="sentiment-toggle-pill" role="group" aria-label={t('trends.sentiments_toggle', 'Sentiment Data Source')}>
+            <button
+              type="button"
+              className={`sentiment-toggle-btn ${sentimentType === 'sentiments' ? 'active' : ''}`}
+              aria-pressed={sentimentType === 'sentiments'}
+              onClick={() => setSentimentType('sentiments')}
+            >
+              {t('trends.sentiments_original', 'Original')}
+            </button>
+            <button
+              type="button"
+              className={`sentiment-toggle-btn ${sentimentType === 'sentiments_deframed' ? 'active' : ''}`}
+              aria-pressed={sentimentType === 'sentiments_deframed'}
+              onClick={() => setSentimentType('sentiments_deframed')}
+              disabled={!sentiments?.sentiments_deframed}
+            >
+              {t('trends.sentiments_deframed', 'Deframed')}
+            </button>
+          </div>
 
-                if (value === null) {
-                  return (
-                    <div key={metric.key} className="sentiment-metric">
-                      <div className="sentiment-metric-row">
-                        <span className="sentiment-label">
-                          {t(`trends.sentiments_metrics.${metric.key}.label`)}
-                        </span>
-                        <span className="sentiment-value">{t('trends.sentiments_na', 'N/A')}</span>
-                        <div className="sentiment-track-wrap" />
-                        {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
-                      </div>
-                    </div>
-                  );
-                }
+          <div className="sentiment-section-header">
+            <strong className="sentiment-header-label">{t('trends.sentiments_vad', 'VAD')}</strong>
+            <span className="sentiment-header-scale">{t('trends.sentiments_vad_scale', 'Scale 1-9, neutral at 5')}</span>
+          </div>
+          <div className="sentiment-rows">
+            {vadMetrics.map((metric) => {
+              const value = metricValues[metric.key as keyof typeof metricValues];
 
-                const baselinePercent = getPercent(metric.baseline || metric.min, metric.min, metric.max);
-                const valuePercent = getPercent(value, metric.min, metric.max);
-                const fillStyle: CSSProperties = {
-                  background: metric.color,
-                  left: `${Math.min(baselinePercent, valuePercent)}%`,
-                  width: `${Math.abs(valuePercent - baselinePercent)}%`,
-                };
-
+              if (value === null) {
                 return (
                   <div key={metric.key} className="sentiment-metric">
                     <div className="sentiment-metric-row">
                       <span className="sentiment-label">
                         {t(`trends.sentiments_metrics.${metric.key}.label`)}
                       </span>
-                      <span className="sentiment-value">{formatValue(value)}</span>
-                      <div className="sentiment-track-wrap">
-                        <div className="sentiment-vad-track">
-                          <div className="sentiment-vad-fill" style={fillStyle} />
-                          <div className="sentiment-vad-baseline" style={{ left: `${baselinePercent}%` }} />
-                        </div>
-                      </div>
+                      <span className="sentiment-value">{t('trends.sentiments_na', 'N/A')}</span>
+                      <div className="sentiment-track-wrap" />
                       {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          </section>
+              }
 
-          <section className="sentiment-section">
-            <div className="sentiment-section-header">
-              <strong className="sentiment-header-label">{t('trends.sentiments_be5', 'BE5')}</strong>
-              <span className="sentiment-header-scale">{t('trends.sentiments_be5_scale', 'Scale 1-5, absent to max')}</span>
-            </div>
-            <div className="sentiment-rows">
-              {be5Metrics.map((metric) => {
-                const value = metricValues[metric.key as keyof typeof metricValues];
+              const baselinePercent = getPercent(metric.baseline || metric.min, metric.min, metric.max);
+              const valuePercent = getPercent(value, metric.min, metric.max);
+              const fillStyle: CSSProperties = {
+                background: metric.color,
+                left: `${Math.min(baselinePercent, valuePercent)}%`,
+                width: `${Math.abs(valuePercent - baselinePercent)}%`,
+              };
 
-                if (value === null) {
-                  return (
-                    <div key={metric.key} className="sentiment-metric">
-                      <div className="sentiment-metric-row">
-                        <span className="sentiment-label">
-                          {t(`trends.sentiments_metrics.${metric.key}.label`)}
-                        </span>
-                        <span className="sentiment-value">{t('trends.sentiments_na', 'N/A')}</span>
-                        <div className="sentiment-track-wrap" />
-                        {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
+              return (
+                <div key={metric.key} className="sentiment-metric">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">
+                      {t(`trends.sentiments_metrics.${metric.key}.label`)}
+                    </span>
+                    <span className="sentiment-value">{formatValue(value)}</span>
+                    <div className="sentiment-track-wrap">
+                      <div className="sentiment-vad-track">
+                        <div className="sentiment-vad-fill" style={fillStyle} />
+                        <div className="sentiment-vad-baseline" style={{ left: `${baselinePercent}%` }} />
                       </div>
                     </div>
-                  );
-                }
+                    {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
 
+          <hr className="sentiment-divider" />
+
+          <div className="sentiment-section-header">
+            <strong className="sentiment-header-label">{t('trends.sentiments_be5', 'BE5')}</strong>
+            <span className="sentiment-header-scale">{t('trends.sentiments_be5_scale', 'Scale 1-5, absent to max')}</span>
+          </div>
+          <div className="sentiment-rows">
+            {be5Metrics.map((metric) => {
+              const value = metricValues[metric.key as keyof typeof metricValues];
+
+              if (value === null) {
                 return (
                   <div key={metric.key} className="sentiment-metric">
                     <div className="sentiment-metric-row">
                       <span className="sentiment-label">
                         {t(`trends.sentiments_metrics.${metric.key}.label`)}
                       </span>
-                      <span className="sentiment-value">{formatValue(value)}</span>
-                      <div className="sentiment-track-wrap">
-                        <div className="sentiment-be5-grid">
-                          {[1, 2, 3, 4, 5].map((step) => {
-                            const fillWidth = Math.max(0, Math.min(1, value - (step - 1))) * 100;
-                            return (
-                              <div key={`${metric.key}-${step}`} className="sentiment-be5-box">
-                                <div
-                                  className="sentiment-be5-fill"
-                                  style={{ width: `${fillWidth}%`, background: metric.color }}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      <span className="sentiment-value">{t('trends.sentiments_na', 'N/A')}</span>
+                      <div className="sentiment-track-wrap" />
                       {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
                     </div>
                   </div>
                 );
-              })}
-            </div>
-          </section>
-        </>
+              }
+
+              return (
+                <div key={metric.key} className="sentiment-metric">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">
+                      {t(`trends.sentiments_metrics.${metric.key}.label`)}
+                    </span>
+                    <span className="sentiment-value">{formatValue(value)}</span>
+                    <div className="sentiment-track-wrap">
+                      <div className="sentiment-be5-grid">
+                        {[1, 2, 3, 4, 5].map((step) => {
+                          const fillWidth = Math.max(0, Math.min(1, value - (step - 1))) * 100;
+                          return (
+                            <div key={`${metric.key}-${step}`} className="sentiment-be5-box">
+                              <div
+                                className="sentiment-be5-fill"
+                                style={{ width: `${fillWidth}%`, background: metric.color }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {isTooltipOpen && (
