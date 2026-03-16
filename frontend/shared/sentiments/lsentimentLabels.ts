@@ -174,7 +174,6 @@ const TEXTS: Record<Lang, Record<string, string>> = {
     alarmed_aggression_defensive_tension: "alarmed aggression, defensive combat tension",
     bittersweet_ambivalence: "bittersweet ambivalence",
     ambiguous_tension: "ambiguous tension",
-    mixed_emotional_state: "mixed emotional state",
     positive_colored_mood: "positively colored mood",
     negative_colored_mood: "negatively colored mood",
     neutral_to_mixed: "neutral to mixed",
