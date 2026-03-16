@@ -1,21 +1,130 @@
-// analyzeEmotionVector.ts
-
-import type { CodeMap } from "./sentimentLabelsTranslations.ts";
+// sentimentLabels.ts
+//
+// Why these heuristic thresholds are used
+// --------------------------------------
+// This file turns continuous VAD / BE5-like scores into discrete labels for
+// rule-based interpretation. The thresholds below are not claimed to be
+// canonical literature cutoffs. They are an engineering discretization built
+// on top of well-established continuous affect models.
+//
+// Research basis for the model assumptions:
+//
+// - Russell (1977) provides evidence for three core affective dimensions:
+//   pleasure-displeasure (valence), arousal, and dominance-submissiveness. ([sciencedirect.com](https://www.sciencedirect.com/science/article/pii/009265667790037X?utm_source=chatgpt.com))
+//
+// - Mohammad (2018) provides reliable human VAD ratings for 20,000+ English
+//   words, supporting VAD as an operational lexical representation. ([aclanthology.org](https://aclanthology.org/P18-1017/?utm_source=chatgpt.com))
+//
+// - Buechel & Hahn (2018) show that dimensional representations such as VAD
+//   can be mapped to discrete emotion formats and vice versa, which supports
+//   the general rule-based linkage used here between VAD and BE5-like signals. ([aclanthology.org](https://aclanthology.org/C18-1245/?utm_source=chatgpt.com))
+//
+// Important:
+// The affect model itself is research-backed.
+// The exact thresholds and decision rules in this file are implementation
+// heuristics, not canonical cutoffs from those papers.
+//
+// What is literature-backed vs. what is heuristic
+// -----------------------------------------------
+// Literature-backed:
+// - Using Valence, Arousal, Dominance as continuous affect dimensions.
+// - Using discrete emotion intensities as continuous scores.
+// - Combining dimensional and discrete emotion representations.
+//
+// Heuristic / implementation choice:
+// - The exact thresholds used here to create low / mid / high buckets.
+// - The exact delta cutoffs for "clear", "mixed", "ambiguous" profiles.
+// - The exact rule table mapping combinations to interpretation codes.
+//
+// Why the VAD thresholds are reasonable
+// -------------------------------------
+// VAD is on a 1..9 scale. The natural midpoint is 5.
+// We use:
+//
+//   low  < 4.0
+//   mid  4.0 .. < 6.0
+//   high >= 6.0
+//
+// Rationale:
+// - This creates a protected middle zone around the scale midpoint.
+// - Values near the center are not over-interpreted as clearly positive /
+//   negative, calm / activated, or weak / dominant.
+// - It is a conservative discretization of a continuous scale.
+// - In practice this is more stable for short texts and sentence-level input.
+//
+// In other words: 4 and 6 are not "published standard cutoffs"; they are a
+// defensible symmetric partition around the midpoint of a 1..9 scale.
+//
+// Why the BE5 thresholds are reasonable
+// -------------------------------------
+// BE5-like emotion intensities here are treated as 1..5 continuous scores.
+// We use:
+//
+//   very_low < 1.5
+//   low      < 2.3
+//   mid      < 3.2
+//   high     >= 3.2
+//
+// Rationale:
+// - 1.5 captures values that are close to absent / negligible.
+// - 2.3 separates weak intensity from meaningfully present intensity.
+// - 3.2 requires a value to be clearly above the midpoint before it is treated
+//   as "high".
+// - This avoids over-triggering strong labels such as joy/fear/anger for mildly
+//   elevated values.
+//
+// Again: these are not canonical paper-defined cutoffs. They are practical
+// working boundaries for stable rule-based interpretation.
+//
+// Why the delta thresholds are reasonable
+// ---------------------------------------
+// We compute the gap between the strongest and second-strongest discrete emotion:
+//
+//   delta >= 0.8  -> clear
+//   delta >= 0.4  -> mixed
+//   else          -> ambiguous
+//
+// Rationale:
+// - On a 1..5 scale, a gap of 0.8 is already substantial.
+// - A gap of 0.4 indicates some preference, but not a sharply dominant profile.
+// - Smaller gaps are too close for a confident single-emotion reading.
+//
+// Why the rules use Dominance so heavily
+// --------------------------------------
+// Dominance operationalizes perceived control / power.
+// This makes rules such as:
+//
+// - fear + low dominance -> threat / powerlessness / uncertainty
+// - anger + high dominance -> hostile control / confrontation
+// - joy + high dominance -> positive agency / confidence
+//
+// theoretically coherent within the PAD/VAD tradition.
 
 export type EmotionVector = {
-  valence: number;
-  arousal: number;
-  dominance: number;
-  joy: number;
-  anger: number;
-  sadness: number;
-  fear: number;
-  disgust: number;
+  valence: number;   // 1..9
+  arousal: number;   // 1..9
+  dominance: number; // 1..9
+  joy: number;       // 1..5
+  anger: number;     // 1..5
+  sadness: number;   // 1..5
+  fear: number;      // 1..5
+  disgust: number;   // 1..5
 };
 
 type Level3 = "low" | "mid" | "high";
 type BE5Level = "very_low" | "low" | "mid" | "high";
 type EmotionName = "joy" | "anger" | "sadness" | "fear" | "disgust";
+
+export type CodeMap = {
+  core_state: string;
+  primary_emotion: string;
+  secondary_emotion: string;
+  interpretation: string;
+  tension_label: string;
+  control_label: string;
+  mood_label: string;
+  clarity_label: string;
+};
 
 type RuleContext = {
   v: Level3;
@@ -228,4 +337,3 @@ export function analyzeEmotionVectorToCodes(input: EmotionVector): CodeMap {
     clarity_label: deriveClarityLabel(clarity),
   };
 }
-
