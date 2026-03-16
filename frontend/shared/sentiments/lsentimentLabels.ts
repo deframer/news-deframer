@@ -12,88 +12,17 @@ type EmotionVector = {
 type Level3 = "low" | "mid" | "high";
 type BE5Level = "very_low" | "low" | "mid" | "high";
 type EmotionName = "joy" | "anger" | "sadness" | "fear" | "disgust";
-
-type CoreStateCode =
-  | "threatened_activation"
-  | "hostile_activation"
-  | "uneasy_low_control"
-  | "depleted_negative"
-  | "cold_negative_control"
-  | "empowered_positive_activation"
-  | "confident_positive"
-  | "calm_positive_control"
-  | "soft_positive_passive"
-  | "focused_activation"
-  | "agitated_uncertain"
-  | "flat_neutral"
-  | "mixed_state";
-
-type PrimaryEmotionCode =
-  | EmotionName
-  | "mixed"
-  | "none_salient";
-
-type InterpretationCode =
-  | "panic_threat_powerlessness"
-  | "fear_powerlessness_uncertainty"
-  | "alarm_tension_worry"
-  | "vulnerable_despair"
-  | "anger_aggressive_control"
-  | "hostile_control_confrontation"
-  | "frustration_irritability"
-  | "contempt_harsh_rejection"
-  | "quiet_grief_resignation"
-  | "sadness_loss_grief"
-  | "agitated_grief_despair"
-  | "helpless_despair_negative_vulnerability"
-  | "euphoria_triumph_enthusiasm"
-  | "joy_confidence_positive_security"
-  | "contentment_warmth_calm_wellbeing"
-  | "positive_agency_selfconfidence"
-  | "contempt_devaluing_rejection"
-  | "defensive_aversion_threat"
-  | "disgust_distancing_aversion"
-  | "hope_fear_ambivalence"
-  | "bitter_hurt_negativity"
-  | "alarmed_aggression_defensive_tension"
-  | "bittersweet_ambivalence"
-  | "ambiguous_tension"
-  | "mixed_emotional_state"
-  | "positive_colored_mood"
-  | "negative_colored_mood"
-  | "neutral_to_mixed";
-
-type TensionCode =
-  | "high_negative_tension"
-  | "high_positive_tension"
-  | "strong_activation"
-  | "low_tension"
-  | "medium_tension";
-
-type ControlCode =
-  | "high_control"
-  | "low_control"
-  | "medium_control";
-
-type MoodCode =
-  | "positive_tone"
-  | "negative_tone"
-  | "ambivalent_tone";
-
-type ClarityCode =
-  | "clear_emotional_state"
-  | "mixed_emotional_state"
-  | "ambiguous_emotional_state";
+type Lang = "de" | "en";
 
 type AnalysisOutput = {
-  core_state: CoreStateCode;
-  primary_emotion: PrimaryEmotionCode;
-  secondary_emotion: EmotionName;
-  interpretation: InterpretationCode;
-  tension_label: TensionCode;
-  control_label: ControlCode;
-  mood_label: MoodCode;
-  clarity_label: ClarityCode;
+  core_state: string;
+  primary_emotion: string;
+  secondary_emotion: string;
+  interpretation: string;
+  tension_label: string;
+  control_label: string;
+  mood_label: string;
+  clarity_label: string;
 };
 
 type RuleContext = {
@@ -101,17 +30,18 @@ type RuleContext = {
   a: Level3;
   d: Level3;
   be5: Record<EmotionName, BE5Level>;
-  primaryEmotion: PrimaryEmotionCode;
-  secondaryEmotion: EmotionName;
   clarity: "clear" | "mixed" | "ambiguous";
-  scores: EmotionVector;
-  emotionsSorted: Array<{ name: EmotionName; value: number }>;
 };
 
-type DecisionRule = {
-  id: string;
-  when: (ctx: RuleContext) => boolean;
-  then: InterpretationCode;
+type CodeMap = {
+  core_state: string;
+  primary_emotion: string;
+  secondary_emotion: string;
+  interpretation: string;
+  tension_label: string;
+  control_label: string;
+  mood_label: string;
+  clarity_label: string;
 };
 
 const VAD_THRESHOLDS = {
@@ -125,8 +55,8 @@ const BE5_THRESHOLDS = {
   highMin: 3.2,
 } as const;
 
-export const LABELS_DE = {
-  core_state: {
+const TEXTS: Record<Lang, Record<string, string>> = {
+  de: {
     threatened_activation: "bedrohlich, angespannt, kontrollarm",
     hostile_activation: "negativ, hochaktiviert, durchsetzungsstark",
     uneasy_low_control: "unangenehm, unsicher, kontrollarm",
@@ -140,9 +70,7 @@ export const LABELS_DE = {
     agitated_uncertain: "nervös, instabil, reaktiv",
     flat_neutral: "flach, neutral, wenig aktiviert",
     mixed_state: "gemischtes Profil",
-  } satisfies Record<CoreStateCode, string>,
 
-  primary_emotion: {
     joy: "Freude",
     anger: "Ärger",
     sadness: "Traurigkeit",
@@ -150,9 +78,7 @@ export const LABELS_DE = {
     disgust: "Ekel",
     mixed: "gemischt",
     none_salient: "keine dominante diskrete Emotion",
-  } satisfies Record<PrimaryEmotionCode, string>,
 
-  interpretation: {
     panic_threat_powerlessness: "Panik, Bedrohung, Ausgeliefertsein",
     fear_powerlessness_uncertainty: "Angst, Ohnmacht, Unsicherheit",
     alarm_tension_worry: "Alarm, Anspannung, Sorge",
@@ -181,44 +107,94 @@ export const LABELS_DE = {
     positive_colored_mood: "positiv gefärbte Stimmung",
     negative_colored_mood: "negativ gefärbte Stimmung",
     neutral_to_mixed: "neutral bis gemischt",
-  } satisfies Record<InterpretationCode, string>,
 
-  tension_label: {
     high_negative_tension: "hohe negative Spannung",
     high_positive_tension: "hohe positive Spannung",
     strong_activation: "starke Aktivierung",
     low_tension: "niedrige Spannung",
     medium_tension: "mittlere Spannung",
-  } satisfies Record<TensionCode, string>,
 
-  control_label: {
     high_control: "hohes Kontrollgefühl",
     low_control: "niedriges Kontrollgefühl",
     medium_control: "mittleres Kontrollgefühl",
-  } satisfies Record<ControlCode, string>,
 
-  mood_label: {
     positive_tone: "positiver Grundton",
     negative_tone: "negativer Grundton",
     ambivalent_tone: "ambivalenter Grundton",
-  } satisfies Record<MoodCode, string>,
 
-  clarity_label: {
     clear_emotional_state: "klare Emotionslage",
-    mixed_emotional_state: "gemischte Emotionslage",
     ambiguous_emotional_state: "uneindeutige Emotionslage",
-  } satisfies Record<ClarityCode, string>,
-} as const;
+  },
 
-export type AnalysisOutputTranslated = AnalysisOutput & {
-  core_state_de: string;
-  primary_emotion_de: string;
-  secondary_emotion_de: string;
-  interpretation_de: string;
-  tension_label_de: string;
-  control_label_de: string;
-  mood_label_de: string;
-  clarity_label_de: string;
+  en: {
+    threatened_activation: "threatened, tense, low control",
+    hostile_activation: "negative, highly activated, forceful",
+    uneasy_low_control: "unpleasant, uncertain, low control",
+    depleted_negative: "empty, resigned, low energy",
+    cold_negative_control: "negative, subdued, controlled",
+    empowered_positive_activation: "euphoric, powerful, controlled",
+    confident_positive: "positive, stable, self-assured",
+    calm_positive_control: "calm, content, composed",
+    soft_positive_passive: "gentle, warm, passively positive",
+    focused_activation: "tense, focused, action-ready",
+    agitated_uncertain: "nervous, unstable, reactive",
+    flat_neutral: "flat, neutral, low activation",
+    mixed_state: "mixed profile",
+
+    joy: "joy",
+    anger: "anger",
+    sadness: "sadness",
+    fear: "fear",
+    disgust: "disgust",
+    mixed: "mixed",
+    none_salient: "no dominant discrete emotion",
+
+    panic_threat_powerlessness: "panic, threat, powerlessness",
+    fear_powerlessness_uncertainty: "fear, powerlessness, uncertainty",
+    alarm_tension_worry: "alarm, tension, worry",
+    vulnerable_despair: "vulnerable despair",
+    anger_aggressive_control: "anger, aggressive control, readiness to fight",
+    hostile_control_confrontation: "assertion, confrontation, hostile control",
+    frustration_irritability: "frustration, irritability, reactive negativity",
+    contempt_harsh_rejection: "contempt, harsh rejection",
+    quiet_grief_resignation: "quiet grief, resignation, melancholy",
+    sadness_loss_grief: "sadness, sorrow, loss",
+    agitated_grief_despair: "despair, agitated grief",
+    helpless_despair_negative_vulnerability: "helplessness, despair, vulnerable negativity",
+    euphoria_triumph_enthusiasm: "euphoria, triumph, enthusiasm",
+    joy_confidence_positive_security: "joy, confidence, positive security",
+    contentment_warmth_calm_wellbeing: "contentment, warmth, calm wellbeing",
+    positive_agency_selfconfidence: "self-confidence, positive agency",
+    contempt_devaluing_rejection: "contempt, devaluing rejection",
+    defensive_aversion_threat: "defensiveness, aversion, threat",
+    disgust_distancing_aversion: "disgust, distancing, aversion",
+    hope_fear_ambivalence: "ambivalent tension between hope and fear",
+    bitter_hurt_negativity: "bitter hurt, wounded negativity",
+    alarmed_aggression_defensive_tension: "alarmed aggression, defensive combat tension",
+    bittersweet_ambivalence: "bittersweet ambivalence",
+    ambiguous_tension: "ambiguous tension",
+    mixed_emotional_state: "mixed emotional state",
+    positive_colored_mood: "positively colored mood",
+    negative_colored_mood: "negatively colored mood",
+    neutral_to_mixed: "neutral to mixed",
+
+    high_negative_tension: "high negative tension",
+    high_positive_tension: "high positive tension",
+    strong_activation: "strong activation",
+    low_tension: "low tension",
+    medium_tension: "medium tension",
+
+    high_control: "high sense of control",
+    low_control: "low sense of control",
+    medium_control: "medium sense of control",
+
+    positive_tone: "positive tone",
+    negative_tone: "negative tone",
+    ambivalent_tone: "ambivalent tone",
+
+    clear_emotional_state: "clear emotional state",
+    ambiguous_emotional_state: "ambiguous emotional state",
+  },
 };
 
 function classifyVAD(value: number): Level3 {
@@ -252,7 +228,7 @@ function getClarity(delta: number): "clear" | "mixed" | "ambiguous" {
   return "ambiguous";
 }
 
-function deriveCoreState(v: Level3, a: Level3, d: Level3): CoreStateCode {
+function deriveCoreState(v: Level3, a: Level3, d: Level3): string {
   if (v === "low" && a === "high" && d === "low") return "threatened_activation";
   if (v === "low" && a === "high" && d === "high") return "hostile_activation";
   if (v === "low" && a === "mid" && d === "low") return "uneasy_low_control";
@@ -271,194 +247,93 @@ function deriveCoreState(v: Level3, a: Level3, d: Level3): CoreStateCode {
 function derivePrimaryEmotion(
   emotionsSorted: Array<{ name: EmotionName; value: number }>,
   clarity: "clear" | "mixed" | "ambiguous"
-): PrimaryEmotionCode {
+): string {
   const top = emotionsSorted[0];
-
   if (top.value < BE5_THRESHOLDS.lowMax) return "none_salient";
   if (top.value >= BE5_THRESHOLDS.highMin) return top.name;
   if (clarity === "ambiguous") return "mixed";
   return top.name;
 }
 
-const INTERPRETATION_RULES: DecisionRule[] = [
-  {
-    id: "H1",
-    when: (c) =>
-      c.be5.fear === "high" && c.v === "low" && c.a === "high" && c.d === "low",
-    then: "panic_threat_powerlessness",
-  },
-  {
-    id: "H2",
-    when: (c) =>
-      c.be5.fear === "high" && c.v === "low" && c.d === "low",
-    then: "fear_powerlessness_uncertainty",
-  },
-  {
-    id: "H3",
-    when: (c) =>
-      c.be5.fear === "high" && c.a === "high" && (c.d === "mid" || c.d === "high"),
-    then: "alarm_tension_worry",
-  },
-  {
-    id: "H4",
-    when: (c) =>
-      (c.be5.fear === "mid" || c.be5.fear === "high") &&
-      c.be5.sadness === "high" &&
-      c.d === "low",
-    then: "vulnerable_despair",
-  },
-  {
-    id: "H5",
-    when: (c) =>
-      c.be5.anger === "high" && c.v === "low" && c.a === "high" && c.d === "high",
-    then: "anger_aggressive_control",
-  },
-  {
-    id: "H6",
-    when: (c) =>
-      c.be5.anger === "high" && c.d === "high",
-    then: "hostile_control_confrontation",
-  },
-  {
-    id: "H7",
-    when: (c) =>
-      c.be5.anger === "high" && c.d === "low",
-    then: "frustration_irritability",
-  },
-  {
-    id: "H8",
-    when: (c) =>
-      (c.be5.anger === "mid" || c.be5.anger === "high") &&
-      c.be5.disgust === "high",
-    then: "contempt_harsh_rejection",
-  },
-  {
-    id: "H9",
-    when: (c) =>
-      c.be5.sadness === "high" && c.v === "low" && c.a === "low",
-    then: "quiet_grief_resignation",
-  },
-  {
-    id: "H10",
-    when: (c) =>
-      c.be5.sadness === "high" && c.v === "low" && c.a === "mid",
-    then: "sadness_loss_grief",
-  },
-  {
-    id: "H11",
-    when: (c) =>
-      c.be5.sadness === "high" && c.a === "high",
-    then: "agitated_grief_despair",
-  },
-  {
-    id: "H12",
-    when: (c) =>
-      c.be5.sadness === "high" && c.be5.fear === "high" && c.d === "low",
-    then: "helpless_despair_negative_vulnerability",
-  },
-  {
-    id: "H13",
-    when: (c) =>
-      c.be5.joy === "high" && c.v === "high" && c.a === "high" && c.d === "high",
-    then: "euphoria_triumph_enthusiasm",
-  },
-  {
-    id: "H14",
-    when: (c) =>
-      c.be5.joy === "high" && c.v === "high" && c.a === "mid" && c.d === "high",
-    then: "joy_confidence_positive_security",
-  },
-  {
-    id: "H15",
-    when: (c) =>
-      c.be5.joy === "high" && c.v === "high" && c.a === "low",
-    then: "contentment_warmth_calm_wellbeing",
-  },
-  {
-    id: "H16",
-    when: (c) =>
-      (c.be5.joy === "mid" || c.be5.joy === "high") &&
-      c.d === "high" &&
-      c.v === "high",
-    then: "positive_agency_selfconfidence",
-  },
-  {
-    id: "H17",
-    when: (c) =>
-      c.be5.disgust === "high" && c.be5.anger === "high",
-    then: "contempt_devaluing_rejection",
-  },
-  {
-    id: "H18",
-    when: (c) =>
-      c.be5.disgust === "high" && c.be5.fear === "high",
-    then: "defensive_aversion_threat",
-  },
-  {
-    id: "H19",
-    when: (c) =>
-      c.be5.disgust === "high",
-    then: "disgust_distancing_aversion",
-  },
-  {
-    id: "H20",
-    when: (c) =>
-      c.be5.joy === "high" && c.be5.fear === "high",
-    then: "hope_fear_ambivalence",
-  },
-  {
-    id: "H21",
-    when: (c) =>
-      c.be5.sadness === "high" && c.be5.anger === "high",
-    then: "bitter_hurt_negativity",
-  },
-  {
-    id: "H22",
-    when: (c) =>
-      c.be5.fear === "high" && c.be5.anger === "high",
-    then: "alarmed_aggression_defensive_tension",
-  },
-  {
-    id: "H23",
-    when: (c) =>
-      c.be5.joy === "high" && c.be5.sadness === "high",
-    then: "bittersweet_ambivalence",
-  },
-  {
-    id: "H24",
-    when: (c) =>
-      c.clarity === "ambiguous" && c.a === "high" && c.v === "low",
-    then: "ambiguous_tension",
-  },
-  {
-    id: "H25",
-    when: (c) =>
-      c.clarity === "ambiguous" && c.v === "mid",
-    then: "mixed_emotional_state",
-  },
-  {
-    id: "H26",
-    when: (c) => c.v === "high",
-    then: "positive_colored_mood",
-  },
-  {
-    id: "H27",
-    when: (c) => c.v === "low",
-    then: "negative_colored_mood",
-  },
-  {
-    id: "H28",
-    when: () => true,
-    then: "neutral_to_mixed",
-  },
-];
+function deriveInterpretation(ctx: RuleContext): string {
+  if (ctx.be5.fear === "high" && ctx.v === "low" && ctx.a === "high" && ctx.d === "low") {
+    return "panic_threat_powerlessness";
+  }
+  if (ctx.be5.fear === "high" && ctx.v === "low" && ctx.d === "low") {
+    return "fear_powerlessness_uncertainty";
+  }
+  if (ctx.be5.fear === "high" && ctx.a === "high" && (ctx.d === "mid" || ctx.d === "high")) {
+    return "alarm_tension_worry";
+  }
+  if ((ctx.be5.fear === "mid" || ctx.be5.fear === "high") && ctx.be5.sadness === "high" && ctx.d === "low") {
+    return "vulnerable_despair";
+  }
 
-function deriveInterpretation(ctx: RuleContext): InterpretationCode {
-  const matched = INTERPRETATION_RULES.find((rule) => rule.when(ctx));
-  return matched ? matched.then : "neutral_to_mixed";
+  if (ctx.be5.anger === "high" && ctx.v === "low" && ctx.a === "high" && ctx.d === "high") {
+    return "anger_aggressive_control";
+  }
+  if (ctx.be5.anger === "high" && ctx.d === "high") {
+    return "hostile_control_confrontation";
+  }
+  if (ctx.be5.anger === "high" && ctx.d === "low") {
+    return "frustration_irritability";
+  }
+  if ((ctx.be5.anger === "mid" || ctx.be5.anger === "high") && ctx.be5.disgust === "high") {
+    return "contempt_harsh_rejection";
+  }
+
+  if (ctx.be5.sadness === "high" && ctx.v === "low" && ctx.a === "low") {
+    return "quiet_grief_resignation";
+  }
+  if (ctx.be5.sadness === "high" && ctx.v === "low" && ctx.a === "mid") {
+    return "sadness_loss_grief";
+  }
+  if (ctx.be5.sadness === "high" && ctx.a === "high") {
+    return "agitated_grief_despair";
+  }
+  if (ctx.be5.sadness === "high" && ctx.be5.fear === "high" && ctx.d === "low") {
+    return "helpless_despair_negative_vulnerability";
+  }
+
+  if (ctx.be5.joy === "high" && ctx.v === "high" && ctx.a === "high" && ctx.d === "high") {
+    return "euphoria_triumph_enthusiasm";
+  }
+  if (ctx.be5.joy === "high" && ctx.v === "high" && ctx.a === "mid" && ctx.d === "high") {
+    return "joy_confidence_positive_security";
+  }
+  if (ctx.be5.joy === "high" && ctx.v === "high" && ctx.a === "low") {
+    return "contentment_warmth_calm_wellbeing";
+  }
+  if ((ctx.be5.joy === "mid" || ctx.be5.joy === "high") && ctx.d === "high" && ctx.v === "high") {
+    return "positive_agency_selfconfidence";
+  }
+
+  if (ctx.be5.disgust === "high" && ctx.be5.anger === "high") {
+    return "contempt_devaluing_rejection";
+  }
+  if (ctx.be5.disgust === "high" && ctx.be5.fear === "high") {
+    return "defensive_aversion_threat";
+  }
+  if (ctx.be5.disgust === "high") {
+    return "disgust_distancing_aversion";
+  }
+
+  if (ctx.clarity === "ambiguous" && ctx.a === "high" && ctx.v === "low") {
+    return "ambiguous_tension";
+  }
+  if (ctx.clarity === "ambiguous" && ctx.v === "mid") {
+    return "mixed_emotional_state";
+  }
+  if (ctx.v === "high") {
+    return "positive_colored_mood";
+  }
+  if (ctx.v === "low") {
+    return "negative_colored_mood";
+  }
+  return "neutral_to_mixed";
 }
 
-function deriveTensionLabel(v: Level3, a: Level3): TensionCode {
+function deriveTensionLabel(v: Level3, a: Level3): string {
   if (a === "high" && v === "low") return "high_negative_tension";
   if (a === "high" && v === "high") return "high_positive_tension";
   if (a === "high" && v === "mid") return "strong_activation";
@@ -466,25 +341,39 @@ function deriveTensionLabel(v: Level3, a: Level3): TensionCode {
   return "medium_tension";
 }
 
-function deriveControlLabel(d: Level3): ControlCode {
+function deriveControlLabel(d: Level3): string {
   if (d === "high") return "high_control";
   if (d === "low") return "low_control";
   return "medium_control";
 }
 
-function deriveMoodLabel(v: Level3): MoodCode {
+function deriveMoodLabel(v: Level3): string {
   if (v === "high") return "positive_tone";
   if (v === "low") return "negative_tone";
   return "ambivalent_tone";
 }
 
-function deriveClarityLabel(clarity: "clear" | "mixed" | "ambiguous"): ClarityCode {
+function deriveClarityLabel(clarity: "clear" | "mixed" | "ambiguous"): string {
   if (clarity === "clear") return "clear_emotional_state";
-  if (clarity === "mixed") return "mixed_emotional_state";
-  return "ambiguous_emotional_state";
+  if (clarity === "ambiguous") return "ambiguous_emotional_state";
+  return "mixed_emotional_state";
 }
 
-export function analyzeEmotionVector(input: EmotionVector): AnalysisOutput {
+function localize(codes: CodeMap, lang: Lang): AnalysisOutput {
+  const t = TEXTS[lang];
+  return {
+    core_state: t[codes.core_state],
+    primary_emotion: t[codes.primary_emotion],
+    secondary_emotion: t[codes.secondary_emotion],
+    interpretation: t[codes.interpretation],
+    tension_label: t[codes.tension_label],
+    control_label: t[codes.control_label],
+    mood_label: t[codes.mood_label],
+    clarity_label: t[codes.clarity_label],
+  };
+}
+
+export function analyzeEmotionVector(input: EmotionVector, lang: Lang = "de"): AnalysisOutput {
   const v = classifyVAD(input.valence);
   const a = classifyVAD(input.arousal);
   const d = classifyVAD(input.dominance);
@@ -501,47 +390,20 @@ export function analyzeEmotionVector(input: EmotionVector): AnalysisOutput {
   const top = emotionsSorted[0];
   const second = emotionsSorted[1];
   const delta = top.value - second.value;
-
   const clarity = getClarity(delta);
-  const primaryEmotion = derivePrimaryEmotion(emotionsSorted, clarity);
-  const secondaryEmotion = second.name;
 
-  const ctx: RuleContext = {
-    v,
-    a,
-    d,
-    be5,
-    primaryEmotion,
-    secondaryEmotion,
-    clarity,
-    scores: input,
-    emotionsSorted,
-  };
-
-  return {
+  const codes: CodeMap = {
     core_state: deriveCoreState(v, a, d),
-    primary_emotion: primaryEmotion,
-    secondary_emotion: secondaryEmotion,
-    interpretation: deriveInterpretation(ctx),
+    primary_emotion: derivePrimaryEmotion(emotionsSorted, clarity),
+    secondary_emotion: second.name,
+    interpretation: deriveInterpretation({ v, a, d, be5, clarity }),
     tension_label: deriveTensionLabel(v, a),
     control_label: deriveControlLabel(d),
     mood_label: deriveMoodLabel(v),
     clarity_label: deriveClarityLabel(clarity),
   };
-}
 
-export function translateAnalysisToGerman(result: AnalysisOutput): AnalysisOutputTranslated {
-  return {
-    ...result,
-    core_state_de: LABELS_DE.core_state[result.core_state],
-    primary_emotion_de: LABELS_DE.primary_emotion[result.primary_emotion],
-    secondary_emotion_de: LABELS_DE.primary_emotion[result.secondary_emotion],
-    interpretation_de: LABELS_DE.interpretation[result.interpretation],
-    tension_label_de: LABELS_DE.tension_label[result.tension_label],
-    control_label_de: LABELS_DE.control_label[result.control_label],
-    mood_label_de: LABELS_DE.mood_label[result.mood_label],
-    clarity_label_de: LABELS_DE.clarity_label[result.clarity_label],
-  };
+  return localize(codes, lang);
 }
 
 // Beispiel
@@ -556,42 +418,32 @@ const input: EmotionVector = {
   disgust: 1.15,
 };
 
-const analysis = analyzeEmotionVector(input);
-const analysisDe = translateAnalysisToGerman(analysis);
-
-console.log(JSON.stringify(analysis, null, 2));
-console.log(JSON.stringify(analysisDe, null, 2));
+console.log(analyzeEmotionVector(input, "de"));
+console.log(analyzeEmotionVector(input, "en"));
 
 /*
-analysis:
+de:
 {
-  "core_state": "confident_positive",
-  "primary_emotion": "joy",
-  "secondary_emotion": "fear",
-  "interpretation": "joy_confidence_positive_security",
-  "tension_label": "medium_tension",
-  "control_label": "high_control",
-  "mood_label": "positive_tone",
-  "clarity_label": "clear_emotional_state"
+  core_state: "positiv, stabil, selbstsicher",
+  primary_emotion: "Freude",
+  secondary_emotion: "Angst",
+  interpretation: "Freude, Zuversicht, positive Sicherheit",
+  tension_label: "mittlere Spannung",
+  control_label: "hohes Kontrollgefühl",
+  mood_label: "positiver Grundton",
+  clarity_label: "klare Emotionslage"
 }
 
-analysisDe:
+en:
 {
-  "core_state": "confident_positive",
-  "primary_emotion": "joy",
-  "secondary_emotion": "fear",
-  "interpretation": "joy_confidence_positive_security",
-  "tension_label": "medium_tension",
-  "control_label": "high_control",
-  "mood_label": "positive_tone",
-  "clarity_label": "clear_emotional_state",
-  "core_state_de": "positiv, stabil, selbstsicher",
-  "primary_emotion_de": "Freude",
-  "secondary_emotion_de": "Angst",
-  "interpretation_de": "Freude, Zuversicht, positive Sicherheit",
-  "tension_label_de": "mittlere Spannung",
-  "control_label_de": "hohes Kontrollgefühl",
-  "mood_label_de": "positiver Grundton",
-  "clarity_label_de": "klare Emotionslage"
+  core_state: "positive, stable, self-assured",
+  primary_emotion: "joy",
+  secondary_emotion: "fear",
+  interpretation: "joy, confidence, positive security",
+  tension_label: "medium tension",
+  control_label: "high sense of control",
+  mood_label: "positive tone",
+  clarity_label: "clear emotional state"
 }
 */
+
