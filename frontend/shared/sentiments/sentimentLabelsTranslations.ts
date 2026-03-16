@@ -92,7 +92,6 @@ export const TEXTS: Record<Lang, Record<string, string>> = {
     ambivalent_tone: "ambivalenter Grundton",
 
     clear_emotional_state: "klare Emotionslage",
-    mixed_emotional_state: "gemischte Emotionslage",
     ambiguous_emotional_state: "uneindeutige Emotionslage",
   },
 
@@ -163,7 +162,6 @@ export const TEXTS: Record<Lang, Record<string, string>> = {
     ambivalent_tone: "ambivalent tone",
 
     clear_emotional_state: "clear emotional state",
-    mixed_emotional_state: "mixed emotional state",
     ambiguous_emotional_state: "ambiguous emotional state",
   },
 };
