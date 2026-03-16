@@ -10,6 +10,7 @@ type EmotionVector = {
 };
 
 type Level3 = "low" | "mid" | "high";
+type BE5Level = "very_low" | "low" | "mid" | "high";
 type EmotionName = "joy" | "anger" | "sadness" | "fear" | "disgust";
 
 type AnalysisOutput = {
@@ -27,6 +28,7 @@ type RuleContext = {
   v: Level3;
   a: Level3;
   d: Level3;
+  be5: Record<EmotionName, BE5Level>;
   primaryEmotion: EmotionName | "mixed" | "none_salient";
   secondaryEmotion: EmotionName;
   clarity: "clear" | "mixed" | "ambiguous";
@@ -46,6 +48,8 @@ const VAD_THRESHOLDS = {
 } as const;
 
 const BE5_THRESHOLDS = {
+  veryLowMax: 1.5,
+  lowMax: 2.3,
   highMin: 3.2,
 } as const;
 
@@ -55,8 +59,11 @@ function classifyVAD(value: number): Level3 {
   return "mid";
 }
 
-function classifyBE5High(value: number): boolean {
-  return value >= BE5_THRESHOLDS.highMin;
+function classifyBE5(value: number): BE5Level {
+  if (value < BE5_THRESHOLDS.veryLowMax) return "very_low";
+  if (value < BE5_THRESHOLDS.lowMax) return "low";
+  if (value < BE5_THRESHOLDS.highMin) return "mid";
+  return "high";
 }
 
 function sortEmotions(scores: EmotionVector): Array<{ name: EmotionName; value: number }> {
@@ -99,7 +106,7 @@ function derivePrimaryEmotion(
 ): EmotionName | "mixed" | "none_salient" {
   const top = emotionsSorted[0];
 
-  if (top.value < 2.3) return "none_salient";
+  if (top.value < BE5_THRESHOLDS.lowMax) return "none_salient";
   if (top.value >= BE5_THRESHOLDS.highMin) return top.name;
   if (clarity === "ambiguous") return "mixed";
   return top.name;
@@ -109,139 +116,144 @@ const INTERPRETATION_RULES: DecisionRule[] = [
   {
     id: "H1",
     when: (c) =>
-      c.scores.fear >= 3.2 && c.v === "low" && c.a === "high" && c.d === "low",
+      c.be5.fear === "high" && c.v === "low" && c.a === "high" && c.d === "low",
     then: "Panik, Bedrohung, Ausgeliefertsein",
   },
   {
     id: "H2",
     when: (c) =>
-      c.scores.fear >= 3.2 && c.v === "low" && c.d === "low",
+      c.be5.fear === "high" && c.v === "low" && c.d === "low",
     then: "Angst, Ohnmacht, Unsicherheit",
   },
   {
     id: "H3",
     when: (c) =>
-      c.scores.fear >= 3.2 && c.a === "high" && (c.d === "mid" || c.d === "high"),
+      c.be5.fear === "high" && c.a === "high" && (c.d === "mid" || c.d === "high"),
     then: "Alarm, Anspannung, Sorge",
   },
   {
     id: "H4",
     when: (c) =>
-      c.scores.fear >= 2.3 && c.scores.sadness >= 3.2 && c.d === "low",
+      (c.be5.fear === "mid" || c.be5.fear === "high") &&
+      c.be5.sadness === "high" &&
+      c.d === "low",
     then: "verletzliche Verzweiflung",
   },
   {
     id: "H5",
     when: (c) =>
-      c.scores.anger >= 3.2 && c.v === "low" && c.a === "high" && c.d === "high",
+      c.be5.anger === "high" && c.v === "low" && c.a === "high" && c.d === "high",
     then: "Wut, aggressive Kontrolle, Kampfbereitschaft",
   },
   {
     id: "H6",
     when: (c) =>
-      c.scores.anger >= 3.2 && c.d === "high",
+      c.be5.anger === "high" && c.d === "high",
     then: "Durchsetzung, Konfrontation, feindselige Kontrolle",
   },
   {
     id: "H7",
     when: (c) =>
-      c.scores.anger >= 3.2 && c.d === "low",
+      c.be5.anger === "high" && c.d === "low",
     then: "Frustration, Gereiztheit, reaktive Negativität",
   },
   {
     id: "H8",
     when: (c) =>
-      c.scores.anger >= 2.3 && c.scores.disgust >= 3.2,
+      (c.be5.anger === "mid" || c.be5.anger === "high") &&
+      c.be5.disgust === "high",
     then: "Verachtung, harte Ablehnung",
   },
   {
     id: "H9",
     when: (c) =>
-      c.scores.sadness >= 3.2 && c.v === "low" && c.a === "low",
+      c.be5.sadness === "high" && c.v === "low" && c.a === "low",
     then: "stille Trauer, Resignation, Melancholie",
   },
   {
     id: "H10",
     when: (c) =>
-      c.scores.sadness >= 3.2 && c.v === "low" && c.a === "mid",
+      c.be5.sadness === "high" && c.v === "low" && c.a === "mid",
     then: "Traurigkeit, Kummer, Verlust",
   },
   {
     id: "H11",
     when: (c) =>
-      c.scores.sadness >= 3.2 && c.a === "high",
+      c.be5.sadness === "high" && c.a === "high",
     then: "Verzweiflung, aufgewühlte Trauer",
   },
   {
     id: "H12",
     when: (c) =>
-      c.scores.sadness >= 3.2 && c.scores.fear >= 3.2 && c.d === "low",
+      c.be5.sadness === "high" && c.be5.fear === "high" && c.d === "low",
     then: "Hilflosigkeit, Verzweiflung, verletzliche Negativität",
   },
   {
     id: "H13",
     when: (c) =>
-      c.scores.joy >= 3.2 && c.v === "high" && c.a === "high" && c.d === "high",
+      c.be5.joy === "high" && c.v === "high" && c.a === "high" && c.d === "high",
     then: "Euphorie, Triumph, Begeisterung",
   },
   {
     id: "H14",
     when: (c) =>
-      c.scores.joy >= 3.2 && c.v === "high" && c.a === "mid" && c.d === "high",
+      c.be5.joy === "high" && c.v === "high" && c.a === "mid" && c.d === "high",
     then: "Freude, Zuversicht, positive Sicherheit",
   },
   {
     id: "H15",
     when: (c) =>
-      c.scores.joy >= 3.2 && c.v === "high" && c.a === "low",
+      c.be5.joy === "high" && c.v === "high" && c.a === "low",
     then: "Zufriedenheit, Wärme, ruhiges Wohlgefühl",
   },
   {
     id: "H16",
     when: (c) =>
-      c.scores.joy >= 2.3 && c.d === "high" && c.v === "high",
+      (c.be5.joy === "mid" || c.be5.joy === "high") &&
+      c.d === "high" &&
+      c.v === "high",
     then: "Selbstsicherheit, positive Handlungsfähigkeit",
   },
   {
     id: "H17",
     when: (c) =>
-      c.scores.disgust >= 3.2 && c.scores.anger >= 3.2,
+      c.be5.disgust === "high" && c.be5.anger === "high",
     then: "Verachtung, abwertende Ablehnung",
   },
   {
     id: "H18",
     when: (c) =>
-      c.scores.disgust >= 3.2 && c.scores.fear >= 3.2,
+      c.be5.disgust === "high" && c.be5.fear === "high",
     then: "Abwehr, Abstoßung, aversive Bedrohung",
   },
   {
     id: "H19",
     when: (c) =>
-      c.scores.disgust >= 3.2,
+      c.be5.disgust === "high",
     then: "Ekel, Distanzierung, Abstoßung",
   },
   {
     id: "H20",
     when: (c) =>
-      c.scores.joy >= 3.2 && c.scores.fear >= 3.2,
+      c.be5.joy === "high" && c.be5.fear === "high",
     then: "ambivalente Spannung zwischen Hoffnung und Angst",
   },
   {
     id: "H21",
     when: (c) =>
-      c.scores.sadness >= 3.2 && c.scores.anger >= 3.2,
+      c.be5.sadness === "high" && c.be5.anger === "high",
     then: "bitterer Schmerz, kränkende Negativität",
   },
   {
     id: "H22",
     when: (c) =>
-      c.scores.fear >= 3.2 && c.scores.anger >= 3.2,
+      c.be5.fear === "high" && c.be5.anger === "high",
     then: "alarmierte Aggression, defensive Kampfspannung",
   },
   {
     id: "H23",
     when: (c) =>
-      c.scores.joy >= 3.2 && c.scores.sadness >= 3.2,
+      c.be5.joy === "high" && c.be5.sadness === "high",
     then: "bittersüße Ambivalenz",
   },
   {
@@ -309,6 +321,14 @@ export function analyzeEmotionVector(input: EmotionVector): AnalysisOutput {
   const a = classifyVAD(input.arousal);
   const d = classifyVAD(input.dominance);
 
+  const be5: Record<EmotionName, BE5Level> = {
+    joy: classifyBE5(input.joy),
+    anger: classifyBE5(input.anger),
+    sadness: classifyBE5(input.sadness),
+    fear: classifyBE5(input.fear),
+    disgust: classifyBE5(input.disgust),
+  };
+
   const emotionsSorted = sortEmotions(input);
   const top = emotionsSorted[0];
   const second = emotionsSorted[1];
@@ -322,6 +342,7 @@ export function analyzeEmotionVector(input: EmotionVector): AnalysisOutput {
     v,
     a,
     d,
+    be5,
     primaryEmotion,
     secondaryEmotion,
     clarity,
@@ -341,7 +362,7 @@ export function analyzeEmotionVector(input: EmotionVector): AnalysisOutput {
   };
 }
 
-// Beispiel:
+// Beispiel
 const input: EmotionVector = {
   valence: 7.72,
   arousal: 4.77,
@@ -356,8 +377,6 @@ const input: EmotionVector = {
 console.log(JSON.stringify(analyzeEmotionVector(input), null, 2));
 
 /*
-Erwartete Ausgabe:
-
 {
   "core_state": "confident_positive",
   "primary_emotion": "joy",
