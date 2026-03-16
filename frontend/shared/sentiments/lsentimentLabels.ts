@@ -14,6 +14,17 @@ type BE5Level = "very_low" | "low" | "mid" | "high";
 type EmotionName = "joy" | "anger" | "sadness" | "fear" | "disgust";
 type Lang = "de" | "en";
 
+type CodeMap = {
+  core_state: string;
+  primary_emotion: string;
+  secondary_emotion: string;
+  interpretation: string;
+  tension_label: string;
+  control_label: string;
+  mood_label: string;
+  clarity_label: string;
+};
+
 type AnalysisOutput = {
   core_state: string;
   primary_emotion: string;
@@ -31,17 +42,6 @@ type RuleContext = {
   d: Level3;
   be5: Record<EmotionName, BE5Level>;
   clarity: "clear" | "mixed" | "ambiguous";
-};
-
-type CodeMap = {
-  core_state: string;
-  primary_emotion: string;
-  secondary_emotion: string;
-  interpretation: string;
-  tension_label: string;
-  control_label: string;
-  mood_label: string;
-  clarity_label: string;
 };
 
 const VAD_THRESHOLDS = {
@@ -123,6 +123,7 @@ const TEXTS: Record<Lang, Record<string, string>> = {
     ambivalent_tone: "ambivalenter Grundton",
 
     clear_emotional_state: "klare Emotionslage",
+    mixed_emotional_state: "gemischte Emotionslage",
     ambiguous_emotional_state: "uneindeutige Emotionslage",
   },
 
@@ -193,6 +194,7 @@ const TEXTS: Record<Lang, Record<string, string>> = {
     ambivalent_tone: "ambivalent tone",
 
     clear_emotional_state: "clear emotional state",
+    mixed_emotional_state: "mixed emotional state",
     ambiguous_emotional_state: "ambiguous emotional state",
   },
 };
@@ -355,25 +357,11 @@ function deriveMoodLabel(v: Level3): string {
 
 function deriveClarityLabel(clarity: "clear" | "mixed" | "ambiguous"): string {
   if (clarity === "clear") return "clear_emotional_state";
-  if (clarity === "ambiguous") return "ambiguous_emotional_state";
-  return "mixed_emotional_state";
+  if (clarity === "mixed") return "mixed_emotional_state";
+  return "ambiguous_emotional_state";
 }
 
-function localize(codes: CodeMap, lang: Lang): AnalysisOutput {
-  const t = TEXTS[lang];
-  return {
-    core_state: t[codes.core_state],
-    primary_emotion: t[codes.primary_emotion],
-    secondary_emotion: t[codes.secondary_emotion],
-    interpretation: t[codes.interpretation],
-    tension_label: t[codes.tension_label],
-    control_label: t[codes.control_label],
-    mood_label: t[codes.mood_label],
-    clarity_label: t[codes.clarity_label],
-  };
-}
-
-export function analyzeEmotionVector(input: EmotionVector, lang: Lang = "de"): AnalysisOutput {
+export function analyzeEmotionVectorToCodes(input: EmotionVector): CodeMap {
   const v = classifyVAD(input.valence);
   const a = classifyVAD(input.arousal);
   const d = classifyVAD(input.dominance);
@@ -392,7 +380,7 @@ export function analyzeEmotionVector(input: EmotionVector, lang: Lang = "de"): A
   const delta = top.value - second.value;
   const clarity = getClarity(delta);
 
-  const codes: CodeMap = {
+  return {
     core_state: deriveCoreState(v, a, d),
     primary_emotion: derivePrimaryEmotion(emotionsSorted, clarity),
     secondary_emotion: second.name,
@@ -402,8 +390,21 @@ export function analyzeEmotionVector(input: EmotionVector, lang: Lang = "de"): A
     mood_label: deriveMoodLabel(v),
     clarity_label: deriveClarityLabel(clarity),
   };
+}
 
-  return localize(codes, lang);
+export function translateCodeMap(codes: CodeMap, lang: Lang = "de"): AnalysisOutput {
+  const t = TEXTS[lang];
+
+  return {
+    core_state: t[codes.core_state] ?? codes.core_state,
+    primary_emotion: t[codes.primary_emotion] ?? codes.primary_emotion,
+    secondary_emotion: t[codes.secondary_emotion] ?? codes.secondary_emotion,
+    interpretation: t[codes.interpretation] ?? codes.interpretation,
+    tension_label: t[codes.tension_label] ?? codes.tension_label,
+    control_label: t[codes.control_label] ?? codes.control_label,
+    mood_label: t[codes.mood_label] ?? codes.mood_label,
+    clarity_label: t[codes.clarity_label] ?? codes.clarity_label,
+  };
 }
 
 // Beispiel
@@ -418,10 +419,27 @@ const input: EmotionVector = {
   disgust: 1.15,
 };
 
-console.log(analyzeEmotionVector(input, "de"));
-console.log(analyzeEmotionVector(input, "en"));
+const codes = analyzeEmotionVectorToCodes(input);
+const de = translateCodeMap(codes, "de");
+const en = translateCodeMap(codes, "en");
+
+console.log("codes", codes);
+console.log("de", de);
+console.log("en", en);
 
 /*
+codes:
+{
+  core_state: "confident_positive",
+  primary_emotion: "joy",
+  secondary_emotion: "fear",
+  interpretation: "joy_confidence_positive_security",
+  tension_label: "medium_tension",
+  control_label: "high_control",
+  mood_label: "positive_tone",
+  clarity_label: "clear_emotional_state"
+}
+
 de:
 {
   core_state: "positiv, stabil, selbstsicher",
@@ -446,4 +464,3 @@ en:
   clarity_label: "clear emotional state"
 }
 */
-
