@@ -100,6 +100,241 @@
 //
 // theoretically coherent within the PAD/VAD tradition.
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+// Why the output uses exactly these 8 labels
+// ------------------------------------------
+// The result vector is intentionally split into eight fields because a single
+// emotion label is too coarse for sentence-level affect analysis. The goal is
+// to separate different analytic layers that are related, but not identical.
+//
+// Output fields and rationale
+// ---------------------------
+//
+// 1) core_state
+//    Example: "confident_positive"
+//
+//    Purpose:
+//    - Captures the global VAD configuration.
+//    - It is the broad affective state derived from valence, arousal, and
+//      dominance alone.
+//    - This gives a state-space reading before discrete emotions are applied.
+//
+//    Why it exists:
+//    - VAD describes overall affective position better than any single discrete
+//      emotion.
+//    - Two sentences can both express "joy" but differ strongly in activation
+//      or control. "core_state" preserves that distinction.
+//
+//    In the example:
+//    - valence is high
+//    - arousal is mid
+//    - dominance is high
+//    => "confident_positive"
+//
+//
+// 2) primary_emotion
+//    Example: "joy"
+//
+//    Purpose:
+//    - Identifies the strongest discrete emotion channel.
+//
+//    Why it exists:
+//    - VAD alone does not tell which named emotion is dominant.
+//    - The strongest BE5-like score provides the most salient discrete emotion.
+//
+//    In the example:
+//    - joy is the highest of joy/anger/sadness/fear/disgust
+//    => "joy"
+//
+//
+// 3) secondary_emotion
+//    Example: "fear"
+//
+//    Purpose:
+//    - Preserves the second strongest discrete emotion.
+//
+//    Why it exists:
+//    - Emotional readings are often not purely single-label.
+//    - The runner-up signal is useful for mixed, ambivalent, or contrastive
+//      states.
+//    - This helps explain borderline or layered interpretations.
+//
+//    In the example:
+//    - fear is the second-highest discrete score
+//    => "fear"
+//
+//
+// 4) interpretation
+//    Example: "joy_confidence_positive_security"
+//
+//    Purpose:
+//    - Produces the main semantic reading from the combination of VAD state
+//      and discrete emotion profile.
+//    - This is the main "human-facing" interpretation code.
+//
+//    Why it exists:
+//    - "primary_emotion = joy" is too thin.
+//    - The interpretation combines:
+//      - joy as dominant emotion
+//      - high valence
+//      - medium arousal
+//      - high dominance
+//    - This yields not just "joy", but a more specific reading:
+//      confidence, positive security, stable positive affect.
+//
+//    In the example:
+//    - joy high
+//    - valence high
+//    - arousal mid
+//    - dominance high
+//    => "joy_confidence_positive_security"
+//
+//
+// 5) tension_label
+//    Example: "medium_tension"
+//
+//    Purpose:
+//    - Separates activation/tension from general positivity or negativity.
+//
+//    Why it exists:
+//    - A sentence can be positive but calm, or positive and highly energized.
+//    - Tension is mainly a simplified reading of arousal combined with valence.
+//
+//    In the example:
+//    - arousal is mid
+//    => not low tension, not high tension
+//    => "medium_tension"
+//
+//
+// 6) control_label
+//    Example: "high_control"
+//
+//    Purpose:
+//    - Makes the dominance dimension explicit.
+//
+//    Why it exists:
+//    - Dominance is too important to leave buried inside "core_state".
+//    - It often separates fear-like helplessness from assertive or confident
+//      states.
+//    - This dimension is especially useful in narrative analysis because it
+//      tracks agency, power, vulnerability, and control.
+//
+//    In the example:
+//    - dominance is high
+//    => "high_control"
+//
+//
+// 7) mood_label
+//    Example: "positive_tone"
+//
+//    Purpose:
+//    - Gives a simplified polarity reading.
+//
+//    Why it exists:
+//    - Sometimes a downstream system only needs broad tone.
+//    - This is a compressed reading of valence alone.
+//    - It is intentionally simpler than "core_state".
+//
+//    In the example:
+//    - valence is high
+//    => "positive_tone"
+//
+//
+// 8) clarity_label
+//    Example: "clear_emotional_state"
+//
+//    Purpose:
+//    - Indicates how sharply one discrete emotion dominates the others.
+//
+//    Why it exists:
+//    - Not every sentence has a clean emotional profile.
+//    - This label tells whether the result is clear, mixed, or ambiguous.
+//    - It is derived from the gap between the strongest and second strongest
+//      discrete emotion scores.
+//
+//    In the example:
+//    - joy is clearly above fear and the other channels
+//    => "clear_emotional_state"
+//
+//
+// Why these 8 are enough
+// ----------------------
+// These eight fields cover distinct analytic questions:
+//
+// - What is the global affective state?           -> core_state
+// - Which named emotion is strongest?             -> primary_emotion
+// - What is the secondary pull?                   -> secondary_emotion
+// - What is the combined semantic reading?        -> interpretation
+// - How activated / tense is it?                  -> tension_label
+// - How much control / agency is present?         -> control_label
+// - Is the tone broadly positive or negative?     -> mood_label
+// - How sharp or mixed is the profile?            -> clarity_label
+//
+// This is why the vector is not collapsed into one label.
+// A single label would destroy important distinctions such as:
+//
+// - joy with calm vs joy with excitement
+// - fear with helplessness vs fear with partial control
+// - positive tone with mixed secondary emotion
+// - clear emotion vs ambiguous profile
+//
+//
+// Why the example result is correct
+// ---------------------------------
+// Input example:
+//
+// {
+//   "valence": 7.72,
+//   "arousal": 4.77,
+//   "dominance": 6.92,
+//   "joy": 3.96,
+//   "anger": 1.24,
+//   "sadness": 1.29,
+//   "fear": 1.37,
+//   "disgust": 1.15
+// }
+//
+// Step-by-step:
+//
+// - valence 7.72  -> high
+// - arousal 4.77  -> mid
+// - dominance 6.92 -> high
+//   => core_state = "confident_positive"
+//
+// - joy 3.96 is the highest discrete emotion
+//   => primary_emotion = "joy"
+//
+// - fear 1.37 is the second-highest discrete emotion
+//   => secondary_emotion = "fear"
+//
+// - joy is high, valence is high, arousal is mid, dominance is high
+//   => interpretation = "joy_confidence_positive_security"
+//
+// - arousal is mid
+//   => tension_label = "medium_tension"
+//
+// - dominance is high
+//   => control_label = "high_control"
+//
+// - valence is high
+//   => mood_label = "positive_tone"
+//
+// - the gap between top and second emotion is large enough
+//   => clarity_label = "clear_emotional_state"
+//
+//
+// Design principle
+// ----------------
+// The result vector is deliberately multi-axis:
+// - VAD contributes state, tension, control, and tone.
+// - Discrete emotions contribute salience and mixture.
+// - The interpretation field fuses both layers.
+//
+// That is why these eight labels exist.
+
 export type EmotionVector = {
   valence: number;   // 1..9
   arousal: number;   // 1..9
