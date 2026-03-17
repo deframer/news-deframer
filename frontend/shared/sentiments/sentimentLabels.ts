@@ -1,4 +1,6 @@
-export type EmotionVector = {
+import { TEXTS } from './sentimentLabelsI18n.ts';
+
+export interface EmotionVector {
   valence: number;   // 1..9
   arousal: number;   // 1..9
   dominance: number; // 1..9
@@ -9,11 +11,23 @@ export type EmotionVector = {
   disgust: number;   // 1..5
 };
 
+export interface AnalysisOutput {
+  core_state: string;
+  primary_emotion: string;
+  secondary_emotion: string;
+  interpretation: string;
+  tension_label: string;
+  control_label: string;
+  mood_label: string;
+  clarity_label: string;
+};
+
+
 type Level3 = "low" | "mid" | "high";
 type BE5Level = "very_low" | "low" | "mid" | "high";
 type EmotionName = "joy" | "anger" | "sadness" | "fear" | "disgust";
 
-export type CodeMap = {
+export interface CodeMap {
   core_state: string;
   primary_emotion: string;
   secondary_emotion: string;
@@ -233,5 +247,34 @@ export function analyzeEmotionVectorToCodes(input: EmotionVector): CodeMap {
     control_label: deriveControlLabel(d),
     mood_label: deriveMoodLabel(v),
     clarity_label: deriveClarityLabel(clarity),
+  };
+}
+
+export function sentimentsToLabels(
+  input: EmotionVector,
+  language?: string | "" | string
+): CodeMap | AnalysisOutput | null {
+  const codes = analyzeEmotionVectorToCodes(input);
+  if (!codes) return null;
+
+  if (language && language !== "") {
+    return translateCodeMap(codes as any, language);
+  }
+
+  return codes;
+}
+
+export function translateCodeMap(codes: CodeMap, lang: string = "de"): AnalysisOutput {
+  const t = TEXTS[lang];
+
+  return {
+    core_state: t[codes.core_state] ?? codes.core_state,
+    primary_emotion: t[codes.primary_emotion] ?? codes.primary_emotion,
+    secondary_emotion: t[codes.secondary_emotion] ?? codes.secondary_emotion,
+    interpretation: t[codes.interpretation] ?? codes.interpretation,
+    tension_label: t[codes.tension_label] ?? codes.tension_label,
+    control_label: t[codes.control_label] ?? codes.control_label,
+    mood_label: t[codes.mood_label] ?? codes.mood_label,
+    clarity_label: t[codes.clarity_label] ?? codes.clarity_label,
   };
 }

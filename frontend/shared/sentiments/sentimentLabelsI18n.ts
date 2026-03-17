@@ -1,30 +1,7 @@
-// sentimentLabelsTranslations.ts
+// sentimentLabelsI18n.ts
 
-export type Lang = "de" | "en";
 
-export type CodeMap = {
-  core_state: string;
-  primary_emotion: string;
-  secondary_emotion: string;
-  interpretation: string;
-  tension_label: string;
-  control_label: string;
-  mood_label: string;
-  clarity_label: string;
-};
-
-export type AnalysisOutput = {
-  core_state: string;
-  primary_emotion: string;
-  secondary_emotion: string;
-  interpretation: string;
-  tension_label: string;
-  control_label: string;
-  mood_label: string;
-  clarity_label: string;
-};
-
-export const TEXTS: Record<Lang, Record<string, string>> = {
+export const TEXTS: Record<string, Record<string, string>> = {
   de: {
     threatened_activation: "bedrohlich, angespannt, kontrollarm",
     hostile_activation: "negativ, hochaktiviert, durchsetzungsstark",
@@ -165,18 +142,3 @@ export const TEXTS: Record<Lang, Record<string, string>> = {
     ambiguous_emotional_state: "ambiguous emotional state",
   },
 };
-
-export function translateCodeMap(codes: CodeMap, lang: Lang = "de"): AnalysisOutput {
-  const t = TEXTS[lang];
-
-  return {
-    core_state: t[codes.core_state] ?? codes.core_state,
-    primary_emotion: t[codes.primary_emotion] ?? codes.primary_emotion,
-    secondary_emotion: t[codes.secondary_emotion] ?? codes.secondary_emotion,
-    interpretation: t[codes.interpretation] ?? codes.interpretation,
-    tension_label: t[codes.tension_label] ?? codes.tension_label,
-    control_label: t[codes.control_label] ?? codes.control_label,
-    mood_label: t[codes.mood_label] ?? codes.mood_label,
-    clarity_label: t[codes.clarity_label] ?? codes.clarity_label,
-  };
-}
