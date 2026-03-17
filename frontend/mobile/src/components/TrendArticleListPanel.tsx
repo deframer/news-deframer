@@ -140,8 +140,8 @@ export const TrendArticleListPanel = ({
         onOpenArticle(item);
         return;
       }
-    } catch (error) {
-      logger.error('TrendArticleList open article fetch failed', { url: article.url, error: String(error) });
+    } catch (err) {
+      logger.error('TrendArticleList open article fetch failed', { url: article.url, error: String(err) });
     }
 
     openArticleInBrowser(article.url);
@@ -177,7 +177,7 @@ export const TrendArticleListPanel = ({
               <Pressable
                 key={`${article.url}-${index}`}
                 onPress={() => {
-                  void handleOpenArticle(article);
+                  handleOpenArticle(article);
                 }}
                 style={[styles.row, { backgroundColor: palette.card, borderColor: palette.border }]}
               >
