@@ -18,6 +18,11 @@ SELECT
     ROUND(MAX((t.sentiments->>'s')::double precision)::numeric, 2) AS sadness,
     ROUND(MAX((t.sentiments->>'f')::double precision)::numeric, 2) AS fear,
     ROUND(MAX((t.sentiments->>'d_g')::double precision)::numeric, 2) AS disgust,
+    -- ROUND(AVG((t.sentiments->>'j')::double precision)::numeric, 2) AS joy,
+    -- ROUND(AVG((t.sentiments->>'a_n')::double precision)::numeric, 2) AS anger,
+    -- ROUND(AVG((t.sentiments->>'s')::double precision)::numeric, 2) AS sadness,
+    -- ROUND(AVG((t.sentiments->>'f')::double precision)::numeric, 2) AS fear,
+    -- ROUND(AVG((t.sentiments->>'d_g')::double precision)::numeric, 2) AS disgust,
 
     ROUND(AVG((t.sentiments_deframed->>'v')::double precision)::numeric, 2) AS deframed_valence,
     ROUND(AVG((t.sentiments_deframed->>'a')::double precision)::numeric, 2) AS deframed_arousal,
@@ -27,6 +32,11 @@ SELECT
     ROUND(MAX((t.sentiments_deframed->>'s')::double precision)::numeric, 2) AS deframed_sadness,
     ROUND(MAX((t.sentiments_deframed->>'f')::double precision)::numeric, 2) AS deframed_fear,
     ROUND(MAX((t.sentiments_deframed->>'d_g')::double precision)::numeric, 2) AS deframed_disgust
+    -- ROUND(AVG((t.sentiments_deframed->>'j')::double precision)::numeric, 2) AS deframed_joy,
+    -- ROUND(AVG((t.sentiments_deframed->>'a_n')::double precision)::numeric, 2) AS deframed_anger,
+    -- ROUND(AVG((t.sentiments_deframed->>'s')::double precision)::numeric, 2) AS deframed_sadness,
+    -- ROUND(AVG((t.sentiments_deframed->>'f')::double precision)::numeric, 2) AS deframed_fear,
+    -- ROUND(AVG((t.sentiments_deframed->>'d_g')::double precision)::numeric, 2) AS deframed_disgust
 FROM public.trends t
 WHERE
     LOWER(CAST(@term AS text)) = ANY(t.noun_stems)

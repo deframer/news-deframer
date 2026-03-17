@@ -76,14 +76,14 @@ type AnalyzedArticle struct {
 }
 
 type SentimentScores struct {
-	Valence   *float64 `gorm:"column:valence" json:"valence,omitempty"`
-	Arousal   *float64 `gorm:"column:arousal" json:"arousal,omitempty"`
-	Dominance *float64 `gorm:"column:dominance" json:"dominance,omitempty"`
-	Joy       *float64 `gorm:"column:joy" json:"joy,omitempty"`
-	Anger     *float64 `gorm:"column:anger" json:"anger,omitempty"`
-	Sadness   *float64 `gorm:"column:sadness" json:"sadness,omitempty"`
-	Fear      *float64 `gorm:"column:fear" json:"fear,omitempty"`
-	Disgust   *float64 `gorm:"column:disgust" json:"disgust,omitempty"`
+	Valence   float64 `gorm:"column:valence" json:"valence,omitempty"`
+	Arousal   float64 `gorm:"column:arousal" json:"arousal,omitempty"`
+	Dominance float64 `gorm:"column:dominance" json:"dominance,omitempty"`
+	Joy       float64 `gorm:"column:joy" json:"joy,omitempty"`
+	Anger     float64 `gorm:"column:anger" json:"anger,omitempty"`
+	Sadness   float64 `gorm:"column:sadness" json:"sadness,omitempty"`
+	Fear      float64 `gorm:"column:fear" json:"fear,omitempty"`
+	Disgust   float64 `gorm:"column:disgust" json:"disgust,omitempty"`
 }
 
 type SentimentItem struct {
@@ -827,6 +827,13 @@ func (r *repository) GetArticlesByTrend(term string, domain string, date *time.T
 	return items, nil
 }
 
+func safeDerefFloat(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
+}
+
 func (r *repository) GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error) {
 	days = normalizeDays(days, 365)
 
@@ -861,28 +868,28 @@ func (r *repository) GetSentimentsByTrend(term string, domain string, date *time
 	var reg *SentimentScores
 	if flat.Valence != nil || flat.Arousal != nil || flat.Dominance != nil || flat.Joy != nil || flat.Anger != nil || flat.Sadness != nil || flat.Fear != nil || flat.Disgust != nil {
 		reg = &SentimentScores{
-			Valence:   flat.Valence,
-			Arousal:   flat.Arousal,
-			Dominance: flat.Dominance,
-			Joy:       flat.Joy,
-			Anger:     flat.Anger,
-			Sadness:   flat.Sadness,
-			Fear:      flat.Fear,
-			Disgust:   flat.Disgust,
+			Valence:   safeDerefFloat(flat.Valence),
+			Arousal:   safeDerefFloat(flat.Arousal),
+			Dominance: safeDerefFloat(flat.Dominance),
+			Joy:       safeDerefFloat(flat.Joy),
+			Anger:     safeDerefFloat(flat.Anger),
+			Sadness:   safeDerefFloat(flat.Sadness),
+			Fear:      safeDerefFloat(flat.Fear),
+			Disgust:   safeDerefFloat(flat.Disgust),
 		}
 	}
 
 	var def *SentimentScores
 	if flat.DeframedValence != nil || flat.DeframedArousal != nil || flat.DeframedDominance != nil || flat.DeframedJoy != nil || flat.DeframedAnger != nil || flat.DeframedSadness != nil || flat.DeframedFear != nil || flat.DeframedDisgust != nil {
 		def = &SentimentScores{
-			Valence:   flat.DeframedValence,
-			Arousal:   flat.DeframedArousal,
-			Dominance: flat.DeframedDominance,
-			Joy:       flat.DeframedJoy,
-			Anger:     flat.DeframedAnger,
-			Sadness:   flat.DeframedSadness,
-			Fear:      flat.DeframedFear,
-			Disgust:   flat.DeframedDisgust,
+			Valence:   safeDerefFloat(flat.DeframedValence),
+			Arousal:   safeDerefFloat(flat.DeframedArousal),
+			Dominance: safeDerefFloat(flat.DeframedDominance),
+			Joy:       safeDerefFloat(flat.DeframedJoy),
+			Anger:     safeDerefFloat(flat.DeframedAnger),
+			Sadness:   safeDerefFloat(flat.DeframedSadness),
+			Fear:      safeDerefFloat(flat.DeframedFear),
+			Disgust:   safeDerefFloat(flat.DeframedDisgust),
 		}
 	}
 

@@ -1,9 +1,13 @@
-import { CSSProperties, useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import log from '../../shared/logger';
+import type { AnalysisOutput, EmotionVector } from '../../shared/sentiments';
+import { sentimentsToLabels } from '../../shared/sentiments';
 import { getSettings } from '../../shared/settings';
-import { DomainEntry, NewsDeframerClient, SentimentItem } from '../client';
+import { DomainEntry, NewsDeframerClient, SentimentItem, SentimentScores } from '../client';
+import { TrendSentimentsInterpretation } from './TrendSentimentsInterpretation';
+import { TrendVADBE5 } from './TrendVADBE5';
 
 interface TrendSentimentsProps {
   term: string;
@@ -13,80 +17,11 @@ interface TrendSentimentsProps {
   className?: string;
 }
 
-interface SentimentMetric {
-  key: string;
-  min: number;
-  max: number;
-  baseline?: number;
-  color: string;
-}
-
-const vadMetrics: SentimentMetric[] = [
-  {
-    key: 'valence',
-    min: 1,
-    max: 9,
-    baseline: 5,
-    color: 'var(--success-color)',
-  },
-  {
-    key: 'arousal',
-    min: 1,
-    max: 9,
-    baseline: 5,
-    color: 'var(--warning-color)',
-  },
-  {
-    key: 'dominance',
-    min: 1,
-    max: 9,
-    baseline: 5,
-    color: 'var(--accent-color)',
-  },
-];
-
-const be5Metrics: SentimentMetric[] = [
-  {
-    key: 'joy',
-    min: 1,
-    max: 5,
-    color: 'var(--warning-color)',
-  },
-  {
-    key: 'anger',
-    min: 1,
-    max: 5,
-    color: 'var(--danger-color)',
-  },
-  {
-    key: 'sadness',
-    min: 1,
-    max: 5,
-    color: 'var(--trend-steady)',
-  },
-  {
-    key: 'fear',
-    min: 1,
-    max: 5,
-    color: 'var(--primary-color)',
-  },
-  {
-    key: 'disgust',
-    min: 1,
-    max: 5,
-    color: 'var(--success-color)',
-  },
-];
-
-const formatValue = (value: number) => value.toFixed(2);
-
-const getPercent = (value: number, min: number, max: number) => ((value - min) / (max - min)) * 100;
-
 const TOOLTIP_MAX_WIDTH = 280;
 const TOOLTIP_GUTTER = 12;
 
 export const TrendSentiments = ({ term, domain, days, date, className }: TrendSentimentsProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tooltipId = useId();
   const [sentiments, setSentiments] = useState<SentimentItem | null>(null);
   const [sentimentType, setSentimentType] = useState<'sentiments' | 'sentiments_deframed'>('sentiments');
@@ -132,19 +67,24 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
     };
   }, [date, days, domain.domain, term]);
 
-  const metricValues = useMemo(() => {
-    const selectedSentiments = sentiments?.[sentimentType];
-    return {
-      valence: selectedSentiments?.valence ?? null,
-      arousal: selectedSentiments?.arousal ?? null,
-      dominance: selectedSentiments?.dominance ?? null,
-      joy: selectedSentiments?.joy ?? null,
-      anger: selectedSentiments?.anger ?? null,
-      sadness: selectedSentiments?.sadness ?? null,
-      fear: selectedSentiments?.fear ?? null,
-      disgust: selectedSentiments?.disgust ?? null,
-    };
+  const metricValues = useMemo((): SentimentScores => {
+    return sentiments?.[sentimentType] || { valence: 5, arousal: 5, dominance: 5, joy: 1, anger: 1, sadness: 1, fear: 1, disgust: 1 };
   }, [sentiments, sentimentType]);
+
+  const interpretation = useMemo((): AnalysisOutput | null => {
+    const ev: EmotionVector = {
+      valence: metricValues.valence,
+      arousal: metricValues.arousal,
+      dominance: metricValues.dominance,
+      joy: metricValues.joy,
+      anger: metricValues.anger,
+      sadness: metricValues.sadness,
+      fear: metricValues.fear,
+      disgust: metricValues.disgust,
+    };
+    const lang = i18n.language || 'en';
+    return sentimentsToLabels(ev, lang) as AnalysisOutput;
+  }, [metricValues, i18n.language]);
 
   const showTooltip = (target: HTMLElement, description: string) => {
     const rect = target.getBoundingClientRect();
@@ -175,25 +115,28 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
   const selectedSentimentData = sentiments?.[sentimentType];
   const hasData = selectedSentimentData && Object.keys(selectedSentimentData).length > 0;
 
-  const renderInfoButton = (description: string) => (
-    <div className="article-header-info-trigger-wrap">
-      <button
-        type="button"
-        className="article-header-info-trigger"
-        aria-label={description}
-        aria-describedby={tooltipId}
-        onMouseEnter={(e) => showTooltip(e.currentTarget, description)}
-        onMouseLeave={hideTooltip}
-        onFocus={(e) => showTooltip(e.currentTarget, description)}
-        onBlur={hideTooltip}
-      >
-        i
-      </button>
-    </div>
-  );
-
   return (
     <div className={`sentiment-panel ${className || ''}`}>
+      <div className="sentiment-toggle-pill" role="group" aria-label={t('trends.sentiments_toggle', 'Sentiment Data Source')}>
+        <button
+          type="button"
+          className={`sentiment-toggle-btn ${sentimentType === 'sentiments' ? 'active' : ''}`}
+          aria-pressed={sentimentType === 'sentiments'}
+          onClick={() => setSentimentType('sentiments')}
+        >
+          {t('trends.sentiments_original', 'Original')}
+        </button>
+        <button
+          type="button"
+          className={`sentiment-toggle-btn ${sentimentType === 'sentiments_deframed' ? 'active' : ''}`}
+          aria-pressed={sentimentType === 'sentiments_deframed'}
+          onClick={() => setSentimentType('sentiments_deframed')}
+          disabled={!sentiments?.sentiments_deframed}
+        >
+          {t('trends.sentiments_deframed', 'Deframed')}
+        </button>
+      </div>
+
       {!hasData && hasLoaded && (
         <div className="sentiment-panel-state sentiment-panel-empty">
           {t('trends.sentiments_no_data_for_type', 'No {{type}} sentiment data available.', {
@@ -203,130 +146,22 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
       )}
 
       {hasData && (
-        <section className="sentiment-section">
-          <div className="sentiment-toggle-pill" role="group" aria-label={t('trends.sentiments_toggle', 'Sentiment Data Source')}>
-            <button
-              type="button"
-              className={`sentiment-toggle-btn ${sentimentType === 'sentiments' ? 'active' : ''}`}
-              aria-pressed={sentimentType === 'sentiments'}
-              onClick={() => setSentimentType('sentiments')}
-            >
-              {t('trends.sentiments_original', 'Original')}
-            </button>
-            <button
-              type="button"
-              className={`sentiment-toggle-btn ${sentimentType === 'sentiments_deframed' ? 'active' : ''}`}
-              aria-pressed={sentimentType === 'sentiments_deframed'}
-              onClick={() => setSentimentType('sentiments_deframed')}
-              disabled={!sentiments?.sentiments_deframed}
-            >
-              {t('trends.sentiments_deframed', 'Deframed')}
-            </button>
+        <section className="sentiment-columns-layout">
+          <div className="sentiment-column-left">
+            <TrendVADBE5
+              metricValues={metricValues}
+              tooltipId={tooltipId}
+              onShowTooltip={showTooltip}
+              onHideTooltip={hideTooltip}
+            />
           </div>
 
-          <div className="sentiment-section-header">
-            <strong className="sentiment-header-label">{t('trends.sentiments_vad', 'VAD')}</strong>
-            <span className="sentiment-header-scale">{t('trends.sentiments_vad_scale', 'Scale 1-9, neutral at 5')}</span>
-          </div>
-          <div className="sentiment-rows">
-            {vadMetrics.map((metric) => {
-              const value = metricValues[metric.key as keyof typeof metricValues];
+          <div className="sentiment-vertical-divider" />
 
-              if (value === null) {
-                return (
-                  <div key={metric.key} className="sentiment-metric">
-                    <div className="sentiment-metric-row">
-                      <span className="sentiment-label">
-                        {t(`trends.sentiments_metrics.${metric.key}.label`)}
-                      </span>
-                      <span className="sentiment-value">{t('trends.sentiments_na', 'N/A')}</span>
-                      <div className="sentiment-track-wrap" />
-                      {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
-                    </div>
-                  </div>
-                );
-              }
-
-              const baselinePercent = getPercent(metric.baseline || metric.min, metric.min, metric.max);
-              const valuePercent = getPercent(value, metric.min, metric.max);
-              const fillStyle: CSSProperties = {
-                background: metric.color,
-                left: `${Math.min(baselinePercent, valuePercent)}%`,
-                width: `${Math.abs(valuePercent - baselinePercent)}%`,
-              };
-
-              return (
-                <div key={metric.key} className="sentiment-metric">
-                  <div className="sentiment-metric-row">
-                    <span className="sentiment-label">
-                      {t(`trends.sentiments_metrics.${metric.key}.label`)}
-                    </span>
-                    <span className="sentiment-value">{formatValue(value)}</span>
-                    <div className="sentiment-track-wrap">
-                      <div className="sentiment-vad-track">
-                        <div className="sentiment-vad-fill" style={fillStyle} />
-                        <div className="sentiment-vad-baseline" style={{ left: `${baselinePercent}%` }} />
-                      </div>
-                    </div>
-                    {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <hr className="sentiment-divider" />
-
-          <div className="sentiment-section-header">
-            <strong className="sentiment-header-label">{t('trends.sentiments_be5', 'BE5')}</strong>
-            <span className="sentiment-header-scale">{t('trends.sentiments_be5_scale', 'Scale 1-5, absent to max')}</span>
-          </div>
-          <div className="sentiment-rows">
-            {be5Metrics.map((metric) => {
-              const value = metricValues[metric.key as keyof typeof metricValues];
-
-              if (value === null) {
-                return (
-                  <div key={metric.key} className="sentiment-metric">
-                    <div className="sentiment-metric-row">
-                      <span className="sentiment-label">
-                        {t(`trends.sentiments_metrics.${metric.key}.label`)}
-                      </span>
-                      <span className="sentiment-value">{t('trends.sentiments_na', 'N/A')}</span>
-                      <div className="sentiment-track-wrap" />
-                      {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
-                    </div>
-                  </div>
-                );
-              }
-
-              return (
-                <div key={metric.key} className="sentiment-metric">
-                  <div className="sentiment-metric-row">
-                    <span className="sentiment-label">
-                      {t(`trends.sentiments_metrics.${metric.key}.label`)}
-                    </span>
-                    <span className="sentiment-value">{formatValue(value)}</span>
-                    <div className="sentiment-track-wrap">
-                      <div className="sentiment-be5-grid">
-                        {[1, 2, 3, 4, 5].map((step) => {
-                          const fillWidth = Math.max(0, Math.min(1, value - (step - 1))) * 100;
-                          return (
-                            <div key={`${metric.key}-${step}`} className="sentiment-be5-box">
-                              <div
-                                className="sentiment-be5-fill"
-                                style={{ width: `${fillWidth}%`, background: metric.color }}
-                              />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {renderInfoButton(t(`trends.sentiments_metrics.${metric.key}.description`))}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="sentiment-column-right">
+            {interpretation && (
+              <TrendSentimentsInterpretation interpretation={interpretation} />
+            )}
           </div>
         </section>
       )}
