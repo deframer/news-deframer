@@ -2,6 +2,8 @@ import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 
+import { TEXTS as sentimentTexts } from '../../../shared/sentiments/sentimentLabelsI18n';
+
 const resources = {
   en: {
     translation: {
@@ -44,48 +46,6 @@ const resources = {
         vel: 'Vel',
         frequency_label: 'Frequency',
         verb_label: 'Verb',
-        sentiments_vad: 'VAD',
-        sentiments_vad_scale: 'Scale 1-9, neutral at 5',
-        sentiments_be5: 'BE5',
-        sentiments_be5_scale: 'Scale 1-5, absent to max',
-        sentiments_original: 'Original',
-        sentiments_deframed: 'Deframed',
-        sentiments_no_data_for_type: 'No {{type}} sentiment data available.',
-        sentiments_disclaimer: 'These scores describe the emotional meaning of the selected article set. They are lexical estimates based on word usage, not direct measurements of what authors, readers, or the public feel.',
-        sentiments_metrics: {
-          valence: {
-            label: 'Valence',
-            description: 'How pleasant or unpleasant the language is.',
-          },
-          arousal: {
-            label: 'Arousal',
-            description: 'How calm or activated the language feels.',
-          },
-          dominance: {
-            label: 'Dominance',
-            description: 'How much control, strength, or power the language conveys.',
-          },
-          joy: {
-            label: 'Joy',
-            description: 'The strongest positive uplift signaled by the language.',
-          },
-          anger: {
-            label: 'Anger',
-            description: 'The strongest hostility or outrage signaled by the language.',
-          },
-          sadness: {
-            label: 'Sadness',
-            description: 'The strongest sorrow or loss signaled by the language.',
-          },
-          fear: {
-            label: 'Fear',
-            description: 'The strongest anxiety or threat signaled by the language.',
-          },
-          disgust: {
-            label: 'Disgust',
-            description: 'The strongest revulsion or aversion signaled by the language.',
-          },
-        },
         search_aria_label: '{{date}}: Frequency {{frequency}}, Velocity {{velocity}}',
         compare: {
           trending_on: 'Trending {{domain}}',
@@ -204,48 +164,6 @@ const resources = {
         vel: 'Vel',
         frequency_label: 'Häufigkeit',
         verb_label: 'Verb',
-        sentiments_vad: 'VAD',
-        sentiments_vad_scale: 'Skala 1-9, neutral bei 5',
-        sentiments_be5: 'BE5',
-        sentiments_be5_scale: 'Skala 1-5, von abwesend bis maximal',
-        sentiments_original: 'Original',
-        sentiments_deframed: 'Deframed',
-        sentiments_no_data_for_type: 'Keine {{type}} Sentiment-Daten verfügbar.',
-        sentiments_disclaimer: 'Diese Werte beschreiben den Emotionsgehalt der ausgewählten Artikel. Es sind lexikalische Schätzungen auf Basis der verwendeten Wörter, keine direkten Aussagen darüber, was Autorinnen und Autoren, Leserinnen und Leser oder die Öffentlichkeit fühlen.',
-        sentiments_metrics: {
-          valence: {
-            label: 'Valenz',
-            description: 'Wie angenehm oder unangenehm die Sprache wirkt.',
-          },
-          arousal: {
-            label: 'Aktivierung',
-            description: 'Wie ruhig oder angeregt die Sprache wirkt.',
-          },
-          dominance: {
-            label: 'Dominanz',
-            description: 'Wie viel Kontrolle, Stärke oder Macht die Sprache vermittelt.',
-          },
-          joy: {
-            label: 'Freude',
-            description: 'Das stärkste positive Hochgefühl, das die Sprache signalisiert.',
-          },
-          anger: {
-            label: 'Wut',
-            description: 'Die stärkste Feindseligkeit oder Empörung, die die Sprache signalisiert.',
-          },
-          sadness: {
-            label: 'Traurigkeit',
-            description: 'Die stärkste Trauer oder Verluststimmung, die die Sprache signalisiert.',
-          },
-          fear: {
-            label: 'Angst',
-            description: 'Die stärkste Angst oder Bedrohung, die die Sprache signalisiert.',
-          },
-          disgust: {
-            label: 'Ekel',
-            description: 'Der stärkste Widerwille oder die stärkste Abneigung, die die Sprache signalisiert.',
-          },
-        },
         search_aria_label: '{{date}}: Häufigkeit {{frequency}}, Geschwindigkeit {{velocity}}',
         compare: {
           trending_on: 'Trends auf {{domain}}',
@@ -336,5 +254,41 @@ i18n
     },
     showSupportNotice: false,
   });
+
+// Merge shared sentiment texts into the translation resources
+Object.keys(sentimentTexts).forEach((lang) => {
+  const t = sentimentTexts[lang];
+  const sentimentResources = {
+    sentiments_vad: t.sentiments_vad,
+    sentiments_vad_scale: t.sentiments_vad_scale,
+    sentiments_be5: t.sentiments_be5,
+    sentiments_be5_scale: t.sentiments_be5_scale,
+    sentiments_original: t.sentiments_original,
+    sentiments_deframed: t.sentiments_deframed,
+    sentiments_no_data_for_type: t.sentiments_no_data_for_type,
+    sentiments_disclaimer: t.sentiments_disclaimer,
+    sentiments_na: t.sentiments_na,
+    sentiments_interpretation: t.sentiments_interpretation,
+    sentiments_core_state: t.sentiments_core_state,
+    sentiments_emotions: t.sentiments_emotions,
+    sentiments_tension: t.sentiments_tension,
+    sentiments_control: t.sentiments_control,
+    sentiments_mood: t.sentiments_mood,
+    sentiments_clarity: t.sentiments_clarity,
+    sentiments_interpretation_header: t.sentiments_interpretation_header,
+    sentiments_metrics: {
+      valence: { label: t.valence, description: t.valence_desc },
+      arousal: { label: t.arousal, description: t.arousal_desc },
+      dominance: { label: t.dominance, description: t.dominance_desc },
+      joy: { label: t.joy, description: t.joy_desc },
+      anger: { label: t.anger, description: t.anger_desc },
+      sadness: { label: t.sadness, description: t.sadness_desc },
+      fear: { label: t.fear, description: t.fear_desc },
+      disgust: { label: t.disgust, description: t.disgust_desc },
+    },
+  };
+
+  i18n.addResourceBundle(lang, 'translation', { trends: sentimentResources }, true, true);
+});
 
 export default i18n;

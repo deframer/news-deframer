@@ -275,6 +275,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   text-align: center;
 }
 .sentiment-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -286,8 +287,8 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 }
 .sentiment-toggle-pill {
   position: absolute;
-  top: 10px;
-  right: 14px;
+  top: 24px;
+  right: 22px;
   display: inline-flex;
   background-color: var(--bg-color-secondary);
   border-radius: 999px;
@@ -327,14 +328,40 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .sentiment-panel-empty {
   color: var(--secondary-text);
 }
-.sentiment-section {
+.sentiment-columns-layout {
   position: relative;
   display: grid;
-  gap: 12px;
+  grid-template-columns: 2fr auto 1fr;
+  gap: 24px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  padding: 14px;
+  padding: 16px;
   background: var(--bg-color-secondary);
+  align-items: stretch;
+}
+.sentiment-column-left,
+.sentiment-column-right {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sentiment-vertical-divider {
+  width: 1px;
+  background-color: var(--border-color);
+  margin: 4px 0;
+}
+@media (max-width: 799px) {
+  .sentiment-columns-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .sentiment-vertical-divider {
+    display: none;
+  }
+  .sentiment-interpretation-item {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 .sentiment-divider {
   border: none;
@@ -433,8 +460,42 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   inset: 0 auto 0 0;
   opacity: 0.88;
 }
-.sentiment-metric--interpretation .sentiment-metric-row {
-  grid-template-columns: 140px 280px minmax(0, 1fr) 20px;
+.sentiment-interpretation-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sentiment-interpretation-header-wrap {
+  margin-bottom: 4px;
+}
+.sentiment-interpretation-header-label {
+  color: var(--text-color);
+  font-size: 1.05em;
+  letter-spacing: 0.06em;
+  font-weight: bold;
+}
+.sentiment-interpretation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sentiment-interpretation-item {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: baseline;
+  padding: 4px 0;
+}
+.sentiment-interpretation-label {
+  color: var(--text-color);
+  font-size: 0.92em;
+  font-weight: 400;
+  line-height: 1.2;
+}
+.sentiment-interpretation-value {
+  color: var(--text-color);
+  font-size: 0.95em;
+  line-height: 1.4;
 }
 .sentiment-footnote {
   color: var(--secondary-text);

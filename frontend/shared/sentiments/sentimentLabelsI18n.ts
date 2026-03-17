@@ -70,6 +70,38 @@ export const TEXTS: Record<string, Record<string, string>> = {
 
     clear_emotional_state: "klare Emotionslage",
     ambiguous_emotional_state: "uneindeutige Emotionslage",
+
+    // UI Labels
+    sentiments_interpretation: "Interpretation",
+    sentiments_core_state: "Kernzustand",
+    sentiments_emotions: "Emotionen",
+    sentiments_tension: "Spannung",
+    sentiments_control: "Kontrolle",
+    sentiments_mood: "Stimmung",
+    sentiments_clarity: "Klarheit",
+    sentiments_interpretation_header: "Interpretation",
+    sentiments_vad: "VAD",
+    sentiments_vad_scale: "Skala 1-9, neutral bei 5",
+    sentiments_be5: "BE5",
+    sentiments_be5_scale: "Skala 1-5, von abwesend bis maximal",
+    sentiments_original: "Original",
+    sentiments_deframed: "Deframed",
+    sentiments_no_data_for_type: "Keine {{type}} Sentiment-Daten verfügbar.",
+    sentiments_na: "N/V",
+    sentiments_disclaimer: "Diese Werte beschreiben den Emotionsgehalt der ausgewählten Artikel. Es sind lexikalische Schätzungen auf Basis der verwendeten Wörter, keine direkten Aussagen darüber, was Autorinnen und Autoren, Leserinnen und Leser oder die Öffentlichkeit fühlen.",
+
+    // Metrics
+    valence: "Valenz",
+    valence_desc: "Wie angenehm oder unangenehm die Sprache wirkt.",
+    arousal: "Aktivierung",
+    arousal_desc: "Wie ruhig oder angeregt die Sprache wirkt.",
+    dominance: "Dominanz",
+    dominance_desc: "Wie viel Kontrolle, Stärke oder Macht die Sprache vermittelt.",
+    joy_desc: "Das stärkste positive Hochgefühl, das die Sprache signalisiert.",
+    anger_desc: "Die stärkste Feindseligkeit oder Empörung, die die Sprache signalisiert.",
+    sadness_desc: "Die stärkste Trauer oder Verluststimmung, die die Sprache signalisiert.",
+    fear_desc: "Die stärkste Angst oder Bedrohung, die die Sprache signalisiert.",
+    disgust_desc: "Der stärkste Widerwille oder die stärkste Abneigung, die die Sprache signalisiert.",
   },
 
   en: {
@@ -140,5 +172,37 @@ export const TEXTS: Record<string, Record<string, string>> = {
 
     clear_emotional_state: "clear emotional state",
     ambiguous_emotional_state: "ambiguous emotional state",
+
+    // UI Labels
+    sentiments_interpretation: "Interpretation",
+    sentiments_core_state: "Core state",
+    sentiments_emotions: "Emotions",
+    sentiments_tension: "Tension",
+    sentiments_control: "Control",
+    sentiments_mood: "Mood",
+    sentiments_clarity: "Clarity",
+    sentiments_interpretation_header: "Interpretation",
+    sentiments_vad: "VAD",
+    sentiments_vad_scale: "Scale 1-9, neutral at 5",
+    sentiments_be5: "BE5",
+    sentiments_be5_scale: "Scale 1-5, absent to max",
+    sentiments_original: "Original",
+    sentiments_deframed: "Deframed",
+    sentiments_no_data_for_type: "No {{type}} sentiment data available.",
+    sentiments_na: "N/A",
+    sentiments_disclaimer: "These scores describe the emotional meaning of the selected article set. They are lexical estimates based on word usage, not direct measurements of what authors, readers, or the public feel.",
+
+    // Metrics
+    valence: "Valence",
+    valence_desc: "How pleasant or unpleasant the language is.",
+    arousal: "Arousal",
+    arousal_desc: "How calm or activated the language feels.",
+    dominance: "Dominance",
+    dominance_desc: "How much control, strength, or power the language conveys.",
+    joy_desc: "The strongest positive uplift signaled by the language.",
+    anger_desc: "The strongest hostility or outrage signaled by the language.",
+    sadness_desc: "The strongest sorrow or loss signaled by the language.",
+    fear_desc: "The strongest anxiety or threat signaled by the language.",
+    disgust_desc: "The strongest revulsion or aversion signaled by the language.",
   },
 };

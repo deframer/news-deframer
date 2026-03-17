@@ -278,3 +278,13 @@ export function translateCodeMap(codes: CodeMap, lang: string = "de"): AnalysisO
     clarity_label: t[codes.clarity_label] ?? codes.clarity_label,
   };
 }
+
+/**
+ * Gets a translation for a specific key from the sentiment library.
+ */
+export function getSentimentUIText(key: string, lang: string = 'en'): string {
+  // Handle language variations (e.g., 'en-US' -> 'en')
+  const baseLang = lang.split('-')[0].toLowerCase();
+  const t = TEXTS[baseLang] || TEXTS['en'];
+  return t[key] ?? key;
+}
