@@ -2,8 +2,10 @@ import { CSSProperties, useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import log from '../../shared/logger';
+import type { AnalysisOutput, EmotionVector } from '../../shared/sentiments';
+import { sentimentsToLabels } from '../../shared/sentiments';
 import { getSettings } from '../../shared/settings';
-import { DomainEntry, NewsDeframerClient, SentimentItem } from '../client';
+import { DomainEntry, NewsDeframerClient, SentimentItem, SentimentScores } from '../client';
 
 interface TrendSentimentsProps {
   term: string;
@@ -86,7 +88,7 @@ const TOOLTIP_MAX_WIDTH = 280;
 const TOOLTIP_GUTTER = 12;
 
 export const TrendSentiments = ({ term, domain, days, date, className }: TrendSentimentsProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const tooltipId = useId();
   const [sentiments, setSentiments] = useState<SentimentItem | null>(null);
   const [sentimentType, setSentimentType] = useState<'sentiments' | 'sentiments_deframed'>('sentiments');
@@ -132,9 +134,24 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
     };
   }, [date, days, domain.domain, term]);
 
-  const metricValues = useMemo(() => {
-    return sentiments?.[sentimentType] || {};
+  const metricValues = useMemo((): SentimentScores => {
+    return sentiments?.[sentimentType] || { valence: 5, arousal: 5, dominance: 5, joy: 1, anger: 1, sadness: 1, fear: 1, disgust: 1 };
   }, [sentiments, sentimentType]);
+
+  const interpretation = useMemo((): AnalysisOutput | null => {
+    const ev: EmotionVector = {
+      valence: metricValues.valence,
+      arousal: metricValues.arousal,
+      dominance: metricValues.dominance,
+      joy: metricValues.joy,
+      anger: metricValues.anger,
+      sadness: metricValues.sadness,
+      fear: metricValues.fear,
+      disgust: metricValues.disgust,
+    };
+    const lang = i18n.language || 'en';
+    return sentimentsToLabels(ev, lang) as AnalysisOutput;
+  }, [metricValues, i18n.language]);
 
   const showTooltip = (target: HTMLElement, description: string) => {
     const rect = target.getBoundingClientRect();
@@ -318,6 +335,73 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
               );
             })}
           </div>
+
+          {interpretation && (
+            <>
+              <hr className="sentiment-divider" />
+              <div className="sentiment-section-header">
+                <strong className="sentiment-header-label">{t('trends.sentiments_interpretation', 'Interpretation')}</strong>
+              </div>
+              <div className="sentiment-rows">
+                <div className="sentiment-metric sentiment-metric--interpretation">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">{t('trends.sentiments_interpretation', 'Interpretation')}</span>
+                    <span></span>
+                    <span className="sentiment-value">{interpretation.interpretation}</span>
+                    <span></span>
+                  </div>
+                </div>
+                <div className="sentiment-metric sentiment-metric--interpretation">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">{t('trends.sentiments_core_state', 'Core state')}</span>
+                    <span></span>
+                    <span className="sentiment-value">{interpretation.core_state}</span>
+                    <span></span>
+                  </div>
+                </div>
+                <div className="sentiment-metric sentiment-metric--interpretation">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">{t('trends.sentiments_emotions', 'Emotions')}</span>
+                    <span></span>
+                    <span className="sentiment-value">{interpretation.primary_emotion} / {interpretation.secondary_emotion}</span>
+                    <span></span>
+                  </div>
+                </div>
+                <div className="sentiment-metric sentiment-metric--interpretation">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">{t('trends.sentiments_tension', 'Tension')}</span>
+                    <span></span>
+                    <span className="sentiment-value">{interpretation.tension_label}</span>
+                    <span></span>
+                  </div>
+                </div>
+                <div className="sentiment-metric sentiment-metric--interpretation">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">{t('trends.sentiments_control', 'Control')}</span>
+                    <span></span>
+                    <span className="sentiment-value">{interpretation.control_label}</span>
+                    <span></span>
+                  </div>
+                </div>
+                <div className="sentiment-metric sentiment-metric--interpretation">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">{t('trends.sentiments_mood', 'Mood')}</span>
+                    <span></span>
+                    <span className="sentiment-value">{interpretation.mood_label}</span>
+                    <span></span>
+                  </div>
+                </div>
+                <div className="sentiment-metric sentiment-metric--interpretation">
+                  <div className="sentiment-metric-row">
+                    <span className="sentiment-label">{t('trends.sentiments_clarity', 'Clarity')}</span>
+                    <span></span>
+                    <span className="sentiment-value">{interpretation.clarity_label}</span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </section>
       )}
 

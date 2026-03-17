@@ -433,6 +433,9 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   inset: 0 auto 0 0;
   opacity: 0.88;
 }
+.sentiment-metric--interpretation .sentiment-metric-row {
+  grid-template-columns: 88px 10px 180px 20px 20px;
+}
 .sentiment-footnote {
   color: var(--secondary-text);
   font-size: 0.82em;

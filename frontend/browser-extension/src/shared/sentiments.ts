@@ -1,1 +1,1 @@
-export * from '../../../shared/sentiments';
+export * from '../../../shared/sentiments/sentimentLabels';
