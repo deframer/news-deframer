@@ -346,7 +346,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
                 <div className="sentiment-metric sentiment-metric--interpretation">
                   <div className="sentiment-metric-row">
                     <span className="sentiment-label">{t('trends.sentiments_interpretation', 'Interpretation')}</span>
-                    <span></span>
                     <span className="sentiment-value">{interpretation.interpretation}</span>
                     <span></span>
                   </div>
@@ -354,7 +353,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
                 <div className="sentiment-metric sentiment-metric--interpretation">
                   <div className="sentiment-metric-row">
                     <span className="sentiment-label">{t('trends.sentiments_core_state', 'Core state')}</span>
-                    <span></span>
                     <span className="sentiment-value">{interpretation.core_state}</span>
                     <span></span>
                   </div>
@@ -362,7 +360,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
                 <div className="sentiment-metric sentiment-metric--interpretation">
                   <div className="sentiment-metric-row">
                     <span className="sentiment-label">{t('trends.sentiments_emotions', 'Emotions')}</span>
-                    <span></span>
                     <span className="sentiment-value">{interpretation.primary_emotion} / {interpretation.secondary_emotion}</span>
                     <span></span>
                   </div>
@@ -370,7 +367,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
                 <div className="sentiment-metric sentiment-metric--interpretation">
                   <div className="sentiment-metric-row">
                     <span className="sentiment-label">{t('trends.sentiments_tension', 'Tension')}</span>
-                    <span></span>
                     <span className="sentiment-value">{interpretation.tension_label}</span>
                     <span></span>
                   </div>
@@ -378,7 +374,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
                 <div className="sentiment-metric sentiment-metric--interpretation">
                   <div className="sentiment-metric-row">
                     <span className="sentiment-label">{t('trends.sentiments_control', 'Control')}</span>
-                    <span></span>
                     <span className="sentiment-value">{interpretation.control_label}</span>
                     <span></span>
                   </div>
@@ -386,7 +381,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
                 <div className="sentiment-metric sentiment-metric--interpretation">
                   <div className="sentiment-metric-row">
                     <span className="sentiment-label">{t('trends.sentiments_mood', 'Mood')}</span>
-                    <span></span>
                     <span className="sentiment-value">{interpretation.mood_label}</span>
                     <span></span>
                   </div>
@@ -394,7 +388,6 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
                 <div className="sentiment-metric sentiment-metric--interpretation">
                   <div className="sentiment-metric-row">
                     <span className="sentiment-label">{t('trends.sentiments_clarity', 'Clarity')}</span>
-                    <span></span>
                     <span className="sentiment-value">{interpretation.clarity_label}</span>
                     <span></span>
                   </div>

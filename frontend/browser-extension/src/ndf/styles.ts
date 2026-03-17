@@ -387,7 +387,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   font-size: 0.88em;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
-  text-align: right;
+  text-align: left;
 }
 .sentiment-track-wrap {
   min-width: 0;
@@ -434,7 +434,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   opacity: 0.88;
 }
 .sentiment-metric--interpretation .sentiment-metric-row {
-  grid-template-columns: 88px 10px 180px 20px 20px;
+  grid-template-columns: 140px 280px minmax(0, 1fr) 20px;
 }
 .sentiment-footnote {
   color: var(--secondary-text);
