@@ -21,7 +21,7 @@
     "@types/chrome": "^0.1.37",
     "@types/jest": "^30.0.0",
     "@types/loglevel": "^1.6.3",
-    "@types/node": "^25.4.0",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "copy-webpack-plugin": "^14.0.0",
@@ -47,12 +47,12 @@
   },
   "dependencies": {
     "date-fns": "^4.1.0",
-    "i18next": "^25.8.17",
+    "i18next": "^25.8.18",
     "i18next-browser-languagedetector": "^8.2.1",
     "loglevel": "^1.9.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-i18next": "^16.5.7",
-    "tldts": "^7.0.25"
+    "react-i18next": "^16.5.8",
+    "tldts": "^7.0.26"
   }
 }
