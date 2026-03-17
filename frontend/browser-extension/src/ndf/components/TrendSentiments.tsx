@@ -133,17 +133,7 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
   }, [date, days, domain.domain, term]);
 
   const metricValues = useMemo(() => {
-    const selectedSentiments = sentiments?.[sentimentType];
-    return {
-      valence: selectedSentiments?.valence ?? null,
-      arousal: selectedSentiments?.arousal ?? null,
-      dominance: selectedSentiments?.dominance ?? null,
-      joy: selectedSentiments?.joy ?? null,
-      anger: selectedSentiments?.anger ?? null,
-      sadness: selectedSentiments?.sadness ?? null,
-      fear: selectedSentiments?.fear ?? null,
-      disgust: selectedSentiments?.disgust ?? null,
-    };
+    return sentiments?.[sentimentType] || {};
   }, [sentiments, sentimentType]);
 
   const showTooltip = (target: HTMLElement, description: string) => {

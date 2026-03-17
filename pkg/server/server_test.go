@@ -161,7 +161,7 @@ func TestHandleSentiments(t *testing.T) {
 				assert.Equal(t, todayPtr, date)
 				assert.Equal(t, 1, days)
 
-				return &database.SentimentItem{Sentiments: &database.SentimentScores{Valence: &valence, Joy: &joy}}, nil
+				return &database.SentimentItem{Sentiments: &database.SentimentScores{Valence: valence, Joy: joy}}, nil
 			},
 		}
 

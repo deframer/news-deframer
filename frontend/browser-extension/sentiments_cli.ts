@@ -1,7 +1,6 @@
 import { analyzeEmotionVectorToCodes, translateCodeMap } from '../shared/sentiments/index.ts';
 import type { EmotionVector } from '../shared/sentiments/index.ts';
 
-// optional
 const input: EmotionVector = {
   valence: 7.72,
   arousal: 4.77,
@@ -16,5 +15,5 @@ const input: EmotionVector = {
 const codes = analyzeEmotionVectorToCodes(input);
 const de = translateCodeMap(codes, "de");
 
-console.log(codes);
-console.log(de);
+console.log('Codes:', codes);
+console.log('Translations (DE):', de);

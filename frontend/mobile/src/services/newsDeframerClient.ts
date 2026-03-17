@@ -93,14 +93,14 @@ export interface AnalyzedArticle {
 }
 
 export interface SentimentScores {
-  valence?: number | null;
-  arousal?: number | null;
-  dominance?: number | null;
-  joy?: number | null;
-  anger?: number | null;
-  sadness?: number | null;
-  fear?: number | null;
-  disgust?: number | null;
+  valence: number;
+  arousal: number;
+  dominance: number;
+  joy: number;
+  anger: number;
+  sadness: number;
+  fear: number;
+  disgust: number;
 }
 
 export interface SentimentItem {
