@@ -354,6 +354,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   .sentiment-columns-layout {
     grid-template-columns: 1fr;
     gap: 16px;
+    padding-top: 40px;
   }
   .sentiment-vertical-divider {
     display: none;

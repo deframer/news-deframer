@@ -6,7 +6,7 @@ interface TrendSentimentsInterpretationProps {
   interpretation: AnalysisOutput;
 }
 
-export const TrendSentimentsInterpretation = ({ interpretation }: TrendSentimentsInterpretationProps) => {
+export const SentimentsInterpretation = ({ interpretation }: TrendSentimentsInterpretationProps) => {
   const { t, i18n } = useTranslation();
   const lang = i18n.language || 'en';
 
