@@ -23,15 +23,7 @@ type RSSProxyFilter struct {
 
 const MaxItemsForRootDomain = 30
 
-type AnalyzedItem struct {
-	Hash string `json:"hash"`
-	URL  string `json:"url"`
-	database.ThinkResult
-	MediaContent *database.MediaContent `json:"media,omitempty"`
-	ThinkRating  float64                `json:"rating"`
-	Authors      database.StringArray   `json:"authors,omitempty"`
-	PubDate      time.Time              `json:"pubDate"`
-}
+type AnalyzedItem = database.AnalyzedItem
 
 type DomainEntry struct {
 	Domain    string  `json:"domain"`
@@ -106,7 +98,7 @@ func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 }
 
 func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error) {
-	dbItems, err := f.repo.FindItemsByRootDomain(rootDomain, MaxItemsForRootDomain)
+	dbItems, err := f.repo.FindAnalyzedItemsByRootDomain(rootDomain, MaxItemsForRootDomain)
 	if err != nil {
 		return nil, err
 	}
@@ -116,47 +108,13 @@ func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string, m
 		if maxScore > 0 && dbItem.ThinkRating > maxScore {
 			continue
 		}
-
-		item := AnalyzedItem{
-			Hash:         dbItem.Hash,
-			URL:          dbItem.URL,
-			MediaContent: dbItem.MediaContent,
-			ThinkRating:  dbItem.ThinkRating,
-			Authors:      dbItem.Authors,
-			PubDate:      dbItem.PubDate,
-		}
-		if dbItem.ThinkResult != nil {
-			item.ThinkResult = *dbItem.ThinkResult
-		}
-		items = append(items, item)
+		items = append(items, dbItem)
 	}
 	return items, nil
 }
 
 func (f *facade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error) {
-	items, err := f.repo.FindItemsByUrl(u)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(items) == 0 {
-		return nil, nil
-	}
-
-	dbItem := items[0]
-	item := AnalyzedItem{
-		Hash:         dbItem.Hash,
-		URL:          dbItem.URL,
-		MediaContent: dbItem.MediaContent,
-		ThinkRating:  dbItem.ThinkRating,
-		Authors:      dbItem.Authors,
-		PubDate:      dbItem.PubDate,
-	}
-	if dbItem.ThinkResult != nil {
-		item.ThinkResult = *dbItem.ThinkResult
-	}
-
-	return &item, nil
+	return f.repo.FindFirstAnalyzedItemByUrl(u)
 }
 
 func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {

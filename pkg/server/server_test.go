@@ -223,7 +223,7 @@ func TestHandleItem(t *testing.T) {
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe", "John Roe"},
-					ThinkResult: database.ThinkResult{
+					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
 				}, nil
@@ -248,7 +248,7 @@ func TestHandleItem(t *testing.T) {
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe"},
-					ThinkResult: database.ThinkResult{
+					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
 				}, nil
@@ -277,7 +277,7 @@ func TestHandleSite(t *testing.T) {
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe"},
-					ThinkResult: database.ThinkResult{
+					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
 				}}, nil

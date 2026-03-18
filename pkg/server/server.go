@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
-	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/deframer/news-deframer/pkg/facade"
 )
 
@@ -511,7 +510,7 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if item.ThinkResult == (database.ThinkResult{}) {
+	if item.ThinkResult == nil {
 		// error happened or we are not there yet with the thinking
 		http.Error(w, "not found", http.StatusNotFound)
 		return

@@ -91,6 +91,16 @@ type SentimentItem struct {
 	SentimentsDeframed *SentimentScores `json:"sentiments_deframed,omitempty"`
 }
 
+type AnalyzedItem struct {
+	Hash         string        `json:"hash"`
+	URL          string        `json:"url"`
+	ThinkResult  *ThinkResult  `gorm:"type:jsonb" json:"-"`
+	MediaContent *MediaContent `gorm:"type:jsonb" json:"media,omitempty"`
+	ThinkRating  float64       `json:"rating"`
+	Authors      StringArray   `gorm:"type:text[]" json:"authors,omitempty"`
+	PubDate      time.Time     `json:"pubDate"`
+}
+
 type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
 	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
@@ -127,6 +137,8 @@ type Repository interface {
 	GetDomainComparison(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]DomainComparison, error)
 	GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error)
 	GetSentimentsByTrend(term string, domain string, date *time.Time, days int) (*SentimentItem, error)
+	FindAnalyzedItemsByRootDomain(rootDomain string, limit int) ([]AnalyzedItem, error)
+	FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, error)
 }
 
 type repository struct {
@@ -798,6 +810,42 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 		return nil, err
 	}
 	return items, nil
+}
+
+func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int) ([]AnalyzedItem, error) {
+	var items []AnalyzedItem
+	subQuery := r.db.Model(&Item{}).
+		Select("DISTINCT ON (items.url) items.*").
+		Joins("JOIN feeds ON feeds.id = items.feed_id").
+		Where("feeds.root_domain = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", rootDomain, true).
+		Where("items.think_result IS NOT NULL AND items.think_error IS NULL AND items.think_error_count = 0").
+		Order("items.url, items.pub_date DESC")
+
+	if err := r.db.Model(&Item{}).
+		Table("(?) as unique_items", subQuery).
+		Select("unique_items.*").
+		Order("unique_items.pub_date DESC").
+		Limit(limit).
+		Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, error) {
+	var item AnalyzedItem
+	if err := r.db.Model(&Item{}).
+		Select("items.*, items.think_result").
+		Joins("JOIN feeds ON feeds.id = items.feed_id").
+		Where("items.url = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", u.String(), true).
+		Order("items.pub_date DESC").
+		First(&item).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &item, nil
 }
 
 func (r *repository) GetArticlesByTrend(term string, domain string, date *time.Time, days int, offset int, limit int) ([]AnalyzedArticle, error) {

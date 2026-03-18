@@ -96,6 +96,14 @@ func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]databa
 	return nil, nil
 }
 
+func (m *mockRepo) FindAnalyzedItemsByRootDomain(rootDomain string, limit int) ([]database.AnalyzedItem, error) {
+	return nil, nil
+}
+
+func (m *mockRepo) FindFirstAnalyzedItemByUrl(u *url.URL) (*database.AnalyzedItem, error) {
+	return nil, nil
+}
+
 func (m *mockRepo) GetTopTrendByDomain(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error) {
 	if m.getTopTrendByDomainFunc != nil {
 		return m.getTopTrendByDomainFunc(domain, language, date, days)
