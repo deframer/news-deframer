@@ -16,8 +16,8 @@ import (
 )
 
 type mockFacade struct {
-	getItemsForRootDomain func(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error)
-	getFirstItemForUrl    func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error)
+	getItemsForRootDomain func(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error)
+	getFirstItemForUrl    func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error)
 	getArticlesByTrend    func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
 	getSentimentsByTrend  func(ctx context.Context, term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
 }
@@ -26,14 +26,14 @@ func (m *mockFacade) GetRssProxyFeed(ctx context.Context, filter *facade.RSSProx
 	return "", nil
 }
 
-func (m *mockFacade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error) {
+func (m *mockFacade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error) {
 	if m.getItemsForRootDomain != nil {
 		return m.getItemsForRootDomain(ctx, rootDomain, maxScore)
 	}
 	return nil, nil
 }
 
-func (m *mockFacade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+func (m *mockFacade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 	if m.getFirstItemForUrl != nil {
 		return m.getFirstItemForUrl(ctx, u)
 	}
@@ -217,9 +217,9 @@ func TestHandleItem(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		mockF := &mockFacade{
-			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 				assert.Equal(t, "https://example.com/a", u.String())
-				return &facade.AnalyzedItem{
+				return &database.AnalyzedItem{
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe", "John Roe"},
@@ -242,9 +242,9 @@ func TestHandleItem(t *testing.T) {
 
 	t.Run("mobile api alias", func(t *testing.T) {
 		mockF := &mockFacade{
-			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 				assert.Equal(t, "https://example.com/a", u.String())
-				return &facade.AnalyzedItem{
+				return &database.AnalyzedItem{
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe"},
@@ -271,9 +271,9 @@ func TestHandleSite(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		mockF := &mockFacade{
-			getItemsForRootDomain: func(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error) {
+			getItemsForRootDomain: func(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error) {
 				assert.Equal(t, "example.com", rootDomain)
-				return []facade.AnalyzedItem{{
+				return []database.AnalyzedItem{{
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe"},

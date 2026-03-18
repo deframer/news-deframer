@@ -23,8 +23,6 @@ type RSSProxyFilter struct {
 
 const MaxItemsForRootDomain = 30
 
-type AnalyzedItem = database.AnalyzedItem
-
 type DomainEntry struct {
 	Domain    string  `json:"domain"`
 	Language  string  `json:"language"`
@@ -33,8 +31,8 @@ type DomainEntry struct {
 
 type Facade interface {
 	GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (string, error)
-	GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error)
-	GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error)
+	GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error)
+	GetFirstItemForUrl(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error)
 	GetRootDomains(ctx context.Context) ([]DomainEntry, error)
 	GetTopTrendByDomain(ctx context.Context, domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
 	GetContextByDomain(ctx context.Context, term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
@@ -97,13 +95,13 @@ func (f *facade) GetRssProxyFeed(ctx context.Context, filter *RSSProxyFilter) (s
 	return *cachedFeed.XMLContent, nil
 }
 
-func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]AnalyzedItem, error) {
+func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error) {
 	dbItems, err := f.repo.FindAnalyzedItemsByRootDomain(rootDomain, MaxItemsForRootDomain)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]AnalyzedItem, 0, len(dbItems))
+	items := make([]database.AnalyzedItem, 0, len(dbItems))
 	for _, dbItem := range dbItems {
 		if maxScore > 0 && dbItem.ThinkRating > maxScore {
 			continue
@@ -113,7 +111,7 @@ func (f *facade) GetItemsForRootDomain(ctx context.Context, rootDomain string, m
 	return items, nil
 }
 
-func (f *facade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*AnalyzedItem, error) {
+func (f *facade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 	return f.repo.FindFirstAnalyzedItemByUrl(u)
 }
 
