@@ -2,7 +2,9 @@ package database
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -86,19 +88,38 @@ type SentimentScores struct {
 	Disgust   float64 `gorm:"column:disgust" json:"disgust,omitempty"`
 }
 
+// Value implements the driver.Valuer interface for SentimentScores.
+func (j SentimentScores) Value() (driver.Value, error) {
+	return json.Marshal(j)
+}
+
+// Scan implements the sql.Scanner interface for SentimentScores.
+func (j *SentimentScores) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(bytes, j)
+}
+
 type SentimentItem struct {
 	Sentiments         *SentimentScores `json:"sentiments,omitempty"`
 	SentimentsDeframed *SentimentScores `json:"sentiments_deframed,omitempty"`
 }
 
 type AnalyzedItem struct {
-	Hash         string        `json:"hash"`
-	URL          string        `json:"url"`
-	ThinkResult  *ThinkResult  `gorm:"type:jsonb" json:"-"`
-	MediaContent *MediaContent `gorm:"type:jsonb" json:"media,omitempty"`
-	ThinkRating  float64       `json:"rating"`
-	Authors      StringArray   `gorm:"type:text[]" json:"authors,omitempty"`
-	PubDate      time.Time     `json:"pubDate"`
+	Hash               string           `json:"hash"`
+	URL                string           `json:"url"`
+	ThinkResult        *ThinkResult     `gorm:"type:jsonb" json:"-"`
+	Sentiments         *SentimentScores `gorm:"type:jsonb" json:"sentiments,omitempty"`
+	SentimentsDeframed *SentimentScores `gorm:"type:jsonb" json:"sentiments_deframed,omitempty"`
+	MediaContent       *MediaContent    `gorm:"type:jsonb" json:"media,omitempty"`
+	ThinkRating        float64          `json:"rating"`
+	Authors            StringArray      `gorm:"type:text[]" json:"authors,omitempty"`
+	PubDate            time.Time        `json:"pubDate"`
 }
 
 type Repository interface {
@@ -834,9 +855,36 @@ func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int)
 
 func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, error) {
 	var item AnalyzedItem
+	query := `items.*,
+		CASE WHEN trends.sentiments IS NOT NULL AND trends.sentiments <> '{}'::jsonb THEN
+			jsonb_build_object(
+				'valence', (trends.sentiments->>'v')::double precision,
+				'arousal', (trends.sentiments->>'a')::double precision,
+				'dominance', (trends.sentiments->>'d')::double precision,
+				'joy', (trends.sentiments->>'j')::double precision,
+				'anger', (trends.sentiments->>'a_n')::double precision,
+				'sadness', (trends.sentiments->>'s')::double precision,
+				'fear', (trends.sentiments->>'f')::double precision,
+				'disgust', (trends.sentiments->>'d_g')::double precision
+			)
+		ELSE NULL END as sentiments,
+		CASE WHEN trends.sentiments_deframed IS NOT NULL AND trends.sentiments_deframed <> '{}'::jsonb THEN
+			jsonb_build_object(
+				'valence', (trends.sentiments_deframed->>'v')::double precision,
+				'arousal', (trends.sentiments_deframed->>'a')::double precision,
+				'dominance', (trends.sentiments_deframed->>'d')::double precision,
+				'joy', (trends.sentiments_deframed->>'j')::double precision,
+				'anger', (trends.sentiments_deframed->>'a_n')::double precision,
+				'sadness', (trends.sentiments_deframed->>'s')::double precision,
+				'fear', (trends.sentiments_deframed->>'f')::double precision,
+				'disgust', (trends.sentiments_deframed->>'d_g')::double precision
+			)
+		ELSE NULL END as sentiments_deframed`
+
 	if err := r.db.Model(&Item{}).
-		Select("items.*, items.think_result").
+		Select(query).
 		Joins("JOIN feeds ON feeds.id = items.feed_id").
+		Joins("LEFT JOIN trends ON trends.item_id = items.id").
 		Where("items.url = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", u.String(), true).
 		Order("items.pub_date DESC").
 		First(&item).Error; err != nil {
