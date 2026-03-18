@@ -82,6 +82,8 @@ export interface AnalyzedItem extends ThinkResult {
   media?: MediaContent;
   rating: number;
   pubDate?: string;
+  sentiments?: SentimentScores;
+  sentiments_deframed?: SentimentScores;
 }
 
 export interface AnalyzedArticle {
