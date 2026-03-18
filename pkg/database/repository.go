@@ -113,13 +113,52 @@ type SentimentItem struct {
 type AnalyzedItem struct {
 	Hash               string           `json:"hash"`
 	URL                string           `json:"url"`
-	ThinkResult        *ThinkResult     `gorm:"type:jsonb" json:"-"`
+	ThinkResult        *ThinkResult     `gorm:"type:jsonb"`
 	Sentiments         *SentimentScores `gorm:"type:jsonb" json:"sentiments,omitempty"`
 	SentimentsDeframed *SentimentScores `gorm:"type:jsonb" json:"sentiments_deframed,omitempty"`
 	MediaContent       *MediaContent    `gorm:"type:jsonb" json:"media,omitempty"`
 	ThinkRating        float64          `json:"rating"`
 	Authors            StringArray      `gorm:"type:text[]" json:"authors,omitempty"`
 	PubDate            time.Time        `json:"pubDate"`
+}
+
+// MarshalJSON implements json.Marshaler to conditionally include ThinkResult fields based on ThinkRating.
+// When ThinkRating is 0, none of the ThinkResult fields are included.
+// When ThinkRating is not 0, the ThinkResult fields are flattened into the AnalyzedItem object.
+func (a AnalyzedItem) MarshalJSON() ([]byte, error) {
+	// Create a map to hold the fields for JSON serialization
+	result := make(map[string]interface{})
+
+	// Add all the regular AnalyzedItem fields
+	result["hash"] = a.Hash
+	result["url"] = a.URL
+	result["sentiments"] = a.Sentiments
+	result["sentiments_deframed"] = a.SentimentsDeframed
+	result["media"] = a.MediaContent
+	result["rating"] = a.ThinkRating
+	result["authors"] = a.Authors
+	result["pubDate"] = a.PubDate
+
+	// Only include ThinkResult fields if ThinkRating is not 0
+	if a.ThinkRating != 0 && a.ThinkResult != nil {
+		// Marshal ThinkResult to JSON and unmarshal into a map to flatten its fields
+		thinkResultJSON, err := json.Marshal(a.ThinkResult)
+		if err != nil {
+			return nil, err
+		}
+
+		var thinkResultMap map[string]interface{}
+		if err := json.Unmarshal(thinkResultJSON, &thinkResultMap); err != nil {
+			return nil, err
+		}
+
+		// Merge ThinkResult fields into the result map
+		for k, v := range thinkResultMap {
+			result[k] = v
+		}
+	}
+
+	return json.Marshal(result)
 }
 
 type Repository interface {

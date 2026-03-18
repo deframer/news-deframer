@@ -226,6 +226,7 @@ func TestHandleItem(t *testing.T) {
 					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
+					ThinkRating: 0.5,
 				}, nil
 			},
 		}
@@ -238,6 +239,36 @@ func TestHandleItem(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe","John Roe"]`)
+		// ThinkResult fields should be flattened since ThinkRating is not 0
+		assert.Contains(t, rr.Body.String(), `"title_corrected":"Corrected Title"`)
+	})
+
+	t.Run("zero_think_rating", func(t *testing.T) {
+		mockF := &mockFacade{
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
+				assert.Equal(t, "https://example.com/a", u.String())
+				return &database.AnalyzedItem{
+					Hash:    "hash1",
+					URL:     "https://example.com/a",
+					Authors: database.StringArray{"Jane Doe", "John Roe"},
+					ThinkResult: &database.ThinkResult{
+						TitleCorrected: "Corrected Title",
+					},
+					ThinkRating: 0.0,
+				}, nil
+			},
+		}
+
+		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		req := httptest.NewRequest(http.MethodGet, "/api/item?url=https://example.com/a", nil)
+		rr := httptest.NewRecorder()
+
+		s.httpServer.Handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe","John Roe"]`)
+		// ThinkResult fields should be omitted since ThinkRating is 0
+		assert.NotContains(t, rr.Body.String(), `"title_corrected"`)
 	})
 
 	t.Run("mobile api alias", func(t *testing.T) {
@@ -251,6 +282,7 @@ func TestHandleItem(t *testing.T) {
 					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
+					ThinkRating: 0.8,
 				}, nil
 			},
 		}
@@ -263,6 +295,36 @@ func TestHandleItem(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe"]`)
+		// ThinkResult fields should be flattened since ThinkRating is not 0
+		assert.Contains(t, rr.Body.String(), `"title_corrected":"Corrected Title"`)
+	})
+
+	t.Run("mobile api alias zero rating", func(t *testing.T) {
+		mockF := &mockFacade{
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
+				assert.Equal(t, "https://example.com/a", u.String())
+				return &database.AnalyzedItem{
+					Hash:    "hash1",
+					URL:     "https://example.com/a",
+					Authors: database.StringArray{"Jane Doe"},
+					ThinkResult: &database.ThinkResult{
+						TitleCorrected: "Corrected Title",
+					},
+					ThinkRating: 0.0,
+				}, nil
+			},
+		}
+
+		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		req := httptest.NewRequest(http.MethodGet, "/mobile/api/item?url=https://example.com/a", nil)
+		rr := httptest.NewRecorder()
+
+		s.httpServer.Handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe"]`)
+		// ThinkResult fields should be omitted since ThinkRating is 0
+		assert.NotContains(t, rr.Body.String(), `"title_corrected"`)
 	})
 }
 
