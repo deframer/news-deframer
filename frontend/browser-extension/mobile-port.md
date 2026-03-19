@@ -92,14 +92,7 @@ That means:
 
 #### c. Remove the standalone debug browser app
 
-The current `src/debug` path and `webpack.debug.config.js` add a second browser app variant that we do not want to keep.
-
-That means:
-
-- remove `src/debug`
-- remove `webpack.debug.config.js`
-- remove `dev-react` from `package.json`
-- remove `dev-react` and stale debug cleanup from `Makefile`
+The old standalone debug browser app has been removed.
 
 ### 3. Reserve a future mobile host structure, but do not build it yet
 

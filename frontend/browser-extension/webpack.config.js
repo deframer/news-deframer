@@ -25,7 +25,7 @@ module.exports = {
                         transpileOnly: true
                     }
                 }],
-                exclude: [/node_modules/, path.resolve(__dirname, 'src/debug')],
+                exclude: /node_modules/,
             },
             {
                 test: /\.css$/i,
