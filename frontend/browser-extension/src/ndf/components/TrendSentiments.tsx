@@ -6,8 +6,9 @@ import type { AnalysisOutput, EmotionVector } from '../../shared/sentiments';
 import { sentimentsToLabels } from '../../shared/sentiments';
 import { getSettings } from '../../shared/settings';
 import { DomainEntry, NewsDeframerClient, SentimentItem, SentimentScores } from '../client';
-import { TrendSentimentsInterpretation } from './TrendSentimentsInterpretation';
-import { TrendVADBE5 } from './TrendVADBE5';
+import { Sentiments } from './Sentiments';
+import { SentimentsInterpretation } from './SentimentsInterpretation';
+import { SentimentsToggle } from './SentimentsToggle';
 
 interface TrendSentimentsProps {
   term: string;
@@ -15,12 +16,13 @@ interface TrendSentimentsProps {
   days: number;
   date?: string;
   className?: string;
+  layout?: 'horizontal' | 'vertical';
 }
 
 const TOOLTIP_MAX_WIDTH = 280;
 const TOOLTIP_GUTTER = 12;
 
-export const TrendSentiments = ({ term, domain, days, date, className }: TrendSentimentsProps) => {
+export const TrendSentiments = ({ term, domain, days, date, className, layout = 'horizontal' }: TrendSentimentsProps) => {
   const { t, i18n } = useTranslation();
   const tooltipId = useId();
   const [sentiments, setSentiments] = useState<SentimentItem | null>(null);
@@ -116,26 +118,12 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
   const hasData = selectedSentimentData && Object.keys(selectedSentimentData).length > 0;
 
   return (
-    <div className={`sentiment-panel ${className || ''}`}>
-      <div className="sentiment-toggle-pill" role="group" aria-label={t('trends.sentiments_toggle', 'Sentiment Data Source')}>
-        <button
-          type="button"
-          className={`sentiment-toggle-btn ${sentimentType === 'sentiments' ? 'active' : ''}`}
-          aria-pressed={sentimentType === 'sentiments'}
-          onClick={() => setSentimentType('sentiments')}
-        >
-          {t('trends.sentiments_original', 'Original')}
-        </button>
-        <button
-          type="button"
-          className={`sentiment-toggle-btn ${sentimentType === 'sentiments_deframed' ? 'active' : ''}`}
-          aria-pressed={sentimentType === 'sentiments_deframed'}
-          onClick={() => setSentimentType('sentiments_deframed')}
-          disabled={!sentiments?.sentiments_deframed}
-        >
-          {t('trends.sentiments_deframed', 'Deframed')}
-        </button>
-      </div>
+    <div className={`sentiment-panel ${className || ''} sentiment-layout-${layout}`}>
+      <SentimentsToggle
+        sentimentType={sentimentType}
+        onTypeChange={setSentimentType}
+        hasDeframed={!!sentiments?.sentiments_deframed}
+      />
 
       {!hasData && hasLoaded && (
         <div className="sentiment-panel-state sentiment-panel-empty">
@@ -147,20 +135,18 @@ export const TrendSentiments = ({ term, domain, days, date, className }: TrendSe
 
       {hasData && (
         <section className="sentiment-columns-layout">
-          <div className="sentiment-column-left">
-            <TrendVADBE5
-              metricValues={metricValues}
-              tooltipId={tooltipId}
-              onShowTooltip={showTooltip}
-              onHideTooltip={hideTooltip}
-            />
-          </div>
+          <Sentiments
+            metricValues={metricValues}
+            tooltipId={tooltipId}
+            onShowTooltip={showTooltip}
+            onHideTooltip={hideTooltip}
+          />
 
-          <div className="sentiment-vertical-divider" />
+          {layout === 'horizontal' && <div className="sentiment-vertical-divider" />}
 
           <div className="sentiment-column-right">
             {interpretation && (
-              <TrendSentimentsInterpretation interpretation={interpretation} />
+              <SentimentsInterpretation interpretation={interpretation} />
             )}
           </div>
         </section>

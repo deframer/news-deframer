@@ -19,7 +19,7 @@ export const ndfStyles = `
 .main-content { padding: 1.5em; }
 h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
 .description { font-size: 1.1em; color: var(--secondary-text); margin-bottom: 0.5em; }
-.analysis-section { border-top: 2px solid var(--border-color); padding-top: 1.5em; margin-top: 1.5em; }
+.analysis-section { padding-top: 1em; margin-top: 1em; }
 .metric-item { display: block; margin-bottom: 1.5em; }
 .metric-label { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; display: block; color: var(--text-color); }
 .metric-details { display: block; width: 100%; }
@@ -40,6 +40,9 @@ h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
   .article-container { padding-top: 55px; padding-bottom: 80px; }
   .page-header { position: fixed; top: 0; left: 0; width: 100%; box-sizing: border-box; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
   .action-buttons { position: fixed; bottom: 0; left: 0; width: 100%; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); margin-top: 0; box-sizing: border-box; }
+  .sentiment-columns-layout { grid-template-columns: 1fr; gap: 16px; padding-top: 40px; }
+  .sentiment-vertical-divider { display: none; }
+  .main-content .tabs { background-color: var(--card-bg); }
 }
 
 /* PortalPage.tsx */
@@ -94,6 +97,7 @@ h1 { margin: 0; font-size: 1.5em; }
 .tab-btn { padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-size: 1.1em; color: var(--text-color); opacity: 0.6; transition: all 0.2s; }
 .tab-btn:hover { opacity: 1; background-color: rgba(0,0,0,0.05); }
 .tab-btn.active { border-bottom-color: var(--btn-bg); opacity: 1; font-weight: 600; }
+.main-content .tabs { border-bottom: none; }
 
 @media (max-width: 799px) {
   .portal-container { padding: 0 1em 1em; }
@@ -328,6 +332,14 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
 .sentiment-panel-empty {
   color: var(--secondary-text);
 }
+.sentiment-layout-vertical .sentiment-columns-layout {
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding-top: 40px;
+}
+.sentiment-layout-vertical .sentiment-vertical-divider {
+  display: none;
+}
 .sentiment-columns-layout {
   position: relative;
   display: grid;
@@ -354,6 +366,7 @@ p { font-size: 0.9em; color: var(--secondary-text); margin: 0; }
   .sentiment-columns-layout {
     grid-template-columns: 1fr;
     gap: 16px;
+    padding-top: 40px;
   }
   .sentiment-vertical-divider {
     display: none;

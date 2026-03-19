@@ -16,8 +16,8 @@ import (
 )
 
 type mockFacade struct {
-	getItemsForRootDomain func(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error)
-	getFirstItemForUrl    func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error)
+	getItemsForRootDomain func(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error)
+	getFirstItemForUrl    func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error)
 	getArticlesByTrend    func(ctx context.Context, term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
 	getSentimentsByTrend  func(ctx context.Context, term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
 }
@@ -26,14 +26,14 @@ func (m *mockFacade) GetRssProxyFeed(ctx context.Context, filter *facade.RSSProx
 	return "", nil
 }
 
-func (m *mockFacade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error) {
+func (m *mockFacade) GetItemsForRootDomain(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error) {
 	if m.getItemsForRootDomain != nil {
 		return m.getItemsForRootDomain(ctx, rootDomain, maxScore)
 	}
 	return nil, nil
 }
 
-func (m *mockFacade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+func (m *mockFacade) GetFirstItemForUrl(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 	if m.getFirstItemForUrl != nil {
 		return m.getFirstItemForUrl(ctx, u)
 	}
@@ -217,15 +217,16 @@ func TestHandleItem(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		mockF := &mockFacade{
-			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 				assert.Equal(t, "https://example.com/a", u.String())
-				return &facade.AnalyzedItem{
+				return &database.AnalyzedItem{
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe", "John Roe"},
-					ThinkResult: database.ThinkResult{
+					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
+					ThinkRating: 0.5,
 				}, nil
 			},
 		}
@@ -238,19 +239,50 @@ func TestHandleItem(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe","John Roe"]`)
+		// ThinkResult fields should be flattened since ThinkRating is not 0
+		assert.Contains(t, rr.Body.String(), `"title_corrected":"Corrected Title"`)
+	})
+
+	t.Run("zero_think_rating", func(t *testing.T) {
+		mockF := &mockFacade{
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
+				assert.Equal(t, "https://example.com/a", u.String())
+				return &database.AnalyzedItem{
+					Hash:    "hash1",
+					URL:     "https://example.com/a",
+					Authors: database.StringArray{"Jane Doe", "John Roe"},
+					ThinkResult: &database.ThinkResult{
+						TitleCorrected: "Corrected Title",
+					},
+					ThinkRating: 0.0,
+				}, nil
+			},
+		}
+
+		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		req := httptest.NewRequest(http.MethodGet, "/api/item?url=https://example.com/a", nil)
+		rr := httptest.NewRecorder()
+
+		s.httpServer.Handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe","John Roe"]`)
+		// ThinkResult fields should be omitted since ThinkRating is 0
+		assert.NotContains(t, rr.Body.String(), `"title_corrected"`)
 	})
 
 	t.Run("mobile api alias", func(t *testing.T) {
 		mockF := &mockFacade{
-			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*facade.AnalyzedItem, error) {
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 				assert.Equal(t, "https://example.com/a", u.String())
-				return &facade.AnalyzedItem{
+				return &database.AnalyzedItem{
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe"},
-					ThinkResult: database.ThinkResult{
+					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
+					ThinkRating: 0.8,
 				}, nil
 			},
 		}
@@ -263,6 +295,36 @@ func TestHandleItem(t *testing.T) {
 
 		assert.Equal(t, http.StatusOK, rr.Code)
 		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe"]`)
+		// ThinkResult fields should be flattened since ThinkRating is not 0
+		assert.Contains(t, rr.Body.String(), `"title_corrected":"Corrected Title"`)
+	})
+
+	t.Run("mobile api alias zero rating", func(t *testing.T) {
+		mockF := &mockFacade{
+			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
+				assert.Equal(t, "https://example.com/a", u.String())
+				return &database.AnalyzedItem{
+					Hash:    "hash1",
+					URL:     "https://example.com/a",
+					Authors: database.StringArray{"Jane Doe"},
+					ThinkResult: &database.ThinkResult{
+						TitleCorrected: "Corrected Title",
+					},
+					ThinkRating: 0.0,
+				}, nil
+			},
+		}
+
+		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		req := httptest.NewRequest(http.MethodGet, "/mobile/api/item?url=https://example.com/a", nil)
+		rr := httptest.NewRecorder()
+
+		s.httpServer.Handler.ServeHTTP(rr, req)
+
+		assert.Equal(t, http.StatusOK, rr.Code)
+		assert.Contains(t, rr.Body.String(), `"authors":["Jane Doe"]`)
+		// ThinkResult fields should be omitted since ThinkRating is 0
+		assert.NotContains(t, rr.Body.String(), `"title_corrected"`)
 	})
 }
 
@@ -271,13 +333,13 @@ func TestHandleSite(t *testing.T) {
 
 	t.Run("success", func(t *testing.T) {
 		mockF := &mockFacade{
-			getItemsForRootDomain: func(ctx context.Context, rootDomain string, maxScore float64) ([]facade.AnalyzedItem, error) {
+			getItemsForRootDomain: func(ctx context.Context, rootDomain string, maxScore float64) ([]database.AnalyzedItem, error) {
 				assert.Equal(t, "example.com", rootDomain)
-				return []facade.AnalyzedItem{{
+				return []database.AnalyzedItem{{
 					Hash:    "hash1",
 					URL:     "https://example.com/a",
 					Authors: database.StringArray{"Jane Doe"},
-					ThinkResult: database.ThinkResult{
+					ThinkResult: &database.ThinkResult{
 						TitleCorrected: "Corrected Title",
 					},
 				}}, nil

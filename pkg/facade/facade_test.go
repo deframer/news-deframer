@@ -33,31 +33,33 @@ func (m *mockDownloader) ResolveRedirect(ctx context.Context, targetURL string) 
 }
 
 type mockRepo struct {
-	findFeedByUrl                func(u *url.URL) (*database.Feed, error)
-	findFeedByUrlAndAvailability func(u *url.URL, onlyEnabled bool) (*database.Feed, error)
-	findFeedById                 func(feedID uuid.UUID) (*database.Feed, error)
-	upsertFeed                   func(feed *database.Feed) error
-	findItemsByUrl               func(u *url.URL) ([]database.Item, error)
-	getAllFeeds                  func(deleted bool) ([]database.Feed, error)
-	deleteFeedById               func(id uuid.UUID) error
-	enqueueSync                  func(id uuid.UUID, pollingInterval time.Duration) error
-	removeSync                   func(id uuid.UUID) error
-	beginFeedUpdate              func(lockDuration time.Duration) (*database.Feed, error)
-	endFeedUpdate                func(id uuid.UUID, err error, successDelay time.Duration) error
-	getPendingItems              func(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
-	upsertItem                   func(item *database.Item) error
-	getItemsByHashes             func(feedID uuid.UUID, hashes []string) ([]database.Item, error)
-	beginThinkFixerBatch         func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
-	upsertCachedFeed             func(cachedFeed *database.CachedFeed) error
-	findCachedFeedById           func(feedID uuid.UUID) (*database.CachedFeed, error)
-	findFeedScheduleById         func(feedID uuid.UUID) (*database.FeedSchedule, error)
-	findItemsByRootDomain        func(rootDomain string, limit int) ([]database.Item, error)
-	getTopTrendByDomain          func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
-	getContextByDomain           func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
-	getLifecycleByDomain         func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
-	getDomainComparison          func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
-	getArticlesByTrend           func(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
-	getSentimentsByTrend         func(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
+	findFeedByUrl                 func(u *url.URL) (*database.Feed, error)
+	findFeedByUrlAndAvailability  func(u *url.URL, onlyEnabled bool) (*database.Feed, error)
+	findFeedById                  func(feedID uuid.UUID) (*database.Feed, error)
+	upsertFeed                    func(feed *database.Feed) error
+	findItemsByUrl                func(u *url.URL) ([]database.Item, error)
+	getAllFeeds                   func(deleted bool) ([]database.Feed, error)
+	deleteFeedById                func(id uuid.UUID) error
+	enqueueSync                   func(id uuid.UUID, pollingInterval time.Duration) error
+	removeSync                    func(id uuid.UUID) error
+	beginFeedUpdate               func(lockDuration time.Duration) (*database.Feed, error)
+	endFeedUpdate                 func(id uuid.UUID, err error, successDelay time.Duration) error
+	getPendingItems               func(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
+	upsertItem                    func(item *database.Item) error
+	getItemsByHashes              func(feedID uuid.UUID, hashes []string) ([]database.Item, error)
+	beginThinkFixerBatch          func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
+	upsertCachedFeed              func(cachedFeed *database.CachedFeed) error
+	findCachedFeedById            func(feedID uuid.UUID) (*database.CachedFeed, error)
+	findFeedScheduleById          func(feedID uuid.UUID) (*database.FeedSchedule, error)
+	findItemsByRootDomain         func(rootDomain string, limit int) ([]database.Item, error)
+	findAnalyzedItemsByRootDomain func(rootDomain string, limit int) ([]database.AnalyzedItem, error)
+	findFirstAnalyzedItemByUrl    func(u *url.URL) (*database.AnalyzedItem, error)
+	getTopTrendByDomain           func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
+	getContextByDomain            func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
+	getLifecycleByDomain          func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
+	getDomainComparison           func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
+	getArticlesByTrend            func(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
+	getSentimentsByTrend          func(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
 }
 
 func mustParseTestDate(raw string) *time.Time {
@@ -229,6 +231,20 @@ func (m *mockRepo) FindItemsByRootDomain(rootDomain string, limit int) ([]databa
 	return nil, nil
 }
 
+func (m *mockRepo) FindAnalyzedItemsByRootDomain(rootDomain string, limit int) ([]database.AnalyzedItem, error) {
+	if m.findAnalyzedItemsByRootDomain != nil {
+		return m.findAnalyzedItemsByRootDomain(rootDomain, limit)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) FindFirstAnalyzedItemByUrl(u *url.URL) (*database.AnalyzedItem, error) {
+	if m.findFirstAnalyzedItemByUrl != nil {
+		return m.findFirstAnalyzedItemByUrl(u)
+	}
+	return nil, nil
+}
+
 func (m *mockRepo) GetTopTrendByDomain(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error) {
 	if m.getTopTrendByDomain != nil {
 		return m.getTopTrendByDomain(domain, language, date, days)
@@ -313,7 +329,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 
 	t.Run("Success", func(t *testing.T) {
 		now := time.Now()
-		expectedItems := []database.Item{
+		expectedItems := []database.AnalyzedItem{
 			{
 				Hash:    "hash1",
 				URL:     "http://example.com/1",
@@ -336,7 +352,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		}
 
 		mockR := &mockRepo{
-			findItemsByRootDomain: func(domain string, limit int) ([]database.Item, error) {
+			findAnalyzedItemsByRootDomain: func(domain string, limit int) ([]database.AnalyzedItem, error) {
 				assert.Equal(t, rootDomain, domain)
 				assert.Equal(t, MaxItemsForRootDomain, limit)
 				return expectedItems, nil
@@ -352,7 +368,8 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		// Verify Item 1
 		assert.Equal(t, "hash1", items[0].Hash)
 		assert.Equal(t, "http://example.com/1", items[0].URL)
-		assert.Equal(t, "Corrected Title 1", items[0].TitleCorrected)
+		assert.NotNil(t, items[0].ThinkResult)
+		assert.Equal(t, "Corrected Title 1", items[0].ThinkResult.TitleCorrected)
 		assert.Equal(t, "http://example.com/img1.jpg", items[0].MediaContent.URL)
 		assert.Equal(t, 0.5, items[0].ThinkRating)
 		assert.Equal(t, database.StringArray{"Jane Doe", "John Roe"}, items[0].Authors)
@@ -361,14 +378,14 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		// Verify Item 2
 		assert.Equal(t, "hash2", items[1].Hash)
 		assert.Equal(t, "http://example.com/2", items[1].URL)
-		assert.Empty(t, items[1].TitleCorrected)
+		assert.Nil(t, items[1].ThinkResult)
 		assert.Nil(t, items[1].MediaContent)
 		assert.Equal(t, 0.0, items[1].ThinkRating)
 		assert.Equal(t, now.Add(-1*time.Hour), items[1].PubDate)
 	})
 
 	t.Run("WithFilter", func(t *testing.T) {
-		expectedItems := []database.Item{
+		expectedItems := []database.AnalyzedItem{
 			{
 				Hash:        "hash1",
 				ThinkRating: 0.8,
@@ -380,7 +397,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 		}
 
 		mockR := &mockRepo{
-			findItemsByRootDomain: func(domain string, limit int) ([]database.Item, error) {
+			findAnalyzedItemsByRootDomain: func(domain string, limit int) ([]database.AnalyzedItem, error) {
 				return expectedItems, nil
 			},
 		}
@@ -393,7 +410,7 @@ func TestGetItemsForRootDomain(t *testing.T) {
 
 	t.Run("RepoError", func(t *testing.T) {
 		mockR := &mockRepo{
-			findItemsByRootDomain: func(domain string, limit int) ([]database.Item, error) {
+			findAnalyzedItemsByRootDomain: func(domain string, limit int) ([]database.AnalyzedItem, error) {
 				return nil, assert.AnError
 			},
 		}
@@ -411,7 +428,7 @@ func TestGetFirstItemForUrl(t *testing.T) {
 
 	t.Run("Found", func(t *testing.T) {
 		now := time.Now()
-		expectedItem := database.Item{
+		expectedItem := database.AnalyzedItem{
 			Hash:    "hash1",
 			URL:     targetURL,
 			Authors: database.StringArray{"Jane Doe"},
@@ -423,9 +440,9 @@ func TestGetFirstItemForUrl(t *testing.T) {
 		}
 
 		mockR := &mockRepo{
-			findItemsByUrl: func(u *url.URL) ([]database.Item, error) {
+			findFirstAnalyzedItemByUrl: func(u *url.URL) (*database.AnalyzedItem, error) {
 				assert.Equal(t, targetURL, u.String())
-				return []database.Item{expectedItem}, nil
+				return &expectedItem, nil
 			},
 		}
 
@@ -435,15 +452,16 @@ func TestGetFirstItemForUrl(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotNil(t, item)
 		assert.Equal(t, "hash1", item.Hash)
-		assert.Equal(t, "Corrected Title", item.TitleCorrected)
+		assert.NotNil(t, item.ThinkResult)
+		assert.Equal(t, "Corrected Title", item.ThinkResult.TitleCorrected)
 		assert.Equal(t, database.StringArray{"Jane Doe"}, item.Authors)
 		assert.Equal(t, now, item.PubDate)
 	})
 
 	t.Run("NotFound", func(t *testing.T) {
 		mockR := &mockRepo{
-			findItemsByUrl: func(u *url.URL) ([]database.Item, error) {
-				return []database.Item{}, nil
+			findFirstAnalyzedItemByUrl: func(u *url.URL) (*database.AnalyzedItem, error) {
+				return nil, nil
 			},
 		}
 		f := New(ctx, nil, mockR)

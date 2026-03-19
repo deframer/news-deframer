@@ -18,7 +18,7 @@
 .main-content { padding: 1.5em; }
 h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
 .description { font-size: 1.1em; color: var(--secondary-text); margin-bottom: 0.5em; }
-.analysis-section { border-top: 2px solid var(--border-color); padding-top: 1.5em; margin-top: 1.5em; }
+.analysis-section { padding-top: 1.5em; margin-top: 1.5em; }
 .metric-item { display: block; margin-bottom: 1.5em; }
 .metric-label { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; display: block; color: var(--text-color); }
 .metric-details { display: block; width: 100%; }
@@ -91,6 +91,8 @@ h1 { margin: 0; font-size: 1.5em; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }
 
 .tabs { display: flex; justify-content: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-color, #ccc); }
+
+.main-content .tabs { border-bottom: none; }
 .tab-btn { padding: 12px 24px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-size: 1.1em; color: var(--text-color); opacity: 0.6; transition: all 0.2s; }
 .tab-btn:hover { opacity: 1; background-color: rgba(0,0,0,0.05); }
 .tab-btn.active { border-bottom-color: var(--btn-bg); opacity: 1; font-weight: 600; }
