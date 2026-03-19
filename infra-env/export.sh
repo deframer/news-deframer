@@ -7,7 +7,7 @@ DATABASE=${1:-deframer}
 DB_USER=${POSTGRES_USER:-deframer}
 DB_PASSWORD=${POSTGRES_PASSWORD:-deframer}
 
-OUTPUT_FILE="${DATABASE}-$(date +%Y-%m-%d-%H-%M).dump"
+OUTPUT_FILE="${DATABASE}-export.dump"
 
 echo "Starting backup for database: ${DATABASE}..."
 
@@ -16,10 +16,6 @@ echo "Starting backup for database: ${DATABASE}..."
 if docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
   pg_dump -U ${DB_USER} ${DATABASE} > "${OUTPUT_FILE}"; then
     echo "Backup completed: ${OUTPUT_FILE}"
-    du -hs "${OUTPUT_FILE}"
-    echo "gzip file"
-    gzip "${OUTPUT_FILE}"
-    du -hs "${OUTPUT_FILE}".gz
 else
     echo "Backup failed!"
     rm -f "${OUTPUT_FILE}"
