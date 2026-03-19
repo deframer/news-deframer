@@ -14,6 +14,7 @@ import { testConnection } from '../lib/connection';
 
 export const SettingsPage = () => {
   const { t, i18n } = useTranslation();
+  const version = chrome.runtime.getManifest().version;
   const [settings, setSettings] = useState<Settings>({
     backendUrl: DEFAULT_BACKEND_URL,
     username: '',
@@ -163,7 +164,7 @@ export const SettingsPage = () => {
     <main className="settings-page-container" aria-labelledby="settings-page-title">
       <div className="header page-header">
         <div>
-          <p className="eyebrow">News Deframer</p>
+          <p className="eyebrow">News Deframer - {version}</p>
           <h1 id="settings-page-title">{t('options.settings_title', 'Settings')}</h1>
         </div>
         <StatusBadge

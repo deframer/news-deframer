@@ -10,6 +10,7 @@ body { margin: 0; overflow-y: auto; overflow-x: hidden; }
 .compact-header { align-items: flex-start; justify-content: space-between; flex-direction: row; }
 .popup-container .header { align-items: flex-start; justify-content: space-between; flex-direction: row; }
 .header h1, .header h2 { margin: 0; }
+.title-version { font-size: 0.72em; font-weight: 500; color: var(--secondary-text); }
 .eyebrow { margin: 0 0 6px; font-size: 12px; color: var(--secondary-text); }
 .tabs { display: flex; justify-content: flex-start; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); gap: 8px; }
 .tab-btn { padding: 12px 18px; background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; font-size: 15px; color: var(--text-color); opacity: 0.7; transition: all 0.2s; }

@@ -14,6 +14,7 @@ export const Popup = () => {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<Settings | null>(null);
   const [status, setStatus] = useState<HostStatus>('idle');
+  const version = chrome.runtime.getManifest().version;
 
   useEffect(() => {
     const styleId = 'ndf-theme-styles';
@@ -75,7 +76,9 @@ export const Popup = () => {
   return (
     <main className="popup-container" aria-label={t('options.title', 'Options')}>
       <div className="header compact-header">
-        <h2>News Deframer</h2>
+        <h2>
+          News Deframer <span className="title-version">{version}</span>
+        </h2>
         <StatusBadge
           status={status}
           enabled={settings.enabled}
