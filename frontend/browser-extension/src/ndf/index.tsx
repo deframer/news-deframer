@@ -14,6 +14,25 @@ import { PortalPage } from './pages/PortalPage';
 import { ndfStyles } from './styles';
 import { classifyUrl, PageType } from './utils/url-classifier';
 
+const getCurrentRootDomain = () => getDomain(window.location.hostname.replace(/:\d+$/, '')) || window.location.hostname;
+
+const isDomainSelected = (settings: Settings) => {
+  const currentRootDomain = getCurrentRootDomain();
+  const selectedDomains = settings.selectedDomains || [];
+
+  if (selectedDomains.length === 0) {
+    log.debug(`NDF skipped: no selected domains configured for ${currentRootDomain}.`);
+    return false;
+  }
+
+  const selected = selectedDomains.includes(currentRootDomain);
+  if (!selected) {
+    log.debug(`NDF skipped: ${currentRootDomain} is not in selectedDomains=[${selectedDomains.join(', ')}].`);
+  }
+
+  return selected;
+};
+
 const App = ({ theme }: { theme: string }) => {
   const [pageType, setPageType] = useState<PageType | null>(null);
   const [data, setData] = useState<
@@ -65,7 +84,7 @@ const App = ({ theme }: { theme: string }) => {
         setAvailableDomains(allDomains);
 
         const siteHost = window.location.host;
-        const rootDomain = getDomain(window.location.hostname.replace(/:\d+$/, ''));
+        const rootDomain = getCurrentRootDomain();
 
         // Check if the site's full host or root domain is registered in the backend.
         let matchedDomain: DomainEntry | null = null;
@@ -178,6 +197,10 @@ export const start = async (providedSettings?: Settings) => {
       return;
     }
 
+    if (!isDomainSelected(settings)) {
+      return;
+    }
+
     // Apply language setting from storage
     const storage = (await chrome.storage.local.get('ndf_language')) as { ndf_language?: string };
     const lang = storage.ndf_language || 'default';
@@ -201,7 +224,7 @@ export const start = async (providedSettings?: Settings) => {
       const html = document.documentElement;
       if (html) {
         resetElementAttributes(html);
-        const domain = getDomain(window.location.hostname) || window.location.hostname;
+        const domain = getCurrentRootDomain();
         html.innerHTML = `<head><title>NDF • ${domain}</title></head><body></body>`;
       }
 

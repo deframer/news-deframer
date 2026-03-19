@@ -1,10 +1,13 @@
 import '../../shared/i18n';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { DomainEntry, NewsDeframerClient } from '../../ndf/client';
 import { DEFAULT_BACKEND_URL, getSettings, Settings } from '../../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../../shared/theme';
+import { SettingsAbout } from '../components/SettingsAbout';
+import { SettingsDomains } from '../components/SettingsDomains';
 import { SettingsForm } from '../components/SettingsForm';
 import { HostStatus, StatusBadge } from '../components/StatusBadge';
 import { testConnection } from '../lib/connection';
@@ -18,10 +21,30 @@ export const SettingsPage = () => {
     enabled: false,
     theme: 'system',
     searchEngineUrl: 'https://search.brave.com',
+    selectedDomains: [],
   });
   const [status, setStatus] = useState<HostStatus>('idle');
   const [loaded, setLoaded] = useState(false);
   const [lang, setLang] = useState('default');
+  const [activeTab, setActiveTab] = useState<'settings' | 'domains' | 'about'>('domains');
+  const [domains, setDomains] = useState<DomainEntry[]>([]);
+  const [domainsLoading, setDomainsLoading] = useState(false);
+  const [domainsUnavailable, setDomainsUnavailable] = useState(false);
+
+  const loadDomains = useCallback(async (settingsToUse: Settings) => {
+    setDomainsLoading(true);
+    try {
+      const client = new NewsDeframerClient(settingsToUse);
+      const nextDomains = await client.getDomains();
+      setDomains(nextDomains);
+      setDomainsUnavailable(false);
+    } catch {
+      setDomains([]);
+      setDomainsUnavailable(true);
+    } finally {
+      setDomainsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     Promise.all([getSettings(), chrome.storage.local.get('ndf_language')]).then(([loadedSettings, storageResult]) => {
@@ -35,21 +58,24 @@ export const SettingsPage = () => {
         testConnection(loadedSettings)
           .then((result) => {
             setStatus(result.connected ? 'success' : 'error');
+            if (result.connected) {
+              setDomains(result.domains);
+              setDomainsUnavailable(false);
+            } else {
+              setDomains([]);
+              setDomainsUnavailable(true);
+            }
           })
           .catch(() => {
             setStatus('error');
+            setDomains([]);
+            setDomainsUnavailable(true);
           });
+      } else {
+        loadDomains(loadedSettings).catch(() => undefined);
       }
     });
-  }, []);
-
-  useEffect(() => {
-    if (!loaded) return;
-    const handler = setTimeout(async () => {
-      await chrome.storage.local.set(settings);
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [settings, loaded]);
+  }, [loadDomains]);
 
   useEffect(() => {
     const styleId = 'ndf-theme-styles';
@@ -73,7 +99,12 @@ export const SettingsPage = () => {
 
   const handleLanguageChange = async (value: string) => {
     setLang(value);
-    await chrome.storage.local.set({ ndf_language: value });
+  };
+
+  const handleSelectedDomainsChange = async (selectedDomains: string[]) => {
+    const nextSettings = { ...settings, selectedDomains };
+    setSettings(nextSettings);
+    await chrome.storage.local.set({ selectedDomains });
   };
 
   const handleTestConnection = async () => {
@@ -81,13 +112,47 @@ export const SettingsPage = () => {
     try {
       const result = await testConnection(settings);
       setStatus(result.connected ? 'success' : 'error');
+      if (result.connected) {
+        setDomains(result.domains);
+        setDomainsUnavailable(false);
+      } else {
+        setDomains([]);
+        setDomainsUnavailable(true);
+      }
     } catch {
       setStatus('error');
+      setDomains([]);
+      setDomainsUnavailable(true);
     }
   };
 
-  const handleClose = () => {
-    window.close();
+  const handleApply = async () => {
+    await chrome.storage.local.set(settings);
+    await chrome.storage.local.set({ ndf_language: lang });
+
+    if (!settings.enabled) {
+      setStatus('idle');
+      setDomains([]);
+      setDomainsUnavailable(false);
+      return;
+    }
+
+    setStatus('loading');
+    try {
+      const result = await testConnection(settings);
+      setStatus(result.connected ? 'success' : 'error');
+      if (result.connected) {
+        setDomains(result.domains);
+        setDomainsUnavailable(false);
+      } else {
+        setDomains([]);
+        setDomainsUnavailable(true);
+      }
+    } catch {
+      setStatus('error');
+      setDomains([]);
+      setDomainsUnavailable(true);
+    }
   };
 
   if (!loaded) {
@@ -112,12 +177,49 @@ export const SettingsPage = () => {
           }}
         />
       </div>
-      <SettingsForm settings={settings} lang={lang} status={status} onSettingsChange={setSettings} onLanguageChange={handleLanguageChange} onTestConnection={handleTestConnection} />
-      <div className="settings-actions">
-        <button className="action-button action-button-enabled settings-close-button" onClick={handleClose} type="button">
-          {t('options.apply', 'Apply')}
+      <div className="tabs settings-tabs" role="tablist" aria-label={t('options.settings_title', 'Settings')}>
+        <button
+          className={`tab-btn ${activeTab === 'domains' ? 'active' : ''}`}
+          onClick={() => setActiveTab('domains')}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'domains'}
+        >
+          {t('options.tab_domains')}
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'settings'}
+        >
+          {t('options.tab_settings')}
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'about' ? 'active' : ''}`}
+          onClick={() => setActiveTab('about')}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'about'}
+        >
+          {t('options.tab_about')}
         </button>
       </div>
+      {activeTab === 'settings' ? (
+        <SettingsForm settings={settings} lang={lang} status={status} onSettingsChange={setSettings} onLanguageChange={handleLanguageChange} onTestConnection={handleTestConnection} />
+      ) : activeTab === 'about' ? (
+        <SettingsAbout />
+      ) : (
+        <SettingsDomains domains={domains} domainsLoading={domainsLoading} domainsUnavailable={domainsUnavailable} settings={settings} onSelectedDomainsChange={handleSelectedDomainsChange} />
+      )}
+      {activeTab === 'settings' ? (
+        <div className="settings-actions">
+          <button className="action-button action-button-enabled settings-close-button" onClick={handleApply} type="button">
+            {t('options.apply', 'Apply')}
+          </button>
+        </div>
+      ) : null}
     </main>
   );
 };

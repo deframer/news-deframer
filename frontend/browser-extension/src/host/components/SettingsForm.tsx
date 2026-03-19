@@ -83,18 +83,6 @@ export const SettingsForm = ({ settings, lang, status, onSettingsChange, onLangu
             onChange={(enabled) => onSettingsChange({ ...settings, enabled })}
           />
         </div>
-
-        <div className="card">
-          <h3 className="section-title">{t('options.section_project')}</h3>
-          <a
-            href="https://deframer.github.io/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="project-link"
-          >
-            {t('footer.github_link')}
-          </a>
-        </div>
       </div>
     </div>
   );
