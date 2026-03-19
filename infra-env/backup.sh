@@ -16,6 +16,10 @@ echo "Starting backup for database: ${DATABASE}..."
 if docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
   pg_dump -U ${DB_USER} ${DATABASE} > "${OUTPUT_FILE}"; then
     echo "Backup completed: ${OUTPUT_FILE}"
+    du -hs "${OUTPUT_FILE}"
+    echo "gzip file"
+    gzip "${OUTPUT_FILE}"
+    du -hs "${OUTPUT_FILE}".gz
 else
     echo "Backup failed!"
     rm -f "${OUTPUT_FILE}"
