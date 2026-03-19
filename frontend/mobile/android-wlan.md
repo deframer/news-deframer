@@ -1,4 +1,4 @@
-# Android over WLAN (ADB Remote)
+# Android over WLAN (ADB QR)
 
 This is a WLAN-only guide.
 
@@ -7,41 +7,27 @@ This is a WLAN-only guide.
 - Android device and development machine on the same network
 - ADB installed (`adb --version`)
 
-## Method 1: Wireless debugging pairing (Android 11+)
+## Wireless debugging pairing (Android 11+)
 
 1. On the phone, open **Developer options -> Wireless debugging**.
-2. Tap **Pair device with pairing code**.
-3. Note these values shown by Android:
-   - Pair endpoint, e.g. `192.168.1.42:37123`
-   - Pairing code, e.g. `123456`
-   - Connect endpoint, e.g. `192.168.1.42:40991`
+2. Tap **Pair device with QR code**.
+3. Note the **IP address & Port** shown on the same screen, e.g. `192.168.1.42:40991`.
 
 From the `mobile` directory:
 
 ```bash
-make android-remote-pair ADB_PAIR=192.168.1.42:37123 ADB_PAIR_CODE=123456 ADB_HOST=192.168.1.42 ADB_PORT=40991
+ADB_CONNECT=192.168.1.42:40991 make android-remote-qr
 ```
 
-This runs:
+This flow:
 
-- `adb pair <ip:pair-port> <pairing-code>`
-- `adb connect <ip>:<connect-port>`
-- `adb devices`
+- shows a valid Android wireless debugging QR code
+- waits for the phone pairing service
+- runs `adb pair`
+- runs `adb connect <ip:port>` using `ADB_CONNECT`
+- runs `adb devices`
 
-## Method 2: Direct connect (when device already listens on TCP)
-
-If your device already has ADB over TCP enabled, run:
-
-```bash
-make android-remote ADB_HOST=192.168.1.42 ADB_PORT=5555
-```
-
-This runs:
-
-- `adb connect <ip>:<port>`
-- `adb devices`
-
-`adb connect` opens a debug session from your computer to the phone over WLAN.
+After pairing, the first plausible device from `adb devices` is used for follow-up commands. You can override it with `ADB_DEVICE=<ip:port>`.
 
 ## Run the app over WLAN
 
@@ -75,10 +61,13 @@ npm run android -- --deviceId 192.168.1.42:5555
 
 If the app gets stuck, keeps old behavior, or hot reload is unreliable, do a full rebuild + reinstall:
 
+Optional: set `ADB_DEVICE=<ip:port>` if you want to force a specific device. Otherwise the first plausible entry from `adb devices` is used.
+
 ```bash
+adb devices
 npm run start
-make android-metro-reverse ADB_DEVICE=192.168.1.42:5555
-make android-apk-install ADB_DEVICE=192.168.1.42:5555
+make android-metro-reverse
+make android-apk-install
 ```
 
 This rebuilds debug APK and installs it on the WLAN-connected device.
@@ -88,5 +77,5 @@ This rebuilds debug APK and installs it on the WLAN-connected device.
 - **`unable to connect`**: host and device are not on the same network, or firewall blocks the port.
 - **Device is `offline`**: run `adb disconnect` and connect again.
 - **Multiple devices connected**: pass `--deviceId <ip>:<port>`.
-- **Connection lost after reboot**: reconnect with the same WLAN method.
+- **Connection lost after reboot**: reconnect with `ADB_CONNECT=<ip:port> make android-remote-qr`.
 - **`Unable to load script from localhost:8081`**: start Metro (`npm run start`) and run `make android-metro-reverse ADB_DEVICE=<ip:port>`.

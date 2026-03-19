@@ -108,4 +108,29 @@ if [[ "$output" != *"ADB wireless QR payload:"* || "$output" != *"WIFI:T:ADB;S:A
   exit 1
 fi
 
+cat >"$tmpdir/adb" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "$1" in
+  devices)
+    printf 'List of devices attached\n192.168.0.2:23456 device\nemulator-5554 device\n'
+    ;;
+  -s)
+    printf 'ADB_SINGLE %s %s\n' "$2" "$3"
+    ;;
+  *)
+    printf 'unexpected adb args: %s\n' "$*" >&2
+    exit 1
+    ;;
+esac
+EOF
+chmod +x "$tmpdir/adb"
+
+output=$(PATH="$tmpdir:$PATH" bash ./scripts/adb-single-device.sh reverse)
+if [[ "$output" != *"Using the first plausible device from adb devices."* || "$output" != *"ADB_SINGLE 192.168.0.2:23456 reverse"* ]]; then
+  printf 'unexpected output for adb-single-device script\n%s\n' "$output" >&2
+  exit 1
+fi
+
 printf 'Makefile QR tests passed\n'

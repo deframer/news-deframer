@@ -1,6 +1,5 @@
-.PHONY: install pods start android ios ios-preflight ios-sim ios-sim-list web android-apk android-apk-install android-apk-release android-bundle-release android-remote android-remote-pair android-remote-qr android-metro-reverse ios-build ios-sim-build clean test test-makefile lint check lint-fix fix
+.PHONY: install pods start android ios ios-preflight ios-sim ios-sim-list web android-apk android-apk-install android-apk-release android-bundle-release android-remote-qr android-metro-reverse ios-build ios-sim-build clean test test-makefile lint check lint-fix fix
 
-ADB_PORT ?= 5555
 DEBUG_APK := android/app/build/outputs/apk/debug/app-debug.apk
 SIMULATOR ?=
 IOS_DERIVED_DATA ?= ios/build
@@ -74,17 +73,6 @@ android-apk-release:
 
 android-bundle-release:
 	cd android && ./gradlew bundleRelease
-
-android-remote:
-	@if [ -z "$(ADB_HOST)" ]; then echo "Usage: make android-remote ADB_HOST=<device-ip> [ADB_PORT=5555]"; exit 1; fi
-	adb connect $(ADB_HOST):$(ADB_PORT)
-	adb devices
-
-android-remote-pair:
-	@if [ -z "$(ADB_PAIR)" ] || [ -z "$(ADB_PAIR_CODE)" ] || [ -z "$(ADB_HOST)" ] || [ -z "$(ADB_PORT)" ]; then echo "Usage: make android-remote-pair ADB_PAIR=<ip:pair-port> ADB_PAIR_CODE=<code> ADB_HOST=<device-ip> ADB_PORT=<connect-port>"; exit 1; fi
-	adb pair $(ADB_PAIR) $(ADB_PAIR_CODE)
-	adb connect $(ADB_HOST):$(ADB_PORT)
-	adb devices
 
 android-remote-qr:
 	@ADB_CONNECT="$(ADB_CONNECT)" ADB_WAIT_TIMEOUT="$(ADB_WAIT_TIMEOUT)" bash ./scripts/android-remote-qr.sh

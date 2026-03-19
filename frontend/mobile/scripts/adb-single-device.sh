@@ -10,10 +10,8 @@ if [ "$count" -eq 0 ]; then
   exit 1
 fi
 
-if [ "$count" -ne 1 ]; then
-  echo "Multiple adb devices detected. Pass ADB_DEVICE=<ip:port>."
-  adb devices
-  exit 1
+if [ "$count" -gt 1 ]; then
+  echo "Multiple adb devices detected. Using the first plausible device from adb devices."
 fi
 
 device="$(printf '%s\n' "$devices" | awk 'NF {print; exit}')"
