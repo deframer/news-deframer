@@ -1,6 +1,7 @@
-.PHONY: install pods start android ios ios-preflight ios-sim ios-sim-list web android-apk android-apk-install android-apk-release android-bundle-release android-remote-qr android-metro-reverse ios-build ios-sim-build clean test test-makefile lint check lint-fix fix
+.PHONY: install pods start android ios ios-preflight ios-sim ios-sim-list web android-apk android-apk-install android-apk-release android-apk-release-install android-bundle-release android-remote-qr android-metro-reverse ios-build ios-sim-build clean test check-mobile-workflows lint check lint-fix fix
 
 DEBUG_APK := android/app/build/outputs/apk/debug/app-debug.apk
+RELEASE_APK := android/app/build/outputs/apk/release/app-release.apk
 SIMULATOR ?=
 IOS_DERIVED_DATA ?= ios/build
 ADB_WAIT_TIMEOUT ?= 90
@@ -37,8 +38,8 @@ dev: web
 test:
 	npm run test
 
-test-makefile:
-	bash ./scripts/test-makefile.sh
+check-mobile-workflows:
+	bash ./scripts/check-mobile-workflows.sh
 
 lint:
 	npm run lint
@@ -70,6 +71,12 @@ android-apk-clean:
 
 android-apk-release:
 	cd android && ./gradlew app:createBundleReleaseJsAndAssets --rerun-tasks && ./gradlew assembleRelease
+
+android-apk-release-install: android-apk-release
+	@if [ -n "$(ADB_DEVICE)" ]; then adb -s "$(ADB_DEVICE)" install -r "$(RELEASE_APK)"; \
+	else \
+		bash ./scripts/adb-single-device.sh install -r "$(RELEASE_APK)"; \
+	fi
 
 android-bundle-release:
 	cd android && ./gradlew bundleRelease

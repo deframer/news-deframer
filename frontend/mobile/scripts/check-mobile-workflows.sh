@@ -133,4 +133,4 @@ if [[ "$output" != *"Using the first plausible device from adb devices."* || "$o
   exit 1
 fi
 
-printf 'Makefile QR tests passed\n'
+printf 'Mobile workflow checks passed\n'
