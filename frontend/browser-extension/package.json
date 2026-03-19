@@ -10,7 +10,6 @@
     "type-check": "tsc --noEmit",
     "type-check:watch": "tsc --noEmit --watch",
     "dev": "echo \"Starting webpack watch. Run 'npm run type-check:watch' in a separate terminal for type checking.\" && webpack --watch",
-    "dev-react": "webpack serve --config webpack.debug.config.js",
     "pack": "cd dist/host && zip -r ../../extension.zip .",
     "clean": "rm -rf dist extension.zip"
   },
