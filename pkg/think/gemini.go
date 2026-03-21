@@ -141,5 +141,9 @@ func (g *gemini) Run(prompt string, language string, request Request) (*database
 		return nil, err
 	}
 
+	if err := verifyThinkResult(&result); err != nil {
+		return nil, err
+	}
+
 	return &result, nil
 }

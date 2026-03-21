@@ -25,7 +25,7 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 	speculative := secureFloat64()
 	overall := (framing + clickbait + persuasive + hyperStimulus + speculative) / 5.0
 
-	return &database.ThinkResult{
+	result := &database.ThinkResult{
 		TitleCorrected:              request.Title,
 		TitleCorrectionReason:       "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 		DescriptionCorrected:        request.Description,
@@ -42,7 +42,13 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 		SpeculativeReason:           "Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris.",
 		Overall:                     overall,
 		OverallReason:               "Integer in mauris eu nibh euismod gravida. Duis ac tellus et risus vulputate vehicula.",
-	}, nil
+	}
+
+	if err := verifyThinkResult(result); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 
 	/*
 		return &database.ThinkResult{

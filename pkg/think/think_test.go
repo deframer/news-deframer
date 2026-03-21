@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -90,4 +91,46 @@ func TestNew_OpenAI(t *testing.T) {
 	resp, err := o.Run("deframer", "en", req)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
+}
+
+func TestVerifyThinkResult(t *testing.T) {
+	err := verifyThinkResult(nil)
+	assert.NoError(t, err)
+
+	err = verifyThinkResult(&database.ThinkResult{})
+	assert.NoError(t, err)
+
+	err = verifyThinkResult(&database.ThinkResult{
+		Framing:       0.5,
+		Clickbait:     0.5,
+		Persuasive:    0.5,
+		HyperStimulus: 0.5,
+		Speculative:   0.5,
+		Overall:       0.5,
+	})
+	assert.NoError(t, err)
+
+	err = verifyThinkResult(&database.ThinkResult{Framing: -0.1})
+	assert.ErrorContains(t, err, "Framing")
+
+	err = verifyThinkResult(&database.ThinkResult{Framing: 1.1})
+	assert.ErrorContains(t, err, "Framing")
+
+	err = verifyThinkResult(&database.ThinkResult{Clickbait: -0.1})
+	assert.ErrorContains(t, err, "Clickbait")
+
+	err = verifyThinkResult(&database.ThinkResult{Persuasive: 1.1})
+	assert.ErrorContains(t, err, "Persuasive")
+
+	err = verifyThinkResult(&database.ThinkResult{HyperStimulus: -0.1})
+	assert.ErrorContains(t, err, "HyperStimulus")
+
+	err = verifyThinkResult(&database.ThinkResult{Speculative: 1.1})
+	assert.ErrorContains(t, err, "Speculative")
+
+	err = verifyThinkResult(&database.ThinkResult{Overall: -0.1})
+	assert.ErrorContains(t, err, "Overall")
+
+	err = verifyThinkResult(&database.ThinkResult{Overall: 1.1})
+	assert.ErrorContains(t, err, "Overall")
 }
