@@ -133,8 +133,11 @@ export class NewsDeframerClient {
             resolve(response.data as T);
           } else if (response && response.status === 404) {
             resolve(null); // Not found is not an error
+          } else if (response && !response.ok) {
+            const rawMessage = response.error || (typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
+            reject(new Error(`GET ${url.toString()} failed: ${rawMessage || `HTTP ${response.status}`}`));
           } else {
-            reject(new Error(response?.error || `API Error: ${response?.status}`));
+            reject(new Error(`GET ${url.toString()} failed: Unknown error`));
           }
         });
       });

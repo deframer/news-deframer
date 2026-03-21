@@ -37,6 +37,9 @@ body { margin: 0; overflow-y: auto; overflow-x: hidden; }
 .text-input, .select-input { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--btn-border); font-size: 14px; background-color: var(--bg-color); color: var(--text-color); }
 .text-input.error { border-color: var(--danger-color); }
 .input-error-message { color: var(--danger-color); font-size: 12px; margin-top: 4px; }
+.connection-error { border: 1px solid var(--btn-border); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; background-color: var(--rating-bg); }
+.connection-error-title { color: var(--text-color); font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.connection-error-body { color: var(--secondary-text); font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
 .action-button { width: 100%; padding: 10px; background-color: var(--rating-bg); border: 1px solid var(--btn-border); border-radius: 6px; cursor: not-allowed; font-size: 14px; font-weight: 500; color: var(--secondary-text); text-decoration: none; text-align: center; transition: background-color 0.2s, color 0.2s; }
 .action-button-enabled, .action-button:enabled { background-color: var(--btn-bg); color: var(--btn-text); cursor: pointer; }
 .settings-actions .settings-close-button { width: auto; min-width: 140px; }

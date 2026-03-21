@@ -9,12 +9,13 @@ interface SettingsFormProps {
   settings: Settings;
   lang: string;
   status: HostStatus;
+  errorMessage: string | null;
   onSettingsChange: (settings: Settings) => void;
   onLanguageChange: (language: string) => void;
   onTestConnection: () => void;
 }
 
-export const SettingsForm = ({ settings, lang, status, onSettingsChange, onLanguageChange, onTestConnection }: SettingsFormProps) => {
+export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsChange, onLanguageChange, onTestConnection }: SettingsFormProps) => {
   const { t } = useTranslation();
   const isLoading = status === 'loading';
   const isSearchUrlValid = settings.searchEngineUrl?.startsWith('https://');
@@ -24,6 +25,12 @@ export const SettingsForm = ({ settings, lang, status, onSettingsChange, onLangu
       <div className="settings-column">
         <div className="card">
           <h3 className="section-title">{t('options.section_connection')}</h3>
+          {errorMessage ? (
+            <div className="connection-error">
+              <div className="connection-error-title">{t('options.status_error')}</div>
+              <div className="connection-error-body">{errorMessage}</div>
+            </div>
+          ) : null}
           <div className="form-group">
             <label className="input-label">{t('options.label_server_url')}</label>
             <input type="text" className="text-input" value={settings.backendUrl} onChange={(e) => onSettingsChange({ ...settings, backendUrl: e.target.value })} placeholder="http://localhost:8080" />

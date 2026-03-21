@@ -3,7 +3,7 @@ import { invalidateDomainCache } from '../../shared/domain-cache';
 import { Settings } from '../../shared/settings';
 import { ProxyResponse } from '../../shared/types';
 
-export const testConnection = async (settings: Settings): Promise<{ connected: boolean; domains: DomainEntry[] }> => {
+export const testConnection = async (settings: Settings): Promise<{ connected: boolean; domains: DomainEntry[]; errorMessage?: string }> => {
   const headers: HeadersInit = {};
   if (settings.username && settings.password) {
     headers.Authorization = 'Basic ' + btoa(`${settings.username}:${settings.password}`);
@@ -21,7 +21,10 @@ export const testConnection = async (settings: Settings): Promise<{ connected: b
   });
 
   if (!response?.ok) {
-    return { connected: false, domains: [] };
+    const errorMessage = typeof response.status === 'number'
+      ? `HTTP ${response.status}`
+      : response.error;
+    return { connected: false, domains: [], errorMessage };
   }
 
   await invalidateDomainCache();
