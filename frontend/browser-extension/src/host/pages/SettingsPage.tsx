@@ -31,6 +31,7 @@ export const SettingsPage = () => {
   const [domains, setDomains] = useState<DomainEntry[]>([]);
   const [domainsLoading, setDomainsLoading] = useState(false);
   const [domainsUnavailable, setDomainsUnavailable] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadDomains = useCallback(async (settingsToUse: Settings) => {
     setDomainsLoading(true);
@@ -59,6 +60,7 @@ export const SettingsPage = () => {
         testConnection(loadedSettings)
           .then((result) => {
             setStatus(result.connected ? 'success' : 'error');
+            setErrorMessage(result.connected ? null : result.errorMessage || 'Connection failed');
             if (result.connected) {
               setDomains(result.domains);
               setDomainsUnavailable(false);
@@ -67,8 +69,9 @@ export const SettingsPage = () => {
               setDomainsUnavailable(true);
             }
           })
-          .catch(() => {
+          .catch((err: Error) => {
             setStatus('error');
+            setErrorMessage(err.message);
             setDomains([]);
             setDomainsUnavailable(true);
           });
@@ -108,28 +111,36 @@ export const SettingsPage = () => {
     await chrome.storage.local.set({ selectedDomains });
   };
 
+  const saveSettings = useCallback(async () => {
+    await chrome.storage.local.set(settings);
+    await chrome.storage.local.set({ ndf_language: lang });
+  }, [settings, lang]);
+
   const handleTestConnection = async () => {
     setStatus('loading');
+    setErrorMessage(null);
     try {
       const result = await testConnection(settings);
       setStatus(result.connected ? 'success' : 'error');
+      setErrorMessage(result.connected ? null : result.errorMessage || 'Connection failed');
       if (result.connected) {
+        await saveSettings();
         setDomains(result.domains);
         setDomainsUnavailable(false);
       } else {
         setDomains([]);
         setDomainsUnavailable(true);
       }
-    } catch {
+    } catch (err: Error) {
       setStatus('error');
+      setErrorMessage(err.message);
       setDomains([]);
       setDomainsUnavailable(true);
     }
   };
 
   const handleApply = async () => {
-    await chrome.storage.local.set(settings);
-    await chrome.storage.local.set({ ndf_language: lang });
+    await saveSettings();
 
     if (!settings.enabled) {
       setStatus('idle');
@@ -139,9 +150,11 @@ export const SettingsPage = () => {
     }
 
     setStatus('loading');
+    setErrorMessage(null);
     try {
       const result = await testConnection(settings);
       setStatus(result.connected ? 'success' : 'error');
+      setErrorMessage(result.connected ? null : result.errorMessage || 'Connection failed');
       if (result.connected) {
         setDomains(result.domains);
         setDomainsUnavailable(false);
@@ -149,8 +162,9 @@ export const SettingsPage = () => {
         setDomains([]);
         setDomainsUnavailable(true);
       }
-    } catch {
+    } catch (err: Error) {
       setStatus('error');
+      setErrorMessage(err.message);
       setDomains([]);
       setDomainsUnavailable(true);
     }
@@ -208,7 +222,7 @@ export const SettingsPage = () => {
         </button>
       </div>
       {activeTab === 'settings' ? (
-        <SettingsForm settings={settings} lang={lang} status={status} onSettingsChange={setSettings} onLanguageChange={handleLanguageChange} onTestConnection={handleTestConnection} />
+        <SettingsForm settings={settings} lang={lang} status={status} errorMessage={errorMessage} onSettingsChange={setSettings} onLanguageChange={handleLanguageChange} onTestConnection={handleTestConnection} />
       ) : activeTab === 'about' ? (
         <SettingsAbout />
       ) : (

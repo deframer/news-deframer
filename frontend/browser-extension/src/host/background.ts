@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       controller.abort();
-      onceSendResponse({ ok: false, error: 'Connection timed out' });
+      onceSendResponse({ ok: false, error: `Timeout after ${timeout}ms` });
     }, timeout);
 
     fetch(url, { headers, signal: controller.signal })
