@@ -83,7 +83,7 @@ SELECT
     trend_sentiments.domain,
     trend_sentiments.language,
     domain_sentiments.time,
-    trend_sentiments.article_count || '(' || domain_sentiments.all_article_count || ')' AS article_count,
+    trend_sentiments.article_count || ' (' || domain_sentiments.all_article_count || ')' AS article_count,
     ROUND((trend_sentiments.valence_avg - domain_sentiments.valence_avg), 2) AS valence,
     ROUND((trend_sentiments.arousal_avg - domain_sentiments.arousal_avg), 2) AS arousal,
     ROUND((trend_sentiments.dominance_avg - domain_sentiments.dominance_avg), 2) AS dominance,
