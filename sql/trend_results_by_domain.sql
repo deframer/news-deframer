@@ -3,7 +3,7 @@ SET duckdb.force_execution = true;
 WITH config AS (
     SELECT
         90 AS days,
-        5 AS trend_limit,
+        10 AS trend_limit,
         ARRAY['circular-technology.com'] AS ignore_domains
 ),
 article_stats AS (
@@ -71,7 +71,7 @@ trend_agg AS (
     SELECT
         domain,
         "language",
-        STRING_AGG(trend_topic || ' (' || frequency || ')', ', ' ORDER BY domain_rank) AS "trends-top-5"
+        STRING_AGG(trend_topic || ' (' || frequency || ')', ', ' ORDER BY frequency DESC, trend_topic) AS top_trends
     FROM top_trends
     CROSS JOIN config
     WHERE domain_rank <= config.trend_limit
@@ -82,7 +82,7 @@ SELECT
     article_stats.language,
     article_stats.time,
     article_stats.article_count,
-    trend_agg."trends-top-5"
+    trend_agg.top_trends
 FROM article_stats
 LEFT JOIN trend_agg
     ON trend_agg.domain = article_stats.domain
