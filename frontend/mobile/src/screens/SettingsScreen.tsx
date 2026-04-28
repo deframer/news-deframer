@@ -74,7 +74,6 @@ export const SettingsScreen = ({
                   onTestConnection(nextSettings);
                 }}
                 palette={palette}
-                description={isCustomServer ? undefined : t('options.default_server_hint', { url: DEFAULT_BACKEND_URL })}
               />
               {isCustomServer ? (
                 <>

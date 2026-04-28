@@ -127,6 +127,7 @@ function App() {
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
   const [portalBackAction, setPortalBackAction] = useState<(() => void) | null>(null);
   const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
+  const [hasAutoTestedRef] = useState(() => ({ current: false }));
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
   const visibleDomains = configured ? domains : [];
   const visibleDomainsLoading = configured ? domainsLoading : false;
@@ -290,6 +291,15 @@ function App() {
       mounted = false;
     };
   }, [booting, configured, screen, settings]);
+
+  useEffect(() => {
+    if (screen !== 'settings' || booting || hasAutoTestedRef.current) {
+      return;
+    }
+
+    hasAutoTestedRef.current = true;
+    handleTestConnection();
+  }, [booting, handleTestConnection, screen, hasAutoTestedRef]);
 
   const handlePortalBackActionChange = useCallback((action: (() => void) | null) => {
     setPortalBackAction(() => action);
