@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "date-fns": "^4.1.0",
-    "i18next": "^25.10.5",
+    "i18next": "^26.0.1",
     "i18next-browser-languagedetector": "^8.2.1",
     "loglevel": "^1.9.2",
     "react": "^19.2.5",
