@@ -64,5 +64,10 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "overrides": {
+    "react-native": {
+      "react": "^19.2.5"
+    }
   }
 }
