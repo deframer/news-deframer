@@ -81,7 +81,7 @@ export const SettingsScreen = ({
                   <TextField label={t('options.label_server_url')} value={serverUrlValue} onChangeText={(backendUrl) => onSettingsChange({ ...settings, backendUrl })} palette={palette} />
                   <TextField label={t('options.label_username')} optional={t('options.label_optional')} value={settings.username} onChangeText={(username) => onSettingsChange({ ...settings, username })} palette={palette} />
                   <TextField label={t('options.label_password')} optional={t('options.label_optional')} value={settings.password} onChangeText={(password) => onSettingsChange({ ...settings, password })} palette={palette} secureTextEntry />
-                  <Pressable onPress={onTestConnection} disabled={isLoading} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
+                  <Pressable onPress={() => onTestConnection(settings)} disabled={isLoading} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
                     {isLoading ? (
                       <LoadingSpinner palette={palette} label={t('options.btn_testing')} center />
                     ) : (

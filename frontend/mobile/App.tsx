@@ -1,6 +1,6 @@
 import './src/i18n';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Appearance, BackHandler, NativeModules, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -127,7 +127,6 @@ function App() {
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
   const [portalBackAction, setPortalBackAction] = useState<(() => void) | null>(null);
   const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
-  const hasAutoTestedSettingsRef = useRef(false);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
   const visibleDomains = configured ? domains : [];
   const visibleDomainsLoading = configured ? domainsLoading : false;
@@ -259,7 +258,7 @@ function App() {
   }, [booting, settings]);
 
   useEffect(() => {
-    if (booting || !configured) {
+    if (booting || !configured || screen !== 'dashboard') {
       return;
     }
 
@@ -290,21 +289,7 @@ function App() {
     return () => {
       mounted = false;
     };
-  }, [booting, configured, settings]);
-
-  useEffect(() => {
-    if (screen !== 'settings') {
-      hasAutoTestedSettingsRef.current = false;
-      return;
-    }
-
-    if (booting || hasAutoTestedSettingsRef.current) {
-      return;
-    }
-
-    hasAutoTestedSettingsRef.current = true;
-    handleTestConnection();
-  }, [booting, handleTestConnection, screen]);
+  }, [booting, configured, screen, settings]);
 
   const handlePortalBackActionChange = useCallback((action: (() => void) | null) => {
     setPortalBackAction(() => action);
@@ -319,7 +304,7 @@ function App() {
     setStatus('loading');
     setSettingsErrorMessage(null);
 
-    const backendUrl = nextSettings.backendUrl.trim();
+    const backendUrl = (nextSettings.backendUrl || '').trim();
     if (!backendUrl) {
       setStatus('error');
       setSettingsErrorMessage(t('mobile.connection_error_missing_url', 'Please enter a server URL before testing the connection.'));

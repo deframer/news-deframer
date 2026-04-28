@@ -117,7 +117,7 @@ export class NewsDeframerClient {
   private readonly apiBase = '/mobile/api';
 
   private getBackendBaseUrl(): string {
-    return this.config.backendUrl
+    return (this.config.backendUrl || '')
       .trim()
       .replace(/\/$/, '');
   }
