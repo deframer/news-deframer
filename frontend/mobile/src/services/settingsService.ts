@@ -35,6 +35,6 @@ export const settingsService = {
   },
 
   hasRequiredConfiguration(settings: Settings): boolean {
-    return settings.backendUrl.trim().length > 0;
+    return (settings.backendUrl || '').trim().length > 0;
   },
 };
