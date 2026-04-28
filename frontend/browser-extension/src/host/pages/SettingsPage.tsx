@@ -33,6 +33,58 @@ export const SettingsPage = () => {
   const [domainsUnavailable, setDomainsUnavailable] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const persistSettings = useCallback(
+    async (nextSettings: Settings) => {
+      await chrome.storage.local.set(nextSettings);
+      await chrome.storage.local.set({ ndf_language: lang });
+    },
+    [lang]
+  );
+
+  const refreshConnection = useCallback(
+    async (nextSettings: Settings): Promise<boolean> => {
+      if (!nextSettings.enabled) {
+        setStatus('idle');
+        setErrorMessage(null);
+        setDomains([]);
+        setDomainsUnavailable(false);
+        return true;
+      }
+
+      const trimmedUrl = nextSettings.backendUrl?.trim() ?? '';
+      if (!trimmedUrl) {
+        setStatus('error');
+        setErrorMessage(i18n.t('options.invalid_server_url', 'Invalid server URL'));
+        setDomains([]);
+        setDomainsUnavailable(true);
+        return false;
+      }
+
+      setStatus('loading');
+      setErrorMessage(null);
+      try {
+        const result = await testConnection(nextSettings);
+        setStatus(result.connected ? 'success' : 'error');
+        setErrorMessage(result.connected ? null : result.errorMessage || 'Connection failed');
+        if (result.connected) {
+          setDomains(result.domains);
+          setDomainsUnavailable(false);
+        } else {
+          setDomains([]);
+          setDomainsUnavailable(true);
+        }
+        return result.connected;
+      } catch (err: Error) {
+        setStatus('error');
+        setErrorMessage(err.message);
+        setDomains([]);
+        setDomainsUnavailable(true);
+        return false;
+      }
+    },
+    []
+  );
+
   const loadDomains = useCallback(async (settingsToUse: Settings) => {
     setDomainsLoading(true);
     try {
@@ -111,63 +163,16 @@ export const SettingsPage = () => {
     await chrome.storage.local.set({ selectedDomains });
   };
 
-  const saveSettings = useCallback(async () => {
-    await chrome.storage.local.set(settings);
-    await chrome.storage.local.set({ ndf_language: lang });
-  }, [settings, lang]);
-
-  const handleTestConnection = async () => {
-    setStatus('loading');
-    setErrorMessage(null);
-    try {
-      const result = await testConnection(settings);
-      setStatus(result.connected ? 'success' : 'error');
-      setErrorMessage(result.connected ? null : result.errorMessage || 'Connection failed');
-      if (result.connected) {
-        await saveSettings();
-        setDomains(result.domains);
-        setDomainsUnavailable(false);
-      } else {
-        setDomains([]);
-        setDomainsUnavailable(true);
-      }
-    } catch (err: Error) {
-      setStatus('error');
-      setErrorMessage(err.message);
-      setDomains([]);
-      setDomainsUnavailable(true);
+  const handleTestConnection = async (nextSettings: Settings = settings) => {
+    const connected = await refreshConnection(nextSettings);
+    if (connected) {
+      await persistSettings(nextSettings);
     }
   };
 
   const handleApply = async () => {
-    await saveSettings();
-
-    if (!settings.enabled) {
-      setStatus('idle');
-      setDomains([]);
-      setDomainsUnavailable(false);
-      return;
-    }
-
-    setStatus('loading');
-    setErrorMessage(null);
-    try {
-      const result = await testConnection(settings);
-      setStatus(result.connected ? 'success' : 'error');
-      setErrorMessage(result.connected ? null : result.errorMessage || 'Connection failed');
-      if (result.connected) {
-        setDomains(result.domains);
-        setDomainsUnavailable(false);
-      } else {
-        setDomains([]);
-        setDomainsUnavailable(true);
-      }
-    } catch (err: Error) {
-      setStatus('error');
-      setErrorMessage(err.message);
-      setDomains([]);
-      setDomainsUnavailable(true);
-    }
+    await persistSettings(settings);
+    await refreshConnection(settings);
   };
 
   if (!loaded) {
@@ -222,7 +227,15 @@ export const SettingsPage = () => {
         </button>
       </div>
       {activeTab === 'settings' ? (
-        <SettingsForm settings={settings} lang={lang} status={status} errorMessage={errorMessage} onSettingsChange={setSettings} onLanguageChange={handleLanguageChange} onTestConnection={handleTestConnection} />
+        <SettingsForm
+          settings={settings}
+          lang={lang}
+          status={status}
+          errorMessage={errorMessage}
+          onSettingsChange={setSettings}
+          onLanguageChange={handleLanguageChange}
+          onTestConnection={handleTestConnection}
+        />
       ) : activeTab === 'about' ? (
         <SettingsAbout />
       ) : (

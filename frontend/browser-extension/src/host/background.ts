@@ -1,4 +1,5 @@
 import log from '../shared/logger';
+import { CONNECTION_TIMEOUT_MS } from '../shared/settings';
 import { ProxyResponse } from '../shared/types';
 
 log.info('Background script running');
@@ -10,7 +11,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 
   if (request.type === 'PROXY_REQ') {
-    const { url, headers, timeout = 5000 } = request;
+    const { url, headers, timeout = CONNECTION_TIMEOUT_MS } = request;
     log.info(`Proxying request to ${url} with timeout ${timeout}ms`);
 
     let responseSent = false;

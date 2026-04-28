@@ -1,5 +1,5 @@
 import React from 'react';
-import { Github } from 'lucide-react-native';
+import { Github } from '../components/icons';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 

@@ -1,5 +1,5 @@
 import { getCachedDomains, invalidateDomainCache,setCachedDomains } from '../shared/domain-cache';
-import { Settings } from '../shared/settings';
+import { CONNECTION_TIMEOUT_MS, Settings } from '../shared/settings';
 
 // --- Type Definitions based on Go backend models ---
 
@@ -126,13 +126,18 @@ export class NewsDeframerClient {
 
     if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
       return new Promise<T | null>((resolve, reject) => {
-        chrome.runtime.sendMessage({ type: 'PROXY_REQ', url: url.toString(), headers }, (response) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error(`Request timed out after ${CONNECTION_TIMEOUT_MS}ms`));
+        }, CONNECTION_TIMEOUT_MS + 1000);
+
+        chrome.runtime.sendMessage({ type: 'PROXY_REQ', url: url.toString(), headers, timeout: CONNECTION_TIMEOUT_MS }, (response) => {
+          clearTimeout(timeoutId);
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
           } else if (response && response.ok) {
             resolve(response.data as T);
           } else if (response && response.status === 404) {
-            resolve(null); // Not found is not an error
+            resolve(null);
           } else if (response && !response.ok) {
             const rawMessage = response.error || (typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
             reject(new Error(`GET ${url.toString()} failed: ${rawMessage || `HTTP ${response.status}`}`));

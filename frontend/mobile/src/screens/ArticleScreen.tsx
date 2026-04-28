@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ExternalLink } from 'lucide-react-native';
+import { ExternalLink } from '../components/icons';
 import { useTranslation } from 'react-i18next';
 
 import { formatTime } from '../../../shared/formatTime';

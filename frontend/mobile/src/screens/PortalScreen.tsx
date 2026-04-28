@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, FlatList, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Info } from 'lucide-react-native';
+import { Info } from '../components/icons';
 import { useTranslation } from 'react-i18next';
 
 import { ArticleTile } from '../components/ArticleTile';
