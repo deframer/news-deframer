@@ -159,6 +159,7 @@ export const TrendComparePanel = ({
       return false;
     });
   }, [domain, items, selectedCompareDomain, selectedItem]);
+  const activeSelectedItem = selectedItem && isSelectedItemPresent ? selectedItem : null;
 
   const handleSelectItem = (selection: SelectedCompareItem) => {
     setSavedScrollOffset(getScrollOffset());
@@ -213,30 +214,14 @@ export const TrendComparePanel = ({
   }, [client, compareDomain, daysInPast, domain, language]);
 
   useEffect(() => {
-    if (!selectedItem) {
-      return;
-    }
-
-    if (!isSelectedItemPresent) {
-      setSelectedItem(null);
-      setSavedScrollOffset(null);
-    }
-  }, [isSelectedItemPresent, selectedItem]);
-
-  useEffect(() => {
-    setSelectedItem(null);
-    setSavedScrollOffset(null);
-  }, [domain, selectedCompareDomain, daysInPast]);
-
-  useEffect(() => {
-    onBackRequestChange(selectedItem ? handleCloseSelection : null);
+    onBackRequestChange(activeSelectedItem ? handleCloseSelection : null);
 
     return () => onBackRequestChange(null);
-  }, [handleCloseSelection, onBackRequestChange, selectedItem]);
+  }, [activeSelectedItem, handleCloseSelection, onBackRequestChange]);
 
   return (
     <View style={styles.stack}>
-      {!selectedItem ? (
+      {!activeSelectedItem ? (
         <View>
           <Text style={[styles.label, { color: palette.secondaryText }]}>{t('mobile.compare_with_label', 'Compare with')}</Text>
           <Dropdown
@@ -266,17 +251,17 @@ export const TrendComparePanel = ({
 
       {!compareDomain ? null : (
         <View style={styles.stack}>
-          {!selectedItem ? <View style={[styles.divider, { borderBottomColor: palette.border }]} /> : null}
+          {!activeSelectedItem ? <View style={[styles.divider, { borderBottomColor: palette.border }]} /> : null}
 
-          {selectedItem ? (
+          {activeSelectedItem ? (
             <Pressable
               onPress={handleCloseSelection}
               style={[styles.selectedTrendPill, { backgroundColor: palette.card, borderColor: palette.border }]}
               accessibilityRole="button"
-              accessibilityLabel={`${t('mobile.change_term')}: ${selectedItem.term} ${BULLET_DELIMITER} ${selectedItem.domain}`}
+              accessibilityLabel={`${t('mobile.change_term')}: ${activeSelectedItem.term} ${BULLET_DELIMITER} ${activeSelectedItem.domain}`}
             >
               <Text style={[styles.selectedTrendText, { color: colorValues.white }]}>
-                {selectedItem.term} {BULLET_DELIMITER} {selectedItem.domain}
+                {activeSelectedItem.term} {BULLET_DELIMITER} {activeSelectedItem.domain}
               </Text>
             </Pressable>
           ) : null}
@@ -286,7 +271,7 @@ export const TrendComparePanel = ({
           {!isLoading && hasError ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('mobile.portal_load_error')}</Text> : null}
           {!isLoading && !hasError && sortedItems.length === 0 ? <Text style={[styles.stateText, { color: palette.secondaryText }]}>{t('trends.no_data')}</Text> : null}
 
-          {!selectedItem && !isLoading && !hasError && sortedItems.length > 0 ? (
+          {!activeSelectedItem && !isLoading && !hasError && sortedItems.length > 0 ? (
             <View style={styles.list}>
               <View style={styles.section}>
                 <View style={[styles.sectionHeader, { backgroundColor: palette.text }]}> 
@@ -311,7 +296,7 @@ export const TrendComparePanel = ({
             </View>
           ) : null}
 
-          {selectedItem && !isLoading && !hasError ? <TrendArticleListPanel palette={palette} term={selectedItem.term} domain={selectedItem.domain} settings={settings} daysInPast={daysInPast} headerTitle={t('trends.article_caption', 'Article')} onOpenArticle={onOpenArticle} /> : null}
+          {activeSelectedItem && !isLoading && !hasError ? <TrendArticleListPanel key={`${activeSelectedItem.term}-${activeSelectedItem.domain}-${daysInPast}-compare`} palette={palette} term={activeSelectedItem.term} domain={activeSelectedItem.domain} settings={settings} daysInPast={daysInPast} headerTitle={t('trends.article_caption', 'Article')} onOpenArticle={onOpenArticle} /> : null}
           </Card>
         </View>
       )}

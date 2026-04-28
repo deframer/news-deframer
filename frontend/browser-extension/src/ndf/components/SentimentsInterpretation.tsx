@@ -26,8 +26,8 @@ export const SentimentsInterpretation = ({ interpretation }: TrendSentimentsInte
         <strong className="sentiment-interpretation-header-label">{t('trends.sentiments_interpretation_header', 'Interpretation')}</strong>
       </div>
       <div className="sentiment-interpretation-list">
-        {interpretationMetrics.map((metric, index) => (
-          <div key={index} className="sentiment-interpretation-item">
+        {interpretationMetrics.map((metric) => (
+          <div key={metric.label} className="sentiment-interpretation-item">
             <span className="sentiment-interpretation-label">{metric.label}</span>
             <span className="sentiment-interpretation-value">{metric.value}</span>
           </div>

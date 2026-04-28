@@ -2,8 +2,8 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { ArticleList } from './ArticleList';
 
-const getSettingsMock = jest.fn().mockResolvedValue({});
-const getArticlesByTrendMock = jest.fn();
+const mockGetSettings = jest.fn().mockResolvedValue({});
+const mockGetArticlesByTrend = jest.fn();
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -20,12 +20,12 @@ jest.mock('react-i18next', () => ({
 }));
 
 jest.mock('../../shared/settings', () => ({
-  getSettings: () => getSettingsMock(),
+  getSettings: () => mockGetSettings(),
 }));
 
 jest.mock('../client', () => ({
   NewsDeframerClient: jest.fn().mockImplementation(() => ({
-    getArticlesByTrend: (...args: unknown[]) => getArticlesByTrendMock(...args),
+    getArticlesByTrend: (...args: unknown[]) => mockGetArticlesByTrend(...args),
   })),
 }));
 
@@ -47,19 +47,19 @@ describe('ArticleList', () => {
   });
 
   beforeEach(() => {
-    getSettingsMock.mockClear();
-    getArticlesByTrendMock.mockReset();
+    mockGetSettings.mockClear();
+    mockGetArticlesByTrend.mockReset();
     (HTMLElement.prototype.scrollIntoView as jest.Mock).mockClear();
   });
 
   it('renders without crashing', () => {
-    getArticlesByTrendMock.mockImplementation(() => new Promise(() => {}));
+    mockGetArticlesByTrend.mockImplementation(() => new Promise(() => {}));
     const { container } = render(<ArticleList term="topic" domain={{ domain: 'example.com', language: 'en' }} days={7} />);
     expect(container).not.toBeNull();
   });
 
   it('scrolls into view after the first article load', async () => {
-    getArticlesByTrendMock.mockResolvedValue([
+    mockGetArticlesByTrend.mockResolvedValue([
       { url: 'https://example.com/a', title: 'A', authors: ['Jane'], pub_date: '2026-03-08T00:00:00Z', rating: 0.4 },
     ]);
 
@@ -73,7 +73,7 @@ describe('ArticleList', () => {
   });
 
   it('scrolls into view when moving to the next page', async () => {
-    getArticlesByTrendMock
+    mockGetArticlesByTrend
       .mockResolvedValueOnce(Array.from({ length: 10 }, (_, index) => ({
         url: `https://example.com/${index}`,
         title: `Article ${index}`,

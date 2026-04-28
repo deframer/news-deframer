@@ -51,9 +51,9 @@ export const TrendDetailsPanel = ({
         />
       </View>
 
-      {activeTab === 'lifecycle' ? <TrendLifecyclePanel palette={palette} term={term} domain={domain} language={language} daysInPast={daysInPast} settings={settings} onOpenArticle={onOpenArticle} /> : null}
+      {activeTab === 'lifecycle' ? <TrendLifecyclePanel key={`${term}-${domain}-${language}-${daysInPast}`} palette={palette} term={term} domain={domain} language={language} daysInPast={daysInPast} settings={settings} onOpenArticle={onOpenArticle} /> : null}
       {activeTab === 'context' ? <TrendContextPanel palette={palette} term={term} domain={domain} language={language} daysInPast={daysInPast} settings={settings} /> : null}
-      {activeTab === 'articles' ? <TrendArticleListPanel palette={palette} term={term} domain={domain} settings={settings} daysInPast={daysInPast} headerTitle={null} onOpenArticle={onOpenArticle} /> : null}
+      {activeTab === 'articles' ? <TrendArticleListPanel key={`${term}-${domain}-${daysInPast}-articles`} palette={palette} term={term} domain={domain} settings={settings} daysInPast={daysInPast} headerTitle={null} onOpenArticle={onOpenArticle} /> : null}
     </Card>
   );
 };

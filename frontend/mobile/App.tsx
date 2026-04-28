@@ -128,6 +128,9 @@ function App() {
   const [portalBackAction, setPortalBackAction] = useState<(() => void) | null>(null);
   const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
+  const visibleDomains = configured ? domains : [];
+  const visibleDomainsLoading = configured ? domainsLoading : false;
+  const activePortalBackAction = screen === 'portal' ? portalBackAction : null;
 
   useEffect(() => {
     if (status !== 'loading') {
@@ -256,8 +259,6 @@ function App() {
 
   useEffect(() => {
     if (booting || !configured) {
-      setDomains([]);
-      setDomainsLoading(false);
       return;
     }
 
@@ -400,8 +401,8 @@ function App() {
     return (
       <DashboardScreen
         palette={palette}
-        domains={domains}
-        domainsLoading={domainsLoading}
+        domains={visibleDomains}
+        domainsLoading={visibleDomainsLoading}
         configured={configured}
         onOpenPortal={(domain) => {
           setSelectedDomain(domain);
@@ -429,13 +430,13 @@ function App() {
       return;
     }
 
-    if (screen === 'portal' && portalBackAction) {
-      portalBackAction();
+    if (screen === 'portal' && activePortalBackAction) {
+      activePortalBackAction();
       return;
     }
 
     setScreen('dashboard');
-  }, [portalBackAction, screen, selectedArticle]);
+  }, [activePortalBackAction, screen, selectedArticle]);
 
   useEffect(() => {
     if (Platform.OS !== 'android' || !showBack) {
@@ -449,12 +450,6 @@ function App() {
 
     return () => subscription.remove();
   }, [handleBack, showBack]);
-
-  useEffect(() => {
-    if (screen !== 'portal') {
-      setPortalBackAction(null);
-    }
-  }, [screen]);
 
   return (
     <SafeAreaProvider>

@@ -163,19 +163,8 @@ export const TrendTagCloudPanel = ({
 
     return items.some((item) => item.trend_topic === selectedTerm);
   }, [items, selectedTerm]);
-
-  useEffect(() => {
-    if (!selectedTerm) {
-      return;
-    }
-
-    if (!isSelectedTermPresent) {
-      logger.info('TrendTagCloud selected term disappeared after refresh', { selectedTerm, daysInPast });
-      setSelectedTerm(null);
-      setActiveDetailTab('lifecycle');
-      setIsCloudCollapsed(false);
-    }
-  }, [daysInPast, isSelectedTermPresent, selectedTerm]);
+  const visibleSelectedTerm = isSelectedTermPresent ? selectedTerm : null;
+  const activeDetailTabValue = visibleSelectedTerm ? activeDetailTab : 'lifecycle';
 
   const handleCloudLayout = (event: LayoutChangeEvent) => {
     const width = Math.round(event.nativeEvent.layout.width);
@@ -205,19 +194,19 @@ export const TrendTagCloudPanel = ({
   }, []);
 
   useEffect(() => {
-    onBackRequestChange(selectedTerm && isCloudCollapsed ? handleShowCloudAgain : null);
+    onBackRequestChange(visibleSelectedTerm && isCloudCollapsed ? handleShowCloudAgain : null);
 
     return () => onBackRequestChange(null);
-  }, [handleShowCloudAgain, isCloudCollapsed, onBackRequestChange, selectedTerm]);
+  }, [handleShowCloudAgain, isCloudCollapsed, onBackRequestChange, visibleSelectedTerm]);
 
   return (
     <View style={styles.stack}>
-      {selectedTerm && isCloudCollapsed ? (
+      {visibleSelectedTerm && isCloudCollapsed ? (
         <Pressable
           onPress={handleShowCloudAgain}
           style={[styles.collapsedContainer, { backgroundColor: palette.card, borderColor: palette.border }]}
           accessibilityRole="button"
-          accessibilityLabel={`${t('mobile.change_term')}: ${selectedTerm}`}
+          accessibilityLabel={`${t('mobile.change_term')}: ${visibleSelectedTerm}`}
         >
           <Text
             style={[
@@ -227,7 +216,7 @@ export const TrendTagCloudPanel = ({
               { color: palette.accent },
             ]}
           >
-            {selectedTerm}
+            {visibleSelectedTerm}
           </Text>
         </Pressable>
       ) : (
@@ -248,7 +237,7 @@ export const TrendTagCloudPanel = ({
                 ]}
               >
                 {positionedWords.map((word) => {
-                  const selected = selectedTerm === word.text;
+                  const selected = visibleSelectedTerm === word.text;
                   const toneStyle = selected ? styles.termSelected : styles.termDefault;
                   const placementStyle = {
                     left: word.x - cloudBounds.left - Math.ceil(word.width) / 2,
@@ -280,15 +269,16 @@ export const TrendTagCloudPanel = ({
         </Card>
       )}
 
-      {selectedTerm && isSelectedTermPresent ? (
+      {visibleSelectedTerm ? (
         <TrendDetailsPanel
+          key={`${visibleSelectedTerm}-${domain}-${language}-${daysInPast}`}
           palette={palette}
-          term={selectedTerm}
+          term={visibleSelectedTerm}
           domain={domain}
           language={language}
           daysInPast={daysInPast}
           settings={settings}
-          activeTab={activeDetailTab}
+          activeTab={activeDetailTabValue}
           setActiveTab={setActiveDetailTab}
           onOpenArticle={onOpenArticle}
         />

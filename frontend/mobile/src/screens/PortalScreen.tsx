@@ -61,6 +61,9 @@ export const PortalScreen = ({
   const client = useMemo(() => new NewsDeframerClient(settings), [settings]);
   const domainOptions = useMemo<DomainOption[]>(() => availableDomains.filter((d) => d.domain !== domain.domain && d.language === domain.language).map((d) => ({ id: d.domain, name: d.domain })), [availableDomains, domain.domain, domain.language]);
   const [compareDomain, setCompareDomain] = useState<string | null>(null);
+  const resolvedCompareDomain = compareDomain && domainOptions.some((option) => option.id === compareDomain)
+    ? compareDomain
+    : domainOptions[0]?.id ?? null;
 
   const loadItems = useCallback(async () => {
     setIsLoading(true);
@@ -103,17 +106,6 @@ export const PortalScreen = ({
       cancelled = true;
     };
   }, [client]);
-
-  useEffect(() => {
-    if (domainOptions.length === 0) {
-      setCompareDomain(null);
-      return;
-    }
-
-    if (!compareDomain || !domainOptions.some((option) => option.id === compareDomain)) {
-      setCompareDomain(domainOptions[0].id);
-    }
-  }, [compareDomain, domainOptions]);
 
   useEffect(() => {
     if (!reasonText) {
@@ -304,6 +296,7 @@ export const PortalScreen = ({
 
             {trendSubview === 'cloud' ? (
               <TrendTagCloudPanel
+                key={`${domain.domain}-${domain.language}-${trendRange}`}
                 palette={palette}
                 domain={domain.domain}
                 language={domain.language}
@@ -315,13 +308,14 @@ export const PortalScreen = ({
             ) : null}
             {trendSubview === 'compare' ? (
               <TrendComparePanel
+                key={`${domain.domain}-${domain.language}-${trendRange}-${resolvedCompareDomain ?? ''}`}
                 palette={palette}
                 domain={domain.domain}
                 language={domain.language}
                 daysInPast={TIME_RANGES.find((range) => range.id === trendRange)?.days || 7}
                 settings={settings}
                 availableDomains={domainOptions}
-                compareDomain={compareDomain}
+                compareDomain={resolvedCompareDomain}
                 onSelectDomain={setCompareDomain}
                 getScrollOffset={() => scrollOffsetRef.current}
                 onRestoreScrollOffset={restorePortalScroll}
