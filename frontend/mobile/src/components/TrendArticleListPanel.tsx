@@ -57,13 +57,6 @@ export const TrendArticleListPanel = ({
   }, [headerTitle, i18n.language, selectedDate, t]);
 
   useEffect(() => {
-    setArticles([]);
-    setOffset(0);
-    setHasMore(true);
-    setError(null);
-  }, [daysInPast, domain, selectedDate, term]);
-
-  useEffect(() => {
     let cancelled = false;
 
     const fetchArticles = async () => {
@@ -167,7 +160,7 @@ export const TrendArticleListPanel = ({
 
       {!loading && !error && articles.length > 0 ? (
         <View style={styles.stack}>
-          {articles.map((article, index) => {
+          {articles.map((article) => {
             const rating = toPercent(article.rating);
             const ratingColors = getRatingColors(rating, palette);
             const authors = article.authors?.join(', ');
@@ -175,7 +168,7 @@ export const TrendArticleListPanel = ({
 
             return (
               <Pressable
-                key={`${article.url}-${index}`}
+                key={article.url}
                 onPress={() => {
                   handleOpenArticle(article);
                 }}

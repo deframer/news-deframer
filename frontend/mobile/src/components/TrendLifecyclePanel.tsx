@@ -92,21 +92,9 @@ export const TrendLifecyclePanel = ({
     };
   }, [client, daysInPast, domain, language, term]);
 
-  useEffect(() => {
-    setSelectedEntryKey(null);
-  }, [term, domain]);
-
-  useEffect(() => {
-    if (!selectedEntryKey || loading) {
-      return;
-    }
-
-    const isStillInRange = data.some((entry, index) => `${entry.time_slice}-${index}` === selectedEntryKey);
-
-    if (!isStillInRange) {
-      setSelectedEntryKey(null);
-    }
-  }, [data, loading, selectedEntryKey]);
+  const visibleSelectedEntryKey = !selectedEntryKey || loading || data.some((entry, index) => `${entry.time_slice}-${index}` === selectedEntryKey)
+    ? selectedEntryKey
+    : null;
 
   const maxFreq = data.length > 0 ? Math.max(...data.map((entry) => entry.frequency)) : 0;
   const barCount = Math.max(data.length, 1);
@@ -116,12 +104,12 @@ export const TrendLifecyclePanel = ({
   const compactBarWidth = Math.max(8, Math.floor((chartWidth - compactGap * Math.max(barCount - 1, 0)) / barCount));
 
   const selectedEntry = useMemo(() => {
-    if (!selectedEntryKey) {
+    if (!visibleSelectedEntryKey) {
       return null;
     }
 
-    return data.find((entry, index) => `${entry.time_slice}-${index}` === selectedEntryKey) ?? null;
-  }, [data, selectedEntryKey]);
+    return data.find((entry, index) => `${entry.time_slice}-${index}` === visibleSelectedEntryKey) ?? null;
+  }, [data, visibleSelectedEntryKey]);
 
   if (loading) {
     return (
@@ -169,7 +157,7 @@ export const TrendLifecyclePanel = ({
               const tone = item.velocity > 0 ? palette.trendUp : item.velocity < 0 ? palette.trendDown : palette.trendSteady;
               const icon = item.velocity > 0 ? '▲' : item.velocity < 0 ? '▼' : '▶';
               const entryKey = `${item.time_slice}-${index}`;
-              const selected = selectedEntryKey === entryKey;
+              const selected = visibleSelectedEntryKey === entryKey;
 
               return (
                 <Pressable
@@ -207,7 +195,7 @@ export const TrendLifecyclePanel = ({
                 const icon = item.velocity > 0 ? '▲' : item.velocity < 0 ? '▼' : '▶';
                 const barTextTone = getTextColorForHex(tone);
                 const entryKey = `${item.time_slice}-${idx}`;
-                const selected = selectedEntryKey === entryKey;
+                const selected = visibleSelectedEntryKey === entryKey;
                 const showLabel = data.length < 15 || idx % Math.ceil(data.length / 10) === 0;
                 const showDate = showLabel && wideBarWidth >= 44;
 
@@ -240,7 +228,7 @@ export const TrendLifecyclePanel = ({
         </View>
       )}
 
-      {selectedEntry ? <TrendArticleListPanel palette={palette} term={term} domain={domain} settings={settings} selectedDate={toIsoDay(selectedEntry.time_slice)} onOpenArticle={onOpenArticle} /> : null}
+      {selectedEntry ? <TrendArticleListPanel key={`${term}-${domain}-${selectedEntry.time_slice}-lifecycle`} palette={palette} term={term} domain={domain} settings={settings} selectedDate={toIsoDay(selectedEntry.time_slice)} onOpenArticle={onOpenArticle} /> : null}
     </View>
   );
 };

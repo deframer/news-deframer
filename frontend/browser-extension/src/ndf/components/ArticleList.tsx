@@ -71,14 +71,6 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
     fetchArticles();
   }, [term, domain, date, days, currentPage]);
 
-  // Reset pagination when the core context changes
-  useEffect(() => {
-    setCurrentPage(1);
-    setHasMore(true);
-    didInitPageRef.current = false;
-    hasLoadedOnceRef.current = false;
-  }, [term, domain, date, days]);
-
   const scrollListIntoView = () => {
     if (typeof window === 'undefined') return;
     if (window.matchMedia('(max-width: 799px)').matches) return;
@@ -179,7 +171,7 @@ export const ArticleList = ({ term, domain, date, days, titleOverride, hideTitle
               </thead>
               <tbody>
                 {articles.map((article, index) => (
-                  <tr key={article.url + index} style={{ borderTop: '1px solid var(--border-color)' }}>
+                  <tr key={article.url} style={{ borderTop: '1px solid var(--border-color)' }}>
                     <td style={{ padding: '8px 5px', verticalAlign: 'middle' }}>
                       {article.rating !== undefined && (
                         <RatingBar

@@ -42,20 +42,11 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
     fetchData();
   }, [term, domain, days]);
 
-
-  useEffect(() => {
-    setSelectedDate(null);
-  }, [term, domain.domain]);
-
-  useEffect(() => {
-    if (!selectedDate) return;
-    if (loading) return;
-    const selectedDay = toIsoDay(selectedDate);
-    const isStillInRange = data.some((entry) => toIsoDay(entry.time_slice) === selectedDay);
-    if (!isStillInRange) {
-      setSelectedDate(null);
-    }
-  }, [data, selectedDate, loading]);
+  const visibleSelectedDate = !selectedDate || loading
+    ? selectedDate
+    : data.some((entry) => toIsoDay(entry.time_slice) === toIsoDay(selectedDate))
+      ? selectedDate
+      : null;
 
   const maxFreq = data.length > 0 ? Math.max(...data.map(d => d.frequency)) : 0;
 
@@ -82,9 +73,8 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
           const heightPercent = maxFreq > 0 ? (item.frequency / maxFreq) * 100 : 0;
           const dateLabel = formatShortDate(item.time_slice, i18n.language);
 
-          const isSelected = selectedDate === item.time_slice;
+          const isSelected = visibleSelectedDate === item.time_slice;
           const style: CSSProperties = { height: `${heightPercent}%` };
-          let icon = null;
           let barClass = 'chart-bar';
           // Unified label style: below the bar with a -45 degree angle
           const labelStyle: CSSProperties = {
@@ -93,18 +83,21 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
   
           if (item.velocity > 0) {
             style.backgroundColor = 'var(--trend-up)';
-            icon = <span className="trend-icon" style={{ color: 'var(--trend-up)' }}>▲</span>;
             labelStyle.color = 'var(--trend-text)';
           } else if (item.velocity < 0) {
             style.backgroundColor = 'var(--trend-down)';
-            icon = <span className="trend-icon" style={{ color: 'var(--trend-down)' }}>▼</span>;
             labelStyle.color = 'var(--trend-text)';
           } else {
             style.backgroundColor = 'var(--trend-steady)';
-            icon = <span className="trend-icon" style={{ color: 'var(--trend-steady)' }}>▶</span>;
             barClass += ' lateral';
             labelStyle.color = 'var(--trend-text)';
           }
+
+          const icon = item.velocity > 0
+            ? <span className="trend-icon" style={{ color: 'var(--trend-up)' }}>▲</span>
+            : item.velocity < 0
+              ? <span className="trend-icon" style={{ color: 'var(--trend-down)' }}>▼</span>
+              : <span className="trend-icon" style={{ color: 'var(--trend-steady)' }}>▶</span>;
 
           return (
             <button
@@ -134,13 +127,14 @@ export const TrendLifecycleChart = ({ domain, days, term }: TrendLifecycleChartP
           );
         })}
       </div>
-      {selectedDate && (
+      {visibleSelectedDate && (
         <ArticleList
+          key={`${term}-${domain.domain}-${days}-${visibleSelectedDate}`}
           term={term}
           domain={domain}
-          date={new Date(selectedDate).toISOString().split('T')[0]} /* Explicitly format to YYYY-MM-DD for API */
+          date={new Date(visibleSelectedDate).toISOString().split('T')[0]} /* Explicitly format to YYYY-MM-DD for API */
           days={undefined}
-          titleOverride={`${t('trends.articles', 'Articles')} / ${formatShortDate(selectedDate, i18n.language)} / ${term}`}
+          titleOverride={`${t('trends.articles', 'Articles')} / ${formatShortDate(visibleSelectedDate, i18n.language)} / ${term}`}
         />
       )}
     </>

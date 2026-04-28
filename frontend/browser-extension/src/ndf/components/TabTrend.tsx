@@ -72,10 +72,11 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'cloud' && <TrendTagCloud domain={domain} days={currentDays} searchEngineUrl={searchEngineUrl} activeTab={detailTab} setActiveTab={setDetailTab} />}
+        {viewMode === 'cloud' && <TrendTagCloud key={`${domain.domain}-${domain.language}-${currentDays}`} domain={domain} days={currentDays} searchEngineUrl={searchEngineUrl} activeTab={detailTab} setActiveTab={setDetailTab} />}
 
         {viewMode === 'compare' && (
           <TrendCompare
+            key={`${domain.domain}-${domain.language}-${currentDays}-${compareDomain ?? ''}`}
             days={currentDays}
             baseItems={[]}
             compareDomain={compareDomain}

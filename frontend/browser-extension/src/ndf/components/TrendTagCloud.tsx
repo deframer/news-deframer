@@ -16,7 +16,6 @@ interface TrendTagCloudProps {
 
 const BULLET_DELIMITER = '•';
 const DEFAULT_WIDTH = 640;
-const DEFAULT_HEIGHT = 400;
 
 const approximateMeasureWord = ({ text, fontSize }: MeasureWordOptions) => ({
   width: Math.max(fontSize, text.length * fontSize * 0.58),
@@ -59,7 +58,7 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
   const [tooltip, setTooltip] = useState<WordCloudWord<TrendMetric & { rank: number }> | null>(null);
   const [items, setItems] = useState<TrendMetric[]>([]);
   const [loading, setLoading] = useState(false);
-  const [dimensions, setDimensions] = useState({ width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT });
+  const [width, setWidth] = useState(DEFAULT_WIDTH);
 
   const currentHeight = selectedTerm ? 250 : 400;
 
@@ -70,19 +69,13 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
       return;
     }
 
-    const updateDimensions = () => {
-      const nextWidth = Math.round(node.clientWidth) || DEFAULT_WIDTH;
-      setDimensions({ width: nextWidth, height: currentHeight });
-    };
-
-    updateDimensions();
-
     if (typeof ResizeObserver === 'undefined') {
       return;
     }
 
-    const observer = new ResizeObserver(() => {
-      updateDimensions();
+    const observer = new ResizeObserver(([entry]) => {
+      const nextWidth = Math.round(entry.contentRect.width) || DEFAULT_WIDTH;
+      setWidth((current) => (current === nextWidth ? current : nextWidth));
     });
 
     observer.observe(node);
@@ -136,12 +129,12 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
     () =>
       layoutWordCloud({
         words,
-        width: dimensions.width,
-        height: dimensions.height,
+        width,
+        height: currentHeight,
         measureWord,
         getColor: (text) => getWordCloudColor(text),
       }),
-    [dimensions.height, dimensions.width, measureWord, words],
+    [currentHeight, measureWord, width, words],
   );
 
   const cloudBounds = useMemo(() => {

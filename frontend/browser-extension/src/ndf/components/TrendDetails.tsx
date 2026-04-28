@@ -48,8 +48,8 @@ export const TrendDetails = ({ term, domain, days, showBorder = true, activeTab,
         </button>
       </div>
       {activeTab === 'context' && <TrendContextChart topic={term} days={days} domain={domain} />}
-      {activeTab === 'lifecycle' && <TrendLifecycleChart domain={domain} days={days} term={term} />}
-      {activeTab === 'articles' && <ArticleList term={term} domain={domain} days={days} hideTitle={true} />}
+      {activeTab === 'lifecycle' && <TrendLifecycleChart key={`${term}-${domain.domain}-${days}`} domain={domain} days={days} term={term} />}
+      {activeTab === 'articles' && <ArticleList key={`${term}-${domain.domain}-${days}`} term={term} domain={domain} days={days} hideTitle={true} />}
       {activeTab === 'sentiments' && <TrendSentiments term={term} domain={domain} days={days} />}
     </div>
   );

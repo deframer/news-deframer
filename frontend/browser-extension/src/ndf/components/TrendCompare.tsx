@@ -47,14 +47,21 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
   const [items, setItems] = useState<DomainComparison[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<{ term: string; domain: string; column: 'A' | 'B' | 'Intersect' } | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 799px)').matches);
   const compareGridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.matchMedia('(max-width: 799px)').matches);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 799px)');
+    const handleChange = (event: MediaQueryListEvent) => {
+      setIsMobile(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
   useEffect(() => {
@@ -75,10 +82,6 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     };
     fetchData();
   }, [domain, compareDomain, days]);
-
-  useEffect(() => {
-    setSelected(null);
-  }, [domain.domain, compareDomain, days]);
 
   useEffect(() => {
     if (!selected) return;
@@ -120,6 +123,7 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     if (!selected) return null;
     return (
       <ArticleList
+        key={`${selected.term}-${selected.domain}-${days}`}
         term={selected.term}
         domain={{ domain: selected.domain, language: domain.language }}
         days={days}
@@ -135,39 +139,28 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     
     const isActive = selected?.term === trendTopic && selected?.column === columnType;
     
-    let scoreA: number | string = '';
-    let scoreB: number | string = '';
     const currentDomainName = domain.domain;
     const comparisonDomainName = compareDomain || '';
 
-    if (isDomainComparison) {
-      const dcItem = item as DomainComparison;
-      scoreA = dcItem.score_a;
-      scoreB = dcItem.score_b;
-    } else { // TrendMetric for baseItems (Column A when not comparing)
-      scoreA = (item as TrendMetric).outlier_ratio.toFixed(1) + 'x';
-      scoreB = ''; 
-    }
+    const [scoreA, scoreB]: [number | string, number | string] = isDomainComparison
+      ? [(item as DomainComparison).score_a, (item as DomainComparison).score_b]
+      : [(item as TrendMetric).outlier_ratio.toFixed(1) + 'x', ''];
 
-    let displayDomainName = '';
-    let displayScore: number | string = ''; 
-    let clickDomain = '';
-
-    if (columnType === 'A') { 
-      displayDomainName = currentDomainName;
-      displayScore = scoreA;
-      clickDomain = currentDomainName;
-    } else if (columnType === 'B') { 
-      displayDomainName = comparisonDomainName;
-      displayScore = scoreB; 
-      clickDomain = comparisonDomainName;
-    } else { 
-      // For Intersect, these are handled by individual chips, no need to set here
-      // but ensuring they are explicitly empty for safety
-      displayDomainName = ''; 
-      displayScore = '';      
-      clickDomain = '';       
-    }
+    const displayDomainName = columnType === 'A'
+      ? currentDomainName
+      : columnType === 'B'
+        ? comparisonDomainName
+        : '';
+    const displayScore: number | string = columnType === 'A'
+      ? scoreA
+      : columnType === 'B'
+        ? scoreB
+        : '';
+    const clickDomain = columnType === 'A'
+      ? currentDomainName
+      : columnType === 'B'
+        ? comparisonDomainName
+        : '';
 
 
     // Determine the main click handler for the li element
@@ -240,8 +233,8 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
   const renderList = (list: DomainComparison[], column: 'A' | 'B' | 'Intersect') => (
     <>
       <ul className="compare-list">
-        {list.map((item, idx) => (
-          <Fragment key={`${item.trend_topic}-${idx}-frag`}>
+        {list.map((item) => (
+          <Fragment key={`${item.trend_topic}-${item.classification}-frag`}>
             {renderTrendItem(item, column)}
           </Fragment>
         ))}

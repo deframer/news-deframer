@@ -147,12 +147,18 @@ const App = ({ theme }: { theme: string }) => {
     init();
   }, []);
 
-  if (error) {
-    // If there was an error, bypass and reload to see the original page.
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+
     sessionStorage.setItem('__ndf-bypass', 'true');
     chrome.runtime.sendMessage({ type: 'SET_BYPASS', value: true }, () => {
       window.location.reload();
     });
+  }, [error]);
+
+  if (error) {
     return null; // Render nothing while we reload
   }
 
