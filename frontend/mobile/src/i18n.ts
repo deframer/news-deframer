@@ -105,12 +105,14 @@ const resources = {
         "status_error": "Error",
         "status_loading": "Loading...",
         "section_connection": "Connection",
+        "label_custom_server": "Custom server",
         "label_server_url": "Server URL",
         "label_username": "Username",
         "label_password": "Password",
         "label_optional": "(Optional)",
         "btn_test_connection": "Test Connection",
-        "btn_testing": "Testing..."
+        "btn_testing": "Testing...",
+        "default_server_hint": "Server: {{url}}"
       },
       "mobile": {
         "dashboard_title": "News Deframer",
@@ -243,12 +245,14 @@ const resources = {
         "status_error": "Fehler",
         "status_loading": "Laden...",
         "section_connection": "Verbindung",
+        "label_custom_server": "Eigener Server",
         "label_server_url": "Server-URL",
         "label_username": "Benutzername",
         "label_password": "Passwort",
         "label_optional": "(Optional)",
         "btn_test_connection": "Verbindung testen",
-        "btn_testing": "Teste..."
+        "btn_testing": "Teste...",
+        "default_server_hint": "Server: {{url}}"
       },
       "mobile": {
         "dashboard_title": "News Deframer",

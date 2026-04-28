@@ -1,7 +1,6 @@
 import './src/i18n';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Menu } from 'lucide-react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Appearance, BackHandler, NativeModules, Platform, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -13,9 +12,10 @@ import { AboutScreen } from './src/screens/AboutScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { PortalScreen } from './src/screens/PortalScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { ArrowLeft, Menu } from './src/components/icons';
 import { AnalyzedItem, DomainEntry, NewsDeframerClient } from './src/services/newsDeframerClient';
 import i18n from './src/i18n';
-import { DEFAULT_SETTINGS, settingsService, Settings } from './src/services/settingsService';
+import { DEFAULT_SETTINGS, CONNECTION_TIMEOUT_MS, settingsService, Settings } from './src/services/settingsService';
 import { themeService } from './src/services/themeService';
 import { HostStatus } from './src/components/StatusBadge';
 import { logger } from './src/services/logger';
@@ -127,6 +127,7 @@ function App() {
   const [selectedArticle, setSelectedArticle] = useState<AnalyzedItem | null>(null);
   const [portalBackAction, setPortalBackAction] = useState<(() => void) | null>(null);
   const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
+  const hasAutoTestedSettingsRef = useRef(false);
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
   const visibleDomains = configured ? domains : [];
   const visibleDomainsLoading = configured ? domainsLoading : false;
@@ -139,7 +140,7 @@ function App() {
 
     const timeoutHandle = setTimeout(() => {
       setStatus((current) => (current === 'loading' ? 'error' : current));
-    }, 5500);
+    }, CONNECTION_TIMEOUT_MS + 500);
 
     return () => clearTimeout(timeoutHandle);
   }, [status]);
@@ -268,7 +269,7 @@ function App() {
     const loadDomains = async () => {
       setDomainsLoading(true);
       try {
-        const loadedDomains = await withTimeout(client.getDomains(), 5000);
+        const loadedDomains = await withTimeout(client.getDomains(), CONNECTION_TIMEOUT_MS);
         if (mounted) {
           setDomains(loadedDomains);
         }
@@ -292,10 +293,16 @@ function App() {
   }, [booting, configured, settings]);
 
   useEffect(() => {
-    if (booting || screen !== 'settings') {
+    if (screen !== 'settings') {
+      hasAutoTestedSettingsRef.current = false;
       return;
     }
 
+    if (booting || hasAutoTestedSettingsRef.current) {
+      return;
+    }
+
+    hasAutoTestedSettingsRef.current = true;
     handleTestConnection();
   }, [booting, handleTestConnection, screen]);
 
@@ -308,11 +315,11 @@ function App() {
     setScreen(nextScreen);
   };
 
-  const handleTestConnection = useCallback(async () => {
+  const handleTestConnection = useCallback(async (nextSettings: Settings = settings) => {
     setStatus('loading');
     setSettingsErrorMessage(null);
 
-    const backendUrl = settings.backendUrl.trim();
+    const backendUrl = nextSettings.backendUrl.trim();
     if (!backendUrl) {
       setStatus('error');
       setSettingsErrorMessage(t('mobile.connection_error_missing_url', 'Please enter a server URL before testing the connection.'));
@@ -333,12 +340,12 @@ function App() {
     }
 
     try {
-      const client = new NewsDeframerClient(settings);
-      await withTimeout(client.getDomains(), 5000);
+      const client = new NewsDeframerClient(nextSettings);
+      await withTimeout(client.getDomains(), CONNECTION_TIMEOUT_MS);
       setStatus('success');
       setSettingsErrorMessage(null);
     } catch (error) {
-      logger.error('Test connection failed', { backendUrl: settings.backendUrl });
+      logger.error('Test connection failed', { backendUrl: nextSettings.backendUrl });
       setStatus('error');
       setSettingsErrorMessage(error instanceof Error ? error.message : String(error));
     }

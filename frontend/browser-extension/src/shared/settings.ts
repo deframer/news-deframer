@@ -11,7 +11,8 @@ export interface Settings {
   selectedDomains?: string[];
 }
 
-export const DEFAULT_BACKEND_URL = 'http://localhost:8080';
+export const DEFAULT_BACKEND_URL = 'https://api.deframer.org';
+export const CONNECTION_TIMEOUT_MS = 5000;
 
 export const getSettings = (): Promise<Settings> => {
   return new Promise((resolve) => {

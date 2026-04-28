@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { Settings } from '../../shared/settings';
+import { DEFAULT_BACKEND_URL, Settings } from '../../shared/settings';
 import { Theme } from '../../shared/theme';
 import { HostStatus } from './StatusBadge';
 import { ToggleSwitch } from './ToggleSwitch';
@@ -12,13 +12,15 @@ interface SettingsFormProps {
   errorMessage: string | null;
   onSettingsChange: (settings: Settings) => void;
   onLanguageChange: (language: string) => void;
-  onTestConnection: () => void;
+  onTestConnection: (settings?: Settings) => void;
 }
 
 export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsChange, onLanguageChange, onTestConnection }: SettingsFormProps) => {
   const { t } = useTranslation();
   const isLoading = status === 'loading';
   const isSearchUrlValid = settings.searchEngineUrl?.startsWith('https://');
+  const isCustomServer = settings.backendUrl !== DEFAULT_BACKEND_URL;
+  const serverUrlValue = isCustomServer ? settings.backendUrl : DEFAULT_BACKEND_URL;
 
   return (
     <div className="content-grid">
@@ -31,25 +33,54 @@ export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsC
               <div className="connection-error-body">{errorMessage}</div>
             </div>
           ) : null}
-          <div className="form-group">
-            <label className="input-label">{t('options.label_server_url')}</label>
-            <input type="text" className="text-input" value={settings.backendUrl} onChange={(e) => onSettingsChange({ ...settings, backendUrl: e.target.value })} placeholder="http://localhost:8080" />
+          <div className={isCustomServer ? 'form-group' : 'form-group-last'}>
+            <ToggleSwitch
+              id="settings-custom-server"
+              label={t('options.label_custom_server')}
+              checked={isCustomServer}
+              onChange={(checked) => {
+                const nextSettings = checked
+                  ? { ...settings, backendUrl: '', username: '', password: '' }
+                  : { ...settings, backendUrl: DEFAULT_BACKEND_URL, username: '', password: '' };
+
+                onSettingsChange(nextSettings);
+
+                if (checked) {
+                  return;
+                }
+
+                onTestConnection(nextSettings);
+              }}
+            />
           </div>
-          <div className="form-group">
-            <label className="input-label">
-              {t('options.label_username')} <span className="optional-text">{t('options.label_optional')}</span>
-            </label>
-            <input type="text" className="text-input" value={settings.username} onChange={(e) => onSettingsChange({ ...settings, username: e.target.value })} />
-          </div>
-          <div className="form-group-last">
-            <label className="input-label">
-              {t('options.label_password')} <span className="optional-text">{t('options.label_optional')}</span>
-            </label>
-            <input type="password" className="text-input" value={settings.password} onChange={(e) => onSettingsChange({ ...settings, password: e.target.value })} />
-          </div>
-          <button className="action-button action-button-enabled" onClick={onTestConnection} disabled={isLoading} type="button">
-            {isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}
-          </button>
+          {isCustomServer ? (
+            <>
+              <div className="form-group">
+                <label className="input-label">{t('options.label_server_url')}</label>
+                <input type="text" className="text-input" value={serverUrlValue} onChange={(e) => onSettingsChange({ ...settings, backendUrl: e.target.value })} placeholder={DEFAULT_BACKEND_URL} />
+              </div>
+              <div className="form-group">
+                <label className="input-label">
+                  {t('options.label_username')} <span className="optional-text">{t('options.label_optional')}</span>
+                </label>
+                <input type="text" className="text-input" value={settings.username} onChange={(e) => onSettingsChange({ ...settings, username: e.target.value })} />
+              </div>
+              <div className="form-group-last">
+                <label className="input-label">
+                  {t('options.label_password')} <span className="optional-text">{t('options.label_optional')}</span>
+                </label>
+                <input type="password" className="text-input" value={settings.password} onChange={(e) => onSettingsChange({ ...settings, password: e.target.value })} />
+              </div>
+              <button 
+                className="action-button action-button-enabled" 
+                onClick={() => onTestConnection(settings)} 
+                disabled={isLoading} 
+                type="button"
+              >
+                {isLoading ? t('options.btn_testing') : t('options.btn_test_connection')}
+              </button>
+            </>
+          ) : null}
         </div>
 
         <div className="card">
@@ -80,7 +111,6 @@ export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsC
             ))}
           </div>
         </div>
-
         <div className="card">
           <h3 className="section-title">{t('options.section_general')}</h3>
           <ToggleSwitch
@@ -90,6 +120,7 @@ export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsC
             onChange={(enabled) => onSettingsChange({ ...settings, enabled })}
           />
         </div>
+
       </div>
     </div>
   );

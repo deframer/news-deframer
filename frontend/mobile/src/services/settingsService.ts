@@ -10,7 +10,8 @@ export interface Settings {
 }
 
 const SETTINGS_KEY = 'news-deframer.mobile.settings';
-export const DEFAULT_BACKEND_URL = 'http://localhost:8080';
+export const DEFAULT_BACKEND_URL = 'https://api.deframer.org';
+export const CONNECTION_TIMEOUT_MS = 5000;
 
 export const DEFAULT_SETTINGS: Settings = {
   backendUrl: DEFAULT_BACKEND_URL,

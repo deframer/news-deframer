@@ -1,6 +1,7 @@
 import { DomainEntry } from '../../ndf/client';
 import { invalidateDomainCache } from '../../shared/domain-cache';
-import { Settings } from '../../shared/settings';
+import i18n from '../../shared/i18n';
+import { CONNECTION_TIMEOUT_MS, Settings } from '../../shared/settings';
 import { ProxyResponse } from '../../shared/types';
 
 export const testConnection = async (settings: Settings): Promise<{ connected: boolean; domains: DomainEntry[]; errorMessage?: string }> => {
@@ -9,9 +10,24 @@ export const testConnection = async (settings: Settings): Promise<{ connected: b
     headers.Authorization = 'Basic ' + btoa(`${settings.username}:${settings.password}`);
   }
 
+  const trimmedUrl = settings.backendUrl?.trim() ?? '';
+  if (!trimmedUrl) {
+    return { connected: false, domains: [], errorMessage: i18n.t('options.invalid_server_url', 'Invalid server URL') };
+  }
+
+  try {
+    new URL(trimmedUrl);
+  } catch {
+    return { connected: false, domains: [], errorMessage: i18n.t('options.invalid_server_url', 'Invalid server URL') };
+  }
   const url = settings.backendUrl.replace(/\/$/, '') + '/api/domains';
   const response = await new Promise<ProxyResponse>((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: 'PROXY_REQ', url, headers, timeout: 5000 }, (res: ProxyResponse) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Connection test timed out'));
+    }, CONNECTION_TIMEOUT_MS + 1000);
+
+    chrome.runtime.sendMessage({ type: 'PROXY_REQ', url, headers, timeout: CONNECTION_TIMEOUT_MS }, (res: ProxyResponse) => {
+      clearTimeout(timeoutId);
       if (chrome.runtime.lastError) {
         reject(new Error(chrome.runtime.lastError.message));
         return;
