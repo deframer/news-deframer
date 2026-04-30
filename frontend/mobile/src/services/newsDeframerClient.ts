@@ -123,7 +123,9 @@ export class NewsDeframerClient {
   }
 
   private async request<T>(endpoint: string, params: Record<string, string>): Promise<T | null> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
 
     if (this.config.username && this.config.password) {
       headers.Authorization = `Basic ${encodeBase64(`${this.config.username}:${this.config.password}`)}`;

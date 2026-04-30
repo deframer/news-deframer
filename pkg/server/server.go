@@ -37,6 +37,11 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 	return rw.body.Write(b)
 }
 
+func isJSONRequest(r *http.Request) bool {
+	accept := strings.ToLower(r.Header.Get("Accept"))
+	return strings.Contains(accept, "application/json") || strings.Contains(accept, "application/*+json")
+}
+
 type Server struct {
 	httpServer *http.Server
 	logger     *slog.Logger
@@ -74,6 +79,9 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 		handler = s.etagMiddleware(s.cacheControlMiddleware(handler))
 	}
 	handler = s.corsMiddleware(handler)
+	if cfg.RedirectWebRequest404URL != "" {
+		handler = s.webRequest404RedirectMiddleware(handler)
+	}
 
 	s.httpServer = &http.Server{
 		Addr:    ":" + cfg.Port,
@@ -179,6 +187,28 @@ func (s *Server) etagMiddleware(next http.Handler) http.Handler {
 				w.WriteHeader(http.StatusNotModified)
 				return
 			}
+		}
+
+		w.WriteHeader(rw.statusCode)
+		if _, err := w.Write(rw.body.Bytes()); err != nil {
+			s.logger.Error("failed to write response", "error", err)
+		}
+	})
+}
+
+func (s *Server) webRequest404RedirectMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rw := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		next.ServeHTTP(rw, r)
+
+		if rw.statusCode == http.StatusNotFound && !isJSONRequest(r) && s.cfg.RedirectWebRequest404URL != "" {
+			http.Redirect(w, r, s.cfg.RedirectWebRequest404URL, http.StatusFound)
+			return
+		}
+
+		if rw.body.Len() == 0 {
+			w.WriteHeader(rw.statusCode)
+			return
 		}
 
 		w.WriteHeader(rw.statusCode)
