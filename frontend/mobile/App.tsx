@@ -307,6 +307,8 @@ function App() {
 
   const openScreen = (nextScreen: Screen) => {
     setDrawerOpen(false);
+    setSelectedArticle(null);
+    setPortalBackAction(null);
     setScreen(nextScreen);
   };
 
@@ -374,7 +376,7 @@ function App() {
     }
 
     if (screen === 'about') {
-      return <AboutScreen palette={palette} onClose={() => setScreen('dashboard')} />;
+      return <AboutScreen palette={palette} onClose={() => openScreen('dashboard')} />;
     }
 
     if (screen === 'portal' && selectedDomain) {
@@ -388,16 +390,16 @@ function App() {
               onBackRequestChange={handlePortalBackActionChange}
               onOpenArticle={(item) => {
                 setSelectedArticle(item);
+                setScreen('article');
               }}
             />
           </View>
-          {selectedArticle ? (
-            <View style={styles.screenOverlay}>
-              <ArticleScreen palette={palette} item={selectedArticle} />
-            </View>
-          ) : null}
         </View>
       );
+    }
+
+    if (screen === 'article' && selectedArticle) {
+      return <ArticleScreen palette={palette} item={selectedArticle} />;
     }
 
     return (
@@ -407,6 +409,8 @@ function App() {
         domainsLoading={visibleDomainsLoading}
         configured={configured}
         onOpenPortal={(domain) => {
+          setSelectedArticle(null);
+          setPortalBackAction(null);
           setSelectedDomain(domain);
           setScreen('portal');
         }}
@@ -428,6 +432,7 @@ function App() {
   const handleBack = useCallback(() => {
     if (selectedArticle || screen === 'article') {
       setSelectedArticle(null);
+      setPortalBackAction(null);
       setScreen('portal');
       return;
     }
@@ -437,6 +442,8 @@ function App() {
       return;
     }
 
+    setSelectedArticle(null);
+    setPortalBackAction(null);
     setScreen('dashboard');
   }, [activePortalBackAction, screen, selectedArticle]);
 
@@ -513,10 +520,11 @@ const styles = StyleSheet.create({
   screen: { flex: 1, overflow: 'hidden' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   screenStack: { flex: 1, position: 'relative' },
-  screenLayer: { flex: 1 },
+  screenLayer: { flex: 1, zIndex: 0, elevation: 0 },
   screenOverlay: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 5,
+    zIndex: 50,
+    elevation: 50,
   },
 });
 

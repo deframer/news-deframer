@@ -101,7 +101,7 @@ export const TrendLifecyclePanel = ({
   const wideBarWidth = 64;
   const wideChartWidth = Math.max(320, barCount * wideBarWidth);
   const compactGap = 2;
-  const compactBarWidth = Math.max(8, Math.floor((chartWidth - compactGap * Math.max(barCount - 1, 0)) / barCount));
+  const compactBarWidth = Math.max(1, Math.floor((chartWidth - compactGap * Math.max(barCount - 1, 0)) / barCount));
 
   const selectedEntry = useMemo(() => {
     if (!visibleSelectedEntryKey) {
@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
   },
   chartFrame: {
     minHeight: 220,
+    overflow: 'hidden',
   },
   chartScroll: {
     width: '100%',
@@ -277,8 +278,10 @@ const styles = StyleSheet.create({
     minHeight: 220,
     flexDirection: 'row',
     alignItems: 'flex-end',
+    justifyContent: 'center',
     gap: 2,
     paddingBottom: 8,
+    width: '100%',
   },
   wideBarWrap: {
     width: 60,
