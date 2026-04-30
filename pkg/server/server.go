@@ -80,6 +80,7 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	}
 	handler = s.corsMiddleware(handler)
 	if cfg.RedirectWebRequest404URL != "" {
+		s.logger.Info("enabled web request 404 redirect", "url", cfg.RedirectWebRequest404URL)
 		handler = s.webRequest404RedirectMiddleware(handler)
 	}
 
