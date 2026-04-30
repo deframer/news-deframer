@@ -6,6 +6,8 @@ ICON_SVG := $(ASSETS_DIR)/icon.svg
 BROWSER_EXTENSION_DIR := $(ASSETS_DIR)/browser-extension
 BROWSER_EXTENSION_SIZES := 16 32 48 128
 BROWSER_EXTENSION_PNGS := $(foreach size,$(BROWSER_EXTENSION_SIZES),$(BROWSER_EXTENSION_DIR)/icon$(size).png)
+BROWSER_EXTENSION_ENABLED_PNGS := $(foreach size,$(BROWSER_EXTENSION_SIZES),$(BROWSER_EXTENSION_DIR)/icon-enabled$(size).png)
+BROWSER_EXTENSION_ENABLED_SVG := $(BROWSER_EXTENSION_DIR)/icon-enabled.svg
 
 ANDROID_DIR := $(ASSETS_DIR)/android
 ANDROID_SIZES := 48 72 96 144 192
@@ -25,6 +27,8 @@ FDROID_ICON := $(FDROID_METADATA_DIR)/icon.png
 icons: icons-browser-extension icons-android icons-ios icons-web
 
 icons-browser-extension: $(BROWSER_EXTENSION_PNGS)
+
+icons-browser-extension-enabled: $(BROWSER_EXTENSION_ENABLED_PNGS)
 
 icons-android: $(ANDROID_PNGS)
 
@@ -63,9 +67,13 @@ sync-mobile-ios-icons: icons-ios
 icons-mobile: sync-mobile-android-icons sync-mobile-ios-icons
 
 clean-icons:
-	rm -f $(BROWSER_EXTENSION_PNGS) $(ANDROID_PNGS) $(IOS_PNGS) $(WEB_PNGS)
+	rm -f $(BROWSER_EXTENSION_PNGS) $(BROWSER_EXTENSION_ENABLED_PNGS) $(ANDROID_PNGS) $(IOS_PNGS) $(WEB_PNGS)
 
 $(BROWSER_EXTENSION_DIR)/icon%.png: $(ICON_SVG)
+	@mkdir -p $(BROWSER_EXTENSION_DIR)
+	rsvg-convert -w $* -h $* $< -o $@
+
+$(BROWSER_EXTENSION_DIR)/icon-enabled%.png: $(BROWSER_EXTENSION_ENABLED_SVG)
 	@mkdir -p $(BROWSER_EXTENSION_DIR)
 	rsvg-convert -w $* -h $* $< -o $@
 
