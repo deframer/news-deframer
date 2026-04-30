@@ -62,9 +62,10 @@ type Config struct {
 
 	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
 
-	BasicAuthUser      string `env:"BASIC_AUTH_USER" envDefault:""`
-	BasicAuthPassword  string `env:"BASIC_AUTH_PASSWORD" envDefault:""`
-	CORSAllowedOrigins string `env:"CORS_ALLOWED_ORIGINS"`
+	BasicAuthUser            string `env:"BASIC_AUTH_USER" envDefault:""`
+	BasicAuthPassword        string `env:"BASIC_AUTH_PASSWORD" envDefault:""`
+	CORSAllowedOrigins       string `env:"CORS_ALLOWED_ORIGINS"`
+	RedirectWebRequest404URL string `env:"REDIRECT_WEBREQUEST_404_URL" envDefault:""`
 
 	DisableETag bool `env:"DISABLE_ETAG" envDefault:"false"`
 

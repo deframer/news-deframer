@@ -116,7 +116,9 @@ export class NewsDeframerClient {
   constructor(private config: Settings) {}
 
   private async proxyRequest<T>(endpoint: string, params: Record<string, string>): Promise<T | null> {
-    const headers: Record<string, string> = {};
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
     if (this.config.username && this.config.password) {
       headers['Authorization'] = 'Basic ' + btoa(`${this.config.username}:${this.config.password}`);
     }
