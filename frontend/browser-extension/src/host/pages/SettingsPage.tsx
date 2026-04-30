@@ -10,6 +10,7 @@ import { SettingsAbout } from '../components/SettingsAbout';
 import { SettingsDomains } from '../components/SettingsDomains';
 import { SettingsForm } from '../components/SettingsForm';
 import { HostStatus, StatusBadge } from '../components/StatusBadge';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 import { testConnection } from '../lib/connection';
 
 export const SettingsPage = () => {
@@ -74,9 +75,9 @@ export const SettingsPage = () => {
           setDomainsUnavailable(true);
         }
         return result.connected;
-      } catch (err: Error) {
+      } catch (err: unknown) {
         setStatus('error');
-        setErrorMessage(err.message);
+        setErrorMessage(err instanceof Error ? err.message : 'Connection failed');
         setDomains([]);
         setDomainsUnavailable(true);
         return false;
@@ -134,6 +135,28 @@ export const SettingsPage = () => {
   }, [loadDomains]);
 
   useEffect(() => {
+    const handleStorageChange = (changes: { enabled?: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName !== 'local' || !changes.enabled || typeof changes.enabled.newValue !== 'boolean') {
+        return;
+      }
+
+      const nextEnabled = changes.enabled.newValue;
+      setSettings((current) => {
+        if (current.enabled === nextEnabled) {
+          return current;
+        }
+
+        const nextSettings = { ...current, enabled: nextEnabled };
+        void refreshConnection(nextSettings);
+        return nextSettings;
+      });
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+  }, [refreshConnection]);
+
+  useEffect(() => {
     const styleId = 'ndf-theme-styles';
     let style = document.getElementById(styleId);
     if (!style) {
@@ -163,6 +186,25 @@ export const SettingsPage = () => {
     await chrome.storage.local.set({ selectedDomains });
   };
 
+  const handleClose = () => {
+    chrome.tabs.getCurrent((tab) => {
+      if (tab?.id != null) {
+        chrome.tabs.remove(tab.id);
+        return;
+      }
+
+      window.close();
+    });
+  };
+
+  const handleEnableToggle = async (enabled: boolean) => {
+    const nextSettings = { ...settings, enabled };
+    setSettings(nextSettings);
+    await chrome.storage.local.set(nextSettings);
+
+    await refreshConnection(nextSettings);
+  };
+
   const handleTestConnection = async (nextSettings: Settings = settings) => {
     const connected = await refreshConnection(nextSettings);
     if (connected) {
@@ -186,45 +228,55 @@ export const SettingsPage = () => {
           <p className="eyebrow">News Deframer - {version}</p>
           <h1 id="settings-page-title">{t('options.settings_title', 'Settings')}</h1>
         </div>
-        <StatusBadge
-          status={status}
-          enabled={settings.enabled}
-          labels={{
-            connected: t('options.status_connected'),
-            error: t('options.status_error'),
-            checking: t('options.status_loading'),
-            disabled: t('options.status_disabled', 'Disabled'),
-          }}
-        />
+        <div className="header-actions">
+          <button className="action-button action-button-enabled header-close-button" onClick={handleClose} type="button">
+            {t('options.close', 'Close')}
+          </button>
+        </div>
       </div>
       <div className="tabs settings-tabs" role="tablist" aria-label={t('options.settings_title', 'Settings')}>
-        <button
-          className={`tab-btn ${activeTab === 'domains' ? 'active' : ''}`}
-          onClick={() => setActiveTab('domains')}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'domains'}
-        >
-          {t('options.tab_domains')}
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'settings'}
-        >
-          {t('options.tab_settings')}
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'about' ? 'active' : ''}`}
-          onClick={() => setActiveTab('about')}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'about'}
-        >
-          {t('options.tab_about')}
-        </button>
+        <div className="tabs-left">
+          <button
+            className={`tab-btn ${activeTab === 'domains' ? 'active' : ''}`}
+            onClick={() => setActiveTab('domains')}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'domains'}
+          >
+            {t('options.tab_domains')}
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'settings'}
+          >
+            {t('options.tab_settings')}
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'about' ? 'active' : ''}`}
+            onClick={() => setActiveTab('about')}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'about'}
+          >
+            {t('options.tab_about')}
+          </button>
+        </div>
+        <div className="tab-controls">
+          <ToggleSwitch id="settings-enable-extension" label={t('options.label_enable_extension')} checked={settings.enabled} onChange={handleEnableToggle} />
+          <StatusBadge
+            status={status}
+            enabled={settings.enabled}
+            labels={{
+              connected: t('options.status_connected'),
+              error: t('options.status_error'),
+              checking: t('options.status_loading'),
+              disabled: t('options.status_disabled', 'Disabled'),
+            }}
+          />
+        </div>
       </div>
       {activeTab === 'settings' ? (
         <SettingsForm
@@ -239,7 +291,13 @@ export const SettingsPage = () => {
       ) : activeTab === 'about' ? (
         <SettingsAbout />
       ) : (
-        <SettingsDomains domains={domains} domainsLoading={domainsLoading} domainsUnavailable={domainsUnavailable} settings={settings} onSelectedDomainsChange={handleSelectedDomainsChange} />
+        <SettingsDomains
+          domains={domains}
+          domainsLoading={domainsLoading}
+          domainsUnavailable={domainsUnavailable}
+          settings={settings}
+          onSelectedDomainsChange={handleSelectedDomainsChange}
+        />
       )}
       {activeTab === 'settings' ? (
         <div className="settings-actions">

@@ -111,15 +111,6 @@ export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsC
             ))}
           </div>
         </div>
-        <div className="card">
-          <h3 className="section-title">{t('options.section_general')}</h3>
-          <ToggleSwitch
-            id="settings-enable-extension"
-            label={t('options.label_enable_extension')}
-            checked={settings.enabled}
-            onChange={(enabled) => onSettingsChange({ ...settings, enabled })}
-          />
-        </div>
 
       </div>
     </div>
