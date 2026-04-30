@@ -10,6 +10,7 @@ import { SettingsAbout } from '../components/SettingsAbout';
 import { SettingsDomains } from '../components/SettingsDomains';
 import { SettingsForm } from '../components/SettingsForm';
 import { HostStatus, StatusBadge } from '../components/StatusBadge';
+import { ToggleSwitch } from '../components/ToggleSwitch';
 import { testConnection } from '../lib/connection';
 
 export const SettingsPage = () => {
@@ -74,9 +75,9 @@ export const SettingsPage = () => {
           setDomainsUnavailable(true);
         }
         return result.connected;
-      } catch (err: Error) {
+      } catch (err: unknown) {
         setStatus('error');
-        setErrorMessage(err.message);
+        setErrorMessage(err instanceof Error ? err.message : 'Connection failed');
         setDomains([]);
         setDomainsUnavailable(true);
         return false;
@@ -163,6 +164,14 @@ export const SettingsPage = () => {
     await chrome.storage.local.set({ selectedDomains });
   };
 
+  const handleEnableToggle = async (enabled: boolean) => {
+    const nextSettings = { ...settings, enabled };
+    setSettings(nextSettings);
+    await chrome.storage.local.set(nextSettings);
+
+    await refreshConnection(nextSettings);
+  };
+
   const handleTestConnection = async (nextSettings: Settings = settings) => {
     const connected = await refreshConnection(nextSettings);
     if (connected) {
@@ -186,16 +195,19 @@ export const SettingsPage = () => {
           <p className="eyebrow">News Deframer - {version}</p>
           <h1 id="settings-page-title">{t('options.settings_title', 'Settings')}</h1>
         </div>
-        <StatusBadge
-          status={status}
-          enabled={settings.enabled}
-          labels={{
-            connected: t('options.status_connected'),
-            error: t('options.status_error'),
-            checking: t('options.status_loading'),
-            disabled: t('options.status_disabled', 'Disabled'),
-          }}
-        />
+        <div className="header-actions">
+          <ToggleSwitch id="settings-enable-extension" label={t('options.label_enable_extension')} checked={settings.enabled} onChange={handleEnableToggle} />
+          <StatusBadge
+            status={status}
+            enabled={settings.enabled}
+            labels={{
+              connected: t('options.status_connected'),
+              error: t('options.status_error'),
+              checking: t('options.status_loading'),
+              disabled: t('options.status_disabled', 'Disabled'),
+            }}
+          />
+        </div>
       </div>
       <div className="tabs settings-tabs" role="tablist" aria-label={t('options.settings_title', 'Settings')}>
         <button
