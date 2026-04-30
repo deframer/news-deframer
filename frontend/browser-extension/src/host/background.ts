@@ -18,6 +18,23 @@ const ENABLED_ICON_PATH = {
   128: 'assets/browser-extension/icon-enabled128.png',
 } as const;
 
+const hasConfiguredBackendUrl = async () => {
+  const result = await chrome.storage.local.get('backendUrl');
+  return typeof result.backendUrl === 'string' && result.backendUrl.trim().length > 0;
+};
+
+const maybeOpenSettings = async () => {
+  if (await hasConfiguredBackendUrl()) {
+    return;
+  }
+
+  await chrome.runtime.openOptionsPage();
+};
+
+const openSettings = async () => {
+  await chrome.runtime.openOptionsPage();
+};
+
 const syncActionIcon = async () => {
   const settings = await getSettings();
   await chrome.action.setIcon({ path: settings.enabled ? ENABLED_ICON_PATH : DEFAULT_ICON_PATH });
@@ -33,6 +50,14 @@ chrome.runtime.onStartup.addListener(() => {
   void syncActionIcon();
 });
 
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason !== 'install' && details.reason !== 'update') {
+    return;
+  }
+
+  void maybeOpenSettings();
+});
+
 chrome.storage.onChanged.addListener((changes, areaName) => {
   if (areaName !== 'local') return;
   if (changes.enabled) {
@@ -43,6 +68,16 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.type === 'SET_BYPASS') {
     sendResponse({ ok: true });
+    return true;
+  }
+
+  if (request.type === 'OPEN_SETTINGS') {
+    void openSettings()
+      .then(() => sendResponse({ ok: true }))
+      .catch((err) => {
+        log.error('Failed to open settings:', err);
+        sendResponse({ ok: false, error: String(err) });
+      });
     return true;
   }
 

@@ -135,6 +135,28 @@ export const SettingsPage = () => {
   }, [loadDomains]);
 
   useEffect(() => {
+    const handleStorageChange = (changes: { enabled?: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName !== 'local' || !changes.enabled || typeof changes.enabled.newValue !== 'boolean') {
+        return;
+      }
+
+      const nextEnabled = changes.enabled.newValue;
+      setSettings((current) => {
+        if (current.enabled === nextEnabled) {
+          return current;
+        }
+
+        const nextSettings = { ...current, enabled: nextEnabled };
+        void refreshConnection(nextSettings);
+        return nextSettings;
+      });
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+  }, [refreshConnection]);
+
+  useEffect(() => {
     const styleId = 'ndf-theme-styles';
     let style = document.getElementById(styleId);
     if (!style) {
@@ -162,6 +184,17 @@ export const SettingsPage = () => {
     const nextSettings = { ...settings, selectedDomains };
     setSettings(nextSettings);
     await chrome.storage.local.set({ selectedDomains });
+  };
+
+  const handleClose = () => {
+    chrome.tabs.getCurrent((tab) => {
+      if (tab?.id != null) {
+        chrome.tabs.remove(tab.id);
+        return;
+      }
+
+      window.close();
+    });
   };
 
   const handleEnableToggle = async (enabled: boolean) => {
@@ -196,6 +229,42 @@ export const SettingsPage = () => {
           <h1 id="settings-page-title">{t('options.settings_title', 'Settings')}</h1>
         </div>
         <div className="header-actions">
+          <button className="action-button action-button-enabled header-close-button" onClick={handleClose} type="button">
+            {t('options.close', 'Close')}
+          </button>
+        </div>
+      </div>
+      <div className="tabs settings-tabs" role="tablist" aria-label={t('options.settings_title', 'Settings')}>
+        <div className="tabs-left">
+          <button
+            className={`tab-btn ${activeTab === 'domains' ? 'active' : ''}`}
+            onClick={() => setActiveTab('domains')}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'domains'}
+          >
+            {t('options.tab_domains')}
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('settings')}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'settings'}
+          >
+            {t('options.tab_settings')}
+          </button>
+          <button
+            className={`tab-btn ${activeTab === 'about' ? 'active' : ''}`}
+            onClick={() => setActiveTab('about')}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'about'}
+          >
+            {t('options.tab_about')}
+          </button>
+        </div>
+        <div className="tab-controls">
           <ToggleSwitch id="settings-enable-extension" label={t('options.label_enable_extension')} checked={settings.enabled} onChange={handleEnableToggle} />
           <StatusBadge
             status={status}
@@ -208,35 +277,6 @@ export const SettingsPage = () => {
             }}
           />
         </div>
-      </div>
-      <div className="tabs settings-tabs" role="tablist" aria-label={t('options.settings_title', 'Settings')}>
-        <button
-          className={`tab-btn ${activeTab === 'domains' ? 'active' : ''}`}
-          onClick={() => setActiveTab('domains')}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'domains'}
-        >
-          {t('options.tab_domains')}
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'settings'}
-        >
-          {t('options.tab_settings')}
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'about' ? 'active' : ''}`}
-          onClick={() => setActiveTab('about')}
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 'about'}
-        >
-          {t('options.tab_about')}
-        </button>
       </div>
       {activeTab === 'settings' ? (
         <SettingsForm
@@ -251,7 +291,13 @@ export const SettingsPage = () => {
       ) : activeTab === 'about' ? (
         <SettingsAbout />
       ) : (
-        <SettingsDomains domains={domains} domainsLoading={domainsLoading} domainsUnavailable={domainsUnavailable} settings={settings} onSelectedDomainsChange={handleSelectedDomainsChange} />
+        <SettingsDomains
+          domains={domains}
+          domainsLoading={domainsLoading}
+          domainsUnavailable={domainsUnavailable}
+          settings={settings}
+          onSelectedDomainsChange={handleSelectedDomainsChange}
+        />
       )}
       {activeTab === 'settings' ? (
         <div className="settings-actions">

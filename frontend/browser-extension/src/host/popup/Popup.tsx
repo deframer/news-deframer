@@ -65,7 +65,7 @@ export const Popup = () => {
   };
 
   const handleOpenSettings = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+    chrome.runtime.sendMessage({ type: 'OPEN_SETTINGS' }, () => undefined);
     window.close();
   };
 
