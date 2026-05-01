@@ -87,6 +87,9 @@ jobs:
         with:
           go-version: '1.26.2'
 
+      - name: Install Goa CLI
+        run: make goa-install
+
       - name: Check Formatting
         run: |
           if [ -n "$(gofmt -l .)" ]; then
