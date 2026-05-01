@@ -86,11 +86,11 @@ export const SettingsPage = () => {
     []
   );
 
-  const loadDomains = useCallback(async (settingsToUse: Settings) => {
+  const loadDomains = useCallback(async (settingsToUse: Settings, bypassCache = false) => {
     setDomainsLoading(true);
     try {
       const client = new NewsDeframerClient(settingsToUse);
-      const nextDomains = await client.getDomains();
+      const nextDomains = await client.getDomains(bypassCache);
       setDomains(nextDomains);
       setDomainsUnavailable(false);
     } catch {
@@ -128,9 +128,9 @@ export const SettingsPage = () => {
             setDomains([]);
             setDomainsUnavailable(true);
           });
-      } else {
-        loadDomains(loadedSettings).catch(() => undefined);
       }
+
+      loadDomains(loadedSettings).catch(() => undefined);
     });
   }, [loadDomains]);
 

@@ -1,3 +1,5 @@
+import { getDomain } from 'tldts';
+
 import { Theme } from './theme';
 
 export interface Settings {
@@ -31,4 +33,25 @@ export const getSettings = (): Promise<Settings> => {
       }
     );
   });
+};
+
+const normalizeDomain = (value: string) => getDomain(value) || value;
+
+export const setSelectedDomains = (selectedDomains: string[]): Promise<void> => {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ selectedDomains }, () => resolve());
+  });
+};
+
+export const removeStallDomainsFromSelection = async (knownDomains: string[]): Promise<void> => {
+  const settings = await getSettings();
+  const selectedDomains = settings.selectedDomains || [];
+  const knownDomainSet = new Set(knownDomains.map(normalizeDomain));
+  const nextSelectedDomains = selectedDomains.filter((domain) => knownDomainSet.has(domain));
+
+  if (nextSelectedDomains.length === selectedDomains.length) {
+    return;
+  }
+
+  await setSelectedDomains(nextSelectedDomains);
 };
