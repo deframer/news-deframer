@@ -11,10 +11,10 @@ import (
 	"sync"
 	"syscall"
 
-	servicenew "github.com/deframer/news-deframer"
 	infra "github.com/deframer/news-deframer/gen/infra"
 	mobile "github.com/deframer/news-deframer/gen/mobile"
 	web "github.com/deframer/news-deframer/gen/web"
+	servicenew "github.com/deframer/news-deframer/pkg/servicenew"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
 )

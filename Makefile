@@ -89,7 +89,7 @@ gen: goa-install
 	goa gen github.com/deframer/news-deframer/pkg/design
 
 example: tidy gen
-	goa example github.com/deframer/news-deframer/pkg/design
+	goa example github.com/deframer/news-deframer/pkg/design && mkdir -p pkg/servicenew && mv -f infra.go web.go mobile.go pkg/servicenew/
 
 docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
 
