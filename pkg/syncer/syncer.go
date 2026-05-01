@@ -469,7 +469,7 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 		thinkError = &errStr
 		nextErrorCount++
 	} else {
-		err = s.updateContent(parsedItem, res)
+		err = updateContent(parsedItem, res)
 		if err != nil {
 			args := append([]any{"error", err}, logKeys...)
 			s.logger.Error("update content failed", args...)
@@ -525,52 +525,6 @@ func (s *Syncer) parseItemFromContent(content string) (*gofeed.Item, error) {
 	return pf.Items[0], nil
 }
 
-func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) error {
-	if item == nil || res == nil {
-		return nil
-	}
-
-	// save the original title
-	res.TitleOriginal = item.Title
-	res.DescriptionOriginal = item.Description
-
-	// correct the title
-	if strings.TrimSpace(res.TitleCorrected) != "" {
-		item.Title = res.TitleCorrected
-	}
-	if strings.TrimSpace(res.DescriptionCorrected) != "" {
-		item.Description = res.DescriptionCorrected
-	}
-
-	// Append the reason to the description
-	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
-
-	var mediaData *MediaData
-
-	// If we don't have existing media content, try to extract it
-	if len(item.Extensions["media"]["content"]) == 0 {
-		if mediaData = extractFromContentTag(item); mediaData != nil {
-			item.Content = ""
-		} else if mediaData = extractFromEnclosureTag(item); mediaData != nil {
-			// found in enclosure
-		} else {
-			mediaData = extractFromDescriptionFallback(res)
-		}
-	}
-
-	if mediaData != nil {
-		applyMediaData(item, mediaData)
-	}
-
-	if item.Extensions != nil {
-		if mediaExt, ok := item.Extensions["media"]; ok {
-			// sometimes media is organized in a media:group
-			delete(mediaExt, "group")
-		}
-	}
-
-	return nil
-}
 func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {
 	// load all items from database by their hashes and with the
 

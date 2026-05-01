@@ -108,6 +108,44 @@ func extractFromDescriptionFallback(res *database.ThinkResult) *MediaData {
 	return nil
 }
 
+func updateContent(item *gofeed.Item, res *database.ThinkResult) error {
+	if item == nil || res == nil {
+		return nil
+	}
+
+	// Save originals before any rewrite.
+	res.TitleOriginal = item.Title
+	res.DescriptionOriginal = item.Description
+
+	if strings.TrimSpace(res.TitleCorrected) != "" {
+		item.Title = res.TitleCorrected
+	}
+	if strings.TrimSpace(res.DescriptionCorrected) != "" {
+		item.Description = res.DescriptionCorrected
+	}
+
+	item.Description = fmt.Sprintf("%s<br/><br/>%s", item.Description, res.OverallReason)
+
+	var mediaData *MediaData
+
+	// Keep existing media untouched. Only synthesize media when none exists.
+	if existingMedia, _ := extractMediaContent(item); existingMedia == nil {
+		if mediaData = extractFromContentTag(item); mediaData != nil {
+			item.Content = ""
+		} else if mediaData = extractFromEnclosureTag(item); mediaData != nil {
+			// found in enclosure
+		} else {
+			mediaData = extractFromDescriptionFallback(res)
+		}
+	}
+
+	if mediaData != nil {
+		applyMediaData(item, mediaData)
+	}
+
+	return nil
+}
+
 func applyMediaData(item *gofeed.Item, data *MediaData) {
 	if item == nil || data == nil {
 		return
