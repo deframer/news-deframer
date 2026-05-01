@@ -2,8 +2,123 @@ package design
 
 import . "goa.design/goa/v3/dsl"
 
+var ItemPayload = Type("ItemPayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("url", String, "Item URL")
+	Required("url")
+})
+
+var SitePayload = Type("SitePayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("root", String, "Root domain")
+	Attribute("max_score", Float64, "Maximum rating to include", func() {
+		Default(0)
+	})
+	Required("root")
+})
+
+var ArticlesPayload = Type("ArticlesPayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("root", String, "Root domain")
+	Attribute("term", String, "Trend term")
+	Attribute("date", String, "Optional date", func() {
+		Format(FormatDate)
+	})
+	Attribute("days", Int, "Lookback window in days", func() {
+		Default(1)
+		Minimum(1)
+	})
+	Attribute("offset", Int, "Result offset", func() {
+		Default(0)
+		Minimum(0)
+	})
+	Attribute("limit", Int, "Maximum results", func() {
+		Default(20)
+		Minimum(1)
+	})
+	Required("root", "term")
+})
+
+var SentimentsPayload = Type("SentimentsPayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("root", String, "Root domain")
+	Attribute("term", String, "Trend term")
+	Attribute("date", String, "Optional date", func() {
+		Format(FormatDate)
+	})
+	Attribute("days", Int, "Lookback window in days", func() {
+		Default(1)
+		Minimum(1)
+	})
+	Required("root", "term")
+})
+
+var DomainsPayload = Type("DomainsPayload", func() {
+	Extend(BasicAuthPayload)
+})
+
+var TopTrendsByDomainPayload = Type("TopTrendsByDomainPayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("domain", String, "Root domain")
+	Attribute("lang", String, "Language code")
+	Attribute("days", Int, "Lookback window in days", func() {
+		Default(1)
+		Minimum(1)
+	})
+	Attribute("date", String, "Optional date", func() {
+		Format(FormatDate)
+	})
+	Required("domain", "lang")
+})
+
+var ContextByDomainPayload = Type("ContextByDomainPayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("term", String, "Trend term")
+	Attribute("domain", String, "Root domain")
+	Attribute("lang", String, "Language code")
+	Attribute("days", Int, "Lookback window in days", func() {
+		Default(1)
+		Minimum(1)
+	})
+	Attribute("date", String, "Optional date", func() {
+		Format(FormatDate)
+	})
+	Required("term", "domain", "lang")
+})
+
+var LifecycleByDomainPayload = Type("LifecycleByDomainPayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("term", String, "Trend term")
+	Attribute("domain", String, "Root domain")
+	Attribute("lang", String, "Language code")
+	Attribute("days", Int, "Lookback window in days", func() {
+		Default(1)
+		Minimum(1)
+	})
+	Attribute("date", String, "Optional date", func() {
+		Format(FormatDate)
+	})
+	Required("term", "domain", "lang")
+})
+
+var DomainComparisonPayload = Type("DomainComparisonPayload", func() {
+	Extend(BasicAuthPayload)
+	Attribute("domain_a", String, "First domain")
+	Attribute("domain_b", String, "Second domain")
+	Attribute("lang", String, "Language code")
+	Attribute("days", Int, "Lookback window in days", func() {
+		Default(1)
+		Minimum(1)
+	})
+	Attribute("date", String, "Optional date", func() {
+		Format(FormatDate)
+	})
+	Required("domain_a", "domain_b", "lang")
+})
+
 var _ = Service("web", func() {
 	Description("Browser/web-facing API contract.")
+	Security(BasicAuth)
 	HTTP(func() {
 		Path("/api")
 	})
@@ -15,10 +130,7 @@ var _ = Service("web", func() {
 func defineWebMethods() {
 	Method("item", func() {
 		Description("Fetch a single analyzed item by URL.")
-		Payload(func() {
-			Attribute("url", String, "Item URL")
-			Required("url")
-		})
+		Payload(ItemPayload)
 		Result(AnalyzedItem)
 		HTTP(func() {
 			GET("/item")
@@ -30,13 +142,7 @@ func defineWebMethods() {
 
 	Method("site", func() {
 		Description("List analyzed items for a root domain.")
-		Payload(func() {
-			Attribute("root", String, "Root domain")
-			Attribute("max_score", Float64, "Maximum rating to include", func() {
-				Default(0)
-			})
-			Required("root")
-		})
+		Payload(SitePayload)
 		Result(ArrayOf(AnalyzedItem))
 		HTTP(func() {
 			GET("/site")
@@ -49,26 +155,7 @@ func defineWebMethods() {
 
 	Method("articles", func() {
 		Description("List articles for a trend and domain.")
-		Payload(func() {
-			Attribute("root", String, "Root domain")
-			Attribute("term", String, "Trend term")
-			Attribute("date", String, "Optional date", func() {
-				Format(FormatDate)
-			})
-			Attribute("days", Int, "Lookback window in days", func() {
-				Default(1)
-				Minimum(1)
-			})
-			Attribute("offset", Int, "Result offset", func() {
-				Default(0)
-				Minimum(0)
-			})
-			Attribute("limit", Int, "Maximum results", func() {
-				Default(20)
-				Minimum(1)
-			})
-			Required("root", "term")
-		})
+		Payload(ArticlesPayload)
 		Result(ArrayOf(AnalyzedArticle))
 		HTTP(func() {
 			GET("/articles")
@@ -85,18 +172,7 @@ func defineWebMethods() {
 
 	Method("sentiments", func() {
 		Description("Get sentiment scores for a trend.")
-		Payload(func() {
-			Attribute("root", String, "Root domain")
-			Attribute("term", String, "Trend term")
-			Attribute("date", String, "Optional date", func() {
-				Format(FormatDate)
-			})
-			Attribute("days", Int, "Lookback window in days", func() {
-				Default(1)
-				Minimum(1)
-			})
-			Required("root", "term")
-		})
+		Payload(SentimentsPayload)
 		Result(SentimentItem)
 		HTTP(func() {
 			GET("/sentiments")
@@ -111,6 +187,7 @@ func defineWebMethods() {
 
 	Method("domains", func() {
 		Description("List root domains.")
+		Payload(DomainsPayload)
 		Result(ArrayOf(DomainEntry))
 		HTTP(func() {
 			GET("/domains")
@@ -120,18 +197,7 @@ func defineWebMethods() {
 
 	Method("topTrendsByDomain", func() {
 		Description("List top trends for a domain.")
-		Payload(func() {
-			Attribute("domain", String, "Root domain")
-			Attribute("lang", String, "Language code")
-			Attribute("days", Int, "Lookback window in days", func() {
-				Default(1)
-				Minimum(1)
-			})
-			Attribute("date", String, "Optional date", func() {
-				Format(FormatDate)
-			})
-			Required("domain", "lang")
-		})
+		Payload(TopTrendsByDomainPayload)
 		Result(ArrayOf(TrendMetric))
 		HTTP(func() {
 			GET("/trends/topbydomain")
@@ -146,19 +212,7 @@ func defineWebMethods() {
 
 	Method("contextByDomain", func() {
 		Description("List trend context for a domain.")
-		Payload(func() {
-			Attribute("term", String, "Trend term")
-			Attribute("domain", String, "Root domain")
-			Attribute("lang", String, "Language code")
-			Attribute("days", Int, "Lookback window in days", func() {
-				Default(1)
-				Minimum(1)
-			})
-			Attribute("date", String, "Optional date", func() {
-				Format(FormatDate)
-			})
-			Required("term", "domain", "lang")
-		})
+		Payload(ContextByDomainPayload)
 		Result(ArrayOf(TrendContext))
 		HTTP(func() {
 			GET("/trends/contextbydomain")
@@ -174,19 +228,7 @@ func defineWebMethods() {
 
 	Method("lifecycleByDomain", func() {
 		Description("List trend lifecycle data for a domain.")
-		Payload(func() {
-			Attribute("term", String, "Trend term")
-			Attribute("domain", String, "Root domain")
-			Attribute("lang", String, "Language code")
-			Attribute("days", Int, "Lookback window in days", func() {
-				Default(1)
-				Minimum(1)
-			})
-			Attribute("date", String, "Optional date", func() {
-				Format(FormatDate)
-			})
-			Required("term", "domain", "lang")
-		})
+		Payload(LifecycleByDomainPayload)
 		Result(ArrayOf(Lifecycle))
 		HTTP(func() {
 			GET("/trends/lifecyclebydomain")
@@ -202,19 +244,7 @@ func defineWebMethods() {
 
 	Method("domainComparison", func() {
 		Description("Compare two domains for a trend.")
-		Payload(func() {
-			Attribute("domain_a", String, "First domain")
-			Attribute("domain_b", String, "Second domain")
-			Attribute("lang", String, "Language code")
-			Attribute("days", Int, "Lookback window in days", func() {
-				Default(1)
-				Minimum(1)
-			})
-			Attribute("date", String, "Optional date", func() {
-				Format(FormatDate)
-			})
-			Required("domain_a", "domain_b", "lang")
-		})
+		Payload(DomainComparisonPayload)
 		Result(ArrayOf(DomainComparison))
 		HTTP(func() {
 			GET("/trends/comparedomains")

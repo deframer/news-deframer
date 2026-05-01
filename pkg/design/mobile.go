@@ -4,6 +4,7 @@ import . "goa.design/goa/v3/dsl"
 
 var _ = Service("mobile", func() {
 	Description("Mobile-facing API contract.")
+	Security(BasicAuth)
 	HTTP(func() {
 		Path("/mobile/api")
 	})

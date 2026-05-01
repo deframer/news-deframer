@@ -5,6 +5,7 @@ import (
 
 	web "github.com/deframer/news-deframer/gen/web"
 	"goa.design/clue/log"
+	"goa.design/goa/v3/security"
 )
 
 // web service example implementation.
@@ -43,7 +44,7 @@ func (s *websrvc) Sentiments(ctx context.Context, p *web.SentimentsPayload) (res
 }
 
 // List root domains.
-func (s *websrvc) Domains(ctx context.Context) (res []*web.DomainEntry, err error) {
+func (s *websrvc) Domains(ctx context.Context, p *web.DomainsPayload) (res []*web.DomainEntry, err error) {
 	log.Printf(ctx, "web.domains")
 	return
 }
@@ -70,4 +71,8 @@ func (s *websrvc) LifecycleByDomain(ctx context.Context, p *web.LifecycleByDomai
 func (s *websrvc) DomainComparisonEndpoint(ctx context.Context, p *web.DomainComparisonPayload) (res []*web.DomainComparison, err error) {
 	log.Printf(ctx, "web.domainComparison")
 	return
+}
+
+func (s *websrvc) BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error) {
+	return ctx, nil
 }

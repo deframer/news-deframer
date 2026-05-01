@@ -5,6 +5,7 @@ import (
 
 	mobile "github.com/deframer/news-deframer/gen/mobile"
 	"goa.design/clue/log"
+	"goa.design/goa/v3/security"
 )
 
 // mobile service example implementation.
@@ -43,7 +44,7 @@ func (s *mobilesrvc) Sentiments(ctx context.Context, p *mobile.SentimentsPayload
 }
 
 // List root domains.
-func (s *mobilesrvc) Domains(ctx context.Context) (res []*mobile.DomainEntry, err error) {
+func (s *mobilesrvc) Domains(ctx context.Context, p *mobile.DomainsPayload) (res []*mobile.DomainEntry, err error) {
 	log.Printf(ctx, "mobile.domains")
 	return
 }
@@ -70,4 +71,8 @@ func (s *mobilesrvc) LifecycleByDomain(ctx context.Context, p *mobile.LifecycleB
 func (s *mobilesrvc) DomainComparisonEndpoint(ctx context.Context, p *mobile.DomainComparisonPayload) (res []*mobile.DomainComparison, err error) {
 	log.Printf(ctx, "mobile.domainComparison")
 	return
+}
+
+func (s *mobilesrvc) BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error) {
+	return ctx, nil
 }

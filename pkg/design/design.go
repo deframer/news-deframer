@@ -2,6 +2,13 @@ package design
 
 import . "goa.design/goa/v3/dsl"
 
+var BasicAuthPayload = Type("BasicAuthPayload", func() {
+	Username("user", String)
+	Password("pass", String)
+})
+
+var BasicAuth = BasicAuthSecurity("basic")
+
 var _ = API("service_new", func() {
 	Title("service_new")
 	Description("service_new Goa design")
