@@ -1,5 +1,5 @@
-import { getCachedDomains, invalidateDomainCache,setCachedDomains } from '../shared/domain-cache';
-import { CONNECTION_TIMEOUT_MS, Settings } from '../shared/settings';
+import { getCachedDomains, invalidateDomainCache, setCachedDomains } from '../shared/domain-cache';
+import { CONNECTION_TIMEOUT_MS, removeStallDomainsFromSelection, Settings } from '../shared/settings';
 
 // --- Type Definitions based on Go backend models ---
 
@@ -153,10 +153,12 @@ export class NewsDeframerClient {
     throw new Error('Extension context missing: Cannot proxy request');
   }
 
-  async getDomains(): Promise<DomainEntry[]> {
-    const cached = await getCachedDomains();
-    if (cached) {
-      return cached;
+  async getDomains(bypassCache = false): Promise<DomainEntry[]> {
+    if (!bypassCache) {
+      const cached = await getCachedDomains();
+      if (cached) {
+        return cached;
+      }
     }
 
     try {
@@ -165,6 +167,9 @@ export class NewsDeframerClient {
 
       if (domains.length > 0) {
         await setCachedDomains(domains);
+        await removeStallDomainsFromSelection(domains.map((domain) => domain.domain));
+      } else {
+        await invalidateDomainCache();
       }
 
       return domains;
