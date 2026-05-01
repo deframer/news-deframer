@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -21,7 +20,6 @@ import (
 	"github.com/deframer/news-deframer/pkg/util/text"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
-	ext "github.com/mmcdole/gofeed/extensions"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -477,7 +475,7 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 			s.logger.Error("update content failed", args...)
 			return nil, err
 		}
-		mediaContent, err = s.extractMediaContent(parsedItem)
+		mediaContent, err = extractMediaContent(parsedItem)
 		if err != nil {
 			args := append([]any{"error", err}, logKeys...)
 			s.logger.Error("extract media content failed", args...)
@@ -551,17 +549,17 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 
 	// If we don't have existing media content, try to extract it
 	if len(item.Extensions["media"]["content"]) == 0 {
-		if mediaData = s.extractFromContentTag(item); mediaData != nil {
+		if mediaData = extractFromContentTag(item); mediaData != nil {
 			item.Content = ""
-		} else if mediaData = s.extractFromEnclosureTag(item); mediaData != nil {
+		} else if mediaData = extractFromEnclosureTag(item); mediaData != nil {
 			// found in enclosure
 		} else {
-			mediaData = s.extractFromDescriptionFallback(res)
+			mediaData = extractFromDescriptionFallback(res)
 		}
 	}
 
 	if mediaData != nil {
-		s.applyMediaData(item, mediaData)
+		applyMediaData(item, mediaData)
 	}
 
 	if item.Extensions != nil {
@@ -573,206 +571,6 @@ func (s *Syncer) updateContent(item *gofeed.Item, res *database.ThinkResult) err
 
 	return nil
 }
-
-func (s *Syncer) extractFromContentTag(item *gofeed.Item) *MediaData {
-	if item.Content == "" {
-		return nil
-	}
-	mediaData, err := transformContent(item.Content)
-	if err == nil && mediaData.URL != "" {
-		return &mediaData
-	}
-	return nil
-}
-
-func (s *Syncer) extractFromEnclosureTag(item *gofeed.Item) *MediaData {
-	for _, enc := range item.Enclosures {
-		if strings.HasPrefix(enc.Type, "image/") && enc.URL != "" {
-			w, h := parseDimensions(enc.URL)
-			return &MediaData{
-				URL:    enc.URL,
-				Medium: "image",
-				Width:  w,
-				Height: h,
-			}
-		}
-	}
-	return nil
-}
-
-func (s *Syncer) extractFromDescriptionFallback(res *database.ThinkResult) *MediaData {
-	target := res.DescriptionOriginal
-	mediaData, err := transformContent(target)
-	if err != nil || mediaData.URL == "" {
-		target = res.TitleOriginal
-		mediaData, err = transformContent(target)
-	}
-
-	if err == nil && mediaData.URL != "" {
-		return &mediaData
-	}
-	return nil
-}
-
-func (s *Syncer) applyMediaData(item *gofeed.Item, data *MediaData) {
-	if item.Extensions == nil {
-		item.Extensions = make(map[string]map[string][]ext.Extension)
-	}
-	if item.Extensions["media"] == nil {
-		item.Extensions["media"] = make(map[string][]ext.Extension)
-	}
-
-	// <media:credit> always delete this
-	delete(item.Extensions["media"], "credit")
-
-	attrs := map[string]string{
-		"url":    data.URL,
-		"medium": data.Medium,
-	}
-	if data.Width > 0 {
-		attrs["width"] = fmt.Sprintf("%d", data.Width)
-	}
-	if data.Height > 0 {
-		attrs["height"] = fmt.Sprintf("%d", data.Height)
-	}
-
-	item.Extensions["media"]["content"] = []ext.Extension{{
-		Name:  "content",
-		Attrs: attrs,
-	}}
-
-	if len(data.Alt) > 0 {
-		item.Extensions["media"]["description"] = []ext.Extension{{
-			Name:  "description",
-			Value: data.Alt,
-		}}
-	}
-}
-
-func (s *Syncer) extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
-	if item == nil || item.Extensions == nil {
-		return nil, nil
-	}
-
-	mediaExt, ok := item.Extensions["media"]
-	if !ok {
-		return nil, nil
-	}
-
-	// Find media:content
-	var contentExt *ext.Extension
-	if contents, ok := mediaExt["content"]; ok {
-		for _, c := range contents {
-			if c.Attrs["url"] != "" {
-				val := c
-				contentExt = &val
-				break
-			}
-		}
-	}
-
-	if contentExt == nil {
-		// Fallback: check for media:thumbnail
-		if thumbs, ok := mediaExt["thumbnail"]; ok && len(thumbs) > 0 {
-			for _, t := range thumbs {
-				if t.Attrs["url"] != "" {
-					val := t
-					// Deep copy attrs to avoid side effects and allow modification
-					newAttrs := make(map[string]string)
-					for k, v := range val.Attrs {
-						newAttrs[k] = v
-					}
-					val.Attrs = newAttrs
-
-					if _, ok := val.Attrs["medium"]; !ok {
-						val.Attrs["medium"] = "image"
-					}
-					contentExt = &val
-					break
-				}
-			}
-		}
-	}
-
-	if contentExt == nil {
-		return nil, nil
-	}
-
-	mc := &database.MediaContent{
-		URL:    contentExt.Attrs["url"],
-		Type:   contentExt.Attrs["type"],
-		Medium: contentExt.Attrs["medium"],
-	}
-
-	if mc.Medium == "" {
-		if strings.HasPrefix(mc.Type, "image/") {
-			mc.Medium = "image"
-		} else if strings.HasPrefix(mc.Type, "video/") {
-			mc.Medium = "video"
-		}
-	}
-
-	// Dimensions
-	w, _ := strconv.Atoi(contentExt.Attrs["width"])
-	h, _ := strconv.Atoi(contentExt.Attrs["height"])
-
-	if w == 0 || h == 0 {
-		w, h = parseDimensions(mc.URL)
-	}
-	mc.Width = w
-	mc.Height = h
-
-	// Metadata (Title/Description)
-	// Check children first
-	if titles, ok := contentExt.Children["title"]; ok && len(titles) > 0 {
-		mc.Title = titles[0].Value
-	}
-	if descs, ok := contentExt.Children["description"]; ok && len(descs) > 0 {
-		mc.Description = descs[0].Value
-	}
-	if credits, ok := contentExt.Children["credit"]; ok && len(credits) > 0 {
-		mc.Credit = credits[0].Value
-	}
-
-	// Fallback to group/item level tags
-	if mc.Title == "" {
-		if titles, ok := mediaExt["title"]; ok && len(titles) > 0 {
-			mc.Title = titles[0].Value
-		}
-	}
-	if mc.Description == "" {
-		if descs, ok := mediaExt["description"]; ok && len(descs) > 0 {
-			mc.Description = descs[0].Value
-		}
-	}
-	if mc.Credit == "" {
-		if credits, ok := mediaExt["credit"]; ok && len(credits) > 0 {
-			mc.Credit = credits[0].Value
-		}
-	}
-
-	// Thumbnail
-	if thumbs, ok := mediaExt["thumbnail"]; ok && len(thumbs) > 0 {
-		tExt := thumbs[0]
-		if tURL := tExt.Attrs["url"]; tURL != "" {
-			mt := &database.MediaThumbnail{
-				URL: tURL,
-			}
-			tw, _ := strconv.Atoi(tExt.Attrs["width"])
-			th, _ := strconv.Atoi(tExt.Attrs["height"])
-
-			if tw == 0 || th == 0 {
-				tw, th = parseDimensions(tURL)
-			}
-			mt.Width = tw
-			mt.Height = th
-			mc.Thumbnail = mt
-		}
-	}
-
-	return mc, nil
-}
-
 func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {
 	// load all items from database by their hashes and with the
 
