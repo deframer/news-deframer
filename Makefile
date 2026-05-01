@@ -56,7 +56,7 @@ build: tidy gen
 
 clean:
 	rm -rf $(BUILD_DIR) gen
-	-docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --rmi local
+	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --rmi local
 
 test:
 	go clean -testcache
