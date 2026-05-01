@@ -8,6 +8,10 @@
 /infra/deploy/*.json
 __debug_bin*
 gen/
+# Goa example outputs generated at repo root.
+/infra.go
+/web.go
+/mobile.go
 /*.pem
 *.db
 *.xml
