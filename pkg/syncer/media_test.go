@@ -1,6 +1,7 @@
 package syncer
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/deframer/news-deframer/pkg/database"
@@ -365,6 +366,171 @@ func TestExtractMediaContent(t *testing.T) {
 			got, err := extractMediaContent(tt.item)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestUpdateContent(t *testing.T) {
+	tests := []struct {
+		name                string
+		item                *gofeed.Item
+		res                 *database.ThinkResult
+		expectedTitle       string
+		expectedDescription string
+		expectedContent     string
+		expectedMediaURL    string
+		expectedWidth       string
+		expectedHeight      string
+		assertGroup         bool
+	}{
+		{
+			name: "Basic Update",
+			item: &gofeed.Item{
+				Title:       "Original Title",
+				Description: "Original Description",
+			},
+			res: &database.ThinkResult{
+				TitleCorrected:       "Corrected Title",
+				DescriptionCorrected: "Corrected Description",
+			},
+			expectedTitle:       "Corrected Title",
+			expectedDescription: "Corrected Description<br/><br/>",
+			expectedContent:     "",
+		},
+		{
+			name: "With Content Encoded",
+			item: &gofeed.Item{
+				Title:       "Foobar",
+				Description: "Short desc",
+				Content:     `<![CDATA[ <p> <a href="https://example.test/story"> <img src="https://example.test/media/hero.jpg" alt="ALT TEXT" /></a><br /><br /></p> ]]>`,
+			},
+			res: &database.ThinkResult{
+				TitleCorrected:       "Corrected Foobar",
+				DescriptionCorrected: "Corrected Short desc",
+				OverallReason:        "Analysis",
+				Clickbait:            1.0,
+				Framing:              1.0,
+				Persuasive:           1.0,
+				HyperStimulus:        1.0,
+				Speculative:          1.0,
+			},
+			expectedTitle:       "Corrected Foobar",
+			expectedDescription: "Corrected Short desc<br/><br/>Analysis",
+			expectedContent:     "",
+			expectedMediaURL:    "https://example.test/media/hero.jpg",
+			expectedWidth:       "1920",
+			expectedHeight:      "1080",
+		},
+		{
+			name: "With Image Enclosure",
+			item: &gofeed.Item{
+				Title:       "Enclosure Test",
+				Description: "Desc",
+				Enclosures: []*gofeed.Enclosure{{
+					URL:  "https://example.test/media/image.jpg?width=1280",
+					Type: "image/jpeg",
+				}},
+			},
+			res: &database.ThinkResult{
+				TitleCorrected:       "Corrected Enclosure",
+				DescriptionCorrected: "Corrected Desc",
+			},
+			expectedTitle:       "Corrected Enclosure",
+			expectedDescription: "Corrected Desc<br/><br/>",
+			expectedContent:     "",
+			expectedMediaURL:    "https://example.test/media/image.jpg?width=1280",
+			expectedWidth:       "1280",
+			expectedHeight:      "720",
+		},
+		{
+			name: "Preserves Media Group",
+			item: &gofeed.Item{
+				Title:       "Lorem headline",
+				Description: "Lorem summary",
+				Content:     `<p>Lorem ipsum with <em>markup</em>.</p>`,
+				Extensions: map[string]map[string][]ext.Extension{
+					"media": {
+						"group": {{
+							Name: "group",
+							Children: map[string][]ext.Extension{
+								"content": {
+									{
+										Name: "content",
+										Attrs: map[string]string{
+											"url":    "https://example.test/media/hero-large.jpg",
+											"type":   "image/jpeg",
+											"medium": "image",
+											"width":  "870",
+											"height": "522",
+										},
+									},
+									{
+										Name: "content",
+										Attrs: map[string]string{
+											"url":    "https://example.test/media/hero-small.jpg",
+											"type":   "image/jpeg",
+											"medium": "image",
+											"width":  "300",
+											"height": "180",
+										},
+									},
+								},
+							},
+						}},
+					},
+				},
+			},
+			res:                 &database.ThinkResult{OverallReason: "Lorem reason text"},
+			expectedTitle:       "Lorem headline",
+			expectedDescription: "Lorem summary<br/><br/>Lorem reason text",
+			expectedContent:     `<p>Lorem ipsum with <em>markup</em>.</p>`,
+			expectedMediaURL:    "https://example.test/media/hero-large.jpg",
+			expectedWidth:       "870",
+			expectedHeight:      "522",
+			assertGroup:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := updateContent(tt.item, tt.res)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedTitle, tt.item.Title)
+			assert.Equal(t, tt.expectedDescription, tt.item.Description)
+			assert.Equal(t, tt.expectedContent, tt.item.Content)
+
+			if tt.expectedMediaURL != "" {
+				got, err := extractMediaContent(tt.item)
+				assert.NoError(t, err)
+				if assert.NotNil(t, got) {
+					assert.Equal(t, tt.expectedMediaURL, got.URL)
+					assert.Equal(t, tt.expectedWidth, fmt.Sprintf("%d", got.Width))
+					assert.Equal(t, tt.expectedHeight, fmt.Sprintf("%d", got.Height))
+					assert.Equal(t, "image", got.Medium)
+				}
+
+				if assert.NotNil(t, tt.item.Extensions) {
+					media, ok := tt.item.Extensions["media"]
+					if assert.True(t, ok) {
+						if !tt.assertGroup {
+							contentExt, ok := media["content"]
+							if assert.True(t, ok) && assert.NotEmpty(t, contentExt) {
+								assert.Equal(t, tt.expectedMediaURL, contentExt[0].Attrs["url"])
+								assert.Equal(t, "image", contentExt[0].Attrs["medium"])
+								assert.Equal(t, tt.expectedWidth, contentExt[0].Attrs["width"])
+								assert.Equal(t, tt.expectedHeight, contentExt[0].Attrs["height"])
+							}
+						}
+
+						_, creditExists := media["credit"]
+						assert.False(t, creditExists, "media:credit should be removed")
+						if tt.assertGroup {
+							_, groupExists := media["group"]
+							assert.True(t, groupExists, "media:group should be preserved")
+						}
+					}
+				}
+			}
 		})
 	}
 }
