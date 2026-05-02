@@ -2,29 +2,31 @@ package servicenew
 
 import (
 	"context"
+	"log/slog"
+	"os"
 
 	infra "github.com/deframer/news-deframer/gen/infra"
-	"goa.design/clue/log"
 )
 
-// infra service example implementation.
-// The example methods log the requests and return zero values.
-type infrasrvc struct{}
+type infrasrvc struct {
+	logger *slog.Logger
+}
 
 // NewInfra returns the infra service implementation.
 func NewInfra() infra.Service {
-	return &infrasrvc{}
+	return &infrasrvc{logger: slog.With("component", "infra")}
 }
 
-// Health check endpoint.
 func (s *infrasrvc) Ping(ctx context.Context) (res string, err error) {
-	log.Printf(ctx, "infra.ping")
-	return
+	s.logger.Debug("ping")
+	return "pong", nil
 }
 
-// Return the current host name.
 func (s *infrasrvc) Hostname(ctx context.Context) (res *infra.HostnameResponse, err error) {
-	res = &infra.HostnameResponse{}
-	log.Printf(ctx, "infra.hostname")
-	return
+	hostname, err := os.Hostname()
+	if err != nil {
+		s.logger.Error("failed to get hostname", "error", err)
+		return nil, err
+	}
+	return &infra.HostnameResponse{Hostname: hostname}, nil
 }

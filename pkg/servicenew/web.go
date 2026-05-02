@@ -4,75 +4,50 @@ import (
 	"context"
 
 	web "github.com/deframer/news-deframer/gen/web"
-	"goa.design/clue/log"
-	"goa.design/goa/v3/security"
+	sharedservice "github.com/deframer/news-deframer/pkg/service"
 )
 
-// web service example implementation.
-// The example methods log the requests and return zero values.
-type websrvc struct{}
+type websrvc struct {
+	svc web.Service
+}
 
 // NewWeb returns the web service implementation.
 func NewWeb() web.Service {
-	return &websrvc{}
+	return &websrvc{svc: sharedservice.NewService()}
 }
 
-// Fetch a single analyzed item by URL.
 func (s *websrvc) Item(ctx context.Context, p *web.ItemPayload) (res *web.AnalyzedItem, err error) {
-	res = &web.AnalyzedItem{}
-	log.Printf(ctx, "web.item")
-	return
+	return s.svc.Item(ctx, p)
 }
 
-// List analyzed items for a root domain.
 func (s *websrvc) Site(ctx context.Context, p *web.SitePayload) (res []*web.AnalyzedItem, err error) {
-	log.Printf(ctx, "web.site")
-	return
+	return s.svc.Site(ctx, p)
 }
 
-// List articles for a trend and domain.
 func (s *websrvc) Articles(ctx context.Context, p *web.ArticlesPayload) (res []*web.AnalyzedArticle, err error) {
-	log.Printf(ctx, "web.articles")
-	return
+	return s.svc.Articles(ctx, p)
 }
 
-// Get sentiment scores for a trend.
 func (s *websrvc) Sentiments(ctx context.Context, p *web.SentimentsPayload) (res *web.SentimentItem, err error) {
-	res = &web.SentimentItem{}
-	log.Printf(ctx, "web.sentiments")
-	return
+	return s.svc.Sentiments(ctx, p)
 }
 
-// List root domains.
 func (s *websrvc) Domains(ctx context.Context, p *web.DomainsPayload) (res []*web.DomainEntry, err error) {
-	log.Printf(ctx, "web.domains")
-	return
+	return s.svc.Domains(ctx, p)
 }
 
-// List top trends for a domain.
 func (s *websrvc) TopTrendsByDomain(ctx context.Context, p *web.TopTrendsByDomainPayload) (res []*web.TrendMetric, err error) {
-	log.Printf(ctx, "web.topTrendsByDomain")
-	return
+	return s.svc.TopTrendsByDomain(ctx, p)
 }
 
-// List trend context for a domain.
 func (s *websrvc) ContextByDomain(ctx context.Context, p *web.ContextByDomainPayload) (res []*web.TrendContext, err error) {
-	log.Printf(ctx, "web.contextByDomain")
-	return
+	return s.svc.ContextByDomain(ctx, p)
 }
 
-// List trend lifecycle data for a domain.
 func (s *websrvc) LifecycleByDomain(ctx context.Context, p *web.LifecycleByDomainPayload) (res []*web.Lifecycle, err error) {
-	log.Printf(ctx, "web.lifecycleByDomain")
-	return
+	return s.svc.LifecycleByDomain(ctx, p)
 }
 
-// Compare two domains for a trend.
 func (s *websrvc) DomainComparisonEndpoint(ctx context.Context, p *web.DomainComparisonPayload) (res []*web.DomainComparison, err error) {
-	log.Printf(ctx, "web.domainComparison")
-	return
-}
-
-func (s *websrvc) BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error) {
-	return ctx, nil
+	return s.svc.DomainComparisonEndpoint(ctx, p)
 }
