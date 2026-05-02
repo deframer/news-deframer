@@ -15,7 +15,7 @@ ifneq ("$(wildcard .env)","")
   export $(shell sed 's/=.*//' .env)
 endif
 
-.PHONY: all build clean test help coverage lint tidy
+.PHONY: all build clean test help coverage lint tidy gen example
 .PHONY: start stop down logs zap
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
 .PHONY: docker-all add-feeds service worker think-fixer
@@ -50,12 +50,12 @@ down:
 logs:
 	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) logs -f
 
-build:
+build: tidy gen
 	mkdir -p $(BUILD_DIR)
 	go build -o $(BUILD_DIR)/ ./$(CMD_DIR)/...
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) gen
 	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --rmi local
 
 test:
@@ -77,10 +77,19 @@ tools-install:
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
+goa-install:
+	go install goa.design/goa/v3/cmd/goa@latest
+
 check: test lint
 
 tidy:
 	go mod tidy
+
+gen: goa-install
+	goa gen github.com/deframer/news-deframer/pkg/design
+
+example: tidy gen
+	goa example github.com/deframer/news-deframer/pkg/design && mkdir -p pkg/servicenew && mv -f infra.go web.go mobile.go pkg/servicenew/
 
 docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
 
