@@ -143,7 +143,7 @@ var AnalyzedArticle = Type("AnalyzedArticle", func() {
 	Attribute("pub_date", String, "Publication date", func() {
 		Format(FormatDateTime)
 	})
-	Required("url", "pub_date")
+	Required("url", "pub_date", "authors")
 })
 
 var SentimentItem = Type("SentimentItem", func() {
@@ -152,9 +152,26 @@ var SentimentItem = Type("SentimentItem", func() {
 })
 
 var AnalyzedItem = Type("AnalyzedItem", func() {
-	Reference(ThinkResult)
 	Attribute("hash", String, "Item hash")
 	Attribute("url", String, "Item URL")
+	Attribute("title_original", String, "Original title")
+	Attribute("description_original", String, "Original description")
+	Attribute("title_corrected", String, "Corrected title")
+	Attribute("title_correction_reason", String, "Why the title changed")
+	Attribute("description_corrected", String, "Corrected description")
+	Attribute("description_correction_reason", String, "Why the description changed")
+	Attribute("framing", Float64, "Framing score")
+	Attribute("framing_reason", String, "Framing explanation")
+	Attribute("clickbait", Float64, "Clickbait score")
+	Attribute("clickbait_reason", String, "Clickbait explanation")
+	Attribute("persuasive", Float64, "Persuasiveness score")
+	Attribute("persuasive_reason", String, "Persuasiveness explanation")
+	Attribute("hyper_stimulus", Float64, "Hyper stimulus score")
+	Attribute("hyper_stimulus_reason", String, "Hyper stimulus explanation")
+	Attribute("speculative", Float64, "Speculative score")
+	Attribute("speculative_reason", String, "Speculative explanation")
+	Attribute("overall", Float64, "Overall score")
+	Attribute("overall_reason", String, "Overall explanation")
 	Attribute("sentiments", SentimentScores, "Original sentiments")
 	Attribute("sentiments_deframed", SentimentScores, "Deframed sentiments")
 	Attribute("media", MediaContent, "Media content")
@@ -163,5 +180,5 @@ var AnalyzedItem = Type("AnalyzedItem", func() {
 	Attribute("pubDate", String, "Publication date", func() {
 		Format(FormatDateTime)
 	})
-	Required("hash", "url", "rating", "pubDate")
+	Required("hash", "url", "rating", "pubDate", "authors")
 })

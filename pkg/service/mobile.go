@@ -137,14 +137,32 @@ func convertMobileAnalyzedItem(item *web.AnalyzedItem) *mobile.AnalyzedItem {
 		return nil
 	}
 	return &mobile.AnalyzedItem{
-		Hash:               item.Hash,
-		URL:                item.URL,
-		Sentiments:         convertMobileSentimentScores(item.Sentiments),
-		SentimentsDeframed: convertMobileSentimentScores(item.SentimentsDeframed),
-		Media:              convertMobileMediaContent(item.Media),
-		Rating:             item.Rating,
-		Authors:            append([]string(nil), item.Authors...),
-		PubDate:            item.PubDate,
+		Hash:                        item.Hash,
+		URL:                         item.URL,
+		TitleOriginal:               item.TitleOriginal,
+		DescriptionOriginal:         item.DescriptionOriginal,
+		TitleCorrected:              item.TitleCorrected,
+		TitleCorrectionReason:       item.TitleCorrectionReason,
+		DescriptionCorrected:        item.DescriptionCorrected,
+		DescriptionCorrectionReason: item.DescriptionCorrectionReason,
+		Framing:                     item.Framing,
+		FramingReason:               item.FramingReason,
+		Clickbait:                   item.Clickbait,
+		ClickbaitReason:             item.ClickbaitReason,
+		Persuasive:                  item.Persuasive,
+		PersuasiveReason:            item.PersuasiveReason,
+		HyperStimulus:               item.HyperStimulus,
+		HyperStimulusReason:         item.HyperStimulusReason,
+		Speculative:                 item.Speculative,
+		SpeculativeReason:           item.SpeculativeReason,
+		Overall:                     item.Overall,
+		OverallReason:               item.OverallReason,
+		Sentiments:                  convertMobileSentimentScores(item.Sentiments),
+		SentimentsDeframed:          convertMobileSentimentScores(item.SentimentsDeframed),
+		Media:                       convertMobileMediaContent(item.Media),
+		Rating:                      item.Rating,
+		Authors:                     append([]string{}, item.Authors...),
+		PubDate:                     item.PubDate,
 	}
 }
 
@@ -156,7 +174,7 @@ func convertMobileAnalyzedArticle(item *web.AnalyzedArticle) *mobile.AnalyzedArt
 		URL:     item.URL,
 		Title:   item.Title,
 		Rating:  item.Rating,
-		Authors: append([]string(nil), item.Authors...),
+		Authors: append([]string{}, item.Authors...),
 		PubDate: item.PubDate,
 	}
 }
