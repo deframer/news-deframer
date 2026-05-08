@@ -3,76 +3,273 @@ package servicenew
 import (
 	"context"
 
+	web "github.com/deframer/news-deframer/gen/web"
+
 	mobile "github.com/deframer/news-deframer/gen/mobile"
-	"goa.design/clue/log"
+	sharedservice "github.com/deframer/news-deframer/pkg/service"
 	"goa.design/goa/v3/security"
 )
 
-// mobile service example implementation.
-// The example methods log the requests and return zero values.
-type mobilesrvc struct{}
+type mobilesrvc struct {
+	svc web.Service
+}
 
 // NewMobile returns the mobile service implementation.
 func NewMobile() mobile.Service {
-	return &mobilesrvc{}
+	return &mobilesrvc{svc: sharedservice.NewService()}
 }
 
-// Fetch a single analyzed item by URL.
 func (s *mobilesrvc) Item(ctx context.Context, p *mobile.ItemPayload) (res *mobile.AnalyzedItem, err error) {
-	res = &mobile.AnalyzedItem{}
-	log.Printf(ctx, "mobile.item")
-	return
+	item, err := s.svc.Item(ctx, &web.ItemPayload{URL: p.URL, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	return convertMobileAnalyzedItem(item), nil
 }
 
-// List analyzed items for a root domain.
 func (s *mobilesrvc) Site(ctx context.Context, p *mobile.SitePayload) (res []*mobile.AnalyzedItem, err error) {
-	log.Printf(ctx, "mobile.site")
-	return
+	items, err := s.svc.Site(ctx, &web.SitePayload{Root: p.Root, MaxScore: p.MaxScore, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	res = make([]*mobile.AnalyzedItem, 0, len(items))
+	for i := range items {
+		res = append(res, convertMobileAnalyzedItem(items[i]))
+	}
+	return res, nil
 }
 
-// List articles for a trend and domain.
 func (s *mobilesrvc) Articles(ctx context.Context, p *mobile.ArticlesPayload) (res []*mobile.AnalyzedArticle, err error) {
-	log.Printf(ctx, "mobile.articles")
-	return
+	items, err := s.svc.Articles(ctx, &web.ArticlesPayload{Root: p.Root, Term: p.Term, Date: p.Date, Days: p.Days, Offset: p.Offset, Limit: p.Limit, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	res = make([]*mobile.AnalyzedArticle, 0, len(items))
+	for i := range items {
+		res = append(res, convertMobileAnalyzedArticle(items[i]))
+	}
+	return res, nil
 }
 
-// Get sentiment scores for a trend.
 func (s *mobilesrvc) Sentiments(ctx context.Context, p *mobile.SentimentsPayload) (res *mobile.SentimentItem, err error) {
-	res = &mobile.SentimentItem{}
-	log.Printf(ctx, "mobile.sentiments")
-	return
+	item, err := s.svc.Sentiments(ctx, &web.SentimentsPayload{Root: p.Root, Term: p.Term, Date: p.Date, Days: p.Days, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	return convertMobileSentimentItem(item), nil
 }
 
-// List root domains.
 func (s *mobilesrvc) Domains(ctx context.Context, p *mobile.DomainsPayload) (res []*mobile.DomainEntry, err error) {
-	log.Printf(ctx, "mobile.domains")
-	return
+	domains, err := s.svc.Domains(ctx, &web.DomainsPayload{User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	res = make([]*mobile.DomainEntry, 0, len(domains))
+	for i := range domains {
+		res = append(res, convertMobileDomainEntry(domains[i]))
+	}
+	return res, nil
 }
 
-// List top trends for a domain.
 func (s *mobilesrvc) TopTrendsByDomain(ctx context.Context, p *mobile.TopTrendsByDomainPayload) (res []*mobile.TrendMetric, err error) {
-	log.Printf(ctx, "mobile.topTrendsByDomain")
-	return
+	trends, err := s.svc.TopTrendsByDomain(ctx, &web.TopTrendsByDomainPayload{Domain: p.Domain, Lang: p.Lang, Days: p.Days, Date: p.Date, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	res = make([]*mobile.TrendMetric, 0, len(trends))
+	for i := range trends {
+		res = append(res, convertMobileTrendMetric(trends[i]))
+	}
+	return res, nil
 }
 
-// List trend context for a domain.
 func (s *mobilesrvc) ContextByDomain(ctx context.Context, p *mobile.ContextByDomainPayload) (res []*mobile.TrendContext, err error) {
-	log.Printf(ctx, "mobile.contextByDomain")
-	return
+	contexts, err := s.svc.ContextByDomain(ctx, &web.ContextByDomainPayload{Term: p.Term, Domain: p.Domain, Lang: p.Lang, Days: p.Days, Date: p.Date, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	res = make([]*mobile.TrendContext, 0, len(contexts))
+	for i := range contexts {
+		res = append(res, convertMobileTrendContext(contexts[i]))
+	}
+	return res, nil
 }
 
-// List trend lifecycle data for a domain.
 func (s *mobilesrvc) LifecycleByDomain(ctx context.Context, p *mobile.LifecycleByDomainPayload) (res []*mobile.Lifecycle, err error) {
-	log.Printf(ctx, "mobile.lifecycleByDomain")
-	return
+	lifecycles, err := s.svc.LifecycleByDomain(ctx, &web.LifecycleByDomainPayload{Term: p.Term, Domain: p.Domain, Lang: p.Lang, Days: p.Days, Date: p.Date, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	res = make([]*mobile.Lifecycle, 0, len(lifecycles))
+	for i := range lifecycles {
+		res = append(res, convertMobileLifecycle(lifecycles[i]))
+	}
+	return res, nil
 }
 
-// Compare two domains for a trend.
 func (s *mobilesrvc) DomainComparisonEndpoint(ctx context.Context, p *mobile.DomainComparisonPayload) (res []*mobile.DomainComparison, err error) {
-	log.Printf(ctx, "mobile.domainComparison")
-	return
+	comparisons, err := s.svc.DomainComparisonEndpoint(ctx, &web.DomainComparisonPayload{DomainA: p.DomainA, DomainB: p.DomainB, Lang: p.Lang, Days: p.Days, Date: p.Date, User: p.User, Pass: p.Pass})
+	if err != nil {
+		return nil, translateMobileError(err)
+	}
+	res = make([]*mobile.DomainComparison, 0, len(comparisons))
+	for i := range comparisons {
+		res = append(res, convertMobileDomainComparison(comparisons[i]))
+	}
+	return res, nil
 }
 
 func (s *mobilesrvc) BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error) {
 	return ctx, nil
+}
+
+func translateMobileError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if nf, ok := err.(web.NotFound); ok {
+		return mobile.NotFound(nf)
+	}
+	return err
+}
+
+func convertMobileAnalyzedItem(item *web.AnalyzedItem) *mobile.AnalyzedItem {
+	if item == nil {
+		return nil
+	}
+	return &mobile.AnalyzedItem{
+		Hash:               item.Hash,
+		URL:                item.URL,
+		Sentiments:         convertMobileSentimentScores(item.Sentiments),
+		SentimentsDeframed: convertMobileSentimentScores(item.SentimentsDeframed),
+		Media:              convertMobileMediaContent(item.Media),
+		Rating:             item.Rating,
+		Authors:            append([]string(nil), item.Authors...),
+		PubDate:            item.PubDate,
+	}
+}
+
+func convertMobileAnalyzedArticle(item *web.AnalyzedArticle) *mobile.AnalyzedArticle {
+	if item == nil {
+		return nil
+	}
+	return &mobile.AnalyzedArticle{
+		URL:     item.URL,
+		Title:   item.Title,
+		Rating:  item.Rating,
+		Authors: append([]string(nil), item.Authors...),
+		PubDate: item.PubDate,
+	}
+}
+
+func convertMobileSentimentItem(item *web.SentimentItem) *mobile.SentimentItem {
+	if item == nil {
+		return nil
+	}
+	return &mobile.SentimentItem{
+		Sentiments:         convertMobileSentimentScores(item.Sentiments),
+		SentimentsDeframed: convertMobileSentimentScores(item.SentimentsDeframed),
+	}
+}
+
+func convertMobileSentimentScores(scores *web.SentimentScores) *mobile.SentimentScores {
+	if scores == nil {
+		return nil
+	}
+	return &mobile.SentimentScores{
+		Valence:   scores.Valence,
+		Arousal:   scores.Arousal,
+		Dominance: scores.Dominance,
+		Joy:       scores.Joy,
+		Anger:     scores.Anger,
+		Sadness:   scores.Sadness,
+		Fear:      scores.Fear,
+		Disgust:   scores.Disgust,
+	}
+}
+
+func convertMobileMediaContent(content *web.MediaContent) *mobile.MediaContent {
+	if content == nil {
+		return nil
+	}
+	return &mobile.MediaContent{
+		URL:         content.URL,
+		Type:        content.Type,
+		Medium:      content.Medium,
+		Height:      content.Height,
+		Width:       content.Width,
+		Title:       content.Title,
+		Description: content.Description,
+		Thumbnail:   convertMobileMediaThumbnail(content.Thumbnail),
+		Credit:      content.Credit,
+	}
+}
+
+func convertMobileMediaThumbnail(thumb *web.MediaThumbnail) *mobile.MediaThumbnail {
+	if thumb == nil {
+		return nil
+	}
+	return &mobile.MediaThumbnail{
+		URL:    thumb.URL,
+		Height: thumb.Height,
+		Width:  thumb.Width,
+	}
+}
+
+func convertMobileDomainEntry(entry *web.DomainEntry) *mobile.DomainEntry {
+	if entry == nil {
+		return nil
+	}
+	return &mobile.DomainEntry{
+		Domain:    entry.Domain,
+		Language:  entry.Language,
+		PortalURL: entry.PortalURL,
+	}
+}
+
+func convertMobileTrendMetric(metric *web.TrendMetric) *mobile.TrendMetric {
+	if metric == nil {
+		return nil
+	}
+	return &mobile.TrendMetric{
+		TrendTopic:   metric.TrendTopic,
+		Frequency:    metric.Frequency,
+		Utility:      metric.Utility,
+		OutlierRatio: metric.OutlierRatio,
+		TimeSlice:    metric.TimeSlice,
+	}
+}
+
+func convertMobileTrendContext(context *web.TrendContext) *mobile.TrendContext {
+	if context == nil {
+		return nil
+	}
+	return &mobile.TrendContext{
+		Context:   context.Context,
+		Frequency: context.Frequency,
+	}
+}
+
+func convertMobileLifecycle(lifecycle *web.Lifecycle) *mobile.Lifecycle {
+	if lifecycle == nil {
+		return nil
+	}
+	return &mobile.Lifecycle{
+		TimeSlice: lifecycle.TimeSlice,
+		Frequency: lifecycle.Frequency,
+		Velocity:  lifecycle.Velocity,
+	}
+}
+
+func convertMobileDomainComparison(comparison *web.DomainComparison) *mobile.DomainComparison {
+	if comparison == nil {
+		return nil
+	}
+	return &mobile.DomainComparison{
+		Classification: comparison.Classification,
+		RankGroup:      comparison.RankGroup,
+		TrendTopic:     comparison.TrendTopic,
+		ScoreA:         comparison.ScoreA,
+		ScoreB:         comparison.ScoreB,
+	}
 }
