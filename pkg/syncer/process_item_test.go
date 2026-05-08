@@ -3,7 +3,6 @@ package syncer
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"strings"
 	"testing"
 
@@ -241,7 +240,6 @@ func TestProcessThinkerItem_UsesTrendInvalidatingUpsert(t *testing.T) {
 
 func TestProcessItemErrorHandling(t *testing.T) {
 	ctx := context.Background()
-	logger := slog.Default()
 
 	feedID := uuid.New()
 	feed := &database.Feed{Base: database.Base{ID: feedID}}
@@ -265,11 +263,10 @@ func TestProcessItemErrorHandling(t *testing.T) {
 		}
 
 		s := &Syncer{
-			ctx:    ctx,
-			repo:   mockR,
-			logger: logger,
-			think:  mockT,
-			feeds:  feeds.NewFeeds(ctx, &config.Config{}),
+			ctx:   ctx,
+			repo:  mockR,
+			think: mockT,
+			feeds: feeds.NewFeeds(ctx, &config.Config{}),
 		}
 
 		item := &gofeed.Item{
@@ -299,11 +296,10 @@ func TestProcessItemErrorHandling(t *testing.T) {
 		}
 
 		s := &Syncer{
-			ctx:    ctx,
-			repo:   mockR,
-			logger: logger,
-			think:  mockT,
-			feeds:  feeds.NewFeeds(ctx, &config.Config{}),
+			ctx:   ctx,
+			repo:  mockR,
+			think: mockT,
+			feeds: feeds.NewFeeds(ctx, &config.Config{}),
 		}
 
 		item := &gofeed.Item{

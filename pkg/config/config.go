@@ -53,26 +53,26 @@ func (t *LLMType) UnmarshalText(text []byte) error {
 }
 
 type Config struct {
+	ApplicationName string `required:"false" default:"'News Deframer Browser Extension Service'"`
+
 	// HTTP Port
 	Port string `env:"PORT" envDefault:"8080"`
 
 	// Gorm DNS
-	DSN         string `env:"DSN" envDefault:"host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"`
-	LogDatabase bool   `env:"LOG_DATABASE" envDefault:"false"`
-
-	LogLevel string `env:"LOG_LEVEL" envDefault:"debug"`
+	DSN string `env:"DSN" envDefault:"host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable"`
 
 	BasicAuthUser            string `env:"BASIC_AUTH_USER" envDefault:""`
 	BasicAuthPassword        string `env:"BASIC_AUTH_PASSWORD" envDefault:""`
 	CORSAllowedOrigins       string `env:"CORS_ALLOWED_ORIGINS"`
 	RedirectWebRequest404URL string `env:"REDIRECT_WEBREQUEST_404_URL" envDefault:""`
 
-	DisableETag bool `env:"DISABLE_ETAG" envDefault:"false"`
-
 	LLM_Type    LLMType `env:"LLM_TYPE" envDefault:"dummy"`
 	LLM_Model   string  `env:"LLM_MODEL" envDefault:""`
 	LLM_APIKey  string  `env:"LLM_API_KEY" envDefault:""`
 	LLM_BaseURL string  `env:"LLM_BASE_URL" envDefault:""`
+
+	DebugLog        bool `required:"false" envconfig:"DEBUG_LOG" default:"false"`
+	DatabaseLogging bool `required:"false" envconfig:"DATABASE_LOGGING" default:"false"`
 }
 
 func Load() (*Config, error) {

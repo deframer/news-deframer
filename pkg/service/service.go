@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"strings"
 	"time"
@@ -12,37 +11,36 @@ import (
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/deframer/news-deframer/pkg/facade"
+	"goa.design/clue/log"
 	"goa.design/goa/v3/security"
 )
 
 // Service implements the web service example behavior.
 type Service struct {
 	facade facade.Facade
-	logger *slog.Logger
 	cfg    *config.Config
 }
 
 // NewService returns the shared web service implementation.
-func NewService() web.Service {
+func NewService(ctx context.Context) web.Service {
 	cfg, err := config.Load()
 	if err != nil {
 		panic(err)
 	}
 
-	repo, err := database.NewRepository(cfg)
+	repo, err := database.NewRepository(ctx, cfg)
 	if err != nil {
 		panic(err)
 	}
 
 	return &Service{
-		facade: facade.New(context.Background(), cfg, repo),
-		logger: slog.With("component", "service"),
+		facade: facade.New(ctx, cfg, repo),
 		cfg:    cfg,
 	}
 }
 
 func (s *Service) Item(ctx context.Context, p *web.ItemPayload) (res *web.AnalyzedItem, err error) {
-	s.logger.Debug("handleItem", "url", p.URL)
+	log.Printf(ctx, "handleItem url=%s", p.URL)
 	reqURL := strings.TrimSuffix(p.URL, "/")
 	if reqURL == "" {
 		return nil, fmt.Errorf("missing url")
@@ -50,13 +48,13 @@ func (s *Service) Item(ctx context.Context, p *web.ItemPayload) (res *web.Analyz
 
 	u, err := url.ParseRequestURI(reqURL)
 	if err != nil {
-		s.logger.Debug("invalid url", "error", err)
+		log.Errorf(ctx, err, "invalid url")
 		return nil, fmt.Errorf("invalid url")
 	}
 
 	item, err := s.facade.GetFirstItemForUrl(ctx, u)
 	if err != nil {
-		s.logger.Error("failed to get item", "error", err)
+		log.Errorf(ctx, err, "failed to get item")
 		return nil, web.NotFound("not found")
 	}
 	if item == nil || item.ThinkResult == nil {
@@ -67,7 +65,7 @@ func (s *Service) Item(ctx context.Context, p *web.ItemPayload) (res *web.Analyz
 }
 
 func (s *Service) Site(ctx context.Context, p *web.SitePayload) (res []*web.AnalyzedItem, err error) {
-	s.logger.Debug("handleSite", "root", p.Root)
+	log.Printf(ctx, "handleSite root=%s", p.Root)
 	rootDomain := strings.TrimSuffix(p.Root, "/")
 	if rootDomain == "" {
 		return nil, fmt.Errorf("missing root")
@@ -76,7 +74,7 @@ func (s *Service) Site(ctx context.Context, p *web.SitePayload) (res []*web.Anal
 	items, err := s.facade.GetItemsForRootDomain(ctx, rootDomain, p.MaxScore)
 	if err != nil || len(items) == 0 {
 		if err != nil {
-			s.logger.Error("GetItemsForRootDomain failed", "error", err)
+			log.Errorf(ctx, err, "GetItemsForRootDomain failed")
 		}
 		return nil, web.NotFound("not found")
 	}
@@ -89,7 +87,7 @@ func (s *Service) Site(ctx context.Context, p *web.SitePayload) (res []*web.Anal
 }
 
 func (s *Service) Articles(ctx context.Context, p *web.ArticlesPayload) (res []*web.AnalyzedArticle, err error) {
-	s.logger.Debug("handleArticles", "root", p.Root, "term", p.Term)
+	log.Printf(ctx, "handleArticles root=%s term=%s", p.Root, p.Term)
 	rootDomain := strings.TrimSuffix(p.Root, "/")
 	date, err := parseOptionalDateParam(p.Date)
 	if err != nil {
@@ -102,7 +100,7 @@ func (s *Service) Articles(ctx context.Context, p *web.ArticlesPayload) (res []*
 	items, err := s.facade.GetArticlesByTrend(ctx, p.Term, rootDomain, date, p.Days, p.Offset, p.Limit)
 	if err != nil || len(items) == 0 {
 		if err != nil {
-			s.logger.Error("GetArticlesByTrend failed", "error", err)
+			log.Errorf(ctx, err, "GetArticlesByTrend failed")
 		}
 		return nil, web.NotFound("not found")
 	}
@@ -115,7 +113,7 @@ func (s *Service) Articles(ctx context.Context, p *web.ArticlesPayload) (res []*
 }
 
 func (s *Service) Sentiments(ctx context.Context, p *web.SentimentsPayload) (res *web.SentimentItem, err error) {
-	s.logger.Debug("handleSentiments", "root", p.Root, "term", p.Term)
+	log.Printf(ctx, "handleSentiments root=%s term=%s", p.Root, p.Term)
 	rootDomain := strings.TrimSuffix(p.Root, "/")
 	date, err := parseOptionalDateParam(p.Date)
 	if err != nil {
@@ -128,7 +126,7 @@ func (s *Service) Sentiments(ctx context.Context, p *web.SentimentsPayload) (res
 	item, err := s.facade.GetSentimentsByTrend(ctx, p.Term, rootDomain, date, p.Days)
 	if err != nil || item == nil {
 		if err != nil {
-			s.logger.Error("GetSentimentsByTrend failed", "error", err)
+			log.Errorf(ctx, err, "GetSentimentsByTrend failed")
 		}
 		return nil, web.NotFound("not found")
 	}
@@ -137,10 +135,10 @@ func (s *Service) Sentiments(ctx context.Context, p *web.SentimentsPayload) (res
 }
 
 func (s *Service) Domains(ctx context.Context, p *web.DomainsPayload) (res []*web.DomainEntry, err error) {
-	s.logger.Debug("handleDomains")
+	log.Printf(ctx, "handleDomains")
 	domains, err := s.facade.GetRootDomains(ctx)
 	if err != nil {
-		s.logger.Error("failed to get root domains", "error", err)
+		log.Errorf(ctx, err, "failed to get root domains")
 		return nil, web.NotFound("not found")
 	}
 
@@ -156,7 +154,7 @@ func (s *Service) Domains(ctx context.Context, p *web.DomainsPayload) (res []*we
 }
 
 func (s *Service) TopTrendsByDomain(ctx context.Context, p *web.TopTrendsByDomainPayload) (res []*web.TrendMetric, err error) {
-	s.logger.Debug("handleTopTrendsByDomain", "domain", p.Domain)
+	log.Printf(ctx, "handleTopTrendsByDomain domain=%s", p.Domain)
 	date, err := parseOptionalDateParam(p.Date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD")
@@ -167,7 +165,7 @@ func (s *Service) TopTrendsByDomain(ctx context.Context, p *web.TopTrendsByDomai
 
 	trends, err := s.facade.GetTopTrendByDomain(ctx, p.Domain, p.Lang, date, p.Days)
 	if err != nil {
-		s.logger.Error("failed to get top trends", "error", err)
+		log.Errorf(ctx, err, "failed to get top trends")
 		return nil, web.NotFound("not found")
 	}
 
@@ -185,7 +183,7 @@ func (s *Service) TopTrendsByDomain(ctx context.Context, p *web.TopTrendsByDomai
 }
 
 func (s *Service) ContextByDomain(ctx context.Context, p *web.ContextByDomainPayload) (res []*web.TrendContext, err error) {
-	s.logger.Debug("handleContextByDomain", "domain", p.Domain, "term", p.Term)
+	log.Printf(ctx, "handleContextByDomain domain=%s term=%s", p.Domain, p.Term)
 	date, err := parseOptionalDateParam(p.Date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD")
@@ -196,7 +194,7 @@ func (s *Service) ContextByDomain(ctx context.Context, p *web.ContextByDomainPay
 
 	contexts, err := s.facade.GetContextByDomain(ctx, p.Term, p.Domain, p.Lang, date, p.Days)
 	if err != nil {
-		s.logger.Error("failed to get context by domain", "error", err)
+		log.Errorf(ctx, err, "failed to get context by domain")
 		return nil, web.NotFound("not found")
 	}
 
@@ -211,7 +209,7 @@ func (s *Service) ContextByDomain(ctx context.Context, p *web.ContextByDomainPay
 }
 
 func (s *Service) LifecycleByDomain(ctx context.Context, p *web.LifecycleByDomainPayload) (res []*web.Lifecycle, err error) {
-	s.logger.Debug("handleLifecycleByDomain", "domain", p.Domain, "term", p.Term)
+	log.Printf(ctx, "handleLifecycleByDomain domain=%s term=%s", p.Domain, p.Term)
 	date, err := parseOptionalDateParam(p.Date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD")
@@ -222,7 +220,7 @@ func (s *Service) LifecycleByDomain(ctx context.Context, p *web.LifecycleByDomai
 
 	lifecycles, err := s.facade.GetLifecycleByDomain(ctx, p.Term, p.Domain, p.Lang, date, p.Days)
 	if err != nil {
-		s.logger.Error("failed to get lifecycle by domain", "error", err)
+		log.Errorf(ctx, err, "failed to get lifecycle by domain")
 		return nil, web.NotFound("not found")
 	}
 
@@ -238,7 +236,7 @@ func (s *Service) LifecycleByDomain(ctx context.Context, p *web.LifecycleByDomai
 }
 
 func (s *Service) DomainComparisonEndpoint(ctx context.Context, p *web.DomainComparisonPayload) (res []*web.DomainComparison, err error) {
-	s.logger.Debug("handleDomainComparison", "domain_a", p.DomainA, "domain_b", p.DomainB)
+	log.Printf(ctx, "handleDomainComparison domain_a=%s domain_b=%s", p.DomainA, p.DomainB)
 	date, err := parseOptionalDateParam(p.Date)
 	if err != nil {
 		return nil, fmt.Errorf("invalid date format, expected YYYY-MM-DD")
@@ -249,7 +247,7 @@ func (s *Service) DomainComparisonEndpoint(ctx context.Context, p *web.DomainCom
 
 	comparisons, err := s.facade.GetDomainComparison(ctx, p.DomainA, p.DomainB, p.Lang, date, p.Days)
 	if err != nil {
-		s.logger.Error("failed to get domain comparison", "error", err)
+		log.Errorf(ctx, err, "failed to get domain comparison")
 		return nil, web.NotFound("not found")
 	}
 

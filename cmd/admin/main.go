@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log/slog"
 	"os"
 
 	"github.com/deframer/news-deframer/pkg/config"
+	applog "github.com/deframer/news-deframer/pkg/logger"
 	"github.com/spf13/cobra"
+	"goa.design/clue/log"
 )
 
 var (
@@ -24,9 +26,9 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// make the default logger always LevelWarn
-		lvl := slog.LevelWarn
-		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
+		ctx := applog.NewLoggerContext(context.Background(), false)
+		log.Print(ctx, log.KV{K: "component", V: "admin"})
+		cmd.SetContext(ctx)
 	},
 }
 

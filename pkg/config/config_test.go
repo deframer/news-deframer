@@ -12,7 +12,6 @@ func TestLoad(t *testing.T) {
 	unsetEnv := func() {
 		_ = os.Unsetenv("PORT")
 		_ = os.Unsetenv("DSN")
-		_ = os.Unsetenv("LOG_LEVEL")
 	}
 
 	t.Run("Defaults", func(t *testing.T) {
@@ -23,14 +22,12 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.NotEmpty(t, cfg.Port)
-		assert.NotEmpty(t, cfg.LogLevel)
 		assert.NotEmpty(t, cfg.DSN)
 	})
 
 	t.Run("Environment Variables Override", func(t *testing.T) {
 		unsetEnv()
 		_ = os.Setenv("PORT", "9090")
-		_ = os.Setenv("LOG_LEVEL", "info")
 
 		defer unsetEnv() // Cleanup
 
@@ -38,6 +35,5 @@ func TestLoad(t *testing.T) {
 		assert.NoError(t, err)
 
 		assert.Equal(t, "9090", cfg.Port)
-		assert.Equal(t, "info", cfg.LogLevel)
 	})
 }

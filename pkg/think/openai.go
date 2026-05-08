@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
+	"goa.design/clue/log"
 )
 
 // OpenAI requires a standard JSON Schema for structured outputs.
@@ -138,7 +138,7 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 			},
 		},
 	)
-	slog.Debug("openai request duration", "duration", time.Since(start))
+	log.Debugf(o.ctx, "openai request duration duration=%s", time.Since(start))
 	if err != nil {
 		return nil, err
 	}
@@ -152,11 +152,11 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 			thoughts = resp.Usage.CompletionTokensDetails.ReasoningTokens
 		}
 
-		slog.Debug("openai token usage",
-			"prompt_tokens", resp.Usage.PromptTokens,
-			"completion_tokens", resp.Usage.CompletionTokens,
-			"thoughts_tokens", thoughts,
-			"total_tokens", resp.Usage.TotalTokens,
+		log.Debugf(o.ctx, "openai token usage prompt_tokens=%d completion_tokens=%d thoughts_tokens=%d total_tokens=%d",
+			resp.Usage.PromptTokens,
+			resp.Usage.CompletionTokens,
+			thoughts,
+			resp.Usage.TotalTokens,
 		)
 	}
 

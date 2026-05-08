@@ -3,9 +3,7 @@ package syncer
 import (
 	"context"
 	"io"
-	"log/slog"
 	"net/url"
-	"os"
 	"testing"
 	"time"
 
@@ -350,7 +348,7 @@ func TestWantedDomains(t *testing.T) {
 
 func TestDetermineLanguage(t *testing.T) {
 	strPtr := func(s string) *string { return &s }
-	s := &Syncer{logger: slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}))}
+	s := &Syncer{ctx: context.Background()}
 
 	testCases := []struct {
 		name         string

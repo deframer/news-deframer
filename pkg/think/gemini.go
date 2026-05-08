@@ -4,11 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/database"
+	"goa.design/clue/log"
 	"google.golang.org/genai"
 )
 
@@ -117,7 +117,7 @@ func (g *gemini) Run(prompt string, language string, request Request) (*database
 			Temperature:       &temperature,
 		},
 	)
-	slog.Debug("gemini request duration", "duration", time.Since(start))
+	log.Debugf(g.ctx, "gemini request duration duration=%s", time.Since(start))
 	if err != nil {
 		return nil, err
 	}
@@ -128,11 +128,11 @@ func (g *gemini) Run(prompt string, language string, request Request) (*database
 			thoughts = resp.UsageMetadata.ThoughtsTokenCount
 		}
 
-		slog.Debug("gemini token usage",
-			"prompt_tokens", resp.UsageMetadata.PromptTokenCount,
-			"candidate_tokens", resp.UsageMetadata.CandidatesTokenCount,
-			"thoughts_tokens", thoughts,
-			"total_tokens", resp.UsageMetadata.TotalTokenCount,
+		log.Debugf(g.ctx, "gemini token usage prompt_tokens=%d candidate_tokens=%d thoughts_tokens=%d total_tokens=%d",
+			resp.UsageMetadata.PromptTokenCount,
+			resp.UsageMetadata.CandidatesTokenCount,
+			thoughts,
+			resp.UsageMetadata.TotalTokenCount,
 		)
 	}
 

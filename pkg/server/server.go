@@ -9,7 +9,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/deframer/news-deframer/pkg/facade"
+	"goa.design/clue/log"
 )
 
 // responseWriter is a wrapper for http.ResponseWriter to capture the status code and body
@@ -43,8 +43,8 @@ func isJSONRequest(r *http.Request) bool {
 }
 
 type Server struct {
+	ctx        context.Context
 	httpServer *http.Server
-	logger     *slog.Logger
 	facade     facade.Facade
 	cfg        *config.Config
 }
@@ -58,7 +58,7 @@ type RSSRequest struct {
 
 func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 	s := &Server{
-		logger: slog.With("component", "server"),
+		ctx:    ctx,
 		facade: f,
 		cfg:    cfg,
 	}
@@ -75,12 +75,14 @@ func New(ctx context.Context, cfg *config.Config, f facade.Facade) *Server {
 
 	// Chain middlewares: etag -> cache-control -> mux
 	var handler http.Handler = mux
-	if !cfg.DisableETag {
+	// TODO: make this configurable again after the logging/config cleanup lands.
+	disableETag := false
+	if !disableETag {
 		handler = s.etagMiddleware(s.cacheControlMiddleware(handler))
 	}
 	handler = s.corsMiddleware(handler)
 	if cfg.RedirectWebRequest404URL != "" {
-		s.logger.Info("enabled web request 404 redirect", "url", cfg.RedirectWebRequest404URL)
+		log.Printf(ctx, "enabled web request 404 redirect url=%s", cfg.RedirectWebRequest404URL)
 		handler = s.webRequest404RedirectMiddleware(handler)
 	}
 
@@ -192,7 +194,7 @@ func (s *Server) etagMiddleware(next http.Handler) http.Handler {
 
 		w.WriteHeader(rw.statusCode)
 		if _, err := w.Write(rw.body.Bytes()); err != nil {
-			s.logger.Error("failed to write response", "error", err)
+			log.Errorf(s.ctx, err, "failed to write response")
 		}
 	})
 }
@@ -214,7 +216,7 @@ func (s *Server) webRequest404RedirectMiddleware(next http.Handler) http.Handler
 
 		w.WriteHeader(rw.statusCode)
 		if _, err := w.Write(rw.body.Bytes()); err != nil {
-			s.logger.Error("failed to write response", "error", err)
+			log.Errorf(s.ctx, err, "failed to write response")
 		}
 	})
 }
@@ -243,14 +245,14 @@ func (s *Server) Stop(ctx context.Context) error {
 }
 
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("ping")
+	log.Printf(s.ctx, "ping")
 	if _, err := w.Write([]byte("pong")); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleTopTrendsByDomain(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleTopTrendsByDomain", "url", r.URL.String())
+	log.Printf(s.ctx, "handleTopTrendsByDomain url=%s", r.URL.String())
 	q := r.URL.Query()
 
 	domain := q.Get("domain")
@@ -281,19 +283,19 @@ func (s *Server) handleTopTrendsByDomain(w http.ResponseWriter, r *http.Request)
 
 	trends, err := s.facade.GetTopTrendByDomain(r.Context(), domain, lang, date, days)
 	if err != nil {
-		s.logger.Error("failed to get top trends", "error", err)
+		log.Errorf(s.ctx, err, "failed to get top trends")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(trends); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleContextByDomain(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleContextByDomain", "url", r.URL.String())
+	log.Printf(s.ctx, "handleContextByDomain url=%s", r.URL.String())
 	q := r.URL.Query()
 
 	term := q.Get("term")
@@ -329,19 +331,19 @@ func (s *Server) handleContextByDomain(w http.ResponseWriter, r *http.Request) {
 
 	contexts, err := s.facade.GetContextByDomain(r.Context(), term, domain, lang, date, days)
 	if err != nil {
-		s.logger.Error("failed to get context by domain", "error", err)
+		log.Errorf(s.ctx, err, "failed to get context by domain")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(contexts); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleLifecycleByDomain(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleLifecycleByDomain", "url", r.URL.String())
+	log.Printf(s.ctx, "handleLifecycleByDomain url=%s", r.URL.String())
 	q := r.URL.Query()
 
 	term := q.Get("term")
@@ -377,19 +379,19 @@ func (s *Server) handleLifecycleByDomain(w http.ResponseWriter, r *http.Request)
 
 	lifecycles, err := s.facade.GetLifecycleByDomain(r.Context(), term, domain, lang, date, days)
 	if err != nil {
-		s.logger.Error("failed to get lifecycle by domain", "error", err)
+		log.Errorf(s.ctx, err, "failed to get lifecycle by domain")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(lifecycles); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleDomainComparison(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleDomainComparison", "url", r.URL.String())
+	log.Printf(s.ctx, "handleDomainComparison url=%s", r.URL.String())
 	q := r.URL.Query()
 
 	domainA := q.Get("domain_a")
@@ -425,33 +427,33 @@ func (s *Server) handleDomainComparison(w http.ResponseWriter, r *http.Request) 
 
 	comparisons, err := s.facade.GetDomainComparison(r.Context(), domainA, domainB, lang, date, days)
 	if err != nil {
-		s.logger.Error("failed to get domain comparison", "error", err)
+		log.Errorf(s.ctx, err, "failed to get domain comparison")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(comparisons); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleHostname(w http.ResponseWriter, r *http.Request) {
 	hostname, err := os.Hostname()
 	if err != nil {
-		s.logger.Error("failed to get hostname", "error", err)
+		log.Errorf(s.ctx, err, "failed to get hostname")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(map[string]string{"hostname": hostname}); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleRSSProxy", "url", r.URL.String())
+	log.Printf(s.ctx, "handleRSSProxy url=%s", r.URL.String())
 	q := r.URL.Query()
 	req := RSSRequest{
 		URL:  strings.TrimSuffix(q.Get("url"), "/"),
@@ -479,13 +481,13 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 
 	xmlData, err := s.facade.GetRssProxyFeed(r.Context(), &filter)
 	if err != nil {
-		s.logger.Error("failed to get rss proxy feed", "error", err)
+		log.Errorf(s.ctx, err, "failed to get rss proxy feed")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	if err := validateXML(xmlData); err != nil {
-		s.logger.Error("invalid xml payload", "error", err)
+		log.Errorf(s.ctx, err, "invalid xml payload")
 		http.Error(w, "invalid feed", http.StatusBadRequest)
 		return
 	}
@@ -496,7 +498,7 @@ func (s *Server) handleRSSProxy(w http.ResponseWriter, r *http.Request) {
 
 	// #nosec G705: xmlData is validated by validateXML and served with strict headers
 	if _, err := io.WriteString(w, xmlData); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
@@ -513,7 +515,7 @@ func validateXML(xmlData string) error {
 }
 
 func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleItem", "url", r.URL.String())
+	log.Printf(s.ctx, "handleItem url=%s", r.URL.String())
 	q := r.URL.Query()
 	reqURL := strings.TrimSuffix(q.Get("url"), "/")
 
@@ -524,14 +526,14 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 
 	u, err := url.ParseRequestURI(reqURL)
 	if err != nil {
-		s.logger.Debug("invalid url", "error", err)
+		log.Errorf(s.ctx, err, "invalid url")
 		http.Error(w, "invalid url", http.StatusBadRequest)
 		return
 	}
 
 	item, err := s.facade.GetFirstItemForUrl(r.Context(), u)
 	if err != nil {
-		s.logger.Error("failed to get item", "error", err)
+		log.Errorf(s.ctx, err, "failed to get item")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
@@ -549,12 +551,12 @@ func (s *Server) handleItem(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(item); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleSite", "url", r.URL.String())
+	log.Printf(s.ctx, "handleSite url=%s", r.URL.String())
 	q := r.URL.Query()
 	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
 
@@ -571,9 +573,9 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 	items, err := s.facade.GetItemsForRootDomain(r.Context(), rootDomain, maxScore)
 	if err != nil || len(items) == 0 {
 		if err != nil {
-			s.logger.Error("GetItemsForRootDomain failed", "error", err)
+			log.Errorf(s.ctx, err, "GetItemsForRootDomain failed")
 		} else {
-			s.logger.Debug("no items found", "url", rootDomain)
+			log.Printf(s.ctx, "no items found url=%s", rootDomain)
 		}
 		http.Error(w, "not found", http.StatusNotFound)
 		return
@@ -581,12 +583,12 @@ func (s *Server) handleSite(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(items); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleArticles", "url", r.URL.String())
+	log.Printf(s.ctx, "handleArticles url=%s", r.URL.String())
 	q := r.URL.Query()
 
 	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
@@ -620,9 +622,9 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 	articles, err := s.facade.GetArticlesByTrend(r.Context(), term, rootDomain, date, days, offset, limit)
 	if err != nil || len(articles) == 0 {
 		if err != nil {
-			s.logger.Error("GetArticlesByTrend failed", "error", err)
+			log.Errorf(s.ctx, err, "GetArticlesByTrend failed")
 		} else {
-			s.logger.Debug("no trend articles found", "root", rootDomain, "term", term, "date", formatOptionalDate(date), "days", days)
+			log.Printf(s.ctx, "no trend articles found root=%s term=%s date=%s days=%d", rootDomain, term, formatOptionalDate(date), days)
 		}
 		http.Error(w, "not found", http.StatusNotFound)
 		return
@@ -630,12 +632,12 @@ func (s *Server) handleArticles(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(articles); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
 func (s *Server) handleSentiments(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleSentiments", "url", r.URL.String())
+	log.Printf(s.ctx, "handleSentiments url=%s", r.URL.String())
 	q := r.URL.Query()
 
 	rootDomain := strings.TrimSuffix(q.Get("root"), "/")
@@ -659,9 +661,9 @@ func (s *Server) handleSentiments(w http.ResponseWriter, r *http.Request) {
 	item, err := s.facade.GetSentimentsByTrend(r.Context(), term, rootDomain, date, days)
 	if err != nil || item == nil {
 		if err != nil {
-			s.logger.Error("GetSentimentsByTrend failed", "error", err)
+			log.Errorf(s.ctx, err, "GetSentimentsByTrend failed")
 		} else {
-			s.logger.Debug("no trend sentiments found", "root", rootDomain, "term", term, "date", formatOptionalDate(date), "days", days)
+			log.Printf(s.ctx, "no trend sentiments found root=%s term=%s date=%s days=%d", rootDomain, term, formatOptionalDate(date), days)
 		}
 		http.Error(w, "not found", http.StatusNotFound)
 		return
@@ -669,7 +671,7 @@ func (s *Server) handleSentiments(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(item); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }
 
@@ -693,16 +695,16 @@ func formatOptionalDate(date *time.Time) string {
 }
 
 func (s *Server) handleDomains(w http.ResponseWriter, r *http.Request) {
-	s.logger.Debug("handleDomains")
+	log.Printf(s.ctx, "handleDomains")
 	domains, err := s.facade.GetRootDomains(r.Context())
 	if err != nil {
-		s.logger.Error("failed to get root domains", "error", err)
+		log.Errorf(s.ctx, err, "failed to get root domains")
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(domains); err != nil {
-		s.logger.Error("failed to write response", "error", err)
+		log.Errorf(s.ctx, err, "failed to write response")
 	}
 }

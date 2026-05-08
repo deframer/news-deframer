@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"strings"
 	"sync"
@@ -20,6 +19,7 @@ import (
 	"github.com/deframer/news-deframer/pkg/util/text"
 	"github.com/google/uuid"
 	"github.com/mmcdole/gofeed"
+	"goa.design/clue/log"
 	"golang.org/x/net/publicsuffix"
 )
 
@@ -47,12 +47,11 @@ type FeedSyncer interface {
 }
 
 type Syncer struct {
-	ctx    context.Context
-	repo   database.Repository
-	logger *slog.Logger
-	dl     downloader.Downloader
-	feeds  feeds.Feeds
-	think  think.Think
+	ctx   context.Context
+	repo  database.Repository
+	dl    downloader.Downloader
+	feeds feeds.Feeds
+	think think.Think
 }
 
 func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Syncer, error) {
@@ -62,33 +61,32 @@ func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Sy
 	}
 
 	return &Syncer{
-		ctx:    ctx,
-		repo:   repo,
-		logger: slog.With("component", "syncer"),
-		dl:     downloader.NewDownloader(ctx, cfg),
-		feeds:  feeds.NewFeeds(ctx, cfg),
-		think:  th,
+		ctx:   ctx,
+		repo:  repo,
+		dl:    downloader.NewDownloader(ctx, cfg),
+		feeds: feeds.NewFeeds(ctx, cfg),
+		think: th,
 	}, nil
 }
 
 func (s *Syncer) SyncFeed(id uuid.UUID) error {
-	s.logger.Info("Syncing feed", "id", id)
+	log.Printf(s.ctx, "Syncing feed id=%s", id)
 	return s.repo.EnqueueSync(id, 0)
 }
 
 func (s *Syncer) StopPolling(id uuid.UUID) error {
-	s.logger.Info("Stopping polling", "id", id)
+	log.Printf(s.ctx, "Stopping polling id=%s", id)
 	return s.repo.RemoveSync(id)
 }
 
 func (s *Syncer) Poll(mode Mode) {
-	s.logger.Info("Starting poller", "mode", mode)
+	log.Printf(s.ctx, "Starting poller mode=%s", mode)
 	if mode == ModeThinkFixer {
 		s.pollThinkerFixerMode()
 		return
 	}
 	if mode != ModeWorker {
-		s.logger.Warn("Unknown mode, defaulting to worker", "mode", mode)
+		log.Warnf(s.ctx, "Unknown mode, defaulting to worker mode=%s", mode)
 	}
 	s.pollWorkerMode()
 }
@@ -96,20 +94,20 @@ func (s *Syncer) Poll(mode Mode) {
 func (s *Syncer) pollWorkerMode() {
 	for {
 		if s.ctx.Err() != nil {
-			s.logger.Info("Stopping poller")
+			log.Printf(s.ctx, "Stopping poller")
 			return
 		}
 
 		if s.syncNextScheduledFeed() {
-			s.logger.Info("A feed was synced")
+			log.Printf(s.ctx, "A feed was synced")
 			continue
 		}
 
-		s.logger.Info("Sleeping...", "duration", config.IdleSleepTime)
+		log.Printf(s.ctx, "Sleeping duration=%s", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():
-			s.logger.Info("Stopping poller")
+			log.Printf(s.ctx, "Stopping poller")
 			return
 		case <-time.After(config.IdleSleepTime):
 		}
@@ -119,20 +117,20 @@ func (s *Syncer) pollWorkerMode() {
 func (s *Syncer) pollThinkerFixerMode() {
 	for {
 		if s.ctx.Err() != nil {
-			s.logger.Info("Stopping poller")
+			log.Printf(s.ctx, "Stopping poller")
 			return
 		}
 
 		if s.fixNextThinkerBatch() {
-			s.logger.Info("A thinker-fixer batch was rechecked")
+			log.Printf(s.ctx, "A thinker-fixer batch was rechecked")
 			continue
 		}
 
-		s.logger.Info("Think-fixer sleeping...", "duration", config.IdleSleepTime)
+		log.Printf(s.ctx, "Think-fixer sleeping duration=%s", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():
-			s.logger.Info("Stopping poller")
+			log.Printf(s.ctx, "Stopping poller")
 			return
 		case <-time.After(config.IdleSleepTime):
 		}
@@ -141,22 +139,22 @@ func (s *Syncer) pollThinkerFixerMode() {
 
 // fixNextThinkerBatch return true if this has updated entries
 func (s *Syncer) fixNextThinkerBatch() bool {
-	s.logger.Info("fixNextThinkerBatch")
+	log.Printf(s.ctx, "fixNextThinkerBatch")
 	since := time.Now().Add(-thinkFixerLookback)
 	maxErrorCount := thinkFixerStopThreshold * 2
 	items, err := s.repo.BeginThinkFixerBatch(thinkFixerBatchSize, since, thinkFixerStopThreshold, maxErrorCount, config.DefaultLockDuration)
 	if err != nil {
-		s.logger.Error("Failed to query thinker-fixer candidates", "error", err)
+		log.Errorf(s.ctx, err, "Failed to query thinker-fixer candidates")
 		return false
 	}
 	if len(items) == 0 {
 		return false
 	}
 
-	s.logger.Info("Think-fixer candidates fetched", "count", len(items))
+	log.Printf(s.ctx, "Think-fixer candidates fetched count=%d", len(items))
 	for i := range items {
 		current := i + 1
-		s.logger.Debug("processThinkerItem", "item_id", items[i].ID, "feed_id", items[i].FeedID, "progress", fmt.Sprintf("%d/%d", current, len(items)))
+		log.Debugf(s.ctx, "processThinkerItem item_id=%s feed_id=%s progress=%d/%d", items[i].ID, items[i].FeedID, current, len(items))
 		s.processThinkerItem(&items[i])
 	}
 	return true
@@ -164,10 +162,10 @@ func (s *Syncer) fixNextThinkerBatch() bool {
 
 // syncNextScheduledFeed return true if this has updated entries
 func (s *Syncer) syncNextScheduledFeed() bool {
-	s.logger.Info("syncNextScheduledFeed")
+	log.Printf(s.ctx, "syncNextScheduledFeed")
 	feed, err := s.repo.BeginFeedUpdate(config.DefaultLockDuration)
 	if err != nil {
-		s.logger.Error("Failed query the next feed to sync", "error", err)
+		log.Errorf(s.ctx, err, "Failed query the next feed to sync")
 		return false
 	}
 	if feed == nil {
@@ -175,13 +173,13 @@ func (s *Syncer) syncNextScheduledFeed() bool {
 	}
 	err = s.updatingFeed(feed)
 	if err := s.repo.EndFeedUpdate(feed.ID, err, config.PollingInterval); err != nil {
-		s.logger.Error("Failed to end feed update", "error", err)
+		log.Errorf(s.ctx, err, "Failed to end feed update")
 	}
 	return true
 }
 
 func (s *Syncer) updatingFeed(feed *database.Feed) error {
-	s.logger.Info("Updating feed", "id", feed.ID, "url", feed.URL)
+	log.Printf(s.ctx, "Updating feed id=%s url=%s", feed.ID, feed.URL)
 
 	u, err := url.Parse(feed.URL)
 	if err != nil {
@@ -210,10 +208,10 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 
 	// items we can calculate a hash and it's urls are on our wanted domain list
 	items := s.feeds.FilterItems(s.ctx, parsedFeed, domains)
-	s.logger.Debug("items", "len", len(items))
+	log.Debugf(s.ctx, "items len=%d", len(items))
 
 	hashes := feeds.GetHashes(items)
-	s.logger.Debug("hashes", "len", len(hashes))
+	log.Debugf(s.ctx, "hashes len=%d", len(hashes))
 
 	count, err := s.processItems(feed, parsedFeed, items, hashes)
 	if err != nil {
@@ -221,7 +219,7 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 	}
 
 	if count == 0 {
-		s.logger.Debug("all items are processed - not updating the feed")
+		log.Debugf(s.ctx, "all items are processed - not updating the feed")
 		return nil
 	}
 
@@ -263,7 +261,7 @@ func (s *Syncer) determineLanguage(feed *database.Feed, parsedFeed *gofeed.Feed)
 		return *feed.Language
 	}
 	// this is a wild guess and will not match!
-	s.logger.Error("No language specified in feed or database, defaulting to 'en'", "feed_url", feed.URL, "feed_id", feed.ID)
+	log.Errorf(s.ctx, fmt.Errorf("no language specified in feed or database"), "No language specified in feed or database, defaulting to 'en' feed_url=%s feed_id=%s", feed.URL, feed.ID)
 	return "en"
 }
 
@@ -273,25 +271,25 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 		return 0, err
 	}
 	count := len(pendingItems)
-	s.logger.Debug("pending items", "len", count)
+	log.Debugf(s.ctx, "pending items len=%d", count)
 
 	if count == 0 {
-		s.logger.Debug("All items are already processed")
+		log.Debugf(s.ctx, "All items are already processed")
 		return 0, nil
 	}
 
 	language := s.determineLanguage(feed, parsedFeed)
 	if feed.Language == nil || *feed.Language == "" {
-		s.logger.Info("Feed language is not set, updating it.", "feed_id", feed.ID, "language", language)
+		log.Printf(s.ctx, "Feed language is not set, updating it. feed_id=%s language=%s", feed.ID, language)
 		feed.Language = &language
 		if err := s.repo.UpsertFeed(feed); err != nil {
 			// Log the error but continue, as this is not a critical failure
-			s.logger.Error("Failed to update feed language", "error", err, "feed_id", feed.ID)
+			log.Errorf(s.ctx, err, "Failed to update feed language feed_id=%s", feed.ID)
 		}
 	}
 
 	if feed.ResolveItemUrl {
-		s.logger.Debug("resolving remaining item urls", "url", feed.URL)
+		log.Debugf(s.ctx, "resolving remaining item urls url=%s", feed.URL)
 		var wg sync.WaitGroup
 		// Limit concurrency to avoid overwhelming the server or local resources
 		sem := make(chan struct{}, 10)
@@ -305,10 +303,9 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 
 				resolved, err := s.dl.ResolveRedirect(s.ctx, item.Link)
 				if err != nil {
-					s.logger.Warn("failed to resolve redirect", "url", item.Link, "error", err)
+					log.Warnf(s.ctx, "failed to resolve redirect url=%s error=%v", item.Link, err)
 				} else {
 					item.Link = resolved
-					// s.logger.Debug("resolved redirect", "url", item.Link)
 				}
 				item.Link = netutil.NormalizeURL(item.Link)
 			}(item.Item)
@@ -327,7 +324,7 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 		}
 		if errorCount, ok := pendingItems[item.Hash]; ok {
 			count++
-			s.logger.Debug("processItem", "feed", feed.ID, "hash", item.Hash, "progress", fmt.Sprintf("%d/%d", count, total))
+			log.Debugf(s.ctx, "processItem feed=%s hash=%s progress=%d/%d", feed.ID, item.Hash, count, total)
 			s.processItem(feed, item.Hash, item.Item, language, errorCount)
 		}
 	}
@@ -344,7 +341,7 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	pubDate := time.Now()
 	if result.pubDate != nil {
 		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
-			s.logger.Warn("ignoring future publication date", "hash", hash, "item_url", item.Link, "pub_date", *result.pubDate)
+			log.Warnf(s.ctx, "ignoring future publication date hash=%s item_url=%s pub_date=%s", hash, item.Link, result.pubDate)
 		} else {
 			pubDate = *result.pubDate
 		}
@@ -367,12 +364,12 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
-		s.logger.Error("failed to create item", "error", err, "hash", hash)
+		log.Errorf(s.ctx, err, "failed to create item hash=%s", hash)
 	}
 
 	// move the lock time in the future (we also extend the sleep time to have a fair execution window)
 	if err := s.repo.EnqueueSync(feed.ID, config.IdleSleepTime); err != nil {
-		s.logger.Error("failed to extend the lock duration item", "error", err, "hash", hash)
+		log.Errorf(s.ctx, err, "failed to extend the lock duration item hash=%s", hash)
 	}
 }
 
@@ -383,7 +380,7 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 
 	parsedItem, err := s.parseItemFromContent(dbItem.Content)
 	if err != nil {
-		s.logger.Error("Failed to parse item content", "error", err, "item_id", dbItem.ID)
+		log.Errorf(s.ctx, err, "Failed to parse item content item_id=%s", dbItem.ID)
 		return
 	}
 
@@ -399,7 +396,7 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 
 	if result.pubDate != nil {
 		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
-			s.logger.Warn("ignoring future publication date", "item_id", dbItem.ID, "item_url", parsedItem.Link, "pub_date", *result.pubDate)
+			log.Warnf(s.ctx, "ignoring future publication date item_id=%s item_url=%s pub_date=%s", dbItem.ID, parsedItem.Link, result.pubDate)
 		} else {
 			dbItem.PubDate = *result.pubDate
 		}
@@ -416,7 +413,7 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 
 	// let the trend miner recreate it as it now has access to the thinker results
 	if err := s.repo.UpsertItemWithTrendInvalidation(dbItem); err != nil {
-		s.logger.Error("failed to update item", "error", err, "item_id", dbItem.ID)
+		log.Errorf(s.ctx, err, "failed to update item item_id=%s", dbItem.ID)
 	}
 }
 
@@ -460,25 +457,22 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 
 	if err != nil {
 		if errors.Is(err, context.Canceled) || s.ctx.Err() != nil {
-			s.logger.Debug("context canceled", logKeys...)
+			log.Debugf(s.ctx, "%s", formatLogKeys("context canceled", logKeys...))
 			return nil, err
 		}
-		args := append([]any{"error", err}, logKeys...)
-		s.logger.Error("analysis failed", args...)
+		log.Errorf(s.ctx, err, "%s", formatLogKeys("analysis failed", logKeys...))
 		errStr := err.Error()
 		thinkError = &errStr
 		nextErrorCount++
 	} else {
 		err = updateContent(parsedItem, res)
 		if err != nil {
-			args := append([]any{"error", err}, logKeys...)
-			s.logger.Error("update content failed", args...)
+			log.Errorf(s.ctx, err, "%s", formatLogKeys("update content failed", logKeys...))
 			return nil, err
 		}
 		mediaContent, err = extractMediaContent(parsedItem)
 		if err != nil {
-			args := append([]any{"error", err}, logKeys...)
-			s.logger.Error("extract media content failed", args...)
+			log.Errorf(s.ctx, err, "%s", formatLogKeys("extract media content failed", logKeys...))
 		}
 		if res != nil {
 			thinkRating = res.Overall
@@ -490,8 +484,7 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 
 	content, err := s.feeds.RenderItem(s.ctx, parsedItem)
 	if err != nil {
-		args := append([]any{"error", err}, logKeys...)
-		s.logger.Error("failed to render item", args...)
+		log.Errorf(s.ctx, err, "%s", formatLogKeys("failed to render item", logKeys...))
 		return nil, err
 	}
 
@@ -532,7 +525,7 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	if err != nil {
 		return err
 	}
-	s.logger.Debug("items", "len", len(items))
+	log.Debugf(s.ctx, "items len=%d", len(items))
 
 	// delete the items - we will replace them
 	parsedFeed.Items = []*gofeed.Item{}
@@ -546,7 +539,7 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 		wrapped := `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>` + item.Content + `</channel></rss>`
 		pf, err := fp.Parse(strings.NewReader(wrapped))
 		if err != nil {
-			s.logger.Error("failed to parse item xml", "error", err, "hash", item.Hash)
+			log.Errorf(s.ctx, err, "failed to parse item xml hash=%s", item.Hash)
 			continue
 		}
 
@@ -575,7 +568,7 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	if err != nil {
 		return err
 	}
-	s.logger.Info("Rendered feed", "len", len(xmlContent))
+	log.Printf(s.ctx, "Rendered feed len=%d", len(xmlContent))
 
 	cachedFeed := &database.CachedFeed{
 		ID:         feed.ID,
@@ -584,4 +577,24 @@ func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, h
 	}
 
 	return s.repo.UpsertCachedFeed(cachedFeed)
+}
+
+func formatLogKeys(msg string, logKeys ...any) string {
+	if len(logKeys) == 0 {
+		return msg
+	}
+
+	var b strings.Builder
+	b.WriteString(msg)
+	for i := 0; i < len(logKeys); i += 2 {
+		b.WriteByte(' ')
+		b.WriteString(fmt.Sprint(logKeys[i]))
+		b.WriteByte('=')
+		if i+1 < len(logKeys) {
+			b.WriteString(fmt.Sprint(logKeys[i+1]))
+		} else {
+			b.WriteString("<missing>")
+		}
+	}
+	return b.String()
 }

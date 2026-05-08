@@ -37,6 +37,7 @@ func main() {
 		format = log.FormatTerminal
 	}
 	ctx := log.Context(context.Background(), log.WithFormat(format))
+	httpPortF = bootstrap(ctx, httpPortF, dbgF)
 	if *dbgF {
 		ctx = log.Context(ctx, log.WithDebug())
 		log.Debugf(ctx, "debug logs enabled")
@@ -51,8 +52,8 @@ func main() {
 	)
 	{
 		infraSvc = servicenew.NewInfra()
-		mobileSvc = servicenew.NewMobile()
-		webSvc = servicenew.NewWeb()
+		mobileSvc = servicenew.NewMobile(ctx)
+		webSvc = servicenew.NewWeb(ctx)
 	}
 
 	// Wrap the services in endpoints that can be invoked from other services

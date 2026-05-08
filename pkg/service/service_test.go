@@ -3,8 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"io"
-	"log/slog"
 	"net/url"
 	"testing"
 	"time"
@@ -99,7 +97,6 @@ func (m *mockFacade) GetSentimentsByTrend(ctx context.Context, term string, doma
 func testService(mf *mockFacade) *Service {
 	return &Service{
 		facade: mf,
-		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
 		cfg:    &config.Config{},
 	}
 }

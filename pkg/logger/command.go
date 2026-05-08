@@ -1,22 +1,21 @@
 package logger
 
 import (
-	"log/slog"
-	"os"
+	"context"
+
+	"goa.design/clue/log"
 )
 
-// NewCommandLogger creates a new slog logger for commands.
-// It removes the timestamp from the log output to keep it clean for CLI usage.
-func NewCommandLogger(level slog.Level) *slog.Logger {
-	opts := &slog.HandlerOptions{
-		Level: level,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			if a.Key == slog.TimeKey {
-				return slog.Attr{}
-			}
-			return a
-		},
+// NewLoggerContext initializes a clue/log context for command-line tools.
+func NewLoggerContext(ctx context.Context, debug bool) context.Context {
+	format := log.FormatJSON
+	if log.IsTerminal() {
+		format = log.FormatTerminal
 	}
-
-	return slog.New(slog.NewTextHandler(os.Stderr, opts))
+	ctx = log.Context(ctx, log.WithFormat(format))
+	if debug {
+		ctx = log.Context(ctx, log.WithDebug())
+		log.Debugf(ctx, "debug logs enabled")
+	}
+	return ctx
 }

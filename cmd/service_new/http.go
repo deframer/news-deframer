@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sync"
 	"time"
 
@@ -70,7 +71,10 @@ func handleHTTPServer(ctx context.Context, u *url.URL, infraEndpoints *infra.End
 		// Log query and response bodies if debug logs are enabled.
 		handler = debug.HTTP()(handler)
 	}
-	handler = log.HTTP(ctx)(handler)
+	// skip pings
+	var noLogRegexp = regexp.MustCompile(`^/(healthz|livez|metrics|ping)$`)
+	handler = log.HTTP(ctx, log.WithPathFilter(noLogRegexp))(handler)
+	// handler = log.HTTP(ctx)(handler)
 
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.

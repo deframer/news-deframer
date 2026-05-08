@@ -96,7 +96,7 @@ func TestHandleArticles(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/api/articles?root=example.com&term=ai&date="+today, nil)
 		rr := httptest.NewRecorder()
 
@@ -108,7 +108,7 @@ func TestHandleArticles(t *testing.T) {
 	})
 
 	t.Run("missing params", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true}, &mockFacade{})
+		s := New(ctx, &config.Config{}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodGet, "/api/articles?root=example.com", nil)
 		rr := httptest.NewRecorder()
 
@@ -118,7 +118,7 @@ func TestHandleArticles(t *testing.T) {
 	})
 
 	t.Run("invalid date", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true}, &mockFacade{})
+		s := New(ctx, &config.Config{}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodGet, "/api/articles?root=example.com&term=ai&date=03-03-2026", nil)
 		rr := httptest.NewRecorder()
 
@@ -134,7 +134,7 @@ func TestHandleArticles(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/api/articles?root=example.com&term=ai&date="+today, nil)
 		rr := httptest.NewRecorder()
 
@@ -165,7 +165,7 @@ func TestHandleSentiments(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/api/sentiments?root=example.com&term=ai&date="+today, nil)
 		rr := httptest.NewRecorder()
 
@@ -176,7 +176,7 @@ func TestHandleSentiments(t *testing.T) {
 	})
 
 	t.Run("missing params", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true}, &mockFacade{})
+		s := New(ctx, &config.Config{}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodGet, "/api/sentiments?root=example.com", nil)
 		rr := httptest.NewRecorder()
 
@@ -186,7 +186,7 @@ func TestHandleSentiments(t *testing.T) {
 	})
 
 	t.Run("invalid date", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true}, &mockFacade{})
+		s := New(ctx, &config.Config{}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodGet, "/api/sentiments?root=example.com&term=ai&date=03-03-2026", nil)
 		rr := httptest.NewRecorder()
 
@@ -202,7 +202,7 @@ func TestHandleSentiments(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/api/sentiments?root=example.com&term=ai&date="+today, nil)
 		rr := httptest.NewRecorder()
 
@@ -231,7 +231,7 @@ func TestHandleItem(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/api/item?url=https://example.com/a", nil)
 		rr := httptest.NewRecorder()
 
@@ -259,7 +259,7 @@ func TestHandleItem(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/api/item?url=https://example.com/a", nil)
 		rr := httptest.NewRecorder()
 
@@ -287,7 +287,7 @@ func TestHandleItem(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/mobile/api/item?url=https://example.com/a", nil)
 		rr := httptest.NewRecorder()
 
@@ -315,7 +315,7 @@ func TestHandleItem(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/mobile/api/item?url=https://example.com/a", nil)
 		rr := httptest.NewRecorder()
 
@@ -346,7 +346,7 @@ func TestHandleSite(t *testing.T) {
 			},
 		}
 
-		s := New(ctx, &config.Config{DisableETag: true}, mockF)
+		s := New(ctx, &config.Config{}, mockF)
 		req := httptest.NewRequest(http.MethodGet, "/api/site?root=example.com", nil)
 		rr := httptest.NewRecorder()
 
@@ -361,7 +361,7 @@ func TestCORS(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("wildcard origin", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true, CORSAllowedOrigins: "*"}, &mockFacade{})
+		s := New(ctx, &config.Config{CORSAllowedOrigins: "*"}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 		req.Header.Set("Origin", "http://192.168.192.124:8090")
 		rr := httptest.NewRecorder()
@@ -375,7 +375,7 @@ func TestCORS(t *testing.T) {
 	})
 
 	t.Run("allowed origin from list", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true, CORSAllowedOrigins: "http://localhost:8090, http://192.168.192.124:8090"}, &mockFacade{})
+		s := New(ctx, &config.Config{CORSAllowedOrigins: "http://localhost:8090, http://192.168.192.124:8090"}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 		req.Header.Set("Origin", "http://192.168.192.124:8090")
 		rr := httptest.NewRecorder()
@@ -388,7 +388,7 @@ func TestCORS(t *testing.T) {
 	})
 
 	t.Run("disallowed origin", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true, CORSAllowedOrigins: "http://localhost:8090"}, &mockFacade{})
+		s := New(ctx, &config.Config{CORSAllowedOrigins: "http://localhost:8090"}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodGet, "/ping", nil)
 		req.Header.Set("Origin", "http://192.168.192.124:8090")
 		rr := httptest.NewRecorder()
@@ -400,7 +400,7 @@ func TestCORS(t *testing.T) {
 	})
 
 	t.Run("preflight request", func(t *testing.T) {
-		s := New(ctx, &config.Config{DisableETag: true, CORSAllowedOrigins: "*"}, &mockFacade{})
+		s := New(ctx, &config.Config{CORSAllowedOrigins: "*"}, &mockFacade{})
 		req := httptest.NewRequest(http.MethodOptions, "/api/domains", nil)
 		req.Header.Set("Origin", "http://192.168.192.124:8090")
 		rr := httptest.NewRecorder()

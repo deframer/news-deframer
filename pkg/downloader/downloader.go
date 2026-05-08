@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
+	"goa.design/clue/log"
 )
 
 // fake a real chrome browser
@@ -30,7 +30,6 @@ type DownloaderOpts struct {
 type downloader struct {
 	ctx       context.Context
 	cfg       *config.Config
-	logger    *slog.Logger
 	client    *http.Client
 	userAgent string
 	sec_CH_UA string
@@ -75,9 +74,8 @@ func NewDownloader(ctx context.Context, cfg *config.Config, opts ...DownloaderOp
 	}
 
 	return &downloader{
-		ctx:    ctx,
-		cfg:    cfg,
-		logger: slog.With("component", "downloader"),
+		ctx: ctx,
+		cfg: cfg,
 		client: &http.Client{
 			Timeout:   15 * time.Second,
 			Transport: transport,
@@ -94,7 +92,7 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 		return nil, errors.New("feed cannot be nil")
 	}
 
-	d.logger.DebugContext(ctx, "downloading feed", "url", feed.String())
+	log.Printf(ctx, "downloading feed url=%s", feed.String())
 
 	switch feed.Scheme {
 	case "http", "https":

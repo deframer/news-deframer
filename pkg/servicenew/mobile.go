@@ -15,8 +15,8 @@ type mobilesrvc struct {
 }
 
 // NewMobile returns the mobile service implementation.
-func NewMobile() mobile.Service {
-	return &mobilesrvc{svc: sharedservice.NewService()}
+func NewMobile(ctx context.Context) mobile.Service {
+	return &mobilesrvc{svc: sharedservice.NewService(ctx)}
 }
 
 func (s *mobilesrvc) Item(ctx context.Context, p *mobile.ItemPayload) (res *mobile.AnalyzedItem, err error) {

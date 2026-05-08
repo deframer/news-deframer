@@ -3,7 +3,6 @@ package facade
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"sort"
 	"strings"
@@ -43,18 +42,16 @@ type Facade interface {
 }
 
 type facade struct {
-	ctx    context.Context
-	cfg    *config.Config
-	logger *slog.Logger
-	repo   database.Repository
+	ctx  context.Context
+	cfg  *config.Config
+	repo database.Repository
 }
 
 func New(ctx context.Context, cfg *config.Config, repo database.Repository, dl ...downloader.Downloader) Facade {
 	return &facade{
-		ctx:    ctx,
-		cfg:    cfg,
-		logger: slog.With("component", "facade"),
-		repo:   repo,
+		ctx:  ctx,
+		cfg:  cfg,
+		repo: repo,
 	}
 }
 
