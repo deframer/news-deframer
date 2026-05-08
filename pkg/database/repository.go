@@ -17,6 +17,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 )
 
 //go:embed sql/statement/top_trend_by_domain.sql
@@ -207,8 +208,13 @@ type repository struct {
 
 // NewRepository initializes a new repository with a database connection from config.
 func NewRepository(ctx context.Context, cfg *config.Config) (Repository, error) {
+	gormLogger := logger.Default.LogMode(logger.Silent)
+	if cfg.DatabaseLogging {
+		gormLogger = NewCustomGormLogger(ctx)
+	}
+
 	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
-		Logger: NewCustomGormLogger(ctx),
+		Logger: gormLogger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
