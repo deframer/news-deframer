@@ -122,10 +122,10 @@ func TestItem(t *testing.T) {
 			getFirstItemForUrl: func(ctx context.Context, u *url.URL) (*database.AnalyzedItem, error) {
 				require.Equal(t, "https://example.com/a", u.String())
 				return &database.AnalyzedItem{
-					Hash:    "hash1",
-					URL:     "https://example.com/a",
-					Authors: database.StringArray{"Jane Doe", "John Roe"},
-					Sentiments: &database.SentimentScores{Valence: 0.7, Joy: 0.9},
+					Hash:               "hash1",
+					URL:                "https://example.com/a",
+					Authors:            database.StringArray{"Jane Doe", "John Roe"},
+					Sentiments:         &database.SentimentScores{Valence: 0.7, Joy: 0.9},
 					SentimentsDeframed: &database.SentimentScores{Valence: 0.2},
 					MediaContent: &database.MediaContent{
 						URL:         mediaURL,

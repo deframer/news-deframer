@@ -1,0 +1,38 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "example", "version": "1.0.0" },
+  "servers": [{ "url": "http://placeholder" }],
+  "tags": [
+    { "name": "rules", "description": "rules" }
+  ],
+  "paths": {
+    "/resource/rules": {
+      "get": {
+        "tags": ["rules"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/RuleListResult" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "RuleListResult": {
+        "type": "object",
+        "properties": {
+          "rules": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

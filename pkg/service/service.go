@@ -174,11 +174,11 @@ func (s *Service) TopTrendsByDomain(ctx context.Context, p *web.TopTrendsByDomai
 	res = make([]*web.TrendMetric, 0, len(trends))
 	for i := range trends {
 		res = append(res, &web.TrendMetric{
-			TrendTopic:  trends[i].TrendTopic,
-			Frequency:   trends[i].Frequency,
-			Utility:     trends[i].Utility,
+			TrendTopic:   trends[i].TrendTopic,
+			Frequency:    trends[i].Frequency,
+			Utility:      trends[i].Utility,
 			OutlierRatio: trends[i].OutlierRatio,
-			TimeSlice:   trends[i].TimeSlice.Format(time.RFC3339),
+			TimeSlice:    trends[i].TimeSlice.Format(time.RFC3339),
 		})
 	}
 	return res, nil
