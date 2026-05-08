@@ -111,10 +111,10 @@ func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi
 		log.Printf(ctx, "shutting down HTTP server at %q", u.Host)
 
 		// Shutdown gracefully with a 30s timeout.
-		shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		err := srv.Shutdown(shutdownCtx)
+		err := srv.Shutdown(ctx)
 		if err != nil {
 			log.Printf(ctx, "failed to shutdown: %v", err)
 		}

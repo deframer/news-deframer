@@ -70,7 +70,7 @@ func main() {
 		case "http", "https":
 			endpoint, payload, err = doHTTP(scheme, host, timeout, debug)
 		default:
-			fmt.Fprintf(os.Stderr, "invalid scheme: %q (valid schemes: grpc|http)\n", scheme)
+			fmt.Fprintf(os.Stderr, "invalid scheme: %q (valid schemes: http)\n", scheme)
 			os.Exit(1)
 		}
 	}
