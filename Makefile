@@ -89,7 +89,7 @@ gen: goa-install
 	goa gen github.com/deframer/news-deframer/pkg/design
 
 example: tidy gen
-	goa example github.com/deframer/news-deframer/pkg/design && mkdir -p pkg/servicenew && for f in *.go; do [ -e "$$f" ] || continue; if [ -e "pkg/servicenew/$$f" ]; then rm -f "$$f"; else mv -f "$$f" "pkg/servicenew/$$f"; fi; done
+	goa example github.com/deframer/news-deframer/pkg/design && mkdir -p pkg/servicenew && for f in *.go; do [ -e "$$f" ] || continue; if [ -e "pkg/servicenew/$$f" ]; then rm -f "$$f"; else mv -f "$$f" "pkg/service/$$f"; fi; done
 
 docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
 
@@ -104,7 +104,7 @@ service-cached: build
 	./bin/service
 
 service: build
-	./bin/service --disable-etag
+	./bin/service
 
 migration: build
 	./bin/migration

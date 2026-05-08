@@ -1,4 +1,4 @@
-package servicenew
+package service
 
 import (
 	"context"
@@ -6,7 +6,6 @@ import (
 	web "github.com/deframer/news-deframer/gen/web"
 
 	mobile "github.com/deframer/news-deframer/gen/mobile"
-	sharedservice "github.com/deframer/news-deframer/pkg/service"
 	"goa.design/goa/v3/security"
 )
 
@@ -16,7 +15,7 @@ type mobilesrvc struct {
 
 // NewMobile returns the mobile service implementation.
 func NewMobile(ctx context.Context) mobile.Service {
-	return &mobilesrvc{svc: sharedservice.NewService(ctx)}
+	return &mobilesrvc{svc: NewWebImplementation(ctx)}
 }
 
 func (s *mobilesrvc) Item(ctx context.Context, p *mobile.ItemPayload) (res *mobile.AnalyzedItem, err error) {

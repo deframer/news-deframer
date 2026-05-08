@@ -36,7 +36,7 @@ func main() {
 		if addr == "" {
 			switch *hostF {
 			case "localhost":
-				addr = "http://0.0.0.0:8081"
+				addr = "http://0.0.0.0:8080"
 			default:
 				fmt.Fprintf(os.Stderr, "invalid host argument: %q (valid hosts: localhost)\n", *hostF)
 				os.Exit(1)
@@ -100,13 +100,13 @@ func usage() {
 	usageCommands = append(usageCommands, httpUsageCommands()...)
 	sort.Strings(usageCommands)
 	usageCommands = slices.Compact(usageCommands)
-	fmt.Fprintf(os.Stderr, `%s is a command line client for the service_new API.
+	fmt.Fprintf(os.Stderr, `%s is a command line client for the service API.
 
 Usage:
     %s [-host HOST][-url URL][-timeout SECONDS][-verbose|-v] SERVICE ENDPOINT [flags]
 
     -host HOST:  server host (localhost). valid values: localhost
-	 -url URL:    specify service URL overriding host URL (http://0.0.0.0:8081)
+    -url URL:    specify service URL overriding host URL (http://localhost:8080)
     -timeout:    maximum number of seconds to wait for response (30)
     -verbose|-v: print request and response details (false)
 

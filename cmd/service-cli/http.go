@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	cli "github.com/deframer/news-deframer/gen/http/cli/service_new"
+	cli "github.com/deframer/news-deframer/gen/http/cli/service"
 	goahttp "goa.design/goa/v3/http"
 	goa "goa.design/goa/v3/pkg"
 )

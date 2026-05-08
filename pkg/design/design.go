@@ -9,14 +9,13 @@ var BasicAuthPayload = Type("BasicAuthPayload", func() {
 
 var BasicAuth = BasicAuthSecurity("basic")
 
-var _ = API("service_new", func() {
-	Title("service_new")
-	Description("service_new Goa design")
+var _ = API("service", func() {
+	Title("service")
+	Description("service Goa design")
 	Version("1.0.0")
-	Server("service_new", func() {
+	Server("service", func() {
 		Host("localhost", func() {
-			URI("http://0.0.0.0:8081")
-			URI("grpc://0.0.0.0:8091")
+			URI("http://0.0.0.0:8080")
 		})
 	})
 })

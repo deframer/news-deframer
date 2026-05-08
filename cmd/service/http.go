@@ -10,9 +10,11 @@ import (
 
 	infrasvr "github.com/deframer/news-deframer/gen/http/infra/server"
 	mobilesvr "github.com/deframer/news-deframer/gen/http/mobile/server"
+	openapisvr "github.com/deframer/news-deframer/gen/http/openapi/server"
 	websvr "github.com/deframer/news-deframer/gen/http/web/server"
 	infra "github.com/deframer/news-deframer/gen/infra"
 	mobile "github.com/deframer/news-deframer/gen/mobile"
+	openapi "github.com/deframer/news-deframer/gen/openapi"
 	web "github.com/deframer/news-deframer/gen/web"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
@@ -21,7 +23,7 @@ import (
 
 // handleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, u *url.URL, infraEndpoints *infra.Endpoints, mobileEndpoints *mobile.Endpoints, webEndpoints *web.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
+func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi.Endpoints, infraEndpoints *infra.Endpoints, mobileEndpoints *mobile.Endpoints, webEndpoints *web.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
 
 	// Provide the transport specific request decoder and response encoder.
 	// The goa http package has built-in support for JSON, XML and gob.
@@ -50,18 +52,21 @@ func handleHTTPServer(ctx context.Context, u *url.URL, infraEndpoints *infra.End
 	// the service input and output data structures to HTTP requests and
 	// responses.
 	var (
-		infraServer  *infrasvr.Server
-		mobileServer *mobilesvr.Server
-		webServer    *websvr.Server
+		openapiServer *openapisvr.Server
+		infraServer   *infrasvr.Server
+		mobileServer  *mobilesvr.Server
+		webServer     *websvr.Server
 	)
 	{
 		eh := errorHandler(ctx)
+		openapiServer = openapisvr.New(openapiEndpoints, mux, dec, enc, eh, nil)
 		infraServer = infrasvr.New(infraEndpoints, mux, dec, enc, eh, nil)
 		mobileServer = mobilesvr.New(mobileEndpoints, mux, dec, enc, eh, nil)
 		webServer = websvr.New(webEndpoints, mux, dec, enc, eh, nil)
 	}
 
 	// Configure the mux.
+	openapisvr.Mount(mux, openapiServer)
 	infrasvr.Mount(mux, infraServer)
 	mobilesvr.Mount(mux, mobileServer)
 	websvr.Mount(mux, webServer)
@@ -79,6 +84,9 @@ func handleHTTPServer(ctx context.Context, u *url.URL, infraEndpoints *infra.End
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
 	srv := &http.Server{Addr: u.Host, Handler: handler, ReadHeaderTimeout: time.Second * 60}
+	for _, m := range openapiServer.Mounts {
+		log.Printf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+	}
 	for _, m := range infraServer.Mounts {
 		log.Printf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
@@ -103,10 +111,10 @@ func handleHTTPServer(ctx context.Context, u *url.URL, infraEndpoints *infra.End
 		log.Printf(ctx, "shutting down HTTP server at %q", u.Host)
 
 		// Shutdown gracefully with a 30s timeout.
-		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		shutdownCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 		defer cancel()
 
-		err := srv.Shutdown(ctx)
+		err := srv.Shutdown(shutdownCtx)
 		if err != nil {
 			log.Printf(ctx, "failed to shutdown: %v", err)
 		}
