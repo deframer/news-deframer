@@ -50,7 +50,7 @@ down:
 logs:
 	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) logs -f
 
-build: tidy gen
+build: gen tidy
 	mkdir -p $(BUILD_DIR)
 	go build -o $(BUILD_DIR)/ ./$(CMD_DIR)/...
 
@@ -82,7 +82,7 @@ goa-install:
 
 check: test lint
 
-tidy:
+tidy: gen
 	go mod tidy
 
 gen: goa-install

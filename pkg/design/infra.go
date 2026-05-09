@@ -3,11 +3,13 @@ package design
 import . "goa.design/goa/v3/dsl"
 
 var HostnameResponse = Type("HostnameResponse", func() {
+	Description("Current host name.")
 	Attribute("hostname", String, "Machine hostname")
 	Required("hostname")
 })
 
 var SentimentScores = Type("SentimentScores", func() {
+	Description("Sentiment score set.")
 	Attribute("valence", Float64, "Valence score")
 	Attribute("arousal", Float64, "Arousal score")
 	Attribute("dominance", Float64, "Dominance score")
@@ -49,6 +51,7 @@ var _ = Service("infra", func() {
 })
 
 var ThinkResult = Type("ThinkResult", func() {
+	Description("Analysis result for an article.")
 	Attribute("title_original", String, "Original title")
 	Attribute("description_original", String, "Original description")
 	Attribute("title_corrected", String, "Corrected title")
@@ -70,6 +73,7 @@ var ThinkResult = Type("ThinkResult", func() {
 })
 
 var MediaThumbnail = Type("MediaThumbnail", func() {
+	Description("Media thumbnail metadata.")
 	Attribute("url", String, "Thumbnail URL")
 	Attribute("height", Int, "Thumbnail height")
 	Attribute("width", Int, "Thumbnail width")
@@ -77,6 +81,7 @@ var MediaThumbnail = Type("MediaThumbnail", func() {
 })
 
 var MediaContent = Type("MediaContent", func() {
+	Description("Media attachment metadata.")
 	Attribute("url", String, "Media URL")
 	Attribute("type", String, "MIME type")
 	Attribute("medium", String, "Media type")
@@ -90,6 +95,7 @@ var MediaContent = Type("MediaContent", func() {
 })
 
 var DomainEntry = Type("DomainEntry", func() {
+	Description("Root domain entry.")
 	Attribute("domain", String, "Root domain")
 	Attribute("language", String, "Language code")
 	Attribute("portal_url", String, "Portal URL", func() {
@@ -99,6 +105,7 @@ var DomainEntry = Type("DomainEntry", func() {
 })
 
 var TrendMetric = Type("TrendMetric", func() {
+	Description("Trending term metric.")
 	Attribute("trend_topic", String, "Trending topic")
 	Attribute("frequency", Int64, "Frequency")
 	Attribute("utility", Int64, "Utility")
@@ -110,12 +117,14 @@ var TrendMetric = Type("TrendMetric", func() {
 })
 
 var TrendContext = Type("TrendContext", func() {
+	Description("Context term for a trend.")
 	Attribute("context", String, "Context word")
 	Attribute("frequency", Int64, "Frequency")
 	Required("context", "frequency")
 })
 
 var Lifecycle = Type("Lifecycle", func() {
+	Description("Trend lifecycle sample.")
 	Attribute("time_slice", String, "Time slice", func() {
 		Format(FormatDateTime)
 	})
@@ -125,6 +134,7 @@ var Lifecycle = Type("Lifecycle", func() {
 })
 
 var DomainComparison = Type("DomainComparison", func() {
+	Description("Trend comparison between domains.")
 	Attribute("classification", String, "Classification", func() {
 		Enum("BLINDSPOT_A", "BLINDSPOT_B", "INTERSECT")
 	})
@@ -136,6 +146,7 @@ var DomainComparison = Type("DomainComparison", func() {
 })
 
 var AnalyzedArticle = Type("AnalyzedArticle", func() {
+	Description("Article summary for trend views.")
 	Attribute("url", String, "Article URL")
 	Attribute("title", String, "Article title")
 	Attribute("rating", Float64, "Article rating")
@@ -143,15 +154,17 @@ var AnalyzedArticle = Type("AnalyzedArticle", func() {
 	Attribute("pub_date", String, "Publication date", func() {
 		Format(FormatDateTime)
 	})
-	Required("url", "pub_date", "authors")
+	Required("url", "pub_date")
 })
 
 var SentimentItem = Type("SentimentItem", func() {
+	Description("Trend sentiment pair.")
 	Attribute("sentiments", SentimentScores, "Original sentiments")
 	Attribute("sentiments_deframed", SentimentScores, "Deframed sentiments")
 })
 
 var AnalyzedItem = Type("AnalyzedItem", func() {
+	Description("Full analyzed item.")
 	Attribute("hash", String, "Item hash")
 	Attribute("url", String, "Item URL")
 	Attribute("title_original", String, "Original title")
@@ -174,6 +187,37 @@ var AnalyzedItem = Type("AnalyzedItem", func() {
 	Attribute("overall_reason", String, "Overall explanation")
 	Attribute("sentiments", SentimentScores, "Original sentiments")
 	Attribute("sentiments_deframed", SentimentScores, "Deframed sentiments")
+	Attribute("media", MediaContent, "Media content")
+	Attribute("rating", Float64, "Think rating")
+	Attribute("authors", ArrayOf(String), "Authors")
+	Attribute("pubDate", String, "Publication date", func() {
+		Format(FormatDateTime)
+	})
+	Required("hash", "url", "rating", "pubDate", "authors")
+})
+
+var AnalyzedSiteItem = Type("AnalyzedSiteItem", func() {
+	Description("Analyzed item for site listings.")
+	Attribute("hash", String, "Item hash")
+	Attribute("url", String, "Item URL")
+	Attribute("title_original", String, "Original title")
+	Attribute("description_original", String, "Original description")
+	Attribute("title_corrected", String, "Corrected title")
+	Attribute("title_correction_reason", String, "Why the title changed")
+	Attribute("description_corrected", String, "Corrected description")
+	Attribute("description_correction_reason", String, "Why the description changed")
+	Attribute("framing", Float64, "Framing score")
+	Attribute("framing_reason", String, "Framing explanation")
+	Attribute("clickbait", Float64, "Clickbait score")
+	Attribute("clickbait_reason", String, "Clickbait explanation")
+	Attribute("persuasive", Float64, "Persuasiveness score")
+	Attribute("persuasive_reason", String, "Persuasiveness explanation")
+	Attribute("hyper_stimulus", Float64, "Hyper stimulus score")
+	Attribute("hyper_stimulus_reason", String, "Hyper stimulus explanation")
+	Attribute("speculative", Float64, "Speculative score")
+	Attribute("speculative_reason", String, "Speculative explanation")
+	Attribute("overall", Float64, "Overall score")
+	Attribute("overall_reason", String, "Overall explanation")
 	Attribute("media", MediaContent, "Media content")
 	Attribute("rating", Float64, "Think rating")
 	Attribute("authors", ArrayOf(String), "Authors")

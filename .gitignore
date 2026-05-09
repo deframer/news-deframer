@@ -28,3 +28,4 @@ coverage.*
 /admin
 /feeds.json
 *.log
+goa*

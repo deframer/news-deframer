@@ -64,7 +64,7 @@ func (w *WebImpl) Item(ctx context.Context, p *web.ItemPayload) (res *web.Analyz
 	return convertAnalyzedItem(item), nil
 }
 
-func (w *WebImpl) Site(ctx context.Context, p *web.SitePayload) (res []*web.AnalyzedItem, err error) {
+func (w *WebImpl) Site(ctx context.Context, p *web.SitePayload) (res []*web.AnalyzedSiteItem, err error) {
 	log.Printf(ctx, "handleSite root=%s", p.Root)
 	rootDomain := strings.TrimSuffix(p.Root, "/")
 	if rootDomain == "" {
@@ -79,9 +79,9 @@ func (w *WebImpl) Site(ctx context.Context, p *web.SitePayload) (res []*web.Anal
 		return nil, web.NotFound("not found")
 	}
 
-	res = make([]*web.AnalyzedItem, 0, len(items))
+	res = make([]*web.AnalyzedSiteItem, 0, len(items))
 	for i := range items {
-		res = append(res, convertAnalyzedItem(&items[i]))
+		res = append(res, convertAnalyzedSiteItem(&items[i]))
 	}
 	return res, nil
 }
@@ -335,6 +335,78 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 		OverallReason:               overallReason,
 		Sentiments:                  convertSentimentScores(item.Sentiments),
 		SentimentsDeframed:          convertSentimentScores(item.SentimentsDeframed),
+		Media:                       convertMediaContent(item.MediaContent),
+		Rating:                      item.ThinkRating,
+		Authors:                     append([]string{}, item.Authors...),
+		PubDate:                     item.PubDate.Format(time.RFC3339),
+	}
+}
+
+func convertAnalyzedSiteItem(item *database.AnalyzedItem) *web.AnalyzedSiteItem {
+	if item == nil {
+		return nil
+	}
+	var (
+		titleOriginal               *string
+		descriptionOriginal         *string
+		titleCorrected              *string
+		titleCorrectionReason       *string
+		descriptionCorrected        *string
+		descriptionCorrectionReason *string
+		framing                     *float64
+		framingReason               *string
+		clickbait                   *float64
+		clickbaitReason             *string
+		persuasive                  *float64
+		persuasiveReason            *string
+		hyperStimulus               *float64
+		hyperStimulusReason         *string
+		speculative                 *float64
+		speculativeReason           *string
+		overall                     *float64
+		overallReason               *string
+	)
+	if tr := item.ThinkResult; tr != nil {
+		titleOriginal = stringPtr(tr.TitleOriginal)
+		descriptionOriginal = stringPtr(tr.DescriptionOriginal)
+		titleCorrected = stringPtr(tr.TitleCorrected)
+		titleCorrectionReason = stringPtr(tr.TitleCorrectionReason)
+		descriptionCorrected = stringPtr(tr.DescriptionCorrected)
+		descriptionCorrectionReason = stringPtr(tr.DescriptionCorrectionReason)
+		framing = float64Ptr(tr.Framing)
+		framingReason = stringPtr(tr.FramingReason)
+		clickbait = float64Ptr(tr.Clickbait)
+		clickbaitReason = stringPtr(tr.ClickbaitReason)
+		persuasive = float64Ptr(tr.Persuasive)
+		persuasiveReason = stringPtr(tr.PersuasiveReason)
+		hyperStimulus = float64Ptr(tr.HyperStimulus)
+		hyperStimulusReason = stringPtr(tr.HyperStimulusReason)
+		speculative = float64Ptr(tr.Speculative)
+		speculativeReason = stringPtr(tr.SpeculativeReason)
+		overall = float64Ptr(tr.Overall)
+		overallReason = stringPtr(tr.OverallReason)
+	}
+	return &web.AnalyzedSiteItem{
+		Hash:                        item.Hash,
+		URL:                         item.URL,
+		TitleOriginal:               titleOriginal,
+		DescriptionOriginal:         descriptionOriginal,
+		TitleCorrected:              titleCorrected,
+		TitleCorrectionReason:       titleCorrectionReason,
+		DescriptionCorrected:        descriptionCorrected,
+		DescriptionCorrectionReason: descriptionCorrectionReason,
+		Framing:                     framing,
+		FramingReason:               framingReason,
+		Clickbait:                   clickbait,
+		ClickbaitReason:             clickbaitReason,
+		Persuasive:                  persuasive,
+		PersuasiveReason:            persuasiveReason,
+		HyperStimulus:               hyperStimulus,
+		HyperStimulusReason:         hyperStimulusReason,
+		Speculative:                 speculative,
+		SpeculativeReason:           speculativeReason,
+		Overall:                     overall,
+		OverallReason:               overallReason,
 		Media:                       convertMediaContent(item.MediaContent),
 		Rating:                      item.ThinkRating,
 		Authors:                     append([]string{}, item.Authors...),

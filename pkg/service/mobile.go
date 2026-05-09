@@ -26,14 +26,14 @@ func (s *mobilesrvc) Item(ctx context.Context, p *mobile.ItemPayload) (res *mobi
 	return convertMobileAnalyzedItem(item), nil
 }
 
-func (s *mobilesrvc) Site(ctx context.Context, p *mobile.SitePayload) (res []*mobile.AnalyzedItem, err error) {
+func (s *mobilesrvc) Site(ctx context.Context, p *mobile.SitePayload) (res []*mobile.AnalyzedSiteItem, err error) {
 	items, err := s.svc.Site(ctx, &web.SitePayload{Root: p.Root, MaxScore: p.MaxScore, User: p.User, Pass: p.Pass})
 	if err != nil {
 		return nil, translateMobileError(err)
 	}
-	res = make([]*mobile.AnalyzedItem, 0, len(items))
+	res = make([]*mobile.AnalyzedSiteItem, 0, len(items))
 	for i := range items {
-		res = append(res, convertMobileAnalyzedItem(items[i]))
+		res = append(res, convertMobileAnalyzedSiteItem(items[i]))
 	}
 	return res, nil
 }
@@ -159,6 +159,38 @@ func convertMobileAnalyzedItem(item *web.AnalyzedItem) *mobile.AnalyzedItem {
 		OverallReason:               item.OverallReason,
 		Sentiments:                  convertMobileSentimentScores(item.Sentiments),
 		SentimentsDeframed:          convertMobileSentimentScores(item.SentimentsDeframed),
+		Media:                       convertMobileMediaContent(item.Media),
+		Rating:                      item.Rating,
+		Authors:                     append([]string{}, item.Authors...),
+		PubDate:                     item.PubDate,
+	}
+}
+
+func convertMobileAnalyzedSiteItem(item *web.AnalyzedSiteItem) *mobile.AnalyzedSiteItem {
+	if item == nil {
+		return nil
+	}
+	return &mobile.AnalyzedSiteItem{
+		Hash:                        item.Hash,
+		URL:                         item.URL,
+		TitleOriginal:               item.TitleOriginal,
+		DescriptionOriginal:         item.DescriptionOriginal,
+		TitleCorrected:              item.TitleCorrected,
+		TitleCorrectionReason:       item.TitleCorrectionReason,
+		DescriptionCorrected:        item.DescriptionCorrected,
+		DescriptionCorrectionReason: item.DescriptionCorrectionReason,
+		Framing:                     item.Framing,
+		FramingReason:               item.FramingReason,
+		Clickbait:                   item.Clickbait,
+		ClickbaitReason:             item.ClickbaitReason,
+		Persuasive:                  item.Persuasive,
+		PersuasiveReason:            item.PersuasiveReason,
+		HyperStimulus:               item.HyperStimulus,
+		HyperStimulusReason:         item.HyperStimulusReason,
+		Speculative:                 item.Speculative,
+		SpeculativeReason:           item.SpeculativeReason,
+		Overall:                     item.Overall,
+		OverallReason:               item.OverallReason,
 		Media:                       convertMobileMediaContent(item.Media),
 		Rating:                      item.Rating,
 		Authors:                     append([]string{}, item.Authors...),

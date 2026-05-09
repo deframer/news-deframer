@@ -15,9 +15,9 @@ import (
 
 type RSSProxyFilter struct {
 	URL      string
-	Lang     string
-	Max      float64
-	Embedded bool
+	Lang     *string
+	Max      *float64
+	Embedded *bool
 }
 
 const MaxItemsForRootDomain = 30

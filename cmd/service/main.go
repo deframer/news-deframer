@@ -14,6 +14,7 @@ import (
 	infra "github.com/deframer/news-deframer/gen/infra"
 	mobile "github.com/deframer/news-deframer/gen/mobile"
 	openapi "github.com/deframer/news-deframer/gen/openapi"
+	rss "github.com/deframer/news-deframer/gen/rss"
 	web "github.com/deframer/news-deframer/gen/web"
 	service "github.com/deframer/news-deframer/pkg/service"
 	"goa.design/clue/debug"
@@ -49,12 +50,14 @@ func main() {
 	var (
 		openapiSvc openapi.Service
 		infraSvc   infra.Service
+		rssSvc     rss.Service
 		mobileSvc  mobile.Service
 		webSvc     web.Service
 	)
 	{
 		openapiSvc = service.NewOpenapi()
 		infraSvc = service.NewInfra()
+		rssSvc = service.NewRSS(ctx)
 		mobileSvc = service.NewMobile(ctx)
 		webSvc = service.NewWeb(ctx)
 	}
@@ -64,6 +67,7 @@ func main() {
 	var (
 		openapiEndpoints *openapi.Endpoints
 		infraEndpoints   *infra.Endpoints
+		rssEndpoints     *rss.Endpoints
 		mobileEndpoints  *mobile.Endpoints
 		webEndpoints     *web.Endpoints
 	)
@@ -74,6 +78,9 @@ func main() {
 		infraEndpoints = infra.NewEndpoints(infraSvc)
 		infraEndpoints.Use(debug.LogPayloads())
 		infraEndpoints.Use(log.Endpoint)
+		rssEndpoints = rss.NewEndpoints(rssSvc)
+		rssEndpoints.Use(debug.LogPayloads())
+		rssEndpoints.Use(log.Endpoint)
 		mobileEndpoints = mobile.NewEndpoints(mobileSvc)
 		mobileEndpoints.Use(debug.LogPayloads())
 		mobileEndpoints.Use(log.Endpoint)
@@ -121,7 +128,7 @@ func main() {
 			} else if u.Port() == "" {
 				u.Host = net.JoinHostPort(u.Host, "80")
 			}
-			handleHTTPServer(ctx, u, openapiEndpoints, infraEndpoints, mobileEndpoints, webEndpoints, &wg, errc, *dbgF)
+			handleHTTPServer(ctx, u, openapiEndpoints, infraEndpoints, rssEndpoints, mobileEndpoints, webEndpoints, &wg, errc, *dbgF)
 		}
 
 	default:

@@ -11,10 +11,12 @@ import (
 	infrasvr "github.com/deframer/news-deframer/gen/http/infra/server"
 	mobilesvr "github.com/deframer/news-deframer/gen/http/mobile/server"
 	openapisvr "github.com/deframer/news-deframer/gen/http/openapi/server"
+	rsssvr "github.com/deframer/news-deframer/gen/http/rss/server"
 	websvr "github.com/deframer/news-deframer/gen/http/web/server"
 	infra "github.com/deframer/news-deframer/gen/infra"
 	mobile "github.com/deframer/news-deframer/gen/mobile"
 	openapi "github.com/deframer/news-deframer/gen/openapi"
+	rss "github.com/deframer/news-deframer/gen/rss"
 	web "github.com/deframer/news-deframer/gen/web"
 	"goa.design/clue/debug"
 	"goa.design/clue/log"
@@ -23,7 +25,7 @@ import (
 
 // handleHTTPServer starts configures and starts a HTTP server on the given
 // URL. It shuts down the server if any error is received in the error channel.
-func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi.Endpoints, infraEndpoints *infra.Endpoints, mobileEndpoints *mobile.Endpoints, webEndpoints *web.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
+func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi.Endpoints, infraEndpoints *infra.Endpoints, rssEndpoints *rss.Endpoints, mobileEndpoints *mobile.Endpoints, webEndpoints *web.Endpoints, wg *sync.WaitGroup, errc chan error, dbg bool) {
 
 	// Provide the transport specific request decoder and response encoder.
 	// The goa http package has built-in support for JSON, XML and gob.
@@ -54,6 +56,7 @@ func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi
 	var (
 		openapiServer *openapisvr.Server
 		infraServer   *infrasvr.Server
+		rssServer     *rsssvr.Server
 		mobileServer  *mobilesvr.Server
 		webServer     *websvr.Server
 	)
@@ -61,6 +64,7 @@ func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi
 		eh := errorHandler(ctx)
 		openapiServer = openapisvr.New(openapiEndpoints, mux, dec, enc, eh, nil)
 		infraServer = infrasvr.New(infraEndpoints, mux, dec, enc, eh, nil)
+		rssServer = rsssvr.New(rssEndpoints, mux, dec, enc, eh, nil)
 		mobileServer = mobilesvr.New(mobileEndpoints, mux, dec, enc, eh, nil)
 		webServer = websvr.New(webEndpoints, mux, dec, enc, eh, nil)
 	}
@@ -68,6 +72,7 @@ func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi
 	// Configure the mux.
 	openapisvr.Mount(mux, openapiServer)
 	infrasvr.Mount(mux, infraServer)
+	rsssvr.Mount(mux, rssServer)
 	mobilesvr.Mount(mux, mobileServer)
 	websvr.Mount(mux, webServer)
 
@@ -88,6 +93,9 @@ func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi
 		log.Printf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
 	for _, m := range infraServer.Mounts {
+		log.Printf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
+	}
+	for _, m := range rssServer.Mounts {
 		log.Printf(ctx, "HTTP %q mounted on %s %s", m.Method, m.Verb, m.Pattern)
 	}
 	for _, m := range mobileServer.Mounts {

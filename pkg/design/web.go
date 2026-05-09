@@ -3,12 +3,14 @@ package design
 import . "goa.design/goa/v3/dsl"
 
 var ItemPayload = Type("ItemPayload", func() {
+	Description("Lookup an item by URL.")
 	Extend(BasicAuthPayload)
 	Attribute("url", String, "Item URL")
 	Required("url")
 })
 
 var SitePayload = Type("SitePayload", func() {
+	Description("List items for a root domain.")
 	Extend(BasicAuthPayload)
 	Attribute("root", String, "Root domain")
 	Attribute("max_score", Float64, "Maximum rating to include", func() {
@@ -18,6 +20,7 @@ var SitePayload = Type("SitePayload", func() {
 })
 
 var ArticlesPayload = Type("ArticlesPayload", func() {
+	Description("List articles for a trend and domain.")
 	Extend(BasicAuthPayload)
 	Attribute("root", String, "Root domain")
 	Attribute("term", String, "Trend term")
@@ -40,6 +43,7 @@ var ArticlesPayload = Type("ArticlesPayload", func() {
 })
 
 var SentimentsPayload = Type("SentimentsPayload", func() {
+	Description("Get sentiments for a trend.")
 	Extend(BasicAuthPayload)
 	Attribute("root", String, "Root domain")
 	Attribute("term", String, "Trend term")
@@ -54,10 +58,12 @@ var SentimentsPayload = Type("SentimentsPayload", func() {
 })
 
 var DomainsPayload = Type("DomainsPayload", func() {
+	Description("List root domains.")
 	Extend(BasicAuthPayload)
 })
 
 var TopTrendsByDomainPayload = Type("TopTrendsByDomainPayload", func() {
+	Description("List top trends for a domain.")
 	Extend(BasicAuthPayload)
 	Attribute("domain", String, "Root domain")
 	Attribute("lang", String, "Language code")
@@ -72,6 +78,7 @@ var TopTrendsByDomainPayload = Type("TopTrendsByDomainPayload", func() {
 })
 
 var ContextByDomainPayload = Type("ContextByDomainPayload", func() {
+	Description("List context for a trend in a domain.")
 	Extend(BasicAuthPayload)
 	Attribute("term", String, "Trend term")
 	Attribute("domain", String, "Root domain")
@@ -87,6 +94,7 @@ var ContextByDomainPayload = Type("ContextByDomainPayload", func() {
 })
 
 var LifecycleByDomainPayload = Type("LifecycleByDomainPayload", func() {
+	Description("List lifecycle data for a trend in a domain.")
 	Extend(BasicAuthPayload)
 	Attribute("term", String, "Trend term")
 	Attribute("domain", String, "Root domain")
@@ -102,6 +110,7 @@ var LifecycleByDomainPayload = Type("LifecycleByDomainPayload", func() {
 })
 
 var DomainComparisonPayload = Type("DomainComparisonPayload", func() {
+	Description("Compare two domains for a trend.")
 	Extend(BasicAuthPayload)
 	Attribute("domain_a", String, "First domain")
 	Attribute("domain_b", String, "Second domain")
@@ -143,7 +152,7 @@ func defineWebMethods() {
 	Method("site", func() {
 		Description("List analyzed items for a root domain.")
 		Payload(SitePayload)
-		Result(ArrayOf(AnalyzedItem))
+		Result(ArrayOf(AnalyzedSiteItem))
 		HTTP(func() {
 			GET("/site")
 			Param("root")
