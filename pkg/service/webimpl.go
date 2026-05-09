@@ -265,8 +265,13 @@ func (w *WebImpl) DomainComparisonEndpoint(ctx context.Context, p *web.DomainCom
 }
 
 func (w *WebImpl) BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error) {
-	if err := basicAuthFromConfig(w.cfg, user, pass); err != nil {
-		return ctx, err
+	if w.cfg != nil {
+		if w.cfg.BasicAuthUser != "" && user != w.cfg.BasicAuthUser {
+			return ctx, fmt.Errorf("unauthorized")
+		}
+		if w.cfg.BasicAuthPassword != "" && pass != w.cfg.BasicAuthPassword {
+			return ctx, fmt.Errorf("unauthorized")
+		}
 	}
 	return ctx, nil
 }
