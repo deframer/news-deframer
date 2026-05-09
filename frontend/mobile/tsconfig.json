@@ -1,7 +1,8 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   },
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["**/node_modules", "**/Pods"]

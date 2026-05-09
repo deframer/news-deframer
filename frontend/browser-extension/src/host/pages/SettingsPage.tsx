@@ -83,7 +83,7 @@ export const SettingsPage = () => {
         return false;
       }
     },
-    []
+    [i18n]
   );
 
   const loadDomains = useCallback(async (settingsToUse: Settings, bypassCache = false) => {

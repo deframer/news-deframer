@@ -1,4 +1,6 @@
-.PHONY: install build clean dev test dist lint lint-fix icons
+.PHONY: install build clean dev test dist lint lint-fix icons openapi-client
+
+OPENAPI_URL ?= http://localhost:8080/openapi/web
 
 install:
 	npm install
@@ -17,6 +19,9 @@ clean:
 # Loads the extension in the browser, watching for file changes.
 dev: icons
 	npm run dev
+
+openapi-client:
+	OPENAPI_URL="$(OPENAPI_URL)" npm run openapi-client
 
 test:
 	npm run test

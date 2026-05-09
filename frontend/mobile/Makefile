@@ -1,10 +1,11 @@
-.PHONY: install pods start android ios ios-preflight ios-sim ios-sim-list web android-apk android-apk-install android-apk-release android-apk-release-install android-bundle-release android-remote-qr android-metro-reverse ios-build ios-sim-build clean test check-mobile-workflows lint check lint-fix fix
+.PHONY: install pods start android ios ios-preflight ios-sim ios-sim-list web openapi-client android-apk android-apk-install android-apk-release android-apk-release-install android-bundle-release android-remote-qr android-metro-reverse ios-build ios-sim-build clean test check-mobile-workflows lint check lint-fix fix
 
 DEBUG_APK := android/app/build/outputs/apk/debug/app-debug.apk
 RELEASE_APK := android/app/build/outputs/apk/release/app-release.apk
 SIMULATOR ?=
 IOS_DERIVED_DATA ?= ios/build
 ADB_WAIT_TIMEOUT ?= 90
+OPENAPI_URL ?= http://localhost:8080/openapi/mobile
 
 install:
 	npm install
@@ -14,6 +15,9 @@ pods:
 
 start:
 	npm run start
+
+openapi-client:
+	OPENAPI_URL="$(OPENAPI_URL)" npm run openapi-client
 
 android:
 	npm run android
