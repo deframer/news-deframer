@@ -1,156 +1,111 @@
 import { getCachedDomains, invalidateDomainCache, setCachedDomains } from '../shared/domain-cache';
 import { CONNECTION_TIMEOUT_MS, removeStallDomainsFromSelection, Settings } from '../shared/settings';
+import {
+  type AnalyzedArticle,
+  type AnalyzedItem,
+  type AnalyzedSiteItem,
+  type DomainComparison,
+  type DomainEntry,
+  getArticlesByTrend,
+  getContextByDomain,
+  getDomainComparison,
+  getDomains as getGeneratedDomains,
+  getItem,
+  getLifecycleByDomain,
+  getSentimentsByTrend,
+  getSite,
+  getTopTrendByDomain,
+  type Lifecycle,
+  type SentimentItem,
+  type SentimentScores,
+  type ThinkResult,
+  type TrendContext,
+  type TrendMetric,
+} from './generated/newsDeframerClient.gen';
 
-// --- Type Definitions based on Go backend models ---
+export type { AnalyzedArticle, AnalyzedItem, DomainComparison, DomainEntry, Lifecycle, SentimentItem, SentimentScores, ThinkResult, TrendContext, TrendMetric };
 
-export interface DomainEntry {
-  domain: string;
-  language: string;
-  portal_url?: string;
-}
+type GeneratedResponse<T> = {
+  data: T;
+  status: number;
+};
 
-export interface TrendMetric {
-  trend_topic: string;
-  frequency: number;
-  utility: number;
-  outlier_ratio: number;
-  time_slice: string;
-}
-
-export interface TrendContext {
-  context: string;
-  frequency: number;
-}
-
-export interface Lifecycle {
-  time_slice: string;
-  frequency: number;
-  velocity: number;
-}
-
-export interface DomainComparison {
-  classification: 'BLINDSPOT_A' | 'BLINDSPOT_B' | 'INTERSECT';
-  rank_group: number;
-  trend_topic: string;
-  score_a: number;
-  score_b: number;
-}
-
-export interface ThinkResult {
-  title_original?: string;
-  description_original?: string;
-  title_corrected?: string;
-  title_correction_reason?: string;
-  description_corrected?: string;
-  description_correction_reason?: string;
-  framing?: number;
-  framing_reason?: string;
-  clickbait?: number;
-  clickbait_reason?: string;
-  persuasive?: number;
-  persuasive_reason?: string;
-  hyper_stimulus?: number;
-  hyper_stimulus_reason?: string;
-  speculative?: number;
-  speculative_reason?: string;
-  overall?: number;
-  overall_reason?: string;
-}
-
-export interface MediaThumbnail {
-  url?: string;
-  height?: number;
-  width?: number;
-}
-
-export interface MediaContent {
-  url?: string;
-  type?: string;
-  medium?: string;
-  height?: number;
-  width?: number;
-  title?: string;
-  description?: string;
-  thumbnail?: MediaThumbnail;
-  credit?: string;
-}
-
-export interface AnalyzedItem extends ThinkResult {
-  hash: string;
-  url: string;
-  authors?: string[];
-  media?: MediaContent;
-  rating: number;
-  pubDate?: string;
-  sentiments?: SentimentScores;
-  sentiments_deframed?: SentimentScores;
-}
-
-export interface AnalyzedArticle {
-  url: string;
-  title?: string;
-  rating?: number;
-  authors?: string[];
-  pub_date: string;
-}
-
-export interface SentimentScores {
-  valence: number;
-  arousal: number;
-  dominance: number;
-  joy: number;
-  anger: number;
-  sadness: number;
-  fear: number;
-  disgust: number;
-}
-
-export interface SentimentItem {
-  sentiments?: SentimentScores;
-  sentiments_deframed?: SentimentScores;
-}
-
-// --- API Client ---
+type ProxyResponse = {
+  ok: boolean;
+  status?: number;
+  data?: unknown;
+  error?: string;
+};
 
 export class NewsDeframerClient {
   constructor(private config: Settings) {}
 
-  private async proxyRequest<T>(endpoint: string, params: Record<string, string>): Promise<T | null> {
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
-    };
-    if (this.config.username && this.config.password) {
-      headers['Authorization'] = 'Basic ' + btoa(`${this.config.username}:${this.config.password}`);
-    }
+  private getBackendBaseUrl(): string {
+    return this.config.backendUrl.replace(/\/$/, '');
+  }
 
-    const url = new URL(this.config.backendUrl.replace(/\/$/, '') + endpoint);
-    Object.entries(params).forEach(([key, value]) => url.searchParams.append(key, value));
+  private createProxyFetch(): typeof globalThis.fetch {
+    return (input, init) => new Promise<Response>((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        reject(new Error('Extension context missing: Cannot proxy request'));
+        return;
+      }
 
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-      return new Promise<T | null>((resolve, reject) => {
-        const timeoutId = setTimeout(() => {
-          reject(new Error(`Request timed out after ${CONNECTION_TIMEOUT_MS}ms`));
-        }, CONNECTION_TIMEOUT_MS + 1000);
+      const path = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      const url = /^https?:\/\//i.test(path) ? path : `${this.getBackendBaseUrl()}${path}`;
+      const headers = new Headers(init?.headers);
 
-        chrome.runtime.sendMessage({ type: 'PROXY_REQ', url: url.toString(), headers, timeout: CONNECTION_TIMEOUT_MS }, (response) => {
+      if (!headers.has('Accept')) {
+        headers.set('Accept', 'application/json');
+      }
+
+      if (this.config.username && this.config.password) {
+        headers.set('Authorization', `Basic ${btoa(`${this.config.username}:${this.config.password}`)}`);
+      }
+
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Request timed out after ${CONNECTION_TIMEOUT_MS}ms`));
+      }, CONNECTION_TIMEOUT_MS + 1000);
+
+      chrome.runtime.sendMessage(
+        { type: 'PROXY_REQ', url, headers: Object.fromEntries(headers.entries()), timeout: CONNECTION_TIMEOUT_MS },
+        (proxyResponse?: ProxyResponse) => {
           clearTimeout(timeoutId);
+
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
-          } else if (response && response.ok) {
-            resolve(response.data as T);
-          } else if (response && response.status === 404) {
-            resolve(null);
-          } else if (response && !response.ok) {
-            const rawMessage = response.error || (typeof response.data === 'string' ? response.data : JSON.stringify(response.data));
-            reject(new Error(`GET ${url.toString()} failed: ${rawMessage || `HTTP ${response.status}`}`));
-          } else {
-            reject(new Error(`GET ${url.toString()} failed: Unknown error`));
+            return;
           }
-        });
-      });
+
+          if (!proxyResponse) {
+            reject(new Error(`GET ${url} failed: Unknown error`));
+            return;
+          }
+
+          const status = proxyResponse.status ?? (proxyResponse.ok ? 200 : 500);
+          const body = proxyResponse.ok ? proxyResponse.data : proxyResponse.data ?? proxyResponse.error ?? null;
+
+          resolve(new Response(JSON.stringify(body), {
+            status,
+            headers: { 'Content-Type': 'application/json' },
+          }));
+        },
+      );
+    });
+  }
+
+  private async unwrap<T>(operation: Promise<GeneratedResponse<T>>, fallback: T | null): Promise<T | null> {
+    const result = await operation;
+
+    if (result.status === 404) {
+      return fallback;
     }
 
-    throw new Error('Extension context missing: Cannot proxy request');
+    if (result.status < 200 || result.status >= 300) {
+      throw new Error(`API Error: ${result.status}`);
+    }
+
+    return result.data;
   }
 
   async getDomains(bypassCache = false): Promise<DomainEntry[]> {
@@ -162,8 +117,7 @@ export class NewsDeframerClient {
     }
 
     try {
-      const result = await this.proxyRequest<DomainEntry[]>('/api/domains', {});
-      const domains = result ?? [];
+      const domains = (await this.unwrap<DomainEntry[]>(getGeneratedDomains(undefined, this.createProxyFetch()), [])) ?? [];
 
       if (domains.length > 0) {
         await setCachedDomains(domains);
@@ -180,93 +134,35 @@ export class NewsDeframerClient {
   }
 
   async getItem(url: string): Promise<AnalyzedItem | null> {
-    return this.proxyRequest<AnalyzedItem>('/api/item', { url });
+    return this.unwrap<AnalyzedItem>(getItem({ url }, undefined, this.createProxyFetch()), null);
   }
 
   async getSite(root: string, maxScore?: number): Promise<AnalyzedItem[]> {
-    const params: Record<string, string> = { root };
-    if (maxScore !== undefined) {
-      params.max_score = maxScore.toString();
-    }
-    const result = await this.proxyRequest<AnalyzedItem[]>('/api/site', params);
-    return result ?? [];
+    const result = await this.unwrap<AnalyzedSiteItem[]>(getSite({ root, max_score: maxScore }, undefined, this.createProxyFetch()), []);
+    return (result ?? []) as AnalyzedItem[];
   }
 
   async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
-    const params: Record<string, string> = { 
-      domain,
-      lang: language,
-      days: daysInPast.toString(),
-    };
-    const result = await this.proxyRequest<TrendMetric[]>('/api/trends/topbydomain', params);
-    return result ?? [];
+    return (await this.unwrap<TrendMetric[]>(getTopTrendByDomain({ domain, lang: language, days: daysInPast }, undefined, this.createProxyFetch()), [])) ?? [];
   }
 
   async getContextByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<TrendContext[]> {
-    const params: Record<string, string> = { 
-      term,
-      domain,
-      lang: language,
-      days: daysInPast.toString(),
-    };
-    const result = await this.proxyRequest<TrendContext[]>('/api/trends/contextbydomain', params);
-    return result ?? [];
+    return (await this.unwrap<TrendContext[]>(getContextByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createProxyFetch()), [])) ?? [];
   }
 
   async getLifecycleByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<Lifecycle[]> {
-    const params: Record<string, string> = { 
-      term,
-      domain,
-      lang: language,
-      days: daysInPast.toString(),
-    };
-    const result = await this.proxyRequest<Lifecycle[]>('/api/trends/lifecyclebydomain', params);
-    return result ?? [];
+    return (await this.unwrap<Lifecycle[]>(getLifecycleByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createProxyFetch()), [])) ?? [];
   }
 
   async getDomainComparison(domainA: string, domainB: string, language: string, daysInPast: number): Promise<DomainComparison[]> {
-    const params: Record<string, string> = { 
-      domain_a: domainA,
-      domain_b: domainB,
-      lang: language,
-      days: daysInPast.toString(),
-    };
-    const result = await this.proxyRequest<DomainComparison[]>('/api/trends/comparedomains', params);
-    return result ?? [];
+    return (await this.unwrap<DomainComparison[]>(getDomainComparison({ domain_a: domainA, domain_b: domainB, lang: language, days: daysInPast }, undefined, this.createProxyFetch()), [])) ?? [];
   }
 
   async getArticlesByTrend(root: string, term: string, date?: string, days?: number, offset?: number, limit?: number): Promise<AnalyzedArticle[]> {
-    const params: Record<string, string> = {
-      root,
-      term,
-    };
-    if (date) {
-      params.date = date;
-    }
-    if (days !== undefined && days !== null) {
-      params.days = days.toString();
-    }
-    if (offset !== undefined) {
-      params.offset = offset.toString();
-    }
-    if (limit !== undefined) {
-      params.limit = limit.toString();
-    }
-    const result = await this.proxyRequest<AnalyzedArticle[]>('/api/articles', params);
-    return result ?? [];
+    return (await this.unwrap<AnalyzedArticle[]>(getArticlesByTrend({ root, term, date, days, offset, limit }, undefined, this.createProxyFetch()), [])) ?? [];
   }
 
   async getSentimentsByTrend(root: string, term: string, date?: string, days?: number): Promise<SentimentItem | null> {
-    const params: Record<string, string> = {
-      root,
-      term,
-    };
-    if (date) {
-      params.date = date;
-    }
-    if (days !== undefined && days !== null) {
-      params.days = days.toString();
-    }
-    return this.proxyRequest<SentimentItem>('/api/sentiments', params);
+    return this.unwrap<SentimentItem>(getSentimentsByTrend({ root, term, date, days }, undefined, this.createProxyFetch()), null);
   }
 }

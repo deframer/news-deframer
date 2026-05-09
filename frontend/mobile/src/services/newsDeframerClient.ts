@@ -1,166 +1,79 @@
 import { encode as encodeBase64 } from 'base-64';
 
+import {
+  getArticlesByTrend,
+  getContextByDomain,
+  getDomainComparison,
+  getDomains,
+  getItem,
+  getLifecycleByDomain,
+  getSentimentsByTrend,
+  getSite,
+  getTopTrendByDomain,
+  type AnalyzedArticle,
+  type AnalyzedItem,
+  type AnalyzedSiteItem,
+  type DomainComparison,
+  type DomainEntry,
+  type Lifecycle,
+  type SentimentItem,
+  type SentimentScores,
+  type ThinkResult,
+  type TrendContext,
+  type TrendMetric,
+} from './generated/newsDeframerClient.gen';
 import { logger } from './logger';
 import { Settings } from './settingsService';
 
-export interface DomainEntry {
-  domain: string;
-  language: string;
-  portal_url?: string;
-}
+export type { AnalyzedArticle, AnalyzedItem, AnalyzedSiteItem, DomainComparison, DomainEntry, Lifecycle, SentimentItem, SentimentScores, ThinkResult, TrendContext, TrendMetric };
 
-export interface TrendMetric {
-  trend_topic: string;
-  frequency: number;
-  utility: number;
-  outlier_ratio: number;
-  time_slice: string;
-}
-
-export interface TrendContext {
-  context: string;
-  frequency: number;
-}
-
-export interface Lifecycle {
-  time_slice: string;
-  frequency: number;
-  velocity: number;
-}
-
-export interface DomainComparison {
-  classification: 'BLINDSPOT_A' | 'BLINDSPOT_B' | 'INTERSECT';
-  rank_group: number;
-  trend_topic: string;
-  score_a: number;
-  score_b: number;
-}
-
-export interface ThinkResult {
-  title_original?: string;
-  description_original?: string;
-  title_corrected?: string;
-  title_correction_reason?: string;
-  description_corrected?: string;
-  description_correction_reason?: string;
-  framing?: number;
-  framing_reason?: string;
-  clickbait?: number;
-  clickbait_reason?: string;
-  persuasive?: number;
-  persuasive_reason?: string;
-  hyper_stimulus?: number;
-  hyper_stimulus_reason?: string;
-  speculative?: number;
-  speculative_reason?: string;
-  overall?: number;
-  overall_reason?: string;
-}
-
-export interface MediaThumbnail {
-  url?: string;
-  height?: number;
-  width?: number;
-}
-
-export interface MediaContent {
-  url?: string;
-  type?: string;
-  medium?: string;
-  height?: number;
-  width?: number;
-  title?: string;
-  description?: string;
-  thumbnail?: MediaThumbnail;
-  credit?: string;
-}
-
-export interface AnalyzedItem extends ThinkResult {
-  hash: string;
-  url: string;
-  authors?: string[];
-  media?: MediaContent;
-  rating: number;
-  pubDate?: string;
-  sentiments?: SentimentScores;
-  sentiments_deframed?: SentimentScores;
-}
-
-export interface AnalyzedArticle {
-  url: string;
-  title?: string;
-  rating?: number;
-  authors?: string[];
-  pub_date: string;
-}
-
-export interface SentimentScores {
-  valence: number;
-  arousal: number;
-  dominance: number;
-  joy: number;
-  anger: number;
-  sadness: number;
-  fear: number;
-  disgust: number;
-}
-
-export interface SentimentItem {
-  sentiments?: SentimentScores;
-  sentiments_deframed?: SentimentScores;
-}
+type GeneratedResponse<T> = {
+  data: T;
+  status: number;
+};
 
 export class NewsDeframerClient {
   constructor(private config: Settings) {}
 
-  // Mobile must use the top-level /mobile/api namespace for every backend endpoint.
-  private readonly apiBase = '/mobile/api';
-
   private getBackendBaseUrl(): string {
-    return (this.config.backendUrl || '')
-      .trim()
-      .replace(/\/$/, '');
+    return (this.config.backendUrl || '').trim().replace(/\/$/, '');
   }
 
-  private async request<T>(endpoint: string, params: Record<string, string>): Promise<T | null> {
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
+  private createFetch(): typeof globalThis.fetch {
+    return (input, init) => {
+      const path = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+      const url = /^https?:\/\//i.test(path) ? path : `${this.getBackendBaseUrl()}${path}`;
+      const headers = new Headers(init?.headers);
+
+      if (!headers.has('Accept')) {
+        headers.set('Accept', 'application/json');
+      }
+
+      if (this.config.username && this.config.password) {
+        headers.set('Authorization', `Basic ${encodeBase64(`${this.config.username}:${this.config.password}`)}`);
+      }
+
+      return fetch(url, { ...init, headers });
     };
+  }
 
-    if (this.config.username && this.config.password) {
-      headers.Authorization = `Basic ${encodeBase64(`${this.config.username}:${this.config.password}`)}`;
+  private async unwrap<T>(operation: Promise<GeneratedResponse<T>>, fallback: T | null): Promise<T | null> {
+    const result = await operation;
+
+    if (result.status === 404) {
+      return fallback;
     }
 
-    const baseUrl = this.getBackendBaseUrl().replace(/\/+$/, '');
-    const endpointPath = endpoint.replace(/^\/+/, '');
-    const searchParams = new URLSearchParams(params);
-    const queryString = searchParams.toString();
-    const requestUrl = queryString ? `${baseUrl}/${endpointPath}?${queryString}` : `${baseUrl}/${endpointPath}`;
-
-    logger.info('API request', { endpoint, params, url: requestUrl });
-
-    let response: Response;
-    try {
-      response = await fetch(requestUrl, { headers });
-    } catch (error) {
-      logger.error('API network error', { endpoint, url: requestUrl, error: String(error) });
-      const rawMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`GET ${requestUrl} failed: ${rawMessage}`, { cause: error });
-    }
-    if (response.status === 404) {
-      logger.warn('API returned 404', { endpoint, url: requestUrl });
-      return null;
-    }
-    if (!response.ok) {
-      logger.error('API non-ok response', { endpoint, url: requestUrl, status: response.status });
-      throw new Error(`API Error: ${response.status}`);
+    if (result.status < 200 || result.status >= 300) {
+      logger.error('API non-ok response', { status: result.status });
+      throw new Error(`API Error: ${result.status}`);
     }
 
-    return (await response.json()) as T;
+    return result.data;
   }
 
   async getDomains(): Promise<DomainEntry[]> {
-    const response = await this.request<DomainEntry[]>(`${this.apiBase}/domains`, {});
+    const response = await this.unwrap<DomainEntry[]>(getDomains(undefined, this.createFetch()), null);
     if (response === null) {
       throw new Error('Domains endpoint returned 404');
     }
@@ -168,66 +81,36 @@ export class NewsDeframerClient {
   }
 
   async getItem(url: string): Promise<AnalyzedItem | null> {
-    return this.request<AnalyzedItem>(`${this.apiBase}/item`, { url });
+    return this.unwrap<AnalyzedItem>(getItem({ url }, undefined, this.createFetch()), null);
   }
 
   async getSite(root: string, maxScore?: number): Promise<AnalyzedItem[]> {
-    const params: Record<string, string> = { root };
-    if (maxScore !== undefined) {
-      params.max_score = String(maxScore);
-    }
-    return (await this.request<AnalyzedItem[]>(`${this.apiBase}/site`, params)) ?? [];
+    const response = await this.unwrap<AnalyzedSiteItem[]>(getSite({ root, max_score: maxScore }, undefined, this.createFetch()), []);
+    return response as AnalyzedItem[];
   }
 
   async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
     logger.info('Fetching top trends by domain', { domain, language, daysInPast });
-    return (await this.request<TrendMetric[]>(`${this.apiBase}/trends/topbydomain`, {
-      domain,
-      lang: language,
-      days: String(daysInPast),
-    })) ?? [];
+    return (await this.unwrap<TrendMetric[]>(getTopTrendByDomain({ domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getContextByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<TrendContext[]> {
-    return (await this.request<TrendContext[]>(`${this.apiBase}/trends/contextbydomain`, {
-      term,
-      domain,
-      lang: language,
-      days: String(daysInPast),
-    })) ?? [];
+    return (await this.unwrap<TrendContext[]>(getContextByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getLifecycleByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<Lifecycle[]> {
-    return (await this.request<Lifecycle[]>(`${this.apiBase}/trends/lifecyclebydomain`, {
-      term,
-      domain,
-      lang: language,
-      days: String(daysInPast),
-    })) ?? [];
+    return (await this.unwrap<Lifecycle[]>(getLifecycleByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getDomainComparison(domainA: string, domainB: string, language: string, daysInPast: number): Promise<DomainComparison[]> {
-    return (await this.request<DomainComparison[]>(`${this.apiBase}/trends/comparedomains`, {
-      domain_a: domainA,
-      domain_b: domainB,
-      lang: language,
-      days: String(daysInPast),
-    })) ?? [];
+    return (await this.unwrap<DomainComparison[]>(getDomainComparison({ domain_a: domainA, domain_b: domainB, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getArticlesByTrend(root: string, term: string, date?: string, days?: number, offset?: number, limit?: number): Promise<AnalyzedArticle[]> {
-    const params: Record<string, string> = { root, term };
-    if (date) params.date = date;
-    if (days !== undefined) params.days = String(days);
-    if (offset !== undefined) params.offset = String(offset);
-    if (limit !== undefined) params.limit = String(limit);
-    return (await this.request<AnalyzedArticle[]>(`${this.apiBase}/articles`, params)) ?? [];
+    return (await this.unwrap<AnalyzedArticle[]>(getArticlesByTrend({ root, term, date, days, offset, limit }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getSentimentsByTrend(root: string, term: string, date?: string, days?: number): Promise<SentimentItem | null> {
-    const params: Record<string, string> = { root, term };
-    if (date) params.date = date;
-    if (days !== undefined) params.days = String(days);
-    return this.request<SentimentItem>(`${this.apiBase}/sentiments`, params);
+    return this.unwrap<SentimentItem>(getSentimentsByTrend({ root, term, date, days }, undefined, this.createFetch()), null);
   }
 }
