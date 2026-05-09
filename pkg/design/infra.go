@@ -1,6 +1,6 @@
 package design
 
-import . "goa.design/goa/v3/dsl"
+import . "goa.design/goa/v3/dsl" //nolint:staticcheck
 
 var HostnameResponse = Type("HostnameResponse", func() {
 	Description("Current host name.")

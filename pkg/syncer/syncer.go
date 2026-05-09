@@ -588,10 +588,10 @@ func formatLogKeys(msg string, logKeys ...any) string {
 	b.WriteString(msg)
 	for i := 0; i < len(logKeys); i += 2 {
 		b.WriteByte(' ')
-		b.WriteString(fmt.Sprint(logKeys[i]))
+		fmt.Fprint(&b, logKeys[i])
 		b.WriteByte('=')
 		if i+1 < len(logKeys) {
-			b.WriteString(fmt.Sprint(logKeys[i+1]))
+			fmt.Fprint(&b, logKeys[i+1])
 		} else {
 			b.WriteString("<missing>")
 		}

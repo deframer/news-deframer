@@ -114,7 +114,7 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: -exclude-dir=cmd/service ./...
+          args: -conf .gosec.json ./...
         env:
           GOTOOLCHAIN: auto
 

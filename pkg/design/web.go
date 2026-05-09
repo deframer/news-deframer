@@ -1,6 +1,6 @@
 package design
 
-import . "goa.design/goa/v3/dsl"
+import . "goa.design/goa/v3/dsl" //nolint:staticcheck
 
 var ItemPayload = Type("ItemPayload", func() {
 	Description("Lookup an item by URL.")

@@ -8,6 +8,7 @@ COMPOSE_ENV_FILE ?= .env-compose
 DOCKER_ENV_FLAG := $(if $(wildcard $(COMPOSE_ENV_FILE)),--env-file $(COMPOSE_ENV_FILE),--env-file /dev/null)
 
 DB_IMAGE := pgduckdb/pgduckdb:18-main
+GO_DIRS := $(shell go list -f '{{.Dir}}' ./... | grep -v '/frontend/.*/node_modules/')
 
 ifneq ("$(wildcard .env)","")
   #$(info using .env file)
@@ -67,13 +68,13 @@ coverage:
 	go tool cover -html=coverage.out -o coverage.html
 
 lint:
-	golangci-lint run ./...
-	gosec -exclude-dir=cmd/service ./...
-	govulncheck ./...
+	golangci-lint run $(GO_DIRS)
+	gosec -conf .gosec.json ./...
+	govulncheck $(GO_DIRS)
 	gofmt -l .
 
 tools-install:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 

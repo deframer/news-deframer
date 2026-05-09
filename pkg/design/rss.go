@@ -1,6 +1,6 @@
 package design
 
-import . "goa.design/goa/v3/dsl"
+import . "goa.design/goa/v3/dsl" //nolint:staticcheck
 
 var RSSPayload = Type("RSSPayload", func() {
 	Description("RSS proxy request.")

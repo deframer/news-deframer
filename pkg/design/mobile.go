@@ -1,6 +1,6 @@
 package design
 
-import . "goa.design/goa/v3/dsl"
+import . "goa.design/goa/v3/dsl" //nolint:staticcheck
 
 var _ = Service("mobile", func() {
 	Description("Mobile-facing API contract.")

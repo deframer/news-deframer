@@ -1,0 +1,8 @@
+{
+  "exclude-rules": [
+    {
+      "path": "cmd/service/.*",
+      "rules": ["G118"]
+    }
+  ]
+}
