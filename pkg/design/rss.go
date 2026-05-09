@@ -30,7 +30,7 @@ var _ = Service("rss", func() {
 			Param("max_score")
 			Param("embedded")
 			Response(StatusOK, func() {
-				ContentType("application/xml")
+				ContentType("text/plain")
 			})
 			Response("bad_request", StatusBadRequest)
 		})
