@@ -5,10 +5,14 @@ ARG TARGETARCH
 
 WORKDIR /app
 
+RUN go install goa.design/goa/v3/cmd/goa@latest
+
 COPY go.mod go.sum* ./
 RUN go mod download
 
 COPY . .
+
+RUN goa gen github.com/deframer/news-deframer/pkg/design
 
 # We disable CGO for a static binary (easier for Alpine/Scratch)
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /out/ ./cmd/service ./cmd/admin
