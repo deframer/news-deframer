@@ -92,6 +92,8 @@ jobs:
 
       # Goa output is not committed, so lint must run after generation.
       - name: Generate Goa code
+        env:
+          GOFLAGS: "-buildvcs=false"
         run: make gen
 
       - name: Check Formatting
