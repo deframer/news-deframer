@@ -16,8 +16,8 @@ type rsssrvc struct {
 	facade facade.Facade
 }
 
-// NewRSS returns the RSS service implementation.
-func NewRSS(ctx context.Context) rss.Service {
+// NewRss returns the RSS service implementation.
+func NewRss(ctx context.Context) rss.Service {
 	cfg, err := config.Load()
 	if err != nil {
 		panic(err)
@@ -31,6 +31,7 @@ func NewRSS(ctx context.Context) rss.Service {
 	return &rsssrvc{facade: facade.New(ctx, cfg, repo)}
 }
 
+// Return a proxied RSS feed.
 func (s *rsssrvc) Feed(ctx context.Context, p *rss.RSSPayload) (res string, err error) {
 	log.Printf(ctx, "handleRSS url=%s", p.URL)
 	if p.URL == "" {

@@ -57,7 +57,7 @@ func main() {
 	{
 		openapiSvc = service.NewOpenapi()
 		infraSvc = service.NewInfra()
-		rssSvc = service.NewRSS(ctx)
+		rssSvc = service.NewRss(ctx)
 		mobileSvc = service.NewMobile(ctx)
 		webSvc = service.NewWeb(ctx)
 	}
