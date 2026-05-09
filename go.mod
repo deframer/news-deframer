@@ -3,7 +3,7 @@ module github.com/deframer/news-deframer
 go 1.26.3
 
 require (
-	github.com/caarlos0/env/v11 v11.4.0
+	github.com/caarlos0/env/v11 v11.4.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.12.3
@@ -14,8 +14,8 @@ require (
 	github.com/stretchr/testify v1.11.1
 	goa.design/clue v1.2.5
 	goa.design/goa/v3 v3.26.0
-	golang.org/x/net v0.53.0
-	google.golang.org/genai v1.54.0
+	golang.org/x/net v0.54.0
+	google.golang.org/genai v1.56.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
@@ -64,12 +64,12 @@ require (
 	go.opentelemetry.io/otel/metric v1.43.0 // indirect
 	go.opentelemetry.io/otel/trace v1.43.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
+	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
-	golang.org/x/sys v0.43.0 // indirect
-	golang.org/x/term v0.42.0 // indirect
-	golang.org/x/text v0.36.0 // indirect
+	golang.org/x/sys v0.44.0 // indirect
+	golang.org/x/term v0.43.0 // indirect
+	golang.org/x/text v0.37.0 // indirect
 	golang.org/x/tools v0.44.0 // indirect
 	google.golang.org/api v0.276.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260420184626-e10c466a9529 // indirect
