@@ -90,6 +90,10 @@ jobs:
       - name: Install Goa CLI
         run: make goa-install
 
+      # Goa output is not committed, so lint must run after generation.
+      - name: Generate Goa code
+        run: make gen
+
       - name: Check Formatting
         run: |
           if [ -n "$(gofmt -l .)" ]; then
