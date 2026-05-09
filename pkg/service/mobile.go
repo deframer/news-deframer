@@ -119,6 +119,11 @@ func (s *mobilesrvc) DomainComparisonEndpoint(ctx context.Context, p *mobile.Dom
 }
 
 func (s *mobilesrvc) BasicAuth(ctx context.Context, user, pass string, scheme *security.BasicScheme) (context.Context, error) {
+	if auther, ok := s.svc.(interface {
+		BasicAuth(context.Context, string, string, *security.BasicScheme) (context.Context, error)
+	}); ok {
+		return auther.BasicAuth(ctx, user, pass, scheme)
+	}
 	return ctx, nil
 }
 
