@@ -27,6 +27,7 @@ WORKDIR /
 
 COPY --from=builder /out/service /usr/bin/service
 COPY --from=builder /out/admin /usr/bin/admin
+COPY --from=builder /app/gen/http/openapi3.json /gen/http/openapi3.json
 
 USER nonroot:nonroot
 
