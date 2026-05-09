@@ -313,15 +313,21 @@ func TestGetRssProxyFeed(t *testing.T) {
 
 	filter := RSSProxyFilter{
 		URL:      "http://example.com",
-		Lang:     "en",
-		Max:      0.75,
-		Embedded: true,
+		Lang:     strPtr("en"),
+		Max:      floatPtr(0.75),
+		Embedded: boolPtr(true),
 	}
 
 	xmlData, err := f.GetRssProxyFeed(ctx, &filter)
 	assert.NoError(t, err)
 	assert.Contains(t, xmlData, "<title>Dummy Feed</title>")
 }
+
+func strPtr(v string) *string { return &v }
+
+func floatPtr(v float64) *float64 { return &v }
+
+func boolPtr(v bool) *bool { return &v }
 
 func TestGetItemsForRootDomain(t *testing.T) {
 	ctx := context.Background()

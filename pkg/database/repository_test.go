@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -21,7 +22,7 @@ func mustOpenTestRepo(t *testing.T) (*repository, *gorm.DB) {
 	cfg, err := config.Load()
 	assert.NoError(t, err)
 
-	baseRepo, err := NewRepository(cfg)
+	baseRepo, err := NewRepository(context.Background(), cfg)
 	if err != nil {
 		t.Skipf("skipping database integration test: %v", err)
 	}

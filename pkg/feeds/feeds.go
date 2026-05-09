@@ -8,7 +8,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/url"
 	"sort"
 	"strings"
@@ -16,6 +15,7 @@ import (
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
+	"goa.design/clue/log"
 )
 
 type Feeds interface {
@@ -27,9 +27,8 @@ type Feeds interface {
 }
 
 type feeds struct {
-	ctx    context.Context
-	cfg    *config.Config
-	logger *slog.Logger
+	ctx context.Context
+	cfg *config.Config
 }
 
 // ItemHashPair holds a feed item and its generated key
@@ -41,9 +40,8 @@ type ItemHashPair struct {
 // NewFeeds initializes a new feeds service
 func NewFeeds(ctx context.Context, cfg *config.Config) Feeds {
 	return &feeds{
-		ctx:    ctx,
-		cfg:    cfg,
-		logger: slog.With("component", "feeds"),
+		ctx: ctx,
+		cfg: cfg,
 	}
 }
 
@@ -231,12 +229,12 @@ func (f *feeds) FilterItems(ctx context.Context, feed *gofeed.Feed, domains []st
 	for _, item := range feed.Items {
 		key, err := ItemHashKey(item)
 		if err != nil {
-			f.logger.DebugContext(ctx, "skipping item", "error", err, "item_title", item.Title)
+			log.Debugf(ctx, "skipping item error=%v item_title=%s", err, item.Title)
 			continue
 		}
 
 		if seen[key] {
-			f.logger.WarnContext(ctx, "duplicate item hash detected", "hash", key, "item_title", item.Title)
+			log.Warnf(ctx, "duplicate item hash detected hash=%s item_title=%s", key, item.Title)
 			continue
 		}
 		seen[key] = true
@@ -244,7 +242,7 @@ func (f *feeds) FilterItems(ctx context.Context, feed *gofeed.Feed, domains []st
 		if len(domains) > 0 {
 			u, err := url.Parse(item.Link)
 			if err != nil {
-				f.logger.DebugContext(ctx, "skipping item invalid url", "error", err, "item_title", item.Title)
+				log.Debugf(ctx, "skipping item invalid url error=%v item_title=%s", err, item.Title)
 				continue
 			}
 			hostname := strings.ToLower(u.Hostname())

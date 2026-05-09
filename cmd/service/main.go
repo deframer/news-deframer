@@ -2,106 +2,145 @@ package main
 
 import (
 	"context"
-	"errors"
 	"flag"
 	"fmt"
-	"html"
-	"log/slog"
-	"net/http"
+	"net"
+	"net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
+	"sync"
 	"syscall"
-	"time"
 
-	"github.com/deframer/news-deframer/pkg/config"
-	"github.com/deframer/news-deframer/pkg/database"
-	"github.com/deframer/news-deframer/pkg/facade"
-	"github.com/deframer/news-deframer/pkg/server"
+	infra "github.com/deframer/news-deframer/gen/infra"
+	mobile "github.com/deframer/news-deframer/gen/mobile"
+	openapi "github.com/deframer/news-deframer/gen/openapi"
+	rss "github.com/deframer/news-deframer/gen/rss"
+	web "github.com/deframer/news-deframer/gen/web"
+	service "github.com/deframer/news-deframer/pkg/service"
+	"goa.design/clue/debug"
+	"goa.design/clue/log"
 )
 
 func main() {
-	jsonLog := flag.Bool("json-log", false, "Enable JSON logging")
-	disableETag := flag.Bool("disable-etag", false, "Disable ETag caching")
-	flag.Usage = func() {
-		// #nosec G705: usage string is escaped before printing
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", html.EscapeString(filepath.Base(os.Args[0])))
-		flag.PrintDefaults()
-	}
+	// Define command line flags, add any other flag required to configure the
+	// service.
+	var (
+		hostF     = flag.String("host", "localhost", "Server host (valid values: localhost)")
+		domainF   = flag.String("domain", "", "Host domain name (overrides host domain specified in service design)")
+		httpPortF = flag.String("http-port", "", "HTTP port (overrides host HTTP port specified in service design)")
+		secureF   = flag.Bool("secure", false, "Use secure scheme (https or grpcs)")
+		dbgF      = flag.Bool("debug", false, "Log request and response bodies")
+	)
 	flag.Parse()
 
-	cfg, err := config.Load()
-	if err != nil {
-		slog.Error("Failed to load config", "error", err)
-		os.Exit(1)
+	// Setup logger. Replace logger with your own log package of choice.
+	format := log.FormatJSON
+	if log.IsTerminal() {
+		format = log.FormatTerminal
+	}
+	ctx := log.Context(context.Background(), log.WithFormat(format))
+	httpPortF = bootstrap(ctx, httpPortF, dbgF)
+	if *dbgF {
+		ctx = log.Context(ctx, log.WithDebug())
+		log.Debugf(ctx, "debug logs enabled")
+	}
+	log.Print(ctx, log.KV{K: "http-port", V: *httpPortF})
+
+	// Initialize the services.
+	var (
+		openapiSvc openapi.Service
+		infraSvc   infra.Service
+		rssSvc     rss.Service
+		mobileSvc  mobile.Service
+		webSvc     web.Service
+	)
+	{
+		openapiSvc = service.NewOpenapi()
+		infraSvc = service.NewInfra()
+		rssSvc = service.NewRss(ctx)
+		mobileSvc = service.NewMobile(ctx)
+		webSvc = service.NewWeb(ctx)
 	}
 
-	if *disableETag {
-		cfg.DisableETag = true
+	// Wrap the services in endpoints that can be invoked from other services
+	// potentially running in different processes.
+	var (
+		openapiEndpoints *openapi.Endpoints
+		infraEndpoints   *infra.Endpoints
+		rssEndpoints     *rss.Endpoints
+		mobileEndpoints  *mobile.Endpoints
+		webEndpoints     *web.Endpoints
+	)
+	{
+		openapiEndpoints = openapi.NewEndpoints(openapiSvc)
+		openapiEndpoints.Use(debug.LogPayloads())
+		openapiEndpoints.Use(log.Endpoint)
+		infraEndpoints = infra.NewEndpoints(infraSvc)
+		infraEndpoints.Use(debug.LogPayloads())
+		infraEndpoints.Use(log.Endpoint)
+		rssEndpoints = rss.NewEndpoints(rssSvc)
+		rssEndpoints.Use(debug.LogPayloads())
+		rssEndpoints.Use(log.Endpoint)
+		mobileEndpoints = mobile.NewEndpoints(mobileSvc)
+		mobileEndpoints.Use(debug.LogPayloads())
+		mobileEndpoints.Use(log.Endpoint)
+		webEndpoints = web.NewEndpoints(webSvc)
+		webEndpoints.Use(debug.LogPayloads())
+		webEndpoints.Use(log.Endpoint)
 	}
 
-	var lvl slog.Level
-	if err := lvl.UnmarshalText([]byte(cfg.LogLevel)); err != nil {
-		slog.Warn("Invalid log level, defaulting to info", "level", cfg.LogLevel, "error", err)
-		lvl = slog.LevelInfo
-	}
+	// Create channel used by both the signal handler and server goroutines
+	// to notify the main goroutine when to stop the server.
+	errc := make(chan error)
 
-	useJSON := *jsonLog
-	if !useJSON {
-		// Check if stdout is a terminal (interactive)
-		if fi, err := os.Stdout.Stat(); err == nil {
-			if (fi.Mode() & os.ModeCharDevice) == 0 {
-				useJSON = true
-			}
-		}
-	}
-
-	if useJSON {
-		slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
-	} else {
-		slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})))
-	}
-
-	hostname, _ := os.Hostname()
-	slog.Info("Service", "level", lvl, "hostname", hostname, "etag_disabled", cfg.DisableETag)
-	if cfg.CORSAllowedOrigins != "" {
-		slog.Info("CORS enabled", "origins", cfg.CORSAllowedOrigins)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	repo, err := database.NewRepository(cfg)
-	if err != nil {
-		slog.Error("Failed to connect to database", "error", err)
-		os.Exit(1)
-	}
-
-	f := facade.New(ctx, cfg, repo)
-
-	srv := server.New(ctx, cfg, f)
-
+	// Setup interrupt handler. This optional step configures the process so
+	// that SIGINT and SIGTERM signals cause the services to stop gracefully.
 	go func() {
-		slog.Info("Starting server", "port", cfg.Port)
-		if err := srv.Start(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			slog.Error("Server failed", "error", err)
-			os.Exit(1)
-		}
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		errc <- fmt.Errorf("%s", <-c)
 	}()
 
-	// Wait for interrupt signal
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
+	var wg sync.WaitGroup
+	ctx, cancel := context.WithCancel(ctx)
 
-	slog.Info("Shutting down...")
+	// Start the servers and send errors (if any) to the error channel.
+	switch *hostF {
+	case "localhost":
+		{
+			addr := "http://0.0.0.0:8080"
+			u, err := url.Parse(addr)
+			if err != nil {
+				log.Fatalf(ctx, err, "invalid URL %#v\n", addr)
+			}
+			if *secureF {
+				u.Scheme = "https"
+			}
+			if *domainF != "" {
+				u.Host = *domainF
+			}
+			if *httpPortF != "" {
+				h, _, err := net.SplitHostPort(u.Host)
+				if err != nil {
+					log.Fatalf(ctx, err, "invalid URL %#v\n", u.Host)
+				}
+				u.Host = net.JoinHostPort(h, *httpPortF)
+			} else if u.Port() == "" {
+				u.Host = net.JoinHostPort(u.Host, "80")
+			}
+			handleHTTPServer(ctx, u, openapiEndpoints, infraEndpoints, rssEndpoints, mobileEndpoints, webEndpoints, &wg, errc, *dbgF)
+		}
 
-	// Shutdown with timeout
-	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer shutdownCancel()
-
-	if err := srv.Stop(shutdownCtx); err != nil {
-		slog.Error("Server shutdown failed", "error", err)
+	default:
+		log.Fatal(ctx, fmt.Errorf("invalid host argument: %q (valid hosts: localhost)", *hostF))
 	}
-	slog.Info("Server stopped")
+
+	// Wait for signal.
+	log.Printf(ctx, "exiting (%v)", <-errc)
+
+	// Send cancellation signal to the goroutines.
+	cancel()
+
+	wg.Wait()
+	log.Printf(ctx, "exited")
 }

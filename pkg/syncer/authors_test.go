@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"log/slog"
 	"testing"
 
 	"github.com/deframer/news-deframer/pkg/database"
@@ -144,10 +143,9 @@ func TestGuessAuthorsByTag(t *testing.T) {
 
 func TestThinkRenderAndExtract_Authors(t *testing.T) {
 	s := &Syncer{
-		ctx:    context.Background(),
-		logger: slog.Default(),
-		think:  &mockThink{},
-		feeds:  &mockFeeds{},
+		ctx:   context.Background(),
+		think: &mockThink{},
+		feeds: &mockFeeds{},
 	}
 
 	item := &gofeed.Item{

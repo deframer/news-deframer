@@ -1,0 +1,44 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "example", "version": "1.0.0" },
+  "servers": [{ "url": "http://placeholder" }],
+  "tags": [
+    { "name": "web", "description": "web" }
+  ],
+  "paths": {
+    "/resource/items/{group}/{item}/{detail}": {
+      "get": {
+        "tags": ["web"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GroupItemEntry" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "GroupItemEntry": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      },
+      "OpenAPIOnlyForRequestBody": {
+        "type": "object",
+        "properties": {
+          "ignored": { "type": "string" }
+        }
+      }
+    }
+  }
+}

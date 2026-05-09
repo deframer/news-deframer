@@ -1,0 +1,47 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "example", "version": "1.0.0" },
+  "servers": [{ "url": "http://placeholder" }],
+  "tags": [
+    { "name": "web", "description": "web" }
+  ],
+  "paths": {
+    "/resource/delete": {
+      "get": {
+        "tags": ["web"],
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/resource/list": {
+      "get": {
+        "tags": ["web"],
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/resource/show/{id}": {
+      "get": {
+        "tags": ["web"],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResult" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TokenResult": {
+        "type": "object",
+        "properties": {
+          "token": { "type": "string" }
+        }
+      }
+    }
+  }
+}

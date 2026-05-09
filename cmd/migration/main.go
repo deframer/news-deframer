@@ -1,31 +1,35 @@
 package main
 
 import (
-	"log/slog"
+	"context"
 	"os"
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/deframer/news-deframer/pkg/database"
+	"goa.design/clue/log"
 )
 
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		slog.Error("Failed to load config", "error", err)
+		log.Fatalf(context.Background(), err, "Failed to load config")
 		os.Exit(1)
 	}
 
-	// force this
-	cfg.LogLevel = "debug"
-	cfg.LogDatabase = true
+	format := log.FormatJSON
+	if log.IsTerminal() {
+		format = log.FormatTerminal
+	}
+	ctx := log.Context(context.Background(), log.WithFormat(format))
+	cfg.DatabaseLogging = true
 
 	// Print the DSN as requested
-	slog.Info("Running migrations", "dsn", cfg.DSN)
+	log.Print(ctx, log.KV{K: "dsn", V: cfg.DSN})
 
 	if err := database.RunMigrations(cfg, true); err != nil {
-		slog.Error("Failed to run migrations", "error", err)
+		log.Fatalf(ctx, err, "Failed to run migrations")
 		os.Exit(1)
 	}
 
-	slog.Info("Migrations completed successfully")
+	log.Print(ctx, log.KV{K: "message", V: "Migrations completed successfully"})
 }

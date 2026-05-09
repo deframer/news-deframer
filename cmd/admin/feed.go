@@ -78,7 +78,7 @@ var feedCmd = &cobra.Command{
 			rootCmd.PersistentPreRun(cmd, args)
 		}
 		var err error
-		repo, err = database.NewRepository(cfg)
+		repo, err = database.NewRepository(cmd.Context(), cfg)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to connect to database: %v\n", err)
 			os.Exit(1)

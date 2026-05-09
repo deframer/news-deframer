@@ -22,5 +22,6 @@ browser-plugin/
 docker/
 docks/
 infra-env/
+gen/
 sql/
 test-env/

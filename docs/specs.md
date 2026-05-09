@@ -10,7 +10,7 @@ The system is designed as a **Producer-Consumer** architecture (Reader-Writer). 
 1.  **API Gateway (Service)**:
     - Written in **Golang**.
     - Stateless HTTP Server.
-    - **Role**: "Dumb Reader". It only serves pre-calculated XML from the DB.
+    - **Role**: "Dumb Reader". It only serves pre-calculated API responses from the DB.
     - Reads from **PostgreSQL** (`cached_feeds`).
 2.  **Deframer Worker (Service)**:
     - Written in **Golang**.
@@ -19,171 +19,19 @@ The system is designed as a **Producer-Consumer** architecture (Reader-Writer). 
 3.  **PostgreSQL (Infrastructure)**:
     - **Persistent Storage**: Stores configuration (`Feeds`) and data (`Items`).
     - **Queue State**: Stores scheduling and locking info (`feed_schedules`).
-    - **Cache**: Stores the ready-to-serve XML strings (`cached_feeds`).
+    - **Cache**: Stores the ready-to-serve API payloads (`cached_feeds`).
 4.  **Admin CLI (Tool)**:
     - Written in **Golang**.
     - Interface for operators to manage feeds, system configuration, and revive dead feeds.
 
 ---
 
-## 2. The RSS Deframer Proxy (API)
-
-### Purpose
-To serve valid RSS 2.0 documents instantly. It acts as the "Read Model" of the system.
-
-### Endpoints
-
-#### A. The Feed Proxy
-```bash
-GET /rss?url=${ENCODED_URL}
-```
-**Behavior**:
-1.  **Resolution**: Map `url` to `uuid` using PostgreSQL `feeds` table.
-2.  **Access Check**: Check if `feeds.enabled` is `true`.
-    -   **False**: Return `403 Forbidden` or `404 Not Found` (depending on preference).
-3.  **Cache Hit**: Query PostgreSQL `cached_feeds` table.
-    -   **Found**: Return `xml_content` immediately.
-    -   **Not Found / Empty**: Return `404 Not Found`.
-4.  **Header Logic**: The HTTP `Last-Modified` header and the RSS `<lastBuildDate>` are derived strictly from `cached_feeds.updated_at`.
-
-#### B. JSON Endpoints
-```bash
-GET /api/item?url=${ARTICLE_URL}&max_score=0.5
-```
-**Behavior**:
-- Used to check if a specific article URL has already been deframed.
-- **Status Codes**:
-    - `200 OK`: Single Item. Returns JSON object.
-    - `404 Not Found`: Domain or Link unknown.
-
-```bash
-GET /api/site?root=${ROOT_DOMAIN}
-```
-**Behavior**:
-- Used to return a list of the most recent items we deframed for the site logic. This will be used by the Web Browser plugin to replace the portal page.
-- **Resolution**:
-    1.  Find all `feeds` where `feeds.root_domain == root`.
-    2.  Select items from these feeds.
-- **Logic**: Returns distinct items (by URL) using a "Fair Distribution" algorithm (interleaving items from different feeds) to prevent high-volume feeds from dominating.
-- **Status Codes**:
-    - `200 OK`: Returns JSON object.
-    - `404 Not Found`: Domain unknown.
-
-```bash
-GET /api/articles?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}&offset=${OFFSET}&limit=${LIMIT}
-```
-**Behavior**:
-- Used to get a list of articles with the selected trend term for the given period.
-- **Temporal Parameters**:
-    - `date` is optional (`YYYY-MM-DD`).
-    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
-    - `days` (optional, default `1`) defines window size.
-    - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
-    - Without `date`: effective window is `[NOW() - days, NOW())`.
-- **Paging Parameters**:
-    - `offset` (optional, default `0`): number of items to skip.
-    - `limit` (optional, default `20`): maximum number of items to return.
-- **Status Codes**:
-    - `200 OK`: Returns JSON object/array.
-    - `404 Not Found`: Domain or term unknown.
-
-```bash
-GET /api/sentiments?root=${ROOT_DOMAIN}&term=${TERM}&date=${DATE}&days=${DAYS}
-```
-**Behavior**:
-- Used to return sentiment data for the selected trend term within the given root domain and time window. The response includes the regular sentiments and, if available, the deframed sentiments.
-- **Temporal Parameters**:
-    - `date` is optional (`YYYY-MM-DD`).
-    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
-    - `days` (optional, default `1`) defines window size.
-    - With `date` set: effective window is `[date - (days - 1), date + 1 day)`.
-    - Without `date`: effective window is `[NOW() - days, NOW())`.
-- **Status Codes**:
-    - `200 OK`: Returns JSON object.
-    - `404 Not Found`: Domain or term unknown.
-
-#### C. Trend API Endpoints
-
-```bash
-GET /api/trends/topbydomain?domain=${ROOT_DOMAIN}&lang=${LANG}&date=${DATE}&days=${DAYS}
-```
-**Behavior**:
-- Used to return a list of the top trending terms (stems) for a specific domain and language.
-- **Query Parameters**:
-    - `domain` (or `d`): The root domain to analyze.
-    - `lang` (or `l`): The language code (e.g., `de`, `en`).
-- **Temporal Parameters**:
-    - `date` is optional (`YYYY-MM-DD`).
-    - If `date` is omitted, SQL uses `NOW()` as the anchor and applies a rolling window.
-    - `days` (optional, default `1`) defines window size.
-- **Status Codes**:
-    - `200 OK`: Returns JSON array of `TrendMetric`.
-    - `400 Bad Request`: Missing domain or language.
-    - `404 Not Found`: Domain unknown or no trends found.
-
-```bash
-GET /api/trends/contextbydomain?term=${TERM}&domain=${ROOT_DOMAIN}&lang=${LANG}&date=${DATE}&days=${DAYS}
-```
-**Behavior**:
-- Used to return context words frequently co-occurring with a specific trend term.
-- **Query Parameters**:
-    - `term` (or `t`): The trend term to analyze.
-    - `domain` (or `d`): The root domain to analyze.
-    - `lang` (or `l`): The language code (e.g., `de`, `en`).
-- **Temporal Parameters**:
-    - (Same as above)
-- **Status Codes**:
-    - `200 OK`: Returns JSON array of `TrendContext`.
-    - `400 Bad Request`: Missing term, domain, or language.
-    - `404 Not Found`: Domain/term unknown or no context found.
-
-```bash
-GET /api/trends/lifecyclebydomain?term=${TERM}&domain=${ROOT_DOMAIN}&lang=${LANG}&date=${DATE}&days=${DAYS}
-```
-**Behavior**:
-- Used to return a time-series view (frequency and velocity) of a specific trend term's lifecycle.
-- **Query Parameters**:
-    - `term` (or `t`): The trend term to analyze.
-    - `domain` (or `d`): The root domain to analyze.
-    - `lang` (or `l`): The language code (e.g., `de`, `en`).
-- **Temporal Parameters**:
-    - (Same as above)
-- **Status Codes**:
-    - `200 OK`: Returns JSON array of `Lifecycle`.
-    - `400 Bad Request`: Missing term, domain, or language.
-    - `404 Not Found`: Domain/term unknown or no lifecycle found.
-
-```bash
-GET /api/trends/comparedomains?domain_a=${DOMAIN_A}&domain_b=${DOMAIN_B}&lang=${LANG}&date=${DATE}&days=${DAYS}
-```
-**Behavior**:
-- Used to return a comparison of trending terms between two different domains, highlighting commonalities and outliers.
-- **Query Parameters**:
-    - `domain_a` (or `da`): The first root domain.
-    - `domain_b` (or `db`): The second root domain.
-    - `lang` (or `l`): The language code (e.g., `de`, `en`).
-- **Temporal Parameters**:
-    - (Same as above)
-- **Status Codes**:
-    - `200 OK`: Returns JSON array of `DomainComparison`.
-    - `400 Bad Request`: Missing domain_a, domain_b, or language.
-    - `404 Not Found`: Domains unknown or no comparison data found.
-
-#### D. Temporal Query Convention (Planned Refactor)
-
-For trend-oriented endpoints currently using `daysInPast`, we will move to a unified temporal contract:
-
-- `date` (optional): anchor day in `YYYY-MM-DD`.
-- `days` (optional, default `1`): window size in days ending at the anchor day.
-- If `date` is not provided, the SQL layer uses `NOW()` as anchor (rolling window semantics).
-- This change is a specification update first; implementation across all handlers/repository methods is pending.
-
 ---
 
-## 3. The Background Worker
+## 2. The Background Worker
 
 ### Purpose
-To handle the heavy lifting: Polling, Scraping, AI Processing, and XML Reconstruction.
+To handle the heavy lifting: Polling, Scraping, AI Processing, and content reconstruction.
 
 ### Routines & Locking
 
@@ -200,7 +48,7 @@ The worker polls the `feed_schedules` table to find available jobs.
 
 #### 3. The Processing Sequence (Monolith)
 Once a lock is acquired, the worker executes the following sequential steps:
-1.  **Fetch Feed**: Download upstream XML.
+    1.  **Fetch Source**: Download upstream content.
     -   **Domain Check**: If `feeds.enforce_feed_domain` is true, discard items where `item.Host != feed.Host`.
 2.  **Identify New Items**:
     -   Calculate SHA256 Hash of the Item URL.
@@ -211,11 +59,11 @@ Once a lock is acquired, the worker executes the following sequential steps:
         -   Download HTML content.
         -   **Run AI Deframer** (Extract facts/summary).
         -   Insert result into `items` table.
-4.  **Feed Build**:
-    -   Select last $N$ items for this `feed_id`.
-    -   Generate final RSS XML.
-    -   Collect the list of Item Hashes into `item_refs`.
-    -   **Commit**: UPDATE/INSERT `cached_feeds` with `xml_content` and `item_refs`.
+4.  **Output Build**:
+	-   Select last $N$ items for this `feed_id`.
+	-   Generate final API output.
+	-   Collect the list of Item Hashes into `item_refs`.
+	-   **Commit**: UPDATE/INSERT `cached_feeds` with `response_content` and `item_refs`.
 
 #### 4. Completion & Rescheduling
 After the feed is built, the worker determines if it should run again.
@@ -234,7 +82,7 @@ After the feed is built, the worker determines if it should run again.
 
 ---
 
-## 4. The Hybrid-State Algorithm
+## 3. The Hybrid-State Algorithm
 
 This algorithm ensures the system handles Bootstraps and Updates efficiently using the Database as a Cold Cache.
 
@@ -253,7 +101,7 @@ If a feed is newly added:
 
 ---
 
-## 5. The Deframing Algorithm (AI Service)
+## 4. The Deframing Algorithm (AI Service)
 
 This component is an abstraction layer over Large Language Models (LLMs).
 
@@ -267,7 +115,7 @@ This component is an abstraction layer over Large Language Models (LLMs).
 
 ---
 
-## 6. Data Schema
+## 5. Data Schema
 
 ### Database (PostgreSQL)
 
@@ -289,9 +137,9 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - `id`: UUID (PK & FK to Feed.ID).
 - `created_at`: Timestamp (Default: `now()`)
 - `updated_at`: Timestamp (Default: `now()`).
-- `xml_header`: Text (**NOT NULL**).
-- `item_refs`: Text Array (`text[]`, Stores list of Item SHA256 hashes currently in the XML).
-- `xml_content`: Text (The final ready-to-serve RSS XML string).
+- `response_header`: Text (**NOT NULL**).
+- `item_refs`: Text Array (`text[]`, Stores list of Item SHA256 hashes currently in the cache).
+- `response_content`: Text (The final ready-to-serve API payload string).
 
 **Table: `feed_schedules` (Operational State)**
 *Sidecar table, 1:1 with Feeds*
@@ -313,14 +161,14 @@ This component is an abstraction layer over Large Language Models (LLMs).
 - `url`: String (**Indexed**).
 - `analyzer_result`: JSONB (The processed AI content, **NOT NULL**).
 - `content`: Text (The raw item content, **NOT NULL**).
-- `pub_date`: Timestamp (pubDate of the XML, Default: `now()`).
+- `pub_date`: Timestamp (Publication date, Default: `now()`).
 - **Constraints**:
   - **Unique Index**: `idx_feed_id_hash` (`feed_id`, `hash`).
   - **Important Note**: The `url` (and `hash`) is **NOT unique globally**. A URL may appear in multiple feeds. It is only unique relative to the `feed_id`.
 
 ---
 
-## 7. Scaling and Configuration
+## 6. Scaling and Configuration
 
 ### Configuration Management
 - **API Keys & Secrets**:
@@ -339,16 +187,16 @@ This component is an abstraction layer over Large Language Models (LLMs).
 
 ---
 
-## 8. Implementation Notes
+## 7. Implementation Notes
 
-- **Optimization**: Ensure `cached_feeds` is TOASTed properly by Postgres as `xml_content` can be large.
+- **Optimization**: Ensure `cached_feeds` is TOASTed properly by Postgres as `response_content` can be large.
 - **Syndication**: Since `items` are scoped to `feed_id`, if two feeds syndicate the same article, the AI will process it twice (once for each feed). This is intentional to allow per-feed prompts or domain enforcement contexts.
 - **Admin Sync**: Use the CLI to force updates during development.
-- **Endpoints**: Probably also support `max_score` for the RSS endpoint. This is much harder as we need dynamic XML generating.
+- **Endpoints**: Probably also support `max_score` for the site endpoint.
 
 ---
 
-## 9. Admin CLI Tool
+## 8. Admin CLI Tool
 
 A command-line interface for operators to manage the system state and feed configurations without direct database manipulation.
 

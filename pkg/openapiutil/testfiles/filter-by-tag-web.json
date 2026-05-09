@@ -1,0 +1,43 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "example", "version": "1.0.0" },
+  "servers": [{ "url": "http://placeholder" }],
+  "tags": [
+    { "name": "web", "description": "web login" },
+    { "name": "checker", "description": "checker start" },
+    { "name": "service", "description": "service route" }
+  ],
+  "paths": {
+    "/resource/service": {
+      "get": {
+        "tags": ["service"],
+        "summary": "service route",
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/resource/web": {
+      "get": {
+        "tags": ["web"],
+        "summary": "web login",
+        "responses": { "200": { "description": "ok" } }
+      }
+    },
+    "/resource/checker": {
+      "get": {
+        "tags": ["checker"],
+        "summary": "checker start",
+        "responses": { "200": { "description": "ok" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SampleRequest": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" }
+        }
+      }
+    }
+  }
+}

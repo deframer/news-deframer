@@ -8,6 +8,7 @@ COMPOSE_ENV_FILE ?= .env-compose
 DOCKER_ENV_FLAG := $(if $(wildcard $(COMPOSE_ENV_FILE)),--env-file $(COMPOSE_ENV_FILE),--env-file /dev/null)
 
 DB_IMAGE := pgduckdb/pgduckdb:18-main
+GO_DIRS := $(shell go list -f '{{.Dir}}' ./... | grep -v '/frontend/.*/node_modules/')
 
 ifneq ("$(wildcard .env)","")
   #$(info using .env file)
@@ -15,7 +16,7 @@ ifneq ("$(wildcard .env)","")
   export $(shell sed 's/=.*//' .env)
 endif
 
-.PHONY: all build clean test help coverage lint tidy
+.PHONY: all build clean test help coverage lint tidy gen example
 .PHONY: start stop down logs zap
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
 .PHONY: docker-all add-feeds service worker think-fixer
@@ -50,12 +51,12 @@ down:
 logs:
 	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) logs -f
 
-build:
+build: gen tidy
 	mkdir -p $(BUILD_DIR)
 	go build -o $(BUILD_DIR)/ ./$(CMD_DIR)/...
 
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) gen
 	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --rmi local
 
 test:
@@ -67,20 +68,29 @@ coverage:
 	go tool cover -html=coverage.out -o coverage.html
 
 lint:
-	golangci-lint run ./...
-	gosec ./...
-	govulncheck ./...
+	golangci-lint run $(GO_DIRS)
+	gosec -conf .gosec.json ./...
+	govulncheck $(GO_DIRS)
 	gofmt -l .
 
 tools-install:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 	go install github.com/securego/gosec/v2/cmd/gosec@latest
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 
+goa-install:
+	go install goa.design/goa/v3/cmd/goa@latest
+
 check: test lint
 
-tidy:
+tidy: gen
 	go mod tidy
+
+gen: goa-install
+	goa gen github.com/deframer/news-deframer/pkg/design
+
+example: tidy gen
+	goa example github.com/deframer/news-deframer/pkg/design && mkdir -p pkg/service && for f in *.go; do [ -e "$$f" ] || continue; if [ -e "pkg/service/$$f" ]; then rm -f "$$f"; else mv -f "$$f" "pkg/service/$$f"; fi; done
 
 docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
 
@@ -95,7 +105,7 @@ service-cached: build
 	./bin/service
 
 service: build
-	./bin/service --disable-etag
+	./bin/service
 
 migration: build
 	./bin/migration

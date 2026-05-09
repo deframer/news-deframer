@@ -1,19 +1,19 @@
 package database
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/url"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
-	mylogger "github.com/deframer/news-deframer/pkg/logger"
 	"github.com/google/uuid"
+	"goa.design/clue/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -202,18 +202,19 @@ type Repository interface {
 }
 
 type repository struct {
-	db *gorm.DB
+	ctx context.Context
+	db  *gorm.DB
 }
 
 // NewRepository initializes a new repository with a database connection from config.
-func NewRepository(cfg *config.Config) (Repository, error) {
-	lvl := logger.Error // maybe Silent is better
-	if cfg.LogDatabase {
-		lvl = logger.Info
+func NewRepository(ctx context.Context, cfg *config.Config) (Repository, error) {
+	gormLogger := logger.Default.LogMode(logger.Silent)
+	if cfg.DatabaseLogging {
+		gormLogger = NewCustomGormLogger(ctx)
 	}
 
 	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
-		Logger: mylogger.NewSlogGormLogger(slog.Default(), lvl),
+		Logger: gormLogger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
@@ -223,12 +224,12 @@ func NewRepository(cfg *config.Config) (Repository, error) {
 		return nil, fmt.Errorf("failed to migrate database: %w", err)
 	}
 
-	return &repository{db: db}, nil
+	return &repository{ctx: ctx, db: db}, nil
 }
 
 // NewFromDB creates a repository from an existing GORM connection.
 func NewFromDB(db *gorm.DB) Repository {
-	return &repository{db: db}
+	return &repository{ctx: context.Background(), db: db}
 }
 
 func (r *repository) FindFeedByUrl(u *url.URL) (*Feed, error) {
@@ -315,7 +316,7 @@ func (r *repository) upsertItemInternal(tx *gorm.DB, item *Item, invalidateTrend
 	// Mitigation: check for URL conflict within the same feed (different hash)
 	var urlConflict Item
 	if err := tx.Where("feed_id = ? AND url = ? AND hash != ?", item.FeedID, item.URL, item.Hash).First(&urlConflict).Error; err == nil {
-		slog.Warn("URL conflict detected, deleting old version to allow update", "url", item.URL, "old_hash", urlConflict.Hash, "new_hash", item.Hash)
+		log.Printf(r.ctx, "URL conflict detected, deleting old version to allow update url=%s old_hash=%s new_hash=%s", item.URL, urlConflict.Hash, item.Hash)
 		if err := tx.Where("item_id = ?", urlConflict.ID).Delete(&Trend{}).Error; err != nil {
 			return err
 		}
@@ -472,7 +473,7 @@ func (r *repository) BeginFeedUpdate(lockDuration time.Duration) (*Feed, error) 
 		if err := tx.Unscoped().First(&f, schedule.ID).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				// soft deleted
-				slog.Warn("Feed schedule exists but feed not found, removing sync", "feed_id", schedule.ID)
+				log.Printf(r.ctx, "Feed schedule exists but feed not found, removing sync feed_id=%s", schedule.ID)
 				return r.removeSyncTx(tx, schedule.ID)
 			}
 			return err
@@ -480,7 +481,7 @@ func (r *repository) BeginFeedUpdate(lockDuration time.Duration) (*Feed, error) 
 
 		if !f.Enabled || f.DeletedAt.Valid {
 			// the feed might was disabled / delete
-			slog.Warn("Feed schedule exists but feed is disabled or deleted, removing sync", "feed_id", schedule.ID)
+			log.Printf(r.ctx, "Feed schedule exists but feed is disabled or deleted, removing sync feed_id=%s", schedule.ID)
 			return r.removeSyncTx(tx, schedule.ID)
 		}
 

@@ -85,7 +85,16 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
-          go-version: '1.26.2'
+          go-version: '1.26.3'
+
+      - name: Install Goa CLI
+        run: make goa-install
+
+      # Goa output is not committed, so lint must run after generation.
+      - name: Generate Goa code
+        env:
+          GOFLAGS: "-buildvcs=false"
+        run: make gen
 
       - name: Check Formatting
         run: |
@@ -105,7 +114,7 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
         with:
-          args: ./...
+          args: -conf .gosec.json ./...
         env:
           GOTOOLCHAIN: auto
 

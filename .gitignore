@@ -7,7 +7,11 @@
 /infra/deploy/migrate-tool*
 /infra/deploy/*.json
 __debug_bin*
-/gen
+gen/
+# Goa example outputs generated at repo root.
+/infra.go
+/web.go
+/mobile.go
 /*.pem
 *.db
 *.xml
@@ -24,3 +28,4 @@ coverage.*
 /admin
 /feeds.json
 *.log
+goa*
