@@ -84,6 +84,8 @@ func handleHTTPServer(ctx context.Context, u *url.URL, openapiEndpoints *openapi
 	// skip pings
 	var noLogRegexp = regexp.MustCompile(`^/(healthz|livez|metrics|ping)$`)
 	handler = log.HTTP(ctx, log.WithPathFilter(noLogRegexp))(handler)
+	// Allow browser and mobile clients to call the API across origins.
+	handler = corsMiddleware(handler)
 	// handler = log.HTTP(ctx)(handler)
 
 	// Start HTTP server using default configuration, change the code to
