@@ -19,7 +19,7 @@
     "@react-native-picker/picker": "^2.11.4",
     "base-64": "^1.0.0",
     "date-fns": "^4.1.0",
-    "i18next": "^26.0.10",
+    "i18next": "^26.1.0",
     "lucide-react-native": "^1.14.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
