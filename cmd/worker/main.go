@@ -50,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(logCtx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	s, err := syncer.New(ctx, cfg, repo)
