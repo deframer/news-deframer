@@ -39,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logCtx := applog.NewLoggerContext(context.Background(), false)
+	logCtx := applog.NewLoggerContext(context.Background(), cfg.DebugLog)
 
 	hostname, _ := os.Hostname()
 	log.Print(logCtx, log.KV{K: "component", V: "worker"}, log.KV{K: "hostname", V: hostname})
@@ -50,7 +50,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(logCtx, os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	s, err := syncer.New(ctx, cfg, repo)
