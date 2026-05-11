@@ -39,7 +39,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	logCtx := applog.NewLoggerContext(context.Background(), false)
+	logCtx := applog.NewLoggerContext(context.Background(), cfg.DebugLog)
 
 	hostname, _ := os.Hostname()
 	log.Print(logCtx, log.KV{K: "component", V: "worker"}, log.KV{K: "hostname", V: hostname})

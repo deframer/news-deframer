@@ -26,7 +26,7 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ctx := applog.NewLoggerContext(context.Background(), false)
+		ctx := applog.NewLoggerContext(context.Background(), cfg.DebugLog)
 		log.Print(ctx, log.KV{K: "component", V: "admin"})
 		cmd.SetContext(ctx)
 	},

@@ -71,8 +71,8 @@ type Config struct {
 	LLM_APIKey  string  `env:"LLM_API_KEY" envDefault:""`
 	LLM_BaseURL string  `env:"LLM_BASE_URL" envDefault:""`
 
-	DebugLog        bool `required:"false" envconfig:"DEBUG_LOG" default:"false"`
-	DatabaseLogging bool `required:"false" envconfig:"DATABASE_LOGGING" default:"false"`
+	DebugLog        bool `env:"DEBUG_LOG" envDefault:"false"`
+	DatabaseLogging bool `env:"DATABASE_LOGGING" envDefault:"false"`
 }
 
 func Load() (*Config, error) {

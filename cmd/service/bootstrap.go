@@ -24,6 +24,9 @@ func bootstrap(ctx context.Context, httpPortF *string, outDbgF *bool) (outHttpPo
 	if cfg.Port != "" {
 		outHttpPortF = &cfg.Port
 	}
+	if outDbgF != nil {
+		*outDbgF = *outDbgF || cfg.DebugLog
+	}
 
 	return
 }
