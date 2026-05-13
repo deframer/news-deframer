@@ -43,9 +43,9 @@ The server periodically polls RSS feeds. Results are cached per `<item>`. Change
 The analysis appends the AI generated values to the feed per `<item>`.
 
 
-## Proxy Service Specification
+## Feed Analysis Service Specification
 
-The service functions as a proxy and content "washer". It retrieves an upstream RSS feed, analyzes it, and returns the enriched feed.
+The service retrieves an upstream RSS feed, analyzes it, and returns the enriched feed.
 
 **Base URL**: `https://deframer.example.com/`
 
@@ -54,10 +54,10 @@ The service functions as a proxy and content "washer". It retrieves an upstream 
 *   **`url`** (Required): The absolute URL of the upstream RSS feed (must be URL-encoded).
 *   **`lang`** (Optional): The IETF BCP 47 language tag (e.g., `en`, `de-DE`) for filtering a specific language.
 *   **`max_score`** (Optional): The maximum allowable score (0.0 - 1.0) for negative attributes. Items exceeding this threshold may be filtered.
-*   **`embedded`** (Optional): If set to `true`, the system modifies the feed content directly instead of appending metadata. No additional values are added, enabling the proxy feed to serve as a direct replacement.
+*   **`embedded`** (Optional): If set to `true`, the system modifies the feed content directly instead of appending metadata. No additional values are added.
     -   **Title**: Replaced with the `title_corrected` to mitigate emotional spikes.
     -   **Description**: Prepended with score summaries and reasoning.
-    -   **Use Case**: Allows the proxy to function as a drop-in replacement for standard RSS readers without custom plugin support.
+    -   **Use Case**: Allows the feed to work without custom plugin support.
 
 Example:
 
@@ -136,8 +136,8 @@ The data collected and cached via the RSS ingestion pipeline can be leveraged by
 
 Ad blockers already utilize lists to identify websites requiring client-side intervention. This architecture allows for the following enhancements:
 
-1.  **Configuration**: The ad blocker configuration includes a flag indicating if a specific domain (e.g., `https://www.example.com`) is supported by the Deframer proxy.
-2.  **Lookup Strategy**: When a user visits a flagged domain sub-page (e.g., `/foo`), the extension queries the local cache or the proxy service to check if that specific path corresponds to an analyzed feed item.
+1.  **Configuration**: The ad blocker configuration includes a flag indicating if a specific domain (e.g., `https://www.example.com`) is supported by Deframer.
+2.  **Lookup Strategy**: When a user visits a flagged domain sub-page (e.g., `/foo`), the extension queries the local cache or service to check if that specific path corresponds to an analyzed feed item.
 
 ### Interaction Handling
 
