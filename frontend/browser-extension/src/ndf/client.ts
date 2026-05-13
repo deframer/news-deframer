@@ -6,6 +6,12 @@ import {
   type AnalyzedSiteItem,
   type DomainComparison,
   type DomainEntry,
+  type Lifecycle,
+  type SentimentItem,
+  type SentimentScores,
+  type ThinkResult,
+  type TrendContext,
+  type TrendMetric,
   webArticles as getArticlesByTrend,
   webContextByDomain as getContextByDomain,
   webDomainComparison as getDomainComparison,
@@ -15,12 +21,6 @@ import {
   webSentiments as getSentimentsByTrend,
   webSite as getSite,
   webTopTrendsByDomain as getTopTrendByDomain,
-  type Lifecycle,
-  type SentimentItem,
-  type SentimentScores,
-  type ThinkResult,
-  type TrendContext,
-  type TrendMetric,
 } from './generated/newsDeframerClient.gen';
 
 export type { AnalyzedArticle, AnalyzedItem, DomainComparison, DomainEntry, Lifecycle, SentimentItem, SentimentScores, ThinkResult, TrendContext, TrendMetric };
