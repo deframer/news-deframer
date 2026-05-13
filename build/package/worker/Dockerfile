@@ -27,4 +27,5 @@ COPY --from=builder /out/admin /usr/bin/admin
 USER nonroot:nonroot
 
 ENTRYPOINT ["/usr/bin/worker"]
-CMD ["--mode", "worker"]
+# Default to ingester mode unless overridden by compose or the CLI.
+CMD ["--mode", "ingester"]

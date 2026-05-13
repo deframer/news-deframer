@@ -42,6 +42,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    command: ["--mode", "ingester"]
     environment:
       - DSN=${DSN:-host=postgres user=deframer password=deframer dbname=deframer port=5432 sslmode=disable}
       - LOG_DATABASE=${LOG_DATABASE:-false}
