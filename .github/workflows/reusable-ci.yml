@@ -112,9 +112,11 @@ jobs:
           version: latest
 
       - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: -conf .gosec.json ./...
         env:
           GOTOOLCHAIN: auto
-        run: gosec -conf .gosec.json ./...
 
       - name: Run govulncheck
         run: |
