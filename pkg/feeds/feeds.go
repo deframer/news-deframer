@@ -291,11 +291,6 @@ func AddNamespace(feed *gofeed.Feed, ns, uri string) {
 }
 
 func (f *feeds) toRSS2Item(item *gofeed.Item) rss2Item {
-	var custom string
-	if item.Custom != nil {
-		custom = item.Custom["custom_field"]
-	}
-
 	// Clone extensions to avoid mutating the original item
 	extensions := make(ext.Extensions)
 	for k, v := range item.Extensions {
@@ -322,7 +317,6 @@ func (f *feeds) toRSS2Item(item *gofeed.Item) rss2Item {
 		Content:     item.Content,
 		PubDate:     item.Published,
 		GUID:        item.GUID,
-		CustomField: custom,
 		Extensions:  extensions,
 		Custom:      item.Custom,
 	}
@@ -426,7 +420,6 @@ type rss2Item struct {
 	Content     string            `xml:"content:encoded,omitempty"`
 	PubDate     string            `xml:"pubDate,omitempty"`
 	GUID        string            `xml:"guid,omitempty"`
-	CustomField string            `xml:"deframer:custom,omitempty"`
 	Extensions  ext.Extensions    `xml:"-"`
 	Custom      map[string]string `xml:"-"`
 }
@@ -474,9 +467,6 @@ func (r rss2Item) MarshalXML(e *xml.Encoder, start xml.StartElement) error {
 		return err
 	}
 	if err := encode("guid", r.GUID); err != nil {
-		return err
-	}
-	if err := encode("deframer:custom", r.CustomField); err != nil {
 		return err
 	}
 

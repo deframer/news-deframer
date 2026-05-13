@@ -23,7 +23,6 @@ import (
 )
 
 const promptScope = "deframer"
-const customPrefix = "deframer"
 const maxThinkRetries = 3
 const thinkFixerBatchSize = 15
 const thinkFixerLookback = 30 * 24 * time.Hour
@@ -448,9 +447,6 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 	var mediaContent *database.MediaContent
 	var thinkRating float64
 	nextErrorCount := currentErrorCount
-
-	feeds.SetExtension(parsedItem, customPrefix, "title_original", parsedItem.Title)
-	feeds.SetExtension(parsedItem, customPrefix, "description_original", parsedItem.Description)
 
 	if err != nil {
 		if errors.Is(err, context.Canceled) || s.ctx.Err() != nil {
