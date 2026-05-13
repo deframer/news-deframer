@@ -20,3 +20,8 @@ Keep RSS as an input format, but remove the RSS proxy and stop enhancing rendere
 - The service no longer proxies RSS responses.
 - Sync stores raw item text and metadata only.
 - Thinking happens asynchronously in a separate worker loop.
+
+
+## Anything else
+
+- Update documentation

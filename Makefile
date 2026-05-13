@@ -86,7 +86,7 @@ check: test lint
 tidy: gen
 	go mod tidy
 
-gen: goa-install
+gen:
 	goa gen github.com/deframer/news-deframer/pkg/design
 
 example: tidy gen
