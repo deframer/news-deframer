@@ -1,15 +1,15 @@
 import { encode as encodeBase64 } from 'base-64';
 
 import {
-  getArticlesByTrend,
-  getContextByDomain,
-  getDomainComparison,
-  getDomains,
-  getItem,
-  getLifecycleByDomain,
-  getSentimentsByTrend,
-  getSite,
-  getTopTrendByDomain,
+  mobileArticles,
+  mobileContextByDomain,
+  mobileDomainComparison,
+  mobileDomains,
+  mobileItem,
+  mobileLifecycleByDomain,
+  mobileSentiments,
+  mobileSite,
+  mobileTopTrendsByDomain,
   type AnalyzedArticle,
   type AnalyzedItem,
   type AnalyzedSiteItem,
@@ -18,17 +18,16 @@ import {
   type Lifecycle,
   type SentimentItem,
   type SentimentScores,
-  type ThinkResult,
   type TrendContext,
   type TrendMetric,
 } from './generated/newsDeframerClient.gen';
 import { logger } from './logger';
 import { Settings } from './settingsService';
 
-export type { AnalyzedArticle, AnalyzedItem, AnalyzedSiteItem, DomainComparison, DomainEntry, Lifecycle, SentimentItem, SentimentScores, ThinkResult, TrendContext, TrendMetric };
+export type { AnalyzedArticle, AnalyzedItem, AnalyzedSiteItem, DomainComparison, DomainEntry, Lifecycle, SentimentItem, SentimentScores, TrendContext, TrendMetric };
 
 type GeneratedResponse<T> = {
-  data: T;
+  data: T | string;
   status: number;
 };
 
@@ -69,11 +68,11 @@ export class NewsDeframerClient {
       throw new Error(`API Error: ${result.status}`);
     }
 
-    return result.data;
+    return result.data as T;
   }
 
   async getDomains(): Promise<DomainEntry[]> {
-    const response = await this.unwrap<DomainEntry[]>(getDomains(undefined, this.createFetch()), null);
+    const response = await this.unwrap<DomainEntry[]>(mobileDomains(undefined, this.createFetch()), null);
     if (response === null) {
       throw new Error('Domains endpoint returned 404');
     }
@@ -81,36 +80,36 @@ export class NewsDeframerClient {
   }
 
   async getItem(url: string): Promise<AnalyzedItem | null> {
-    return this.unwrap<AnalyzedItem>(getItem({ url }, undefined, this.createFetch()), null);
+    return this.unwrap<AnalyzedItem>(mobileItem({ url }, undefined, this.createFetch()), null);
   }
 
   async getSite(root: string, maxScore?: number): Promise<AnalyzedItem[]> {
-    const response = await this.unwrap<AnalyzedSiteItem[]>(getSite({ root, max_score: maxScore }, undefined, this.createFetch()), []);
+    const response = await this.unwrap<AnalyzedSiteItem[]>(mobileSite({ root, max_score: maxScore }, undefined, this.createFetch()), []);
     return response as AnalyzedItem[];
   }
 
   async getTopTrendByDomain(domain: string, language: string, daysInPast: number): Promise<TrendMetric[]> {
     logger.info('Fetching top trends by domain', { domain, language, daysInPast });
-    return (await this.unwrap<TrendMetric[]>(getTopTrendByDomain({ domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
+    return (await this.unwrap<TrendMetric[]>(mobileTopTrendsByDomain({ domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getContextByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<TrendContext[]> {
-    return (await this.unwrap<TrendContext[]>(getContextByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
+    return (await this.unwrap<TrendContext[]>(mobileContextByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getLifecycleByDomain(term: string, domain: string, language: string, daysInPast: number): Promise<Lifecycle[]> {
-    return (await this.unwrap<Lifecycle[]>(getLifecycleByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
+    return (await this.unwrap<Lifecycle[]>(mobileLifecycleByDomain({ term, domain, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getDomainComparison(domainA: string, domainB: string, language: string, daysInPast: number): Promise<DomainComparison[]> {
-    return (await this.unwrap<DomainComparison[]>(getDomainComparison({ domain_a: domainA, domain_b: domainB, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
+    return (await this.unwrap<DomainComparison[]>(mobileDomainComparison({ domain_a: domainA, domain_b: domainB, lang: language, days: daysInPast }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getArticlesByTrend(root: string, term: string, date?: string, days?: number, offset?: number, limit?: number): Promise<AnalyzedArticle[]> {
-    return (await this.unwrap<AnalyzedArticle[]>(getArticlesByTrend({ root, term, date, days, offset, limit }, undefined, this.createFetch()), [])) ?? [];
+    return (await this.unwrap<AnalyzedArticle[]>(mobileArticles({ root, term, date, days, offset, limit }, undefined, this.createFetch()), [])) ?? [];
   }
 
   async getSentimentsByTrend(root: string, term: string, date?: string, days?: number): Promise<SentimentItem | null> {
-    return this.unwrap<SentimentItem>(getSentimentsByTrend({ root, term, date, days }, undefined, this.createFetch()), null);
+    return this.unwrap<SentimentItem>(mobileSentiments({ root, term, date, days }, undefined, this.createFetch()), null);
   }
 }
