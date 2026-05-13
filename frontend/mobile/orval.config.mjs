@@ -1,7 +1,7 @@
 export default {
   newsDeframerMobile: {
     input: {
-      target: process.env.OPENAPI_URL || './openapi.mobile.yaml',
+      target: process.env.OPENAPI_URL,
     },
     output: {
       target: './src/services/generated/newsDeframerClient.gen.ts',

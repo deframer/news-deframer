@@ -1,7 +1,7 @@
 export default {
   newsDeframerWeb: {
     input: {
-      target: process.env.OPENAPI_URL || './openapi.web.yaml',
+      target: process.env.OPENAPI_URL,
     },
     output: {
       target: './src/ndf/generated/newsDeframerClient.gen.ts',
