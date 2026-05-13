@@ -106,10 +106,10 @@ jobs:
 
       - name: GolangCI-Lint
         uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
         env:
           GOFLAGS: "-buildvcs=false"
+        with:
+          version: latest
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master

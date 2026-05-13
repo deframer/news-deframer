@@ -50,18 +50,10 @@ func Migrate(db *gorm.DB, forced bool) error {
 	}
 
 	// AutoMigrate the schema
-	if err := db.AutoMigrate(&Feed{}, &CachedFeed{}, &Item{}, &FeedSchedule{}, &Trend{}); err != nil {
+	if err := db.AutoMigrate(&Feed{}, &Item{}, &FeedSchedule{}, &Trend{}); err != nil {
 		return err
 	}
-
-	// Manually add FK for CachedFeed -> Feed (Shared PK)
-	// Workaround for GORM AutoMigrate issue:
-	// GORM struggles with Shared PK + Belongs To direction inference,
-	// causing circular dependency errors during table creation if defined in the struct.
 	_ = db.Exec(`DO $$ BEGIN
-		IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_cached_feeds_feeds') THEN
-			ALTER TABLE cached_feeds ADD CONSTRAINT fk_cached_feeds_feeds FOREIGN KEY (id) REFERENCES feeds(id) ON DELETE CASCADE ON UPDATE CASCADE;
-		END IF;
 		IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_feed_schedules_feeds') THEN
 			ALTER TABLE feed_schedules ADD CONSTRAINT fk_feed_schedules_feeds FOREIGN KEY (id) REFERENCES feeds(id) ON DELETE CASCADE ON UPDATE CASCADE;
 		END IF;

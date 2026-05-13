@@ -158,7 +158,7 @@ func TestThinkRenderAndExtract_Authors(t *testing.T) {
 		},
 	}
 
-	result, err := s.thinkRenderAndExtract(item, "en", 0)
+	result, err := s.renderThoughtsAndItem(item, "en", 0)
 	assert.NoError(t, err)
 	assert.Equal(t, database.StringArray{"Alice", "Bob"}, result.authors)
 }

@@ -2,9 +2,7 @@ package facade
 
 import (
 	"context"
-	"io"
 	"net/url"
-	"strings"
 	"testing"
 	"time"
 
@@ -12,25 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
-
-type mockDownloader struct {
-	downloadRSSFeed func(ctx context.Context, feed *url.URL) (io.ReadCloser, error)
-	resolveRedirect func(ctx context.Context, targetURL string) (string, error)
-}
-
-func (m *mockDownloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.ReadCloser, error) {
-	if m.downloadRSSFeed != nil {
-		return m.downloadRSSFeed(ctx, feed)
-	}
-	return nil, nil
-}
-
-func (m *mockDownloader) ResolveRedirect(ctx context.Context, targetURL string) (string, error) {
-	if m.resolveRedirect != nil {
-		return m.resolveRedirect(ctx, targetURL)
-	}
-	return targetURL, nil
-}
 
 type mockRepo struct {
 	findFeedByUrl                 func(u *url.URL) (*database.Feed, error)
@@ -48,8 +27,6 @@ type mockRepo struct {
 	upsertItem                    func(item *database.Item) error
 	getItemsByHashes              func(feedID uuid.UUID, hashes []string) ([]database.Item, error)
 	beginThinkFixerBatch          func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
-	upsertCachedFeed              func(cachedFeed *database.CachedFeed) error
-	findCachedFeedById            func(feedID uuid.UUID) (*database.CachedFeed, error)
 	findFeedScheduleById          func(feedID uuid.UUID) (*database.FeedSchedule, error)
 	findItemsByRootDomain         func(rootDomain string, limit int) ([]database.Item, error)
 	findAnalyzedItemsByRootDomain func(rootDomain string, limit int) ([]database.AnalyzedItem, error)
@@ -192,23 +169,16 @@ func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]databa
 	return nil, nil
 }
 
-func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+func (m *mockRepo) BeginThinkerBatch(limit int, lockDuration time.Duration) ([]database.Item, error) {
 	if m.beginThinkFixerBatch != nil {
-		return m.beginThinkFixerBatch(limit, since, minErrorCount, maxErrorCount, lockDuration)
+		return m.beginThinkFixerBatch(limit, time.Time{}, 0, 0, lockDuration)
 	}
 	return nil, nil
 }
 
-func (m *mockRepo) UpsertCachedFeed(cachedFeed *database.CachedFeed) error {
-	if m.upsertCachedFeed != nil {
-		return m.upsertCachedFeed(cachedFeed)
-	}
-	return nil
-}
-
-func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, error) {
-	if m.findCachedFeedById != nil {
-		return m.findCachedFeedById(feedID)
+func (m *mockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+	if m.beginThinkFixerBatch != nil {
+		return m.beginThinkFixerBatch(limit, since, minErrorCount, maxErrorCount, lockDuration)
 	}
 	return nil, nil
 }
@@ -286,48 +256,6 @@ func (m *mockRepo) GetSentimentsByTrend(term string, domain string, date *time.T
 	}
 	return nil, nil
 }
-
-func TestGetRssProxyFeed(t *testing.T) {
-	ctx := context.Background()
-	rssContent := `
-	<rss version="2.0">
-		<channel>
-			<title>Dummy Feed</title>
-		</channel>
-	</rss>`
-	mockDL := &mockDownloader{
-		downloadRSSFeed: func(ctx context.Context, feed *url.URL) (io.ReadCloser, error) {
-			return io.NopCloser(strings.NewReader(rssContent)), nil
-		},
-	}
-
-	mockR := &mockRepo{
-		findFeedByUrl: func(u *url.URL) (*database.Feed, error) {
-			return &database.Feed{}, nil
-		},
-		findCachedFeedById: func(id uuid.UUID) (*database.CachedFeed, error) {
-			return &database.CachedFeed{XMLContent: &rssContent}, nil
-		},
-	}
-	f := New(ctx, nil, mockR, mockDL)
-
-	filter := RSSProxyFilter{
-		URL:      "http://example.com",
-		Lang:     strPtr("en"),
-		Max:      floatPtr(0.75),
-		Embedded: boolPtr(true),
-	}
-
-	xmlData, err := f.GetRssProxyFeed(ctx, &filter)
-	assert.NoError(t, err)
-	assert.Contains(t, xmlData, "<title>Dummy Feed</title>")
-}
-
-func strPtr(v string) *string { return &v }
-
-func floatPtr(v float64) *float64 { return &v }
-
-func boolPtr(v bool) *bool { return &v }
 
 func TestGetItemsForRootDomain(t *testing.T) {
 	ctx := context.Background()

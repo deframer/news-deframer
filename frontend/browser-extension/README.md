@@ -23,7 +23,7 @@ Browser extension to deframe news sites.
 ### 4. Development Workflow
 
 1.  **Start the Backend:**
-    Ensure the Go backend is running (e.g., run `make start` in the project root).
+    Ensure the Go backend is running, for example with `docker compose -f docker/docker-compose.yml up -d` from the project root.
 
 2.  **Start the Extension Builder:**
     ```bash

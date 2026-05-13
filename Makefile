@@ -1,14 +1,7 @@
 DOCKER_REPO := ghcr.io/deframer/news-deframer
 BUILD_DIR := bin
 CMD_DIR := cmd
-DOCKER_COMPOSE_FILE ?= docker-compose.yml
-
-# we want to avoid to share the developer .env file with docker compose (the DSN hosts etc. are different)
-COMPOSE_ENV_FILE ?= .env-compose
-DOCKER_ENV_FLAG := $(if $(wildcard $(COMPOSE_ENV_FILE)),--env-file $(COMPOSE_ENV_FILE),--env-file /dev/null)
-
 DB_IMAGE := pgduckdb/pgduckdb:18-main
-GO_DIRS := $(shell go list -f '{{.Dir}}' ./... | grep -v '/frontend/.*/node_modules/')
 
 ifneq ("$(wildcard .env)","")
   #$(info using .env file)
@@ -17,9 +10,8 @@ ifneq ("$(wildcard .env)","")
 endif
 
 .PHONY: all build clean test help coverage lint tidy gen example
-.PHONY: start stop down logs zap
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
-.PHONY: docker-all add-feeds service worker think-fixer
+.PHONY: docker-all add-feeds service worker thinker thinker-fixer
 
 all: build
 
@@ -35,29 +27,12 @@ infra-env-down:
 infra-env-zap:
 	$(MAKE) -C infra-env zap
 
-zap: down start
-
-# DOCKER_COMPOSE_FILE=docker-compose-lb.yml make start/stop/down/logs
-
-start:
-	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) up -d --build --force-recreate --no-deps
-
-stop:
-	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) stop
-
-down:
-	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --remove-orphans --volumes
-
-logs:
-	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) logs -f
-
 build: gen tidy
 	mkdir -p $(BUILD_DIR)
 	go build -o $(BUILD_DIR)/ ./$(CMD_DIR)/...
 
 clean:
 	rm -rf $(BUILD_DIR) gen
-	docker compose $(DOCKER_ENV_FLAG) -f $(DOCKER_COMPOSE_FILE) down --rmi local
 
 test:
 	go clean -testcache
@@ -68,9 +43,9 @@ coverage:
 	go tool cover -html=coverage.out -o coverage.html
 
 lint:
-	golangci-lint run $(GO_DIRS)
+	golangci-lint run
 	gosec -conf .gosec.json ./...
-	govulncheck $(GO_DIRS)
+	govulncheck ./...; \
 	gofmt -l .
 
 tools-install:
@@ -86,7 +61,7 @@ check: test lint
 tidy: gen
 	go mod tidy
 
-gen: goa-install
+gen:
 	goa gen github.com/deframer/news-deframer/pkg/design
 
 example: tidy gen
@@ -114,8 +89,11 @@ worker: build
 	./bin/admin feed sync-all
 	./bin/worker
 
-think-fixer: build
-	./bin/worker --mode think-fixer
+thinker: build
+	./bin/worker --mode thinker
+
+thinker-fixer: build
+	./bin/worker --mode thinker-fixer
 
 SQL_DIR := sql
 

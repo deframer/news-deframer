@@ -1,0 +1,11 @@
+version: "2"
+
+run:
+  relative-path-mode: gomod
+  go: "1.24"
+
+linters:
+  settings:
+    govet:
+      disable:
+        - inline

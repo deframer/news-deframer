@@ -24,21 +24,12 @@
 ## Handling Feeds
 
 - Run `docker compose exec service admin -h`
-- Add the example feeds `cat feed-example.json | docker compose exec -T  worker admin feed import`
-- List `docker compose exec worker admin feed list`
-- Force a Sync `docker compose exec worker admin feed sync-all`
-- Force a Miner Run `docker compose exec worker admin feed mine-all`
+- Add the example feeds `cat feed-example.json | docker compose exec -T ingester admin feed import`
+- List `docker compose exec ingester admin feed list`
+- Force a Sync `docker compose exec ingester admin feed sync-all`
+- Force a Miner Run `docker compose exec ingester admin feed mine-all`
+- Start the thinker and thinker-fixer by uncommenting their services in `docker/docker-compose.yml`.
 You can manage feeds using the `admin` CLI tool inside the running container.
-
-## RSS Proxy Usage
-
-Once feeds are configured, you can access the proxied versions via the service.
-
-- **URL Pattern**: `http://<your-server-ip>:<port>/rss?url=<upstream-feed-url>`
-- **Example**: `http://192.168.1.1:8080/rss?url=https://my-fancy-newssite.com/rss`
-- You might need to use a password. Some RSS reader require `https` connections. Use ngingx proxy manager or similar for a certificate.
-
-**Note**: The requested feed URL must be registered in the system (see 'Handling Feeds') before it can be proxied. Allow some time for the background worker to download and process items.
 
 ## Browser Plugin
 

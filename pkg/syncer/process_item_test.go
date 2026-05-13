@@ -35,7 +35,10 @@ func TestProcessItem_Categories(t *testing.T) {
 	s, err := New(context.Background(), cfg, repo)
 	assert.NoError(t, err)
 
-	s.think = &mockThink{}
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+		t.Fatal("syncItem must not call think")
+		return nil, nil
+	}}
 	mockFeeds := &mockFeeds{}
 	s.feeds = mockFeeds
 
@@ -56,7 +59,7 @@ func TestProcessItem_Categories(t *testing.T) {
 		return []string{"cat1", "cat2", "cat3"}
 	}
 
-	s.processItem(feed, hash, item, "en", 0)
+	s.syncItem(feed, hash, item, "en")
 
 	assert.NotNil(t, capturedItem)
 	assert.Equal(t, database.StringArray{"cat1", "cat2", "cat3"}, capturedItem.Categories)
@@ -70,7 +73,10 @@ func TestProcessItem_Authors(t *testing.T) {
 	s, err := New(context.Background(), cfg, repo)
 	assert.NoError(t, err)
 
-	s.think = &mockThink{}
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+		t.Fatal("syncItem must not call think")
+		return nil, nil
+	}}
 	s.feeds = &mockFeeds{}
 
 	feed := &database.Feed{Base: database.Base{ID: uuid.New()}}
@@ -90,7 +96,7 @@ func TestProcessItem_Authors(t *testing.T) {
 		return nil
 	}
 
-	s.processItem(feed, "test-hash", item, "en", 0)
+	s.syncItem(feed, "test-hash", item, "en")
 
 	assert.NotNil(t, capturedItem)
 	assert.Equal(t, database.StringArray{"Alice", "Bob", "Carol"}, capturedItem.Authors)
@@ -104,7 +110,10 @@ func TestProcessItem_EmptyAuthors(t *testing.T) {
 	s, err := New(context.Background(), cfg, repo)
 	assert.NoError(t, err)
 
-	s.think = &mockThink{}
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+		t.Fatal("syncItem must not call think")
+		return nil, nil
+	}}
 	s.feeds = &mockFeeds{}
 
 	feed := &database.Feed{Base: database.Base{ID: uuid.New()}}
@@ -119,13 +128,13 @@ func TestProcessItem_EmptyAuthors(t *testing.T) {
 		return nil
 	}
 
-	s.processItem(feed, "test-hash", item, "en", 0)
+	s.syncItem(feed, "test-hash", item, "en")
 
 	assert.NotNil(t, capturedItem)
 	assert.Equal(t, database.StringArray{}, capturedItem.Authors)
 }
 
-func TestProcessThinkerItem_Authors(t *testing.T) {
+func TestThinkItem_Authors(t *testing.T) {
 	repo := &mockRepo{}
 	cfg, err := config.Load()
 	assert.NoError(t, err)
@@ -156,13 +165,13 @@ func TestProcessThinkerItem_Authors(t *testing.T) {
 		return nil
 	}
 
-	s.processThinkerItem(dbItem)
+	s.thinkItem(dbItem)
 
 	assert.NotNil(t, capturedItem)
 	assert.Equal(t, database.StringArray{"Alice"}, capturedItem.Authors)
 }
 
-func TestProcessThinkerItem_EmptyAuthors(t *testing.T) {
+func TestThinkItem_EmptyAuthors(t *testing.T) {
 	repo := &mockRepo{}
 	cfg, err := config.Load()
 	assert.NoError(t, err)
@@ -192,13 +201,13 @@ func TestProcessThinkerItem_EmptyAuthors(t *testing.T) {
 		return nil
 	}
 
-	s.processThinkerItem(dbItem)
+	s.thinkItem(dbItem)
 
 	assert.NotNil(t, capturedItem)
 	assert.Equal(t, database.StringArray{}, capturedItem.Authors)
 }
 
-func TestProcessThinkerItem_UsesTrendInvalidatingUpsert(t *testing.T) {
+func TestThinkItem_UsesTrendInvalidatingUpsert(t *testing.T) {
 	repo := &mockRepo{}
 	cfg, err := config.Load()
 	assert.NoError(t, err)
@@ -232,17 +241,17 @@ func TestProcessThinkerItem_UsesTrendInvalidatingUpsert(t *testing.T) {
 		return nil
 	}
 
-	s.processThinkerItem(dbItem)
+	s.thinkItem(dbItem)
 
 	assert.False(t, plainCalled)
 	assert.True(t, invalidateCalled)
 }
 
-func TestProcessItemErrorHandling(t *testing.T) {
+func TestThinkItemErrorHandling(t *testing.T) {
 	ctx := context.Background()
+	strPtr := func(s string) *string { return &s }
 
 	feedID := uuid.New()
-	feed := &database.Feed{Base: database.Base{ID: feedID}}
 
 	t.Run("IncrementErrorCountOnError", func(t *testing.T) {
 		mockT := &mockThinkEH{
@@ -275,7 +284,7 @@ func TestProcessItemErrorHandling(t *testing.T) {
 			Link:        "http://example.com/1",
 		}
 
-		s.processItem(feed, "hash1", item, "en", 1)
+		s.thinkItem(&database.Item{ID: uuid.New(), Hash: "hash1", FeedID: feedID, URL: item.Link, Content: "<item><title>Test Item</title><description>Desc</description></item>", ThinkErrorCount: 1, Language: strPtr("en")})
 	})
 
 	t.Run("ResetErrorCountOnSuccess", func(t *testing.T) {
@@ -308,6 +317,6 @@ func TestProcessItemErrorHandling(t *testing.T) {
 			Link:        "http://example.com/2",
 		}
 
-		s.processItem(feed, "hash2", item, "en", 2)
+		s.thinkItem(&database.Item{ID: uuid.New(), Hash: "hash2", FeedID: feedID, URL: item.Link, Content: "<item><title>Test Item 2</title><description>Desc</description></item>", ThinkErrorCount: 2, Language: strPtr("en")})
 	})
 }

@@ -36,7 +36,12 @@ docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
 
 # Restore dump
 echo "Restoring data..."
-cat "${INPUT_FILE}" | docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
-  psql -U ${DB_USER} ${DATABASE}
+if [[ "${INPUT_FILE}" == *.gz ]]; then
+  gzip -dc "${INPUT_FILE}" | docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
+    psql -U ${DB_USER} ${DATABASE}
+else
+  cat "${INPUT_FILE}" | docker compose exec -T -e PGPASSWORD="${DB_PASSWORD}" postgres \
+    psql -U ${DB_USER} ${DATABASE}
+fi
 
 echo "Restore completed."

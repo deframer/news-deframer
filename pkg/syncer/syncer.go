@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -23,21 +22,19 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const feedTitlePrefix = "Deframer: "
 const promptScope = "deframer"
-const customPrefix = "deframer"
-const customNamespace = "https://github.com/deframer/news-deframer/"
 const maxThinkRetries = 3
-const thinkFixerBatchSize = 15
-const thinkFixerLookback = 30 * 24 * time.Hour
-const thinkFixerStopThreshold = maxThinkRetries
+const thinkerBatchSize = 15
+const thinkerFixerLookback = 90 * 24 * time.Hour
+const thinkerStopThreshold = maxThinkRetries
 const publicationDateGracePeriod = 10 * time.Minute
 
 type Mode string
 
 const (
-	ModeWorker     Mode = "worker"
-	ModeThinkFixer Mode = "think-fixer"
+	ModeIngester     Mode = "ingester"
+	ModeThinker      Mode = "thinker"
+	ModeThinkerFixer Mode = "thinker-fixer"
 )
 
 type FeedSyncer interface {
@@ -81,17 +78,21 @@ func (s *Syncer) StopPolling(id uuid.UUID) error {
 
 func (s *Syncer) Poll(mode Mode) {
 	log.Printf(s.ctx, "Starting poller mode=%s", mode)
-	if mode == ModeThinkFixer {
-		s.pollThinkerFixerMode()
+	if mode == ModeThinker {
+		s.pollThinker()
 		return
 	}
-	if mode != ModeWorker {
-		log.Warnf(s.ctx, "Unknown mode, defaulting to worker mode=%s", mode)
+	if mode == ModeThinkerFixer {
+		s.pollThinkerFixer(thinkerFixerLookback)
+		return
 	}
-	s.pollWorkerMode()
+	if mode != ModeIngester {
+		log.Warnf(s.ctx, "Unknown mode, defaulting to ingester mode=%s", mode)
+	}
+	s.pollIngester()
 }
 
-func (s *Syncer) pollWorkerMode() {
+func (s *Syncer) pollIngester() {
 	for {
 		if s.ctx.Err() != nil {
 			log.Printf(s.ctx, "Stopping poller")
@@ -114,19 +115,19 @@ func (s *Syncer) pollWorkerMode() {
 	}
 }
 
-func (s *Syncer) pollThinkerFixerMode() {
+func (s *Syncer) pollThinker() {
 	for {
 		if s.ctx.Err() != nil {
 			log.Printf(s.ctx, "Stopping poller")
 			return
 		}
 
-		if s.fixNextThinkerBatch() {
-			log.Printf(s.ctx, "A thinker-fixer batch was rechecked")
+		if s.processThinkerBatch() {
+			log.Printf(s.ctx, "Thinker batch checked")
 			continue
 		}
 
-		log.Printf(s.ctx, "Think-fixer sleeping duration=%s", config.IdleSleepTime)
+		log.Printf(s.ctx, "Thinker sleep duration=%s", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():
@@ -137,25 +138,70 @@ func (s *Syncer) pollThinkerFixerMode() {
 	}
 }
 
-// fixNextThinkerBatch return true if this has updated entries
-func (s *Syncer) fixNextThinkerBatch() bool {
-	log.Printf(s.ctx, "fixNextThinkerBatch")
-	since := time.Now().Add(-thinkFixerLookback)
-	maxErrorCount := thinkFixerStopThreshold * 2
-	items, err := s.repo.BeginThinkFixerBatch(thinkFixerBatchSize, since, thinkFixerStopThreshold, maxErrorCount, config.DefaultLockDuration)
+func (s *Syncer) pollThinkerFixer(lookback time.Duration) {
+	for {
+		if s.ctx.Err() != nil {
+			log.Printf(s.ctx, "Stopping poller")
+			return
+		}
+
+		if s.processThinkerFixerBatch(lookback) {
+			log.Printf(s.ctx, "Thinker fixer batch checked")
+			continue
+		}
+
+		log.Printf(s.ctx, "Thinker fixer sleep duration=%s", config.IdleSleepTime)
+
+		select {
+		case <-s.ctx.Done():
+			log.Printf(s.ctx, "Stopping poller")
+			return
+		case <-time.After(config.IdleSleepTime):
+		}
+	}
+}
+
+func (s *Syncer) processThinkerBatch() bool {
+	log.Printf(s.ctx, "processThinkerBatch")
+	items, err := s.repo.BeginThinkerBatch(thinkerBatchSize, config.DefaultLockDuration)
 	if err != nil {
-		log.Errorf(s.ctx, err, "Failed to query thinker-fixer candidates")
+		log.Errorf(s.ctx, err, "Failed to query thinker candidates")
 		return false
 	}
 	if len(items) == 0 {
 		return false
 	}
 
-	log.Printf(s.ctx, "Think-fixer candidates fetched count=%d", len(items))
+	log.Printf(s.ctx, "Thinker candidates fetched count=%d", len(items))
 	for i := range items {
 		current := i + 1
 		log.Debugf(s.ctx, "processThinkerItem item_id=%s feed_id=%s progress=%d/%d", items[i].ID, items[i].FeedID, current, len(items))
-		s.processThinkerItem(&items[i])
+		s.thinkItem(&items[i])
+	}
+	return true
+}
+
+func (s *Syncer) processThinkerFixerBatch(lookback time.Duration) bool {
+	log.Printf(s.ctx, "processThinkerFixerBatch")
+	since := time.Time{}
+	if lookback > 0 {
+		since = time.Now().Add(-lookback)
+	}
+	maxErrorCount := thinkerStopThreshold * 2
+	items, err := s.repo.BeginThinkerFixerBatch(thinkerBatchSize, since, thinkerStopThreshold, maxErrorCount, config.DefaultLockDuration)
+	if err != nil {
+		log.Errorf(s.ctx, err, "Failed to query thinker fixer candidates")
+		return false
+	}
+	if len(items) == 0 {
+		return false
+	}
+
+	log.Printf(s.ctx, "Thinker fixer candidates fetched count=%d", len(items))
+	for i := range items {
+		current := i + 1
+		log.Debugf(s.ctx, "processThinkerItem item_id=%s feed_id=%s progress=%d/%d", items[i].ID, items[i].FeedID, current, len(items))
+		s.thinkItem(&items[i])
 	}
 	return true
 }
@@ -213,7 +259,7 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 	hashes := feeds.GetHashes(items)
 	log.Debugf(s.ctx, "hashes len=%d", len(hashes))
 
-	count, err := s.processItems(feed, parsedFeed, items, hashes)
+	count, err := s.syncPendingFeedItems(feed, parsedFeed, items, hashes)
 	if err != nil {
 		return err
 	}
@@ -223,7 +269,7 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 		return nil
 	}
 
-	return s.updateCacheFeed(feed, parsedFeed, hashes)
+	return nil
 }
 
 func (s *Syncer) wantedDomains(feed *database.Feed) ([]string, error) {
@@ -265,7 +311,7 @@ func (s *Syncer) determineLanguage(feed *database.Feed, parsedFeed *gofeed.Feed)
 	return "en"
 }
 
-func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, items []feeds.ItemHashPair, hashes []string) (int, error) {
+func (s *Syncer) syncPendingFeedItems(feed *database.Feed, parsedFeed *gofeed.Feed, items []feeds.ItemHashPair, hashes []string) (int, error) {
 	pendingItems, err := s.repo.GetPendingItems(feed.ID, hashes, maxThinkRetries)
 	if err != nil {
 		return 0, err
@@ -322,29 +368,35 @@ func (s *Syncer) processItems(feed *database.Feed, parsedFeed *gofeed.Feed, item
 			// don't create a result in feed_schedules table - the next tick will pick it up
 			return 0, nil
 		}
-		if errorCount, ok := pendingItems[item.Hash]; ok {
+		if _, ok := pendingItems[item.Hash]; ok {
 			count++
-			log.Debugf(s.ctx, "processItem feed=%s hash=%s progress=%d/%d", feed.ID, item.Hash, count, total)
-			s.processItem(feed, item.Hash, item.Item, language, errorCount)
+			log.Debugf(s.ctx, "syncItem feed=%s hash=%s progress=%d/%d", feed.ID, item.Hash, count, total)
+			s.syncItem(feed, item.Hash, item.Item, language)
 		}
 	}
 
 	return count, nil
 }
 
-func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item, language string, currentErrorCount int) {
-	result, err := s.thinkRenderAndExtract(item, language, currentErrorCount, "hash", hash, "item_url", item.Link)
+func (s *Syncer) syncItem(feed *database.Feed, hash string, item *gofeed.Item, language string) {
+	pubDate := time.Now()
+	if item.PublishedParsed != nil {
+		if item.PublishedParsed.After(time.Now().Add(publicationDateGracePeriod)) {
+			log.Warnf(s.ctx, "ignoring future publication date hash=%s item_url=%s pub_date=%s", hash, item.Link, item.PublishedParsed)
+		} else {
+			pubDate = *item.PublishedParsed
+		}
+	}
+
+	content, err := s.feeds.RenderItem(s.ctx, item)
 	if err != nil {
+		log.Errorf(s.ctx, err, "failed to render item hash=%s", hash)
 		return
 	}
 
-	pubDate := time.Now()
-	if result.pubDate != nil {
-		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
-			log.Warnf(s.ctx, "ignoring future publication date hash=%s item_url=%s pub_date=%s", hash, item.Link, result.pubDate)
-		} else {
-			pubDate = *result.pubDate
-		}
+	mediaContent, err := extractMediaContent(item)
+	if err != nil {
+		log.Errorf(s.ctx, err, "failed to extract media content hash=%s", hash)
 	}
 
 	dbItem := &database.Item{
@@ -352,15 +404,12 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 		FeedID:          feed.ID,
 		URL:             netutil.NormalizeURL(item.Link),
 		Language:        &language,
-		Content:         result.content,
+		Content:         content,
 		PubDate:         pubDate,
-		ThinkResult:     result.thinkResult,
-		MediaContent:    result.mediaContent,
-		ThinkError:      result.thinkError,
-		ThinkErrorCount: result.nextErrorCount,
-		ThinkRating:     result.thinkRating,
-		Categories:      emptyStringArray(result.categories),
-		Authors:         emptyStringArray(result.authors),
+		MediaContent:    mediaContent,
+		ThinkErrorCount: 0,
+		Categories:      emptyStringArray(s.feeds.ExtractCategories(item)),
+		Authors:         emptyStringArray(s.extractAndNormalizeAuthors(item, language)),
 	}
 
 	if err := s.repo.UpsertItem(dbItem); err != nil {
@@ -373,12 +422,12 @@ func (s *Syncer) processItem(feed *database.Feed, hash string, item *gofeed.Item
 	}
 }
 
-func (s *Syncer) processThinkerItem(dbItem *database.Item) {
+func (s *Syncer) thinkItem(dbItem *database.Item) {
 	if dbItem == nil {
 		return
 	}
 
-	parsedItem, err := s.parseItemFromContent(dbItem.Content)
+	parsedItem, err := s.parseItemContent(dbItem.Content)
 	if err != nil {
 		log.Errorf(s.ctx, err, "Failed to parse item content item_id=%s", dbItem.ID)
 		return
@@ -389,7 +438,7 @@ func (s *Syncer) processThinkerItem(dbItem *database.Item) {
 		language = *dbItem.Language
 	}
 
-	result, err := s.thinkRenderAndExtract(parsedItem, language, dbItem.ThinkErrorCount, "item_id", dbItem.ID, "item_url", parsedItem.Link)
+	result, err := s.renderThoughtsAndItem(parsedItem, language, dbItem.ThinkErrorCount, "item_id", dbItem.ID, "item_url", parsedItem.Link)
 	if err != nil {
 		return
 	}
@@ -436,7 +485,7 @@ func emptyStringArray(values []string) database.StringArray {
 	return database.StringArray(values)
 }
 
-func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string, currentErrorCount int, logKeys ...any) (*thinkerOutcome, error) {
+func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string, currentErrorCount int, logKeys ...any) (*thinkerOutcome, error) {
 	if parsedItem == nil {
 		return nil, fmt.Errorf("parsed item is nil")
 	}
@@ -451,9 +500,6 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 	var mediaContent *database.MediaContent
 	var thinkRating float64
 	nextErrorCount := currentErrorCount
-
-	feeds.SetExtension(parsedItem, customPrefix, "title_original", parsedItem.Title)
-	feeds.SetExtension(parsedItem, customPrefix, "description_original", parsedItem.Description)
 
 	if err != nil {
 		if errors.Is(err, context.Canceled) || s.ctx.Err() != nil {
@@ -506,7 +552,7 @@ func (s *Syncer) thinkRenderAndExtract(parsedItem *gofeed.Item, language string,
 	}, nil
 }
 
-func (s *Syncer) parseItemFromContent(content string) (*gofeed.Item, error) {
+func (s *Syncer) parseItemContent(content string) (*gofeed.Item, error) {
 	wrapped := `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>` + content + `</channel></rss>`
 	pf, err := gofeed.NewParser().Parse(strings.NewReader(wrapped))
 	if err != nil {
@@ -516,67 +562,6 @@ func (s *Syncer) parseItemFromContent(content string) (*gofeed.Item, error) {
 		return nil, fmt.Errorf("no items found in content")
 	}
 	return pf.Items[0], nil
-}
-
-func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {
-	// load all items from database by their hashes and with the
-
-	items, err := s.repo.GetItemsByHashes(feed.ID, hashes)
-	if err != nil {
-		return err
-	}
-	log.Debugf(s.ctx, "items len=%d", len(items))
-
-	// delete the items - we will replace them
-	parsedFeed.Items = []*gofeed.Item{}
-	// custom namespace
-	feeds.AddNamespace(parsedFeed, "xmlns:"+customPrefix, customNamespace)
-	// media namespace
-	feeds.AddNamespace(parsedFeed, "xmlns:media", "http://search.yahoo.com/mrss/")
-
-	fp := gofeed.NewParser()
-	for _, item := range items {
-		wrapped := `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>` + item.Content + `</channel></rss>`
-		pf, err := fp.Parse(strings.NewReader(wrapped))
-		if err != nil {
-			log.Errorf(s.ctx, err, "failed to parse item xml hash=%s", item.Hash)
-			continue
-		}
-
-		if len(pf.Items) == 0 {
-			continue
-		}
-
-		current := pf.Items[0]
-
-		if item.ThinkResult != nil && item.ThinkError == nil {
-			res := *item.ThinkResult
-			var m map[string]interface{}
-			b, _ := json.Marshal(res)
-			_ = json.Unmarshal(b, &m)
-			for k, v := range m {
-				feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
-			}
-		}
-
-		parsedFeed.Items = append(parsedFeed.Items, current)
-	}
-
-	parsedFeed.Title = feedTitlePrefix + parsedFeed.Title
-
-	xmlContent, err := s.feeds.RenderFeed(s.ctx, parsedFeed)
-	if err != nil {
-		return err
-	}
-	log.Printf(s.ctx, "Rendered feed len=%d", len(xmlContent))
-
-	cachedFeed := &database.CachedFeed{
-		ID:         feed.ID,
-		XMLContent: &xmlContent,
-		ItemRefs:   database.StringArray(hashes),
-	}
-
-	return s.repo.UpsertCachedFeed(cachedFeed)
 }
 
 func formatLogKeys(msg string, logKeys ...any) string {
