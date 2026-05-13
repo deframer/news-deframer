@@ -9,7 +9,3 @@ linters:
     govet:
       disable:
         - inline
-
-issues:
-  exclusions:
-    rules: []
