@@ -184,7 +184,8 @@ type Repository interface {
 	EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval time.Duration) error
 	GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
 	GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item, error)
-	BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
+	BeginThinkerBatch(limit int, lockDuration time.Duration) ([]Item, error)
+	BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
 	UpsertItem(item *Item) error
 	UpsertItemWithTrendInvalidation(item *Item) error
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
@@ -624,7 +625,56 @@ func (r *repository) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item
 	return items, nil
 }
 
-func (r *repository) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error) {
+func (r *repository) BeginThinkerBatch(limit int, lockDuration time.Duration) ([]Item, error) {
+	var items []Item
+
+	if limit <= 0 {
+		return items, nil
+	}
+
+	now := time.Now()
+	claimUntil := now.Add(lockDuration)
+
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Model(&Item{}).
+			Select("items.*").
+			Joins("JOIN feeds ON feeds.id = items.feed_id").
+			Where("feeds.deleted_at IS NULL").
+			Where("feeds.enabled = ?", true).
+			Where("feeds.polling = ?", true).
+			Where("items.think_result IS NULL").
+			Where("items.think_error IS NULL").
+			Where("items.updated_at <= ?", now).
+			Order("items.updated_at ASC").
+			Limit(limit).
+			Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
+			Preload("Feed").
+			Find(&items).Error; err != nil {
+			return err
+		}
+
+		if len(items) == 0 {
+			return nil
+		}
+
+		ids := make([]uuid.UUID, 0, len(items))
+		for _, item := range items {
+			ids = append(ids, item.ID)
+		}
+
+		return tx.Model(&Item{}).
+			Where("id IN ?", ids).
+			Update("updated_at", claimUntil).
+			Error
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return items, nil
+}
+
+func (r *repository) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error) {
 	var items []Item
 
 	if limit <= 0 {

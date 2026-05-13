@@ -105,18 +105,14 @@ jobs:
           fi
 
       - name: GolangCI-Lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
         env:
           GOFLAGS: "-buildvcs=false"
+        run: golangci-lint run
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@master
-        with:
-          args: -conf .gosec.json ./...
         env:
           GOTOOLCHAIN: auto
+        run: gosec -conf .gosec.json ./...
 
       - name: Run govulncheck
         run: |

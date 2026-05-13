@@ -76,7 +76,10 @@ func (m *mockRepo) UpsertItemWithTrendInvalidation(item *database.Item) error {
 func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]database.Item, error) {
 	return nil, nil
 }
-func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+func (m *mockRepo) BeginThinkerBatch(limit int, lockDuration time.Duration) ([]database.Item, error) {
+	return nil, nil
+}
+func (m *mockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
 	return nil, nil
 }
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
@@ -183,7 +186,7 @@ func TestPoll(t *testing.T) {
 
 	s, err := New(ctx, cfg, repo)
 	assert.NoError(t, err)
-	s.Poll(ModeWorker)
+	s.Poll(ModeIngester)
 }
 
 func TestStopPolling(t *testing.T) {

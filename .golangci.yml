@@ -1,0 +1,14 @@
+version: "2"
+
+run:
+  relative-path-mode: gomod
+
+linters:
+  settings:
+    govet:
+      disable:
+        - inline
+
+issues:
+  exclusions:
+    rules: []

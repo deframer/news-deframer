@@ -24,10 +24,11 @@
 ## Handling Feeds
 
 - Run `docker compose exec service admin -h`
-- Add the example feeds `cat feed-example.json | docker compose exec -T  worker admin feed import`
-- List `docker compose exec worker admin feed list`
-- Force a Sync `docker compose exec worker admin feed sync-all`
-- Force a Miner Run `docker compose exec worker admin feed mine-all`
+- Add the example feeds `cat feed-example.json | docker compose exec -T ingester admin feed import`
+- List `docker compose exec ingester admin feed list`
+- Force a Sync `docker compose exec ingester admin feed sync-all`
+- Force a Miner Run `docker compose exec ingester admin feed mine-all`
+- Start the thinker and thinker-fixer by uncommenting their services in `docker/docker-compose.yml`.
 You can manage feeds using the `admin` CLI tool inside the running container.
 
 ## Browser Plugin

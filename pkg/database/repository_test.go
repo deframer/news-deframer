@@ -1263,6 +1263,47 @@ func TestGetItemsByHashes(t *testing.T) {
 	})
 }
 
+func TestBeginThinkerBatch(t *testing.T) {
+	_, baseDB := mustOpenTestRepo(t)
+
+	t.Run("OldestFirstAndLocksByUpdatedAt", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://thinker-batch.test/" + uuid.New().String(), Enabled: true, Polling: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		older := time.Now().Add(-2 * time.Hour)
+		evenOlder := time.Now().Add(-3 * time.Hour)
+
+		item1 := Item{FeedID: feed.ID, Hash: "h1", URL: "http://item1/" + uuid.New().String(), Content: "c1", ThinkResult: nil, ThinkError: nil}
+		item2 := Item{FeedID: feed.ID, Hash: "h2", URL: "http://item2/" + uuid.New().String(), Content: "c2", ThinkResult: nil, ThinkError: nil}
+		item3 := Item{FeedID: feed.ID, Hash: "h3", URL: "http://item3/" + uuid.New().String(), Content: "c3", ThinkResult: &ThinkResult{TitleCorrected: "done"}}
+		assert.NoError(t, tx.Create(&item1).Error)
+		assert.NoError(t, tx.Create(&item2).Error)
+		assert.NoError(t, tx.Create(&item3).Error)
+
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item1.ID).UpdateColumn("updated_at", evenOlder).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item2.ID).UpdateColumn("updated_at", older).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item3.ID).UpdateColumn("updated_at", evenOlder).Error)
+
+		before := time.Now()
+		items, err := repo.BeginThinkerBatch(2, time.Minute)
+		assert.NoError(t, err)
+		if assert.Len(t, items, 2) {
+			assert.Equal(t, "h1", strings.TrimSpace(items[0].Hash))
+			assert.Equal(t, "h2", strings.TrimSpace(items[1].Hash))
+		}
+
+		var refreshed1, refreshed2 Item
+		assert.NoError(t, tx.First(&refreshed1, "id = ?", item1.ID).Error)
+		assert.NoError(t, tx.First(&refreshed2, "id = ?", item2.ID).Error)
+		assert.True(t, refreshed1.UpdatedAt.After(before))
+		assert.True(t, refreshed2.UpdatedAt.After(before))
+	})
+}
+
 func TestFindFeedScheduleById(t *testing.T) {
 	baseRepo, baseDB := mustOpenTestRepo(t)
 

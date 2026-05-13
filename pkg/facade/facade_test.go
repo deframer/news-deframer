@@ -169,7 +169,14 @@ func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]databa
 	return nil, nil
 }
 
-func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+func (m *mockRepo) BeginThinkerBatch(limit int, lockDuration time.Duration) ([]database.Item, error) {
+	if m.beginThinkFixerBatch != nil {
+		return m.beginThinkFixerBatch(limit, time.Time{}, 0, 0, lockDuration)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
 	if m.beginThinkFixerBatch != nil {
 		return m.beginThinkFixerBatch(limit, since, minErrorCount, maxErrorCount, lockDuration)
 	}

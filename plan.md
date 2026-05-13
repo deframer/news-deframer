@@ -7,12 +7,12 @@ Keep RSS as an input format, but remove the RSS proxy and stop enhancing rendere
 ## Steps
 
 - [x] Remove the RSS proxy contract and service implementation.
-- [ ] Split the current worker into two explicit modes: an ingester and a thinker.
-- [ ] Stop injecting deframer-specific `<item>` extensions during sync.
-- [ ] Keep raw `title` and `description` values intact in stored items.
-- [ ] Move thinker processing into its own loop so sync and analysis run separately.
-- [ ] Rebuild cached feed output so existing stored feeds no longer carry original-title/description deframer tags.
-- [ ] Update tests and docs to match the new text-first pipeline.
+- [x] Split the current worker into two explicit modes: an ingester and a thinker.
+- [x] Stop injecting deframer-specific `<item>` extensions during sync.
+- [x] Keep raw `title` and `description` values intact in stored items.
+- [x] Move thinker processing into its own loop so sync and analysis run separately.
+- [x] Rebuild cached feed output so existing stored feeds no longer carry original-title/description deframer tags.
+- [x] Update tests and docs to match the new text-first pipeline.
 
 ## Expected Result
 
@@ -25,3 +25,4 @@ Keep RSS as an input format, but remove the RSS proxy and stop enhancing rendere
 ## Anything else
 
 - [x] Update documentation
+- [x] Update Docker / Docker compose files
