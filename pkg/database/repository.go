@@ -187,8 +187,6 @@ type Repository interface {
 	BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
 	UpsertItem(item *Item) error
 	UpsertItemWithTrendInvalidation(item *Item) error
-	UpsertCachedFeed(cachedFeed *CachedFeed) error
-	FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error)
 	FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error)
 	CreateFeedSchedule(feedID uuid.UUID) error
 	GetTopTrendByDomain(domain string, language string, date *time.Time, days int) ([]TrendMetric, error)
@@ -524,6 +522,15 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 			return err
 		}
 
+		if jobErr == nil {
+			if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(map[string]interface{}{
+				"last_synced_at": gorm.Expr("NOW()"),
+				"updated_at":     gorm.Expr("NOW()"),
+			}).Error; err != nil {
+				return err
+			}
+		}
+
 		if jobErr == nil && feed.Enabled && feed.Polling {
 			return r.enqueueSyncTx(tx, id, pollingInterval)
 		}
@@ -666,31 +673,6 @@ func (r *repository) BeginThinkFixerBatch(limit int, since time.Time, minErrorCo
 	return items, nil
 }
 
-func (r *repository) UpsertCachedFeed(cachedFeed *CachedFeed) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		var existing CachedFeed
-		if err := tx.Select("created_at").Where("id = ?", cachedFeed.ID).First(&existing).Error; err != nil {
-			if !errors.Is(err, gorm.ErrRecordNotFound) {
-				return err
-			}
-		} else {
-			cachedFeed.CreatedAt = existing.CreatedAt
-		}
-		return tx.Save(cachedFeed).Error
-	})
-}
-
-func (r *repository) FindCachedFeedById(feedID uuid.UUID) (*CachedFeed, error) {
-	var cached CachedFeed
-	if err := r.db.Where("id = ?", feedID).First(&cached).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &cached, nil
-}
-
 func (r *repository) FindFeedScheduleById(feedID uuid.UUID) (*FeedSchedule, error) {
 	var schedule FeedSchedule
 	if err := r.db.Where("id = ?", feedID).First(&schedule).Error; err != nil {
@@ -721,15 +703,11 @@ func (r *repository) DeleteFeedById(id uuid.UUID) error {
 
 func (r *repository) PurgeFeedById(id uuid.UUID) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		// 1. Delete CachedFeed (1:1 with Feed ID)
-		if err := tx.Where("id = ?", id).Delete(&CachedFeed{}).Error; err != nil {
-			return fmt.Errorf("failed to delete cached feed: %w", err)
-		}
-		// 2. Delete FeedSchedule (1:1 with Feed ID)
+		// 1. Delete FeedSchedule (1:1 with Feed ID)
 		if err := tx.Where("id = ?", id).Delete(&FeedSchedule{}).Error; err != nil {
 			return fmt.Errorf("failed to delete feed schedule: %w", err)
 		}
-		// Delete Trends (N:1 with Feed ID)
+		// 2. Delete Trends (N:1 with Feed ID)
 		if err := tx.Where("feed_id = ?", id).Delete(&Trend{}).Error; err != nil {
 			return fmt.Errorf("failed to delete trends: %w", err)
 		}

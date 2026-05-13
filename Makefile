@@ -68,9 +68,16 @@ coverage:
 	go tool cover -html=coverage.out -o coverage.html
 
 lint:
-	golangci-lint run $(GO_DIRS)
-	gosec -conf .gosec.json ./...
-	govulncheck $(GO_DIRS)
+	@set -e; \
+	tmp=$$(mktemp); \
+	golangci-lint run $(GO_DIRS) >"$$tmp" 2>&1 || { cat "$$tmp"; rm -f "$$tmp"; exit 1; }; \
+	rm -f "$$tmp"; \
+	tmp=$$(mktemp); \
+	gosec -conf .gosec.json ./... >"$$tmp" 2>&1 || { cat "$$tmp"; rm -f "$$tmp"; exit 1; }; \
+	rm -f "$$tmp"; \
+	tmp=$$(mktemp); \
+	govulncheck $(GO_DIRS) >"$$tmp" 2>&1 || { cat "$$tmp"; rm -f "$$tmp"; exit 1; }; \
+	rm -f "$$tmp"; \
 	gofmt -l .
 
 tools-install:

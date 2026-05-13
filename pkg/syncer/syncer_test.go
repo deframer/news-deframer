@@ -79,10 +79,6 @@ func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]databa
 func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
 	return nil, nil
 }
-func (m *mockRepo) UpsertCachedFeed(cachedFeed *database.CachedFeed) error { return nil }
-func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, error) {
-	return nil, nil
-}
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	return nil, nil
 }

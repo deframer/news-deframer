@@ -2,7 +2,6 @@ package syncer
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -23,10 +22,8 @@ import (
 	"golang.org/x/net/publicsuffix"
 )
 
-const feedTitlePrefix = "Deframer: "
 const promptScope = "deframer"
 const customPrefix = "deframer"
-const customNamespace = "https://github.com/deframer/news-deframer/"
 const maxThinkRetries = 3
 const thinkFixerBatchSize = 15
 const thinkFixerLookback = 30 * 24 * time.Hour
@@ -223,7 +220,7 @@ func (s *Syncer) updatingFeed(feed *database.Feed) error {
 		return nil
 	}
 
-	return s.updateCacheFeed(feed, parsedFeed, hashes)
+	return nil
 }
 
 func (s *Syncer) wantedDomains(feed *database.Feed) ([]string, error) {
@@ -516,67 +513,6 @@ func (s *Syncer) parseItemFromContent(content string) (*gofeed.Item, error) {
 		return nil, fmt.Errorf("no items found in content")
 	}
 	return pf.Items[0], nil
-}
-
-func (s *Syncer) updateCacheFeed(feed *database.Feed, parsedFeed *gofeed.Feed, hashes []string) error {
-	// load all items from database by their hashes and with the
-
-	items, err := s.repo.GetItemsByHashes(feed.ID, hashes)
-	if err != nil {
-		return err
-	}
-	log.Debugf(s.ctx, "items len=%d", len(items))
-
-	// delete the items - we will replace them
-	parsedFeed.Items = []*gofeed.Item{}
-	// custom namespace
-	feeds.AddNamespace(parsedFeed, "xmlns:"+customPrefix, customNamespace)
-	// media namespace
-	feeds.AddNamespace(parsedFeed, "xmlns:media", "http://search.yahoo.com/mrss/")
-
-	fp := gofeed.NewParser()
-	for _, item := range items {
-		wrapped := `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel>` + item.Content + `</channel></rss>`
-		pf, err := fp.Parse(strings.NewReader(wrapped))
-		if err != nil {
-			log.Errorf(s.ctx, err, "failed to parse item xml hash=%s", item.Hash)
-			continue
-		}
-
-		if len(pf.Items) == 0 {
-			continue
-		}
-
-		current := pf.Items[0]
-
-		if item.ThinkResult != nil && item.ThinkError == nil {
-			res := *item.ThinkResult
-			var m map[string]interface{}
-			b, _ := json.Marshal(res)
-			_ = json.Unmarshal(b, &m)
-			for k, v := range m {
-				feeds.SetExtension(current, customPrefix, k, fmt.Sprintf("%v", v))
-			}
-		}
-
-		parsedFeed.Items = append(parsedFeed.Items, current)
-	}
-
-	parsedFeed.Title = feedTitlePrefix + parsedFeed.Title
-
-	xmlContent, err := s.feeds.RenderFeed(s.ctx, parsedFeed)
-	if err != nil {
-		return err
-	}
-	log.Printf(s.ctx, "Rendered feed len=%d", len(xmlContent))
-
-	cachedFeed := &database.CachedFeed{
-		ID:         feed.ID,
-		XMLContent: &xmlContent,
-		ItemRefs:   database.StringArray(hashes),
-	}
-
-	return s.repo.UpsertCachedFeed(cachedFeed)
 }
 
 func formatLogKeys(msg string, logKeys ...any) string {

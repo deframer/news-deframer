@@ -38,16 +38,9 @@ type Feed struct {
 	Polling           bool          `gorm:"not null;default:false"`
 	Mining            bool          `gorm:"not null;default:false"`
 	ResolveItemUrl    bool          `gorm:"not null;default:false"`
+	LastSyncedAt      *time.Time    `gorm:"index"`
 	Categories        StringArray   `gorm:"type:text[];not null;default:'{}'"`
 	FeedSchedule      *FeedSchedule `gorm:"foreignKey:ID;references:ID"`
-}
-
-type CachedFeed struct {
-	ID         uuid.UUID   `gorm:"primaryKey;type:uuid"` // this is a FK to Feed.ID
-	CreatedAt  time.Time   `gorm:"not null;default:now()"`
-	UpdatedAt  time.Time   `gorm:"not null;default:now()"`
-	XMLContent *string     `gorm:"type:text"`
-	ItemRefs   StringArray `gorm:"type:text[];not null;default:'{}'"`
 }
 
 // StringArray aliases []string to implement sql.Scanner and driver.Valuer for PostgreSQL text[]

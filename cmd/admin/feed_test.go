@@ -643,14 +643,6 @@ func (m *MockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCoun
 	return nil, nil
 }
 
-func (m *MockRepo) UpsertCachedFeed(cachedFeed *database.CachedFeed) error {
-	return nil
-}
-
-func (m *MockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, error) {
-	return nil, nil
-}
-
 func (m *MockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	if f, ok := m.feeds[feedID]; ok {
 		return f.FeedSchedule, nil

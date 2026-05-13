@@ -1039,6 +1039,11 @@ func TestEndFeedUpdate(t *testing.T) {
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
 		assert.Nil(t, s.ThinkerLockedUntil)
 		assert.NotNil(t, s.NextThinkerAt)
+
+		var updatedFeed Feed
+		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
+		assert.NotNil(t, updatedFeed.LastSyncedAt)
+		assert.WithinDuration(t, time.Now(), *updatedFeed.LastSyncedAt, 5*time.Second)
 		// Should be scheduled for future (now + pollingInterval)
 		assert.WithinDuration(t, time.Now().Add(pollingInterval), *s.NextThinkerAt, 5*time.Second)
 	})
@@ -1061,6 +1066,10 @@ func TestEndFeedUpdate(t *testing.T) {
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
 		assert.Nil(t, s.NextThinkerAt)
+
+		var updatedFeed Feed
+		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
+		assert.Nil(t, updatedFeed.LastSyncedAt)
 	})
 
 	t.Run("Polling_Disabled", func(t *testing.T) {
@@ -1083,6 +1092,11 @@ func TestEndFeedUpdate(t *testing.T) {
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
 		assert.Nil(t, s.ThinkerLockedUntil)
 		assert.Nil(t, s.NextThinkerAt)
+
+		var updatedFeed Feed
+		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
+		assert.NotNil(t, updatedFeed.LastSyncedAt)
+		assert.WithinDuration(t, time.Now(), *updatedFeed.LastSyncedAt, 5*time.Second)
 	})
 }
 
@@ -1246,138 +1260,6 @@ func TestGetItemsByHashes(t *testing.T) {
 		itemsEmpty, err := repo.GetItemsByHashes(feed.ID, []string{})
 		assert.NoError(t, err)
 		assert.Empty(t, itemsEmpty)
-	})
-}
-
-func TestUpsertCachedFeed(t *testing.T) {
-	_, baseDB := mustOpenTestRepo(t)
-
-	t.Run("CreateAndUpdate", func(t *testing.T) {
-		tx := baseDB.Begin()
-		defer tx.Rollback()
-		repo := NewFromDB(tx)
-
-		// 1. Create Feed
-		feed := Feed{URL: "http://cached-feed.test/" + uuid.New().String(), Enabled: true}
-		assert.NoError(t, tx.Create(&feed).Error)
-
-		// 2. Create CachedFeed
-		xmlContent := "<rss>...</rss>"
-		cachedFeed := &CachedFeed{
-			ID:         feed.ID,
-			XMLContent: &xmlContent,
-			ItemRefs:   StringArray{"hash1", "hash2"},
-		}
-
-		// 3. Upsert (Create)
-		err := repo.UpsertCachedFeed(cachedFeed)
-		assert.NoError(t, err)
-
-		// Verify
-		var stored CachedFeed
-		err = tx.First(&stored, feed.ID).Error
-		assert.NoError(t, err)
-		assert.Equal(t, feed.ID, stored.ID)
-		assert.Equal(t, xmlContent, *stored.XMLContent)
-		assert.Equal(t, StringArray{"hash1", "hash2"}, stored.ItemRefs)
-
-		// 4. Upsert (Update)
-		newXML := "<rss>updated</rss>"
-		cachedFeed.XMLContent = &newXML
-		cachedFeed.ItemRefs = StringArray{"hash3"}
-
-		err = repo.UpsertCachedFeed(cachedFeed)
-		assert.NoError(t, err)
-
-		// Verify Update
-		var updated CachedFeed
-		err = tx.First(&updated, feed.ID).Error
-		assert.NoError(t, err)
-		assert.Equal(t, newXML, *updated.XMLContent)
-		assert.Equal(t, StringArray{"hash3"}, updated.ItemRefs)
-	})
-}
-
-func TestFindCachedFeedById(t *testing.T) {
-	baseRepo, baseDB := mustOpenTestRepo(t)
-
-	t.Run("Found", func(t *testing.T) {
-		tx := baseDB.Begin()
-		defer tx.Rollback()
-		repo := NewFromDB(tx)
-
-		feed := Feed{URL: "http://cached-find.test/" + uuid.New().String(), Enabled: true}
-		assert.NoError(t, tx.Create(&feed).Error)
-
-		xmlContent := "<rss>found</rss>"
-		cached := CachedFeed{
-			ID:         feed.ID,
-			XMLContent: &xmlContent,
-			ItemRefs:   StringArray{"h1"},
-		}
-		assert.NoError(t, tx.Create(&cached).Error)
-
-		found, err := repo.FindCachedFeedById(feed.ID)
-		assert.NoError(t, err)
-		assert.NotNil(t, found)
-		assert.Equal(t, feed.ID, found.ID)
-		assert.Equal(t, xmlContent, *found.XMLContent)
-	})
-
-	t.Run("NotFound", func(t *testing.T) {
-		repo := baseRepo
-		found, err := repo.FindCachedFeedById(uuid.New())
-		assert.NoError(t, err)
-		assert.Nil(t, found)
-	})
-
-	t.Run("Constraint_UniqueUrl", func(t *testing.T) {
-		tx := baseDB.Begin()
-		defer tx.Rollback()
-		repo := NewFromDB(tx)
-
-		urlStr := "http://unique-constraint.test/" + uuid.New().String()
-
-		// 1. Create first feed
-		feed1 := &Feed{
-			URL:     urlStr,
-			Enabled: true,
-		}
-		assert.NoError(t, repo.UpsertFeed(feed1))
-
-		// 2. Create second feed with same URL (Should Fail)
-		feed2 := &Feed{
-			URL:     urlStr,
-			Enabled: true,
-		}
-		err := repo.UpsertFeed(feed2)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "already exists")
-
-		// 3. Soft Delete feed1
-		assert.NoError(t, repo.DeleteFeedById(feed1.ID))
-
-		// 4. Create second feed again (Should Succeed now)
-		err = repo.UpsertFeed(feed2)
-		assert.NoError(t, err)
-
-		// 5. Update feed2 to a new URL
-		newUrl := "http://unique-constraint-new.test/" + uuid.New().String()
-		feed2.URL = newUrl
-		assert.NoError(t, repo.UpsertFeed(feed2))
-
-		// 6. Create feed3 with the OLD url of feed2 (Should Succeed)
-		feed3 := &Feed{
-			URL:     urlStr,
-			Enabled: true,
-		}
-		assert.NoError(t, repo.UpsertFeed(feed3))
-
-		// 7. Try to update feed3 to feed2's current URL (Should Fail)
-		feed3.URL = newUrl
-		err = repo.UpsertFeed(feed3)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "already exists")
 	})
 }
 
@@ -1622,8 +1504,6 @@ func TestPurgeFeedById(t *testing.T) {
 
 		// Add related data
 		assert.NoError(t, tx.Create(&FeedSchedule{ID: feed.ID}).Error)
-		xml := "content"
-		assert.NoError(t, tx.Create(&CachedFeed{ID: feed.ID, XMLContent: &xml}).Error)
 		item := Item{ID: uuid.New(), FeedID: feed.ID, Hash: "h1", URL: "u1", Content: "c1"}
 		assert.NoError(t, tx.Create(&item).Error)
 		assert.NoError(t, tx.Create(&Trend{ItemID: item.ID, FeedID: feed.ID, RootDomain: "d", Language: "en"}).Error)
@@ -1636,8 +1516,6 @@ func TestPurgeFeedById(t *testing.T) {
 		tx.Unscoped().Model(&Feed{}).Where("id = ?", feed.ID).Count(&count)
 		assert.Equal(t, int64(0), count)
 		tx.Model(&FeedSchedule{}).Where("id = ?", feed.ID).Count(&count)
-		assert.Equal(t, int64(0), count)
-		tx.Model(&CachedFeed{}).Where("id = ?", feed.ID).Count(&count)
 		assert.Equal(t, int64(0), count)
 		tx.Model(&Item{}).Where("feed_id = ?", feed.ID).Count(&count)
 		assert.Equal(t, int64(0), count)

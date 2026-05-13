@@ -176,14 +176,6 @@ func (m *mockRepo) BeginThinkFixerBatch(limit int, since time.Time, minErrorCoun
 	return nil, nil
 }
 
-func (m *mockRepo) UpsertCachedFeed(cachedFeed *database.CachedFeed) error {
-	return nil
-}
-
-func (m *mockRepo) FindCachedFeedById(feedID uuid.UUID) (*database.CachedFeed, error) {
-	return nil, nil
-}
-
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	if m.findFeedScheduleById != nil {
 		return m.findFeedScheduleById(feedID)
