@@ -299,6 +299,7 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 		speculativeReason           *string
 		overall                     *float64
 		overallReason               *string
+		category                    *string
 	)
 	if tr := item.ThinkResult; tr != nil {
 		titleOriginal = stringPtr(tr.TitleOriginal)
@@ -319,6 +320,7 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 		speculativeReason = stringPtr(tr.SpeculativeReason)
 		overall = float64Ptr(tr.Overall)
 		overallReason = stringPtr(tr.OverallReason)
+		category = stringPtr(tr.Category)
 	}
 	return &web.AnalyzedItem{
 		Hash:                        item.Hash,
@@ -341,6 +343,7 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 		SpeculativeReason:           speculativeReason,
 		Overall:                     overall,
 		OverallReason:               overallReason,
+		Category:                    category,
 		Sentiments:                  convertSentimentScores(item.Sentiments),
 		SentimentsDeframed:          convertSentimentScores(item.SentimentsDeframed),
 		Media:                       convertMediaContent(item.MediaContent),
@@ -373,6 +376,7 @@ func convertAnalyzedSiteItem(item *database.AnalyzedItem) *web.AnalyzedSiteItem 
 		speculativeReason           *string
 		overall                     *float64
 		overallReason               *string
+		category                    *string
 	)
 	if tr := item.ThinkResult; tr != nil {
 		titleOriginal = stringPtr(tr.TitleOriginal)
@@ -393,6 +397,7 @@ func convertAnalyzedSiteItem(item *database.AnalyzedItem) *web.AnalyzedSiteItem 
 		speculativeReason = stringPtr(tr.SpeculativeReason)
 		overall = float64Ptr(tr.Overall)
 		overallReason = stringPtr(tr.OverallReason)
+		category = stringPtr(tr.Category)
 	}
 	return &web.AnalyzedSiteItem{
 		Hash:                        item.Hash,
@@ -415,6 +420,7 @@ func convertAnalyzedSiteItem(item *database.AnalyzedItem) *web.AnalyzedSiteItem 
 		SpeculativeReason:           speculativeReason,
 		Overall:                     overall,
 		OverallReason:               overallReason,
+		Category:                    category,
 		Media:                       convertMediaContent(item.MediaContent),
 		Rating:                      item.ThinkRating,
 		Authors:                     append([]string{}, item.Authors...),

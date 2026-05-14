@@ -1,6 +1,7 @@
 SELECT
     i.url AS url,
     NULLIF(i.think_result->>'title_corrected', '') AS title,
+    NULLIF(i.think_result->>'category', '') AS category,
     CASE WHEN i.think_result IS NOT NULL THEN i.think_rating ELSE NULL END AS rating,
     NULLIF(i.authors, '{}'::text[]) AS authors,
     t.pub_date AS pub_date

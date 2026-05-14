@@ -33,6 +33,7 @@ var openAISchemaDefinition = jsonschema.Definition{
 		"speculative_reason":            {Type: jsonschema.String},
 		"overall":                       {Type: jsonschema.Number},
 		"overall_reason":                {Type: jsonschema.String},
+		"category":                      {Type: jsonschema.String},
 	},
 	Required: []string{
 		"title_corrected", "title_correction_reason",
@@ -43,6 +44,7 @@ var openAISchemaDefinition = jsonschema.Definition{
 		"hyper_stimulus", "hyper_stimulus_reason",
 		"speculative", "speculative_reason",
 		"overall", "overall_reason",
+		"category",
 	},
 	// strictly required for OpenAI structured outputs
 	AdditionalProperties: false,

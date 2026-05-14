@@ -26,6 +26,7 @@ Das JSON muss die folgenden Felder enthalten:
 14. **`speculative_reason`** (String): Identifikation der Unsicherheitsquelle (z. B. "quellenlose Gerüchte", "Zukunftsprognose", "Konjunktiv: hätte/sollte/könnte") in max. 10 Wörtern.
 15. **`overall`** (Float, 0.0 - 1.0): Ein aggregierter Gesamtwert, der zur Entscheidung dient, ob der Artikel verworfen werden soll.
 16. **`overall_reason`** (String): Eine holistische Zusammenfassung, warum der Text diese spezifischen Bewertungen erhalten hat, in maximal 20 Wörtern.
+17. **`category`** (String): Eine journalistische Hauptkategorie (1 Wort) der Nachricht.
 
 **Regeln:**
 *   Antworte immer auf Deutsch (für die Inhalte der JSON-Werte).
@@ -51,6 +52,7 @@ Das JSON muss die folgenden Felder enthalten:
   "speculative": 0.2,
   "speculative_reason": "Impliziert Insolvenz ohne offizielle Quelle.",
   "overall": 0.5,
-  "overall_reason": "Der Text ist sensationalistischer Clickbait, der routinemäßige Finanznachrichten übertreibt, um Panik zu erzeugen."
+  "overall_reason": "Der Text ist sensationalistischer Clickbait, der routinemäßige Finanznachrichten übertreibt, um Panik zu erzeugen.",
+  "category": "Wirtschaft"
 }
 ```

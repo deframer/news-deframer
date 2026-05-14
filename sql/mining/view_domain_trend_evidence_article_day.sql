@@ -9,6 +9,7 @@ SELECT
     i.id,
     i.url,
     i.think_result->>'title_corrected' AS title,
+    i.think_result->>'category' AS category,
     i.think_result->>'overall' AS overall
 
 FROM public.trends t

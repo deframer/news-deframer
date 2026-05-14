@@ -84,6 +84,7 @@ type ThinkResult struct {
 	SpeculativeReason           string  `json:"speculative_reason,omitempty"`
 	Overall                     float64 `json:"overall,omitempty"`
 	OverallReason               string  `json:"overall_reason,omitempty"`
+	Category                    string  `json:"category,omitempty"`
 }
 
 func (j ThinkResult) Value() (driver.Value, error) {

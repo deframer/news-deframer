@@ -120,7 +120,8 @@ WITH config AS (
             'title_original', driver.think_result ->> 'title_original',
             'description_original', driver.think_result ->> 'description_original',
             'title_corrected', driver.think_result ->> 'title_corrected',
-            'description_corrected', driver.think_result ->> 'description_corrected'
+            'description_corrected', driver.think_result ->> 'description_corrected',
+            'category', driver.think_result ->> 'category'
         ) AS content,
         url
     FROM driver
@@ -132,7 +133,8 @@ WITH config AS (
             'title_original', think_result ->> 'title_original',
             'description_original', think_result ->> 'description_original',
             'title_corrected', think_result ->> 'title_corrected',
-            'description_corrected', think_result ->> 'description_corrected'
+            'description_corrected', think_result ->> 'description_corrected',
+            'category', think_result ->> 'category'
         ) AS content,
         url
     FROM top_associates
