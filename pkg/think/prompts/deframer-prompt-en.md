@@ -26,7 +26,7 @@ The JSON must contain the following fields:
 14. **`speculative_reason`** (String): Identification of the source of uncertainty (e.g., "unsourced rumors," "future prediction," "conditional phrasing: could/should/might") in max 10 words.
 15. **`overall`** (Float, 0.0 - 1.0): An aggregate score to decide if the article should be avoided.
 16. **`overall_reason`** (String): A holistic summary of why the text received these specific scores in a maximum of 20 words.
-17. **`category`** (String): A journalistic main category. Must be strictly one of: `politics`, `world`, `business`, `sport`, `culture`, `technology`, `health`, `finance`, `science`, `environment`, `travel`, `lifestyle`, `games`, `history`, `opinion`, `other`.
+17. **`category`** (String): A journalistic main category. Must be strictly one of: `politics`, `world`, `business`, `sport`, `culture`, `technology`, `health`, `finance`, `science`, `environment`, `travel`, `lifestyle`, `games`, `history`, `opinion`, `other`. If the ideal category is unavailable, choose the closest allowed category from the list.
 
 **Rules:**
 *   Always answer in English.
