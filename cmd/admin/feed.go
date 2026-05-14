@@ -356,6 +356,8 @@ func addFeed(feedUrl string, enabled bool, polling bool, mining bool, noRootDoma
 		portalUrlPtr = &portalUrl
 	}
 
+	categories = validateCategoryList(categories)
+
 	newFeed := &database.Feed{
 		URL:               u.String(),
 		RootDomain:        rootDomain,
@@ -658,7 +660,7 @@ func setCategories(input string, categoriesStr string) {
 	feed := resolveFeed(input, false)
 
 	categories := strings.Split(categoriesStr, ",")
-	feed.Categories = categories
+	feed.Categories = validateCategoryList(categories)
 	if err := repo.UpsertFeed(feed); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to set categories: %v\n", err)
 		os.Exit(1)

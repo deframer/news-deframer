@@ -1,4 +1,4 @@
-package think
+package category
 
 import (
 	"fmt"
@@ -17,6 +17,17 @@ var canonicalCategories = localizedCategories["en"]
 
 var builtCategoryLookupByLanguage = buildCategoryLookupByLanguage()
 
+var englishCategoryLookup = func() map[string]struct{} {
+	lookup := make(map[string]struct{}, len(EnglishCategories))
+	for _, category := range EnglishCategories {
+		lookup[category] = struct{}{}
+	}
+	return lookup
+}()
+
+// EnglishCategories is the canonical set used by admin input and stored results.
+var EnglishCategories = append([]string(nil), canonicalCategories...)
+
 func buildCategoryLookupByLanguage() map[string]map[string]string {
 	lookup := make(map[string]map[string]string, len(localizedCategories))
 	for language, labels := range localizedCategories {
@@ -32,17 +43,21 @@ func buildCategoryLookupByLanguage() map[string]map[string]string {
 	return lookup
 }
 
-func validateLocalizedCategory(language, category string) error {
-	_, err := normalizeCategory(language, category)
-	if err != nil {
-		return err
+func ValidateLocalizedCategory(language, category string) error {
+	_, err := NormalizeCategory(language, category)
+	return err
+}
+
+func ValidateEnglishCategory(category string) error {
+	if _, ok := englishCategoryLookup[category]; !ok {
+		return fmt.Errorf("invalid category %q", category)
 	}
 
 	return nil
 }
 
-func firstLocalizedCategory(language string) (string, error) {
-	allowed, err := localizedCategoriesFor(language)
+func FirstLocalizedCategory(language string) (string, error) {
+	allowed, err := LocalizedCategoriesFor(language)
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +68,7 @@ func firstLocalizedCategory(language string) (string, error) {
 	return allowed[0], nil
 }
 
-func localizedCategoriesFor(language string) ([]string, error) {
+func LocalizedCategoriesFor(language string) ([]string, error) {
 	allowed, ok := localizedCategories[language]
 	if !ok || len(allowed) == 0 {
 		return nil, fmt.Errorf("no localized categories configured for language: %s", language)
@@ -66,7 +81,7 @@ func localizedCategoriesFor(language string) ([]string, error) {
 	return categories, nil
 }
 
-func normalizeCategory(language, category string) (string, error) {
+func NormalizeCategory(language, category string) (string, error) {
 	categories, ok := builtCategoryLookupByLanguage[language]
 	if !ok || len(categories) == 0 {
 		return "", fmt.Errorf("no localized categories configured for language: %s", language)

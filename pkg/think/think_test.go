@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	categorypkg "github.com/deframer/news-deframer/pkg/category"
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/stretchr/testify/assert"
@@ -19,39 +20,39 @@ func TestGetPrompt(t *testing.T) {
 }
 
 func TestLocalizedCategoryValidation(t *testing.T) {
-	err := validateLocalizedCategory("en", "business")
+	err := categorypkg.ValidateLocalizedCategory("en", "business")
 	assert.NoError(t, err)
 
-	err = validateLocalizedCategory("de", "wirtschaft")
+	err = categorypkg.ValidateLocalizedCategory("de", "wirtschaft")
 	assert.NoError(t, err)
 
-	err = validateLocalizedCategory("da", "erhverv")
+	err = categorypkg.ValidateLocalizedCategory("da", "erhverv")
 	assert.NoError(t, err)
 
-	err = validateLocalizedCategory("en", "wirtschaft")
+	err = categorypkg.ValidateLocalizedCategory("en", "wirtschaft")
 	assert.Error(t, err)
 
-	err = validateLocalizedCategory("xx", "business")
+	err = categorypkg.ValidateLocalizedCategory("xx", "business")
 	assert.Error(t, err)
 }
 
 func TestNormalizeCategory(t *testing.T) {
-	value, err := normalizeCategory("en", "opinion")
+	value, err := categorypkg.NormalizeCategory("en", "opinion")
 	assert.NoError(t, err)
 	assert.Equal(t, "opinion", value)
 
-	value, err = normalizeCategory("de", "meinung")
+	value, err = categorypkg.NormalizeCategory("de", "meinung")
 	assert.NoError(t, err)
 	assert.Equal(t, "opinion", value)
 
-	value, err = normalizeCategory("da", "erhverv")
+	value, err = categorypkg.NormalizeCategory("da", "erhverv")
 	assert.NoError(t, err)
 	assert.Equal(t, "business", value)
 
-	_, err = normalizeCategory("de", "business")
+	_, err = categorypkg.NormalizeCategory("de", "business")
 	assert.Error(t, err)
 
-	_, err = normalizeCategory("fr", "opinion")
+	_, err = categorypkg.NormalizeCategory("fr", "opinion")
 	assert.Error(t, err)
 }
 

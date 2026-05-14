@@ -3,6 +3,7 @@ package think
 import (
 	"fmt"
 
+	categorypkg "github.com/deframer/news-deframer/pkg/category"
 	"github.com/deframer/news-deframer/pkg/database"
 )
 
@@ -32,11 +33,11 @@ func verifyThinkResult(language string, res *database.ThinkResult) error {
 		return fmt.Errorf(errFmt, "Overall", res.Overall)
 	}
 
-	if err := validateLocalizedCategory(language, res.Category); err != nil {
+	if err := categorypkg.ValidateLocalizedCategory(language, res.Category); err != nil {
 		return err
 	}
 
-	normalizedCategory, err := normalizeCategory(language, res.Category)
+	normalizedCategory, err := categorypkg.NormalizeCategory(language, res.Category)
 	if err != nil {
 		return err
 	}

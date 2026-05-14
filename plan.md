@@ -2,27 +2,20 @@
 
 ## Goal
 
-Keep RSS as an input format, but remove the RSS proxy and stop enhancing rendered items in the sync path.
+Fail fast when admin feed categories are invalid, using the English category list as the source of truth.
 
 ## Steps
 
-- [x] Remove the RSS proxy contract and service implementation.
-- [x] Split the current worker into two explicit modes: an ingester and a thinker.
-- [x] Stop injecting deframer-specific `<item>` extensions during sync.
-- [x] Keep raw `title` and `description` values intact in stored items.
-- [x] Move thinker processing into its own loop so sync and analysis run separately.
-- [x] Rebuild cached feed output so existing stored feeds no longer carry original-title/description deframer tags.
-- [x] Update tests and docs to match the new text-first pipeline.
+- [ ] Move `category.go` into a shared `pkg/category` package.
+- [ ] Keep validation in the existing admin commands, not a new tool.
+- [ ] Update the admin feed commands in `cmd/admin/feed.go` to validate categories.
+- [ ] Update the admin import path in `cmd/admin/importexport.go` to validate categories.
+- [ ] Reuse the existing think category validator with language `en`.
+- [ ] Return clear errors for unknown categories and stop the command.
+- [ ] Run `make lint` and relevant tests after the change.
 
 ## Expected Result
 
-- RSS remains an upstream source.
-- The service no longer proxies RSS responses.
-- Sync stores raw item text and metadata only.
-- Thinking happens asynchronously in a separate worker loop.
-
-
-## Anything else
-
-- [x] Update documentation
-- [x] Update Docker / Docker compose files
+- Admin rejects unknown feed categories immediately.
+- Feed imports do not accept invalid category names.
+- English categories remain the canonical admin format.

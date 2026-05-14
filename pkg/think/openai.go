@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	categorypkg "github.com/deframer/news-deframer/pkg/category"
 	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/sashabaranov/go-openai"
 	"github.com/sashabaranov/go-openai/jsonschema"
@@ -82,7 +83,7 @@ func newOpenAI(ctx context.Context, model, apiKey, baseURL string) (*openaiProvi
 }
 
 func (o *openaiProvider) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
-	if _, err := localizedCategoriesFor(language); err != nil {
+	if _, err := categorypkg.LocalizedCategoriesFor(language); err != nil {
 		return nil, err
 	}
 

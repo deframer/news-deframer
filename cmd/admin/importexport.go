@@ -82,6 +82,8 @@ func importFeeds() {
 	}
 
 	for _, f := range feeds {
+		f.Categories = validateCategoryList(f.Categories)
+
 		u, err := parseAndNormalizeURL(f.URL)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Skipping invalid URL %s: %v\n", f.URL, err)

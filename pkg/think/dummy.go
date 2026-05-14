@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 
+	categorypkg "github.com/deframer/news-deframer/pkg/category"
 	"github.com/deframer/news-deframer/pkg/database"
 )
 
@@ -14,7 +15,7 @@ func newDummy() *dummy {
 }
 
 func (d *dummy) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
-	if _, err := localizedCategoriesFor(language); err != nil {
+	if _, err := categorypkg.LocalizedCategoriesFor(language); err != nil {
 		return nil, err
 	}
 
@@ -48,7 +49,7 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 		OverallReason:               "Integer in mauris eu nibh euismod gravida. Duis ac tellus et risus vulputate vehicula.",
 	}
 
-	category, err := firstLocalizedCategory(language)
+	category, err := categorypkg.FirstLocalizedCategory(language)
 	if err != nil {
 		return nil, err
 	}
