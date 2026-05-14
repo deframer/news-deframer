@@ -26,7 +26,7 @@ JSON-objektet skal indeholde følgende felter:
 14. **`speculative_reason`** (String): Identifikation af usikkerhedskilden (fx "unsourced rumors", "future prediction", "conditional phrasing: could/should/might") i maks. 10 ord.
 15. **`overall`** (Float, 0.0 - 1.0): En samlet score til at afgøre om artiklen bør undgås.
 16. **`overall_reason`** (String): En helhedsopsummering af hvorfor teksten fik disse specifikke scores på maks. 20 ord.
-17. **`category`** (String): En journalistisk hovedkategori (1 ord) for nyheden.
+17. **`category`** (String): En journalistisk hovedkategori. Skal være strengt en af: `politik`, `verden`, `erhverv`, `sport`, `kultur`, `teknologi`, `sundhed`, `finans`, `videnskab`, `miljo`, `rejse`, `livsstil`, `andet`.
 
 **Rules:**
 * Svar altid på dansk.
@@ -52,5 +52,5 @@ JSON-objektet skal indeholde følgende felter:
   "speculative_reason": "Implies bankruptcy without official filing source.",
   "overall": 0.5,
   "overall_reason": "The text is sensationalized clickbait exaggerating routine financial news to induce panic.",
-  "category": "Erhverv"
+  "category": "erhverv"
 }

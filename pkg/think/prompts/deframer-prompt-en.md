@@ -26,7 +26,7 @@ The JSON must contain the following fields:
 14. **`speculative_reason`** (String): Identification of the source of uncertainty (e.g., "unsourced rumors," "future prediction," "conditional phrasing: could/should/might") in max 10 words.
 15. **`overall`** (Float, 0.0 - 1.0): An aggregate score to decide if the article should be avoided.
 16. **`overall_reason`** (String): A holistic summary of why the text received these specific scores in a maximum of 20 words.
-17. **`category`** (String): A journalistic main category (1 word) of the news.
+17. **`category`** (String): A journalistic main category. Must be strictly one of: `politics`, `world`, `business`, `sport`, `culture`, `technology`, `health`, `finance`, `science`, `environment`, `travel`, `lifestyle`, `other`.
 
 **Rules:**
 *   Always answer in English.
@@ -52,6 +52,6 @@ The JSON must contain the following fields:
   "speculative_reason": "Implies bankruptcy without official filing source.",
   "overall": 0.5,
   "overall_reason": "The text is sensationalized clickbait exaggerating routine financial news to induce panic.",
-  "category": "Business"
+  "category": "business"
 }
 ```
