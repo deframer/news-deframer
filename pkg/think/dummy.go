@@ -42,6 +42,7 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 		SpeculativeReason:           "Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris.",
 		Overall:                     overall,
 		OverallReason:               "Integer in mauris eu nibh euismod gravida. Duis ac tellus et risus vulputate vehicula.",
+		Category:                    "General",
 	}
 
 	if err := verifyThinkResult(result); err != nil {

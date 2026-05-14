@@ -133,7 +133,8 @@ WITH config AS (
             'title_original', d.think_result ->> 'title_original',
             'description_original', d.think_result ->> 'description_original',
             'title_corrected', d.think_result ->> 'title_corrected',
-            'description_corrected', d.think_result ->> 'description_corrected'
+            'description_corrected', d.think_result ->> 'description_corrected',
+            'category', d.think_result ->> 'category'
         ) AS content,
         url,
         d.domain AS driver_domain
@@ -146,7 +147,8 @@ WITH config AS (
             'title_original', think_result ->> 'title_original',
             'description_original', think_result ->> 'description_original',
             'title_corrected', think_result ->> 'title_corrected',
-            'description_corrected', think_result ->> 'description_corrected'
+            'description_corrected', think_result ->> 'description_corrected',
+            'category', think_result ->> 'category'
         ) AS content,
         url,
         (SELECT domain FROM driver) AS driver_domain
