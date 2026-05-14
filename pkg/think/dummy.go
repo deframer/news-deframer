@@ -14,6 +14,10 @@ func newDummy() *dummy {
 }
 
 func (d *dummy) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
+	if _, err := localizedCategoriesFor(language); err != nil {
+		return nil, err
+	}
+
 	if _, err := getPrompt(prompt, language); err != nil {
 		return nil, err
 	}
@@ -42,10 +46,15 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 		SpeculativeReason:           "Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris.",
 		Overall:                     overall,
 		OverallReason:               "Integer in mauris eu nibh euismod gravida. Duis ac tellus et risus vulputate vehicula.",
-		Category:                    "General",
 	}
 
-	if err := verifyThinkResult(result); err != nil {
+	category, err := firstLocalizedCategory(language)
+	if err != nil {
+		return nil, err
+	}
+	result.Category = category
+
+	if err := verifyThinkResult(language, result); err != nil {
 		return nil, err
 	}
 

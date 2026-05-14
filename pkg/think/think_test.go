@@ -18,6 +18,23 @@ func TestGetPrompt(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestLocalizedCategoryValidation(t *testing.T) {
+	err := validateLocalizedCategory("en", "business")
+	assert.NoError(t, err)
+
+	err = validateLocalizedCategory("de", "wirtschaft")
+	assert.NoError(t, err)
+
+	err = validateLocalizedCategory("da", "erhverv")
+	assert.NoError(t, err)
+
+	err = validateLocalizedCategory("en", "wirtschaft")
+	assert.Error(t, err)
+
+	err = validateLocalizedCategory("xx", "business")
+	assert.Error(t, err)
+}
+
 func TestDummy_Run(t *testing.T) {
 	d := newDummy()
 
@@ -94,43 +111,47 @@ func TestNew_OpenAI(t *testing.T) {
 }
 
 func TestVerifyThinkResult(t *testing.T) {
-	err := verifyThinkResult(nil)
+	err := verifyThinkResult("en", nil)
 	assert.NoError(t, err)
 
-	err = verifyThinkResult(&database.ThinkResult{})
+	err = verifyThinkResult("en", &database.ThinkResult{Category: "other"})
 	assert.NoError(t, err)
 
-	err = verifyThinkResult(&database.ThinkResult{
+	err = verifyThinkResult("en", &database.ThinkResult{
 		Framing:       0.5,
 		Clickbait:     0.5,
 		Persuasive:    0.5,
 		HyperStimulus: 0.5,
 		Speculative:   0.5,
 		Overall:       0.5,
+		Category:      "business",
 	})
 	assert.NoError(t, err)
 
-	err = verifyThinkResult(&database.ThinkResult{Framing: -0.1})
+	err = verifyThinkResult("en", &database.ThinkResult{Framing: -0.1, Category: "business"})
 	assert.ErrorContains(t, err, "Framing")
 
-	err = verifyThinkResult(&database.ThinkResult{Framing: 1.1})
+	err = verifyThinkResult("en", &database.ThinkResult{Framing: 1.1, Category: "business"})
 	assert.ErrorContains(t, err, "Framing")
 
-	err = verifyThinkResult(&database.ThinkResult{Clickbait: -0.1})
+	err = verifyThinkResult("en", &database.ThinkResult{Clickbait: -0.1, Category: "business"})
 	assert.ErrorContains(t, err, "Clickbait")
 
-	err = verifyThinkResult(&database.ThinkResult{Persuasive: 1.1})
+	err = verifyThinkResult("en", &database.ThinkResult{Persuasive: 1.1, Category: "business"})
 	assert.ErrorContains(t, err, "Persuasive")
 
-	err = verifyThinkResult(&database.ThinkResult{HyperStimulus: -0.1})
+	err = verifyThinkResult("en", &database.ThinkResult{HyperStimulus: -0.1, Category: "business"})
 	assert.ErrorContains(t, err, "HyperStimulus")
 
-	err = verifyThinkResult(&database.ThinkResult{Speculative: 1.1})
+	err = verifyThinkResult("en", &database.ThinkResult{Speculative: 1.1, Category: "business"})
 	assert.ErrorContains(t, err, "Speculative")
 
-	err = verifyThinkResult(&database.ThinkResult{Overall: -0.1})
+	err = verifyThinkResult("en", &database.ThinkResult{Overall: -0.1, Category: "business"})
 	assert.ErrorContains(t, err, "Overall")
 
-	err = verifyThinkResult(&database.ThinkResult{Overall: 1.1})
+	err = verifyThinkResult("en", &database.ThinkResult{Overall: 1.1, Category: "business"})
 	assert.ErrorContains(t, err, "Overall")
+
+	err = verifyThinkResult("en", &database.ThinkResult{Category: "wirtschaft"})
+	assert.ErrorContains(t, err, "invalid category")
 }

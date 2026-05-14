@@ -6,7 +6,7 @@ import (
 	"github.com/deframer/news-deframer/pkg/database"
 )
 
-func verifyThinkResult(res *database.ThinkResult) error {
+func verifyThinkResult(language string, res *database.ThinkResult) error {
 	const errFmt = "ThinkResult is out of bounds 0.0 - 1.0: %s is %.1f"
 
 	if res == nil {
@@ -30,6 +30,10 @@ func verifyThinkResult(res *database.ThinkResult) error {
 	}
 	if res.Overall < 0.0 || res.Overall > 1.0 {
 		return fmt.Errorf(errFmt, "Overall", res.Overall)
+	}
+
+	if err := validateLocalizedCategory(language, res.Category); err != nil {
+		return err
 	}
 
 	return nil

@@ -82,6 +82,10 @@ func newOpenAI(ctx context.Context, model, apiKey, baseURL string) (*openaiProvi
 }
 
 func (o *openaiProvider) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
+	if _, err := localizedCategoriesFor(language); err != nil {
+		return nil, err
+	}
+
 	key := prompt + ":" + language
 
 	o.mu.RLock()
@@ -172,7 +176,7 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 		return nil, fmt.Errorf("failed to unmarshal result: %w", err)
 	}
 
-	if err := verifyThinkResult(&result); err != nil {
+	if err := verifyThinkResult(language, &result); err != nil {
 		return nil, err
 	}
 
