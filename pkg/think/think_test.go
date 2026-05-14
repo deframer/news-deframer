@@ -35,13 +35,33 @@ func TestLocalizedCategoryValidation(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestNormalizeCategory(t *testing.T) {
+	value, err := normalizeCategory("en", "opinion")
+	assert.NoError(t, err)
+	assert.Equal(t, "opinion", value)
+
+	value, err = normalizeCategory("de", "meinung")
+	assert.NoError(t, err)
+	assert.Equal(t, "opinion", value)
+
+	value, err = normalizeCategory("da", "erhverv")
+	assert.NoError(t, err)
+	assert.Equal(t, "business", value)
+
+	_, err = normalizeCategory("de", "business")
+	assert.Error(t, err)
+
+	_, err = normalizeCategory("fr", "opinion")
+	assert.Error(t, err)
+}
+
 func TestDummy_Run(t *testing.T) {
 	d := newDummy()
 
 	_, err := d.Run("deframer", "en", Request{})
 	assert.NoError(t, err)
 
-	_, err = d.Run("unknown", "en", Request{})
+	_, err = d.Run("deframer", "fr", Request{})
 	assert.Error(t, err)
 }
 
@@ -117,6 +137,11 @@ func TestVerifyThinkResult(t *testing.T) {
 	err = verifyThinkResult("en", &database.ThinkResult{Category: "other"})
 	assert.NoError(t, err)
 
+	res := &database.ThinkResult{Category: "meinung"}
+	err = verifyThinkResult("de", res)
+	assert.NoError(t, err)
+	assert.Equal(t, "opinion", res.Category)
+
 	err = verifyThinkResult("en", &database.ThinkResult{
 		Framing:       0.5,
 		Clickbait:     0.5,
@@ -154,4 +179,7 @@ func TestVerifyThinkResult(t *testing.T) {
 
 	err = verifyThinkResult("en", &database.ThinkResult{Category: "wirtschaft"})
 	assert.ErrorContains(t, err, "invalid category")
+
+	err = verifyThinkResult("fr", &database.ThinkResult{Category: "opinion"})
+	assert.ErrorContains(t, err, "no localized categories configured")
 }

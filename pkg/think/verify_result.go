@@ -36,5 +36,11 @@ func verifyThinkResult(language string, res *database.ThinkResult) error {
 		return err
 	}
 
+	normalizedCategory, err := normalizeCategory(language, res.Category)
+	if err != nil {
+		return err
+	}
+	res.Category = normalizedCategory
+
 	return nil
 }
