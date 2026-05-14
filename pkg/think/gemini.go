@@ -73,6 +73,10 @@ func newGemini(ctx context.Context, model, apiKey string) (*gemini, error) {
 }
 
 func (g *gemini) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
+	if _, err := localizedCategoriesFor(language); err != nil {
+		return nil, err
+	}
+
 	key := prompt + ":" + language
 
 	g.mu.RLock()
@@ -143,7 +147,7 @@ func (g *gemini) Run(prompt string, language string, request Request) (*database
 		return nil, err
 	}
 
-	if err := verifyThinkResult(&result); err != nil {
+	if err := verifyThinkResult(language, &result); err != nil {
 		return nil, err
 	}
 
