@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	categorypkg "github.com/deframer/news-deframer/pkg/category"
 	"github.com/deframer/news-deframer/pkg/database"
 	"goa.design/clue/log"
 	"google.golang.org/genai"
@@ -73,7 +74,7 @@ func newGemini(ctx context.Context, model, apiKey string) (*gemini, error) {
 }
 
 func (g *gemini) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
-	if _, err := localizedCategoriesFor(language); err != nil {
+	if _, err := categorypkg.LocalizedCategoriesFor(language); err != nil {
 		return nil, err
 	}
 
