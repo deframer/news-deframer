@@ -2,6 +2,7 @@ WITH config AS (
     SELECT
         ARRAY['spiegel.de', 'tagesschau.de', 'stern.de', 'nzz.de'] AS driving_domains,
         'de' AS language,
+        -- 'politik' as category,
         8 AS period_hours,
         3 AS associate_limit,
         2 AS min_shared_nouns
