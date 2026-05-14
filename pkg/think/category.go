@@ -60,9 +60,7 @@ func localizedCategoriesFor(language string) ([]string, error) {
 	}
 
 	categories := make([]string, 0, len(allowed))
-	for _, pair := range allowed {
-		categories = append(categories, pair)
-	}
+	categories = append(categories, allowed...)
 	sort.Strings(categories)
 
 	return categories, nil
