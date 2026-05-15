@@ -1266,7 +1266,7 @@ func TestGetItemsByHashes(t *testing.T) {
 func TestBeginThinkerBatch(t *testing.T) {
 	_, baseDB := mustOpenTestRepo(t)
 
-		t.Run("OldestFirstAndLocksByUpdatedAt", func(t *testing.T) {
+	t.Run("OldestFirstAndLocksByUpdatedAt", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
