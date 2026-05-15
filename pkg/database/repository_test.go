@@ -1266,7 +1266,7 @@ func TestGetItemsByHashes(t *testing.T) {
 func TestBeginThinkerBatch(t *testing.T) {
 	_, baseDB := mustOpenTestRepo(t)
 
-	t.Run("OldestFirstAndLocksByUpdatedAt", func(t *testing.T) {
+	t.Run("RetriesBeforeFreshItems", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
 		repo := NewFromDB(tx)
@@ -1274,33 +1274,62 @@ func TestBeginThinkerBatch(t *testing.T) {
 		feed := Feed{URL: "http://thinker-batch.test/" + uuid.New().String(), Enabled: true, Polling: true}
 		assert.NoError(t, tx.Create(&feed).Error)
 
+		since := time.Now().Add(-time.Second)
 		older := time.Now().Add(-2 * time.Hour)
-		evenOlder := time.Now().Add(-3 * time.Hour)
 
-		item1 := Item{FeedID: feed.ID, Hash: "h1", URL: "http://item1/" + uuid.New().String(), Content: "c1", ThinkResult: nil, ThinkError: nil}
-		item2 := Item{FeedID: feed.ID, Hash: "h2", URL: "http://item2/" + uuid.New().String(), Content: "c2", ThinkResult: nil, ThinkError: nil}
-		item3 := Item{FeedID: feed.ID, Hash: "h3", URL: "http://item3/" + uuid.New().String(), Content: "c3", ThinkResult: &ThinkResult{TitleCorrected: "done"}}
+		item0 := Item{FeedID: feed.ID, Hash: "h0", URL: "http://item0/" + uuid.New().String(), Content: "c0", ThinkErrorCount: 0}
+		item1 := Item{FeedID: feed.ID, Hash: "h1", URL: "http://item1/" + uuid.New().String(), Content: "c1", ThinkErrorCount: 1}
+		item2 := Item{FeedID: feed.ID, Hash: "h2", URL: "http://item2/" + uuid.New().String(), Content: "c2", ThinkErrorCount: 2}
+		item3 := Item{FeedID: feed.ID, Hash: "h3", URL: "http://item3/" + uuid.New().String(), Content: "c3", ThinkErrorCount: 3}
+		assert.NoError(t, tx.Create(&item0).Error)
 		assert.NoError(t, tx.Create(&item1).Error)
 		assert.NoError(t, tx.Create(&item2).Error)
 		assert.NoError(t, tx.Create(&item3).Error)
 
-		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item1.ID).UpdateColumn("updated_at", evenOlder).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item0.ID).UpdateColumn("updated_at", older).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item1.ID).UpdateColumn("updated_at", older).Error)
 		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item2.ID).UpdateColumn("updated_at", older).Error)
-		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item3.ID).UpdateColumn("updated_at", evenOlder).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item3.ID).UpdateColumn("updated_at", older).Error)
 
-		before := time.Now()
-		items, err := repo.BeginThinkerBatch(2, time.Minute)
+		items, err := repo.BeginThinkerBatch(4, since, 0, 3, time.Minute)
+		assert.NoError(t, err)
+		if assert.Len(t, items, 4) {
+			assert.Equal(t, "h3", strings.TrimSpace(items[0].Hash))
+			assert.Equal(t, "h2", strings.TrimSpace(items[1].Hash))
+			assert.Equal(t, "h1", strings.TrimSpace(items[2].Hash))
+			assert.Equal(t, "h0", strings.TrimSpace(items[3].Hash))
+		}
+	})
+
+	t.Run("FixerSelectsDeadLetterWindow", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://thinker-fixer.test/" + uuid.New().String(), Enabled: true, Polling: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		since := time.Now().Add(-time.Second)
+		item1 := Item{FeedID: feed.ID, Hash: "f1", URL: "http://itemf1/" + uuid.New().String(), Content: "c1", ThinkErrorCount: 3}
+		item2 := Item{FeedID: feed.ID, Hash: "f2", URL: "http://itemf2/" + uuid.New().String(), Content: "c2", ThinkErrorCount: 4}
+		item3 := Item{FeedID: feed.ID, Hash: "f3", URL: "http://itemf3/" + uuid.New().String(), Content: "c3", ThinkErrorCount: 6}
+		item4 := Item{FeedID: feed.ID, Hash: "f4", URL: "http://itemf4/" + uuid.New().String(), Content: "c4", ThinkErrorCount: 7}
+		assert.NoError(t, tx.Create(&item1).Error)
+		assert.NoError(t, tx.Create(&item2).Error)
+		assert.NoError(t, tx.Create(&item3).Error)
+		assert.NoError(t, tx.Create(&item4).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item1.ID).UpdateColumn("updated_at", time.Now().Add(-2*time.Hour)).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item2.ID).UpdateColumn("updated_at", time.Now().Add(-2*time.Hour)).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item3.ID).UpdateColumn("updated_at", time.Now().Add(-2*time.Hour)).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item4.ID).UpdateColumn("updated_at", time.Now().Add(-2*time.Hour)).Error)
+
+		items, err := repo.BeginThinkerFixerBatch(10, since, 4, 6, time.Minute)
 		assert.NoError(t, err)
 		if assert.Len(t, items, 2) {
-			assert.Equal(t, "h1", strings.TrimSpace(items[0].Hash))
-			assert.Equal(t, "h2", strings.TrimSpace(items[1].Hash))
+			hashes := []string{strings.TrimSpace(items[0].Hash), strings.TrimSpace(items[1].Hash)}
+			assert.Contains(t, hashes, "f2")
+			assert.Contains(t, hashes, "f3")
 		}
-
-		var refreshed1, refreshed2 Item
-		assert.NoError(t, tx.First(&refreshed1, "id = ?", item1.ID).Error)
-		assert.NoError(t, tx.First(&refreshed2, "id = ?", item2.ID).Error)
-		assert.True(t, refreshed1.UpdatedAt.After(before))
-		assert.True(t, refreshed2.UpdatedAt.After(before))
 	})
 }
 

@@ -26,7 +26,8 @@ const promptScope = "deframer"
 const maxThinkRetries = 3
 const thinkerBatchSize = 15
 const thinkerFixerLookback = 90 * 24 * time.Hour
-const thinkerStopThreshold = maxThinkRetries
+const thinkerFixerMinErrorCount = 4
+const thinkerFixerMaxErrorCount = 6
 const publicationDateGracePeriod = 10 * time.Minute
 
 type Mode string
@@ -163,7 +164,7 @@ func (s *Syncer) pollThinkerFixer(lookback time.Duration) {
 
 func (s *Syncer) processThinkerBatch() bool {
 	log.Printf(s.ctx, "processThinkerBatch")
-	items, err := s.repo.BeginThinkerBatch(thinkerBatchSize, config.DefaultLockDuration)
+	items, err := s.repo.BeginThinkerBatch(thinkerBatchSize, time.Time{}, 0, maxThinkRetries, config.DefaultLockDuration)
 	if err != nil {
 		log.Errorf(s.ctx, err, "Failed to query thinker candidates")
 		return false
@@ -187,8 +188,7 @@ func (s *Syncer) processThinkerFixerBatch(lookback time.Duration) bool {
 	if lookback > 0 {
 		since = time.Now().Add(-lookback)
 	}
-	maxErrorCount := thinkerStopThreshold * 2
-	items, err := s.repo.BeginThinkerFixerBatch(thinkerBatchSize, since, thinkerStopThreshold, maxErrorCount, config.DefaultLockDuration)
+	items, err := s.repo.BeginThinkerFixerBatch(thinkerBatchSize, since, thinkerFixerMinErrorCount, thinkerFixerMaxErrorCount, config.DefaultLockDuration)
 	if err != nil {
 		log.Errorf(s.ctx, err, "Failed to query thinker fixer candidates")
 		return false

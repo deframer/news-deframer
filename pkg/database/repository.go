@@ -184,7 +184,7 @@ type Repository interface {
 	EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval time.Duration) error
 	GetPendingItems(feedID uuid.UUID, hashes []string, maxRetries int) (map[string]int, error)
 	GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item, error)
-	BeginThinkerBatch(limit int, lockDuration time.Duration) ([]Item, error)
+	BeginThinkerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
 	BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error)
 	UpsertItem(item *Item) error
 	UpsertItemWithTrendInvalidation(item *Item) error
@@ -625,10 +625,13 @@ func (r *repository) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]Item
 	return items, nil
 }
 
-func (r *repository) BeginThinkerBatch(limit int, lockDuration time.Duration) ([]Item, error) {
+func (r *repository) BeginThinkerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]Item, error) {
 	var items []Item
 
 	if limit <= 0 {
+		return items, nil
+	}
+	if minErrorCount > maxErrorCount {
 		return items, nil
 	}
 
@@ -636,16 +639,22 @@ func (r *repository) BeginThinkerBatch(limit int, lockDuration time.Duration) ([
 	claimUntil := now.Add(lockDuration)
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&Item{}).
+		query := tx.Model(&Item{}).
 			Select("items.*").
 			Joins("JOIN feeds ON feeds.id = items.feed_id").
 			Where("feeds.deleted_at IS NULL").
 			Where("feeds.enabled = ?", true).
 			Where("feeds.polling = ?", true).
 			Where("items.think_result IS NULL").
-			Where("items.think_error IS NULL").
 			Where("items.updated_at <= ?", now).
-			Order("items.updated_at ASC").
+			Where("items.think_error_count >= ?", minErrorCount).
+			Where("items.think_error_count <= ?", maxErrorCount)
+		if !since.IsZero() {
+			query = query.Where("items.created_at >= ?", since)
+		}
+
+		if err := query.
+			Order("CASE WHEN items.think_error_count > 0 THEN 0 ELSE 1 END ASC, items.think_error_count DESC, items.updated_at ASC").
 			Limit(limit).
 			Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
 			Preload("Feed").
@@ -680,20 +689,28 @@ func (r *repository) BeginThinkerFixerBatch(limit int, since time.Time, minError
 	if limit <= 0 {
 		return items, nil
 	}
+	if minErrorCount > maxErrorCount {
+		return items, nil
+	}
 
 	lockBefore := time.Now().Add(-lockDuration)
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Model(&Item{}).
+		query := tx.Model(&Item{}).
 			Select("items.*").
 			Joins("JOIN feeds ON feeds.id = items.feed_id").
 			Where("feeds.deleted_at IS NULL").
 			Where("feeds.enabled = ?", true).
 			Where("feeds.polling = ?", true).
-			Where("items.created_at >= ?", since).
+			Where("items.think_result IS NULL").
 			Where("items.think_error_count >= ?", minErrorCount).
 			Where("items.think_error_count <= ?", maxErrorCount).
-			Where("items.updated_at <= ?", lockBefore).
+			Where("items.updated_at <= ?", lockBefore)
+		if !since.IsZero() {
+			query = query.Where("items.created_at >= ?", since)
+		}
+
+		if err := query.
 			Order("items.created_at ASC").
 			Limit(limit).
 			Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
