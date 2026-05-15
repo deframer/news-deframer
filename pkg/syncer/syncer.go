@@ -104,7 +104,7 @@ func (s *Syncer) pollIngester() {
 			continue
 		}
 
-		log.Printf(s.ctx, "Sleeping duration=%s", config.IdleSleepTime)
+		log.Debugf(s.ctx, "Sleeping duration=%s", config.IdleSleepTime)
 
 		select {
 		case <-s.ctx.Done():
@@ -208,7 +208,7 @@ func (s *Syncer) processThinkerFixerBatch(lookback time.Duration) bool {
 
 // syncNextScheduledFeed return true if this has updated entries
 func (s *Syncer) syncNextScheduledFeed() bool {
-	log.Printf(s.ctx, "syncNextScheduledFeed")
+	log.Debugf(s.ctx, "syncNextScheduledFeed")
 	feed, err := s.repo.BeginFeedUpdate(config.DefaultLockDuration)
 	if err != nil {
 		log.Errorf(s.ctx, err, "Failed query the next feed to sync")

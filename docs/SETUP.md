@@ -20,6 +20,10 @@
    docker compose pull
    docker compose up -d
    ```
+   If you want multiple `thinker` or `thinker-fixer` workers, scale them at startup:
+   ```bash
+   docker compose up -d --scale thinker=3 --scale thinker-fixer=2
+   ```
 
 ## Handling Feeds
 
@@ -28,7 +32,9 @@
 - List `docker compose exec ingester admin feed list`
 - Force a Sync `docker compose exec ingester admin feed sync-all`
 - Force a Miner Run `docker compose exec ingester admin feed mine-all`
-- Start the thinker and thinker-fixer by uncommenting their services in `docker/docker-compose.yml`.
+- Start multiple thinker workers with `docker compose up -d --scale thinker=3`.
+- Start multiple thinker-fixer workers with `docker compose up -d --scale thinker-fixer=2`.
+- You can combine both scales in one command.
 You can manage feeds using the `admin` CLI tool inside the running container.
 
 ## Browser Plugin

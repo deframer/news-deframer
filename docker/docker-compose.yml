@@ -1,4 +1,10 @@
 ---
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "2g"
+    max-file: "1"
+
 services:
   postgres:
     # this is postgres with the pg_duckdb extension precompiled
@@ -12,6 +18,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-deframer}
     volumes:
       - postgres_data:/var/lib/postgresql
+    logging: *default-logging
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-deframer}"]
       interval: 5s
@@ -33,6 +40,7 @@ services:
       - BASIC_AUTH_PASSWORD=${BASIC_AUTH_PASSWORD:-}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - REDIRECT_WEBREQUEST_404_URL=${REDIRECT_WEBREQUEST_404_URL:-}
+    logging: *default-logging
     ports:
       - "${PORT:-8080}:${PORT:-8080}"
 
@@ -51,6 +59,7 @@ services:
       - LLM_MODEL=${LLM_MODEL:-}
       - LLM_API_KEY=${LLM_API_KEY:-}
       - LLM_BASE_URL=${LLM_BASE_URL:-}
+    logging: *default-logging
 
   thinker:
     image: ghcr.io/deframer/news-deframer/worker:latest
@@ -67,6 +76,7 @@ services:
       - LLM_MODEL=${LLM_MODEL:-}
       - LLM_API_KEY=${LLM_API_KEY:-}
       - LLM_BASE_URL=${LLM_BASE_URL:-}
+    logging: *default-logging
 
   # thinker-fixer:
   #   image: ghcr.io/deframer/news-deframer/worker:latest
@@ -83,6 +93,7 @@ services:
   #     - LLM_MODEL=${LLM_MODEL:-}
   #     - LLM_API_KEY=${LLM_API_KEY:-}
   #     - LLM_BASE_URL=${LLM_BASE_URL:-}
+  #   logging: *default-logging
 
   miner:
     image: ghcr.io/deframer/news-deframer-mining/miner:latest
@@ -96,6 +107,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       # we download the models on demand
       - SPACY_MODELS=${SPACY_MODELS:-en de es}
+    logging: *default-logging
 
 volumes:
   postgres_data:
