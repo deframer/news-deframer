@@ -76,7 +76,7 @@ func (m *mockRepo) UpsertItemWithTrendInvalidation(item *database.Item) error {
 func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]database.Item, error) {
 	return nil, nil
 }
-func (m *mockRepo) BeginThinkerBatch(limit int, lockDuration time.Duration) ([]database.Item, error) {
+func (m *mockRepo) BeginThinkerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
 	return nil, nil
 }
 func (m *mockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
