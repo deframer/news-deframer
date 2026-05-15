@@ -148,7 +148,7 @@ func (g *gemini) Run(prompt string, language string, request Request, ignoreCate
 		return nil, err
 	}
 
-	if err := verifyThinkResult(language, &result, ignoreCategoryErrors); err != nil {
+	if err := validateAndNormalizeThinkResult(language, &result, ignoreCategoryErrors); err != nil {
 		return nil, err
 	}
 

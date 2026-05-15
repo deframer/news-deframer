@@ -7,7 +7,7 @@ import (
 	"github.com/deframer/news-deframer/pkg/database"
 )
 
-func verifyThinkResult(language string, res *database.ThinkResult, ignoreCategoryErrors bool) error {
+func validateAndNormalizeThinkResult(language string, res *database.ThinkResult, ignoreCategoryErrors bool) error {
 	const errFmt = "ThinkResult is out of bounds 0.0 - 1.0: %s is %.1f"
 
 	if res == nil {
@@ -33,23 +33,23 @@ func verifyThinkResult(language string, res *database.ThinkResult, ignoreCategor
 		return fmt.Errorf(errFmt, "Overall", res.Overall)
 	}
 
-	if err := categorypkg.ValidateLocalizedCategory(language, res.Category); err != nil {
-		if ignoreCategoryErrors {
-			res.Category = categorypkg.GetUnknowCategory()
-			return nil
-		}
-		return err
-	}
-
-	normalizedCategory, err := categorypkg.NormalizeCategory(language, res.Category)
+	category, err := normalizeThinkResultCategory(language, res.Category, ignoreCategoryErrors)
 	if err != nil {
-		if ignoreCategoryErrors {
-			res.Category = categorypkg.GetUnknowCategory()
-			return nil
-		}
 		return err
 	}
-	res.Category = normalizedCategory
+	res.Category = category
 
 	return nil
+}
+
+func normalizeThinkResultCategory(language, category string, ignoreCategoryErrors bool) (string, error) {
+	normalizedCategory, err := categorypkg.NormalizeCategory(language, category)
+	if err != nil {
+		if ignoreCategoryErrors {
+			return categorypkg.GetUnknowCategory(), nil
+		}
+		return "", err
+	}
+
+	return normalizedCategory, nil
 }

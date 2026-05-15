@@ -55,7 +55,7 @@ func (d *dummy) Run(prompt string, language string, request Request, ignoreCateg
 	}
 	result.Category = category
 
-	if err := verifyThinkResult(language, result, ignoreCategoryErrors); err != nil {
+	if err := validateAndNormalizeThinkResult(language, result, ignoreCategoryErrors); err != nil {
 		return nil, err
 	}
 

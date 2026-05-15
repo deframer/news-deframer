@@ -183,7 +183,7 @@ func (o *openaiProvider) Run(prompt string, language string, request Request, ig
 		return nil, fmt.Errorf("failed to unmarshal result: %w", err)
 	}
 
-	if err := verifyThinkResult(language, &result, ignoreCategoryErrors); err != nil {
+	if err := validateAndNormalizeThinkResult(language, &result, ignoreCategoryErrors); err != nil {
 		return nil, err
 	}
 

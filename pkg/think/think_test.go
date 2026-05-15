@@ -131,19 +131,19 @@ func TestNew_OpenAI(t *testing.T) {
 	assert.NotNil(t, resp)
 }
 
-func TestVerifyThinkResult(t *testing.T) {
-	err := verifyThinkResult("en", nil, false)
+func TestValidateAndNormalizeThinkResult(t *testing.T) {
+	err := validateAndNormalizeThinkResult("en", nil, false)
 	assert.NoError(t, err)
 
-	err = verifyThinkResult("en", &database.ThinkResult{Category: "other"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Category: "other"}, false)
 	assert.NoError(t, err)
 
 	res := &database.ThinkResult{Category: "meinung"}
-	err = verifyThinkResult("de", res, false)
+	err = validateAndNormalizeThinkResult("de", res, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "opinion", res.Category)
 
-	err = verifyThinkResult("en", &database.ThinkResult{
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{
 		Framing:       0.5,
 		Clickbait:     0.5,
 		Persuasive:    0.5,
@@ -154,38 +154,38 @@ func TestVerifyThinkResult(t *testing.T) {
 	}, false)
 	assert.NoError(t, err)
 
-	err = verifyThinkResult("en", &database.ThinkResult{Framing: -0.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Framing: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Framing")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Framing: 1.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Framing: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Framing")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Clickbait: -0.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Clickbait: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Clickbait")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Persuasive: 1.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Persuasive: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Persuasive")
 
-	err = verifyThinkResult("en", &database.ThinkResult{HyperStimulus: -0.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{HyperStimulus: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "HyperStimulus")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Speculative: 1.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Speculative: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Speculative")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Overall: -0.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Overall: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Overall")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Overall: 1.1, Category: "business"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Overall: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Overall")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Category: "wirtschaft"}, false)
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Category: "wirtschaft"}, false)
 	assert.ErrorContains(t, err, "invalid category")
 
-	err = verifyThinkResult("fr", &database.ThinkResult{Category: "opinion"}, false)
+	err = validateAndNormalizeThinkResult("fr", &database.ThinkResult{Category: "opinion"}, false)
 	assert.ErrorContains(t, err, "no localized categories configured")
 
 	res = &database.ThinkResult{Category: "wirtschaft"}
-	err = verifyThinkResult("en", res, true)
+	err = validateAndNormalizeThinkResult("en", res, true)
 	assert.NoError(t, err)
 	assert.Equal(t, "other", res.Category)
 }
