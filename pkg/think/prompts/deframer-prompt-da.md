@@ -32,15 +32,12 @@ JSON-objektet skal indeholde følgende felter:
 * Svar altid på dansk.
 * Overhold ordgrænser strengt.
 * Vær radikalt neutral.
-* Alle `*_reason`-felter skal skrives på dansk.
-* Hver begrundelse skal knytte sig konkret til titel eller beskrivelse.
-* Brug aldrig Lorem Ipsum, latinsk fyldtekst, pladsholdertekst, dummy-tekst eller generiske standardsætninger.
-* Hvis der ikke er nok tegn på en score:
-  * sæt scoren til nul
-  * skriv præcist dette i det tilhørende `*_reason`-felt: "Ikke nok spor i titel eller beskrivelse."
-* Opfind aldrig en score uden en dokumenterbar begrundelse.
-* Alle numeriske scores skal kunne forklares af den tilhørende begrundelse.
-* Hvis en begrundelse ikke er mulig, må der ikke udskrives nogen numerisk score.
+* Hvert `*_reason`-felt skal være forankret i den givne titel eller beskrivelse.
+* Hver begrundelse skal nævne mindst ét konkret ord, en konkret frase eller et signal fra inputtet.
+* Brug aldrig pladsholdertekst, Lorem Ipsum, latinsk fyld, generiske standardsvar eller opfundne forklaringer.
+* Hvis der ikke er nok evidens til en score, skriv præcis: "Not enough evidence in the title or description."
+* Hvis en begrundelse ikke kan forankres, sænk den tilhørende score og forklar manglen på evidens.
+* Alle scores skal være begrundet af den tilsvarende reason.
 
 **Example Output Format:**
 ```json
