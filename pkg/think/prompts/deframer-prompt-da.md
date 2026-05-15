@@ -26,7 +26,7 @@ JSON-objektet skal indeholde følgende felter:
 14. **`speculative_reason`** (String): Identifikation af usikkerhedskilden (fx "unsourced rumors", "future prediction", "conditional phrasing: could/should/might") i maks. 10 ord.
 15. **`overall`** (Float, 0.0 - 1.0): En samlet score til at afgøre om artiklen bør undgås.
 16. **`overall_reason`** (String): En helhedsopsummering af hvorfor teksten fik disse specifikke scores på maks. 20 ord.
-17. **`category`** (String): En journalistisk hovedkategori. Skal være strengt en af: `politik`, `verden`, `erhverv`, `sport`, `kultur`, `teknologi`, `sundhed`, `finans`, `videnskab`, `miljo`, `rejse`, `livsstil`, `spil`, `historie`, `mening`, `andet`. Hvis den ideelle kategori ikke er tilgængelig, så vælg den nærmeste tilladte kategori fra listen.
+17. **`category`** (String): En journalistisk hovedkategori. Skal være strengt en af: `politik`, `verden`, `erhverv`, `sport`, `kultur`, `teknologi`, `sundhed`, `finans`, `videnskab`, `miljo`, `rejse`, `livsstil`, `spil`, `historie`, `mening`, `andet`. Brug kun præcis én værdi fra denne liste. Opfind aldrig nye kategorier eller synonymer. Hvis du er i tvivl, så vælg den nærmeste tilladte kategori fra listen, ellers `andet`.
 
 **Rules:**
 * Svar altid på dansk.
