@@ -99,3 +99,7 @@ func NormalizeCategory(language, category string) (string, error) {
 
 	return "", fmt.Errorf("invalid category %q for language %s", category, language)
 }
+
+func GetUnknowCategory() string {
+	return "other"
+}

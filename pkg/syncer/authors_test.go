@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/think"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
 	"github.com/stretchr/testify/assert"
@@ -161,4 +162,52 @@ func TestThinkRenderAndExtract_Authors(t *testing.T) {
 	result, err := s.renderThoughtsAndItem(item, "en", 0)
 	assert.NoError(t, err)
 	assert.Equal(t, database.StringArray{"Alice", "Bob"}, result.authors)
+}
+
+func TestThinkRenderAndExtract_UsesIgnoreCategoryErrorsOnRetryBoundary(t *testing.T) {
+	var gotIgnore bool
+	s := &Syncer{
+		ctx: context.Background(),
+		think: &mockThink{
+			runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
+				gotIgnore = ignoreCategoryErrors
+				return &database.ThinkResult{Overall: 0.5, Category: "business"}, nil
+			},
+		},
+		feeds: &mockFeeds{},
+	}
+
+	item := &gofeed.Item{
+		Title:       "Retry boundary",
+		Description: "Desc",
+		Content:     "<p>content</p>",
+	}
+
+	_, err := s.renderThoughtsAndItem(item, "en", maxThinkRetries)
+	assert.NoError(t, err)
+	assert.True(t, gotIgnore)
+}
+
+func TestThinkRenderAndExtract_UsesIgnoreCategoryErrorsOnFixerBoundary(t *testing.T) {
+	var gotIgnore bool
+	s := &Syncer{
+		ctx: context.Background(),
+		think: &mockThink{
+			runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
+				gotIgnore = ignoreCategoryErrors
+				return &database.ThinkResult{Overall: 0.5, Category: "business"}, nil
+			},
+		},
+		feeds: &mockFeeds{},
+	}
+
+	item := &gofeed.Item{
+		Title:       "Fixer boundary",
+		Description: "Desc",
+		Content:     "<p>content</p>",
+	}
+
+	_, err := s.renderThoughtsAndItem(item, "en", thinkerFixerMaxErrorCount)
+	assert.NoError(t, err)
+	assert.True(t, gotIgnore)
 }

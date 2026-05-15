@@ -494,7 +494,9 @@ func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string,
 		Title:       text.StripHTML(parsedItem.Title),
 		Description: text.StripHTML(parsedItem.Description),
 	}
-	res, err := s.think.Run(promptScope, language, req)
+	futureErrorCount := currentErrorCount + 1
+	ignoreCategoryErrors := futureErrorCount > maxThinkRetries || futureErrorCount > thinkerFixerMaxErrorCount
+	res, err := s.think.Run(promptScope, language, req, ignoreCategoryErrors)
 
 	var thinkError *string
 	var mediaContent *database.MediaContent

@@ -17,12 +17,12 @@ import (
 )
 
 type mockThinkEH struct {
-	runFunc func(scope string, language string, req think.Request) (*database.ThinkResult, error)
+	runFunc func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error)
 }
 
-func (m *mockThinkEH) Run(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+func (m *mockThinkEH) Run(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 	if m.runFunc != nil {
-		return m.runFunc(scope, language, req)
+		return m.runFunc(scope, language, req, ignoreCategoryErrors)
 	}
 	return &database.ThinkResult{}, nil
 }
@@ -35,7 +35,7 @@ func TestProcessItem_Categories(t *testing.T) {
 	s, err := New(context.Background(), cfg, repo)
 	assert.NoError(t, err)
 
-	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 		t.Fatal("syncItem must not call think")
 		return nil, nil
 	}}
@@ -73,7 +73,7 @@ func TestProcessItem_Authors(t *testing.T) {
 	s, err := New(context.Background(), cfg, repo)
 	assert.NoError(t, err)
 
-	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 		t.Fatal("syncItem must not call think")
 		return nil, nil
 	}}
@@ -110,7 +110,7 @@ func TestProcessItem_EmptyAuthors(t *testing.T) {
 	s, err := New(context.Background(), cfg, repo)
 	assert.NoError(t, err)
 
-	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 		t.Fatal("syncItem must not call think")
 		return nil, nil
 	}}
@@ -255,7 +255,7 @@ func TestThinkItemErrorHandling(t *testing.T) {
 
 	t.Run("IncrementErrorCountOnError", func(t *testing.T) {
 		mockT := &mockThinkEH{
-			runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+			runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 				return nil, errors.New("thinking failed")
 			},
 		}
@@ -289,7 +289,7 @@ func TestThinkItemErrorHandling(t *testing.T) {
 
 	t.Run("ResetErrorCountOnSuccess", func(t *testing.T) {
 		mockT := &mockThinkEH{
-			runFunc: func(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+			runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 				return &database.ThinkResult{TitleCorrected: "Cool"}, nil
 			},
 		}

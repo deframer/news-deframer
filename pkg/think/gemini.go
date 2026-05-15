@@ -73,7 +73,7 @@ func newGemini(ctx context.Context, model, apiKey string) (*gemini, error) {
 	}, nil
 }
 
-func (g *gemini) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
+func (g *gemini) Run(prompt string, language string, request Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 	if _, err := categorypkg.LocalizedCategoriesFor(language); err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (g *gemini) Run(prompt string, language string, request Request) (*database
 		return nil, err
 	}
 
-	if err := verifyThinkResult(language, &result); err != nil {
+	if err := verifyThinkResult(language, &result, ignoreCategoryErrors); err != nil {
 		return nil, err
 	}
 

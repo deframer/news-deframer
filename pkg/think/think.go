@@ -13,7 +13,7 @@ import (
 var promptFS embed.FS
 
 type Think interface {
-	Run(prompt string, language string, request Request) (*database.ThinkResult, error)
+	Run(prompt string, language string, request Request, ignoreCategoryErrors bool) (*database.ThinkResult, error)
 }
 
 func New(ctx context.Context, cfg *config.Config) (Think, error) {

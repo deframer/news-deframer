@@ -7,7 +7,7 @@ import (
 	"github.com/deframer/news-deframer/pkg/database"
 )
 
-func verifyThinkResult(language string, res *database.ThinkResult) error {
+func verifyThinkResult(language string, res *database.ThinkResult, ignoreCategoryErrors bool) error {
 	const errFmt = "ThinkResult is out of bounds 0.0 - 1.0: %s is %.1f"
 
 	if res == nil {
@@ -34,11 +34,19 @@ func verifyThinkResult(language string, res *database.ThinkResult) error {
 	}
 
 	if err := categorypkg.ValidateLocalizedCategory(language, res.Category); err != nil {
+		if ignoreCategoryErrors {
+			res.Category = categorypkg.GetUnknowCategory()
+			return nil
+		}
 		return err
 	}
 
 	normalizedCategory, err := categorypkg.NormalizeCategory(language, res.Category)
 	if err != nil {
+		if ignoreCategoryErrors {
+			res.Category = categorypkg.GetUnknowCategory()
+			return nil
+		}
 		return err
 	}
 	res.Category = normalizedCategory
