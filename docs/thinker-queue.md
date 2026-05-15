@@ -11,7 +11,9 @@ An item is eligible when `think_result IS NULL`, its error count is inside the q
 
 ## Queue Windows
 
-- `thinker`: `think_error_count` `0..3`, ordered by `updated_at ASC`
+- `thinker`: one query, priority order is retries first, then fresh items
+- `thinker`: retries use `think_error_count` `1..3`, ordered by `think_error_count DESC, updated_at ASC`
+- `thinker`: fresh items use `think_error_count = 0`, ordered by `updated_at ASC`
 - `thinker-fixer`: `think_error_count` `4..6`, ordered by `created_at ASC`
 - `7+`: dead-letter
 
@@ -27,8 +29,8 @@ An item is eligible when `think_result IS NULL`, its error count is inside the q
 
 ## Why this works
 
-- Fresh items are processed first.
-- Retryable failures stay in the thinker lane.
+- Retryable failures stay in the thinker lane and are drained first.
+- Fresh items fill the batch when no retryable items are available.
 - Exhausted failures move to the fixer lane.
 - The fixer starts with the oldest matching item by creation time.
 - There is no gap where an item can fail once or twice and then disappear.
@@ -37,7 +39,9 @@ An item is eligible when `think_result IS NULL`, its error count is inside the q
 
 This keeps the queues bounded and makes retry behavior deterministic:
 
+- `1..3` errors: thinker retryable and prioritized
 - `0` errors: normal first pass
-- `1..3` errors: thinker retryable
 - `4..6` errors: fixer retryable
 - `7+` errors: stop retrying
+
+The thinker queue is a priority order, not a fixed split.

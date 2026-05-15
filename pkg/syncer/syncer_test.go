@@ -22,6 +22,9 @@ type mockRepo struct {
 	removeSyncCalled         bool
 	upsertItemFunc           func(item *database.Item) error
 	upsertItemInvalidateFunc func(item *database.Item) error
+	beginThinkerBatchFunc    func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
+	beginThinkerFixerFunc    func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
+	beginThinkerBatchCalls   int
 	getTopTrendByDomainFunc  func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
 	getContextByDomainFunc   func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
 	getLifecycleByDomainFunc func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
@@ -77,9 +80,16 @@ func (m *mockRepo) GetItemsByHashes(feedID uuid.UUID, hashes []string) ([]databa
 	return nil, nil
 }
 func (m *mockRepo) BeginThinkerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+	m.beginThinkerBatchCalls++
+	if m.beginThinkerBatchFunc != nil {
+		return m.beginThinkerBatchFunc(limit, since, minErrorCount, maxErrorCount, lockDuration)
+	}
 	return nil, nil
 }
 func (m *mockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+	if m.beginThinkerFixerFunc != nil {
+		return m.beginThinkerFixerFunc(limit, since, minErrorCount, maxErrorCount, lockDuration)
+	}
 	return nil, nil
 }
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
@@ -187,6 +197,27 @@ func TestPoll(t *testing.T) {
 	s, err := New(ctx, cfg, repo)
 	assert.NoError(t, err)
 	s.Poll(ModeIngester)
+}
+
+func TestProcessThinkerBatchUsesSingleQuery(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	repo.beginThinkerBatchFunc = func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
+		assert.Equal(t, thinkerBatchSize, limit)
+		assert.True(t, since.IsZero())
+		assert.Equal(t, 0, minErrorCount)
+		assert.Equal(t, maxThinkRetries, maxErrorCount)
+		return nil, nil
+	}
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	ok := s.processThinkerBatch()
+	assert.False(t, ok)
+	assert.Equal(t, 1, repo.beginThinkerBatchCalls)
 }
 
 func TestStopPolling(t *testing.T) {

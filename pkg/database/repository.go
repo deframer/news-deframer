@@ -654,7 +654,7 @@ func (r *repository) BeginThinkerBatch(limit int, since time.Time, minErrorCount
 		}
 
 		if err := query.
-			Order("items.updated_at ASC").
+			Order("CASE WHEN items.think_error_count > 0 THEN 0 ELSE 1 END ASC, items.think_error_count DESC, items.updated_at ASC").
 			Limit(limit).
 			Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
 			Preload("Feed").
