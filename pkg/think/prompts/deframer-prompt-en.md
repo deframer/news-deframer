@@ -32,6 +32,15 @@ The JSON must contain the following fields:
 *   Always answer in English.
 *   Strictly adhere to word limits.
 *   Be radically neutral.
+*   All `*_reason` fields must be written in English.
+*   Each reason must refer concretely to the title or description.
+*   Never use Lorem Ipsum, Latin filler text, placeholder text, dummy text, or generic stock phrases.
+*   If there are not enough clues for a score:
+    * set the score to zero
+    * write exactly this in the corresponding `*_reason` field: "Not enough clues in the title or description."
+*   Never invent a score without a verifiable reason.
+*   Every numeric score must be explainable by the corresponding reason.
+*   If a reason is not possible, no numeric score may be output.
 
 **Example Output Format:**
 ```json

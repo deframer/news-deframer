@@ -111,6 +111,9 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 	}
 
 	var temperature float32 = 0.0
+	var topP float32 = 1.0
+	var frequencyPenalty float32 = 0.0
+	var presencePenalty float32 = 0.0
 
 	// Prepare the schema for the API request
 	schemaBytes, err := json.Marshal(openAISchemaDefinition)
@@ -122,8 +125,11 @@ func (o *openaiProvider) Run(prompt string, language string, request Request) (*
 	resp, err := o.client.CreateChatCompletion(
 		o.ctx,
 		openai.ChatCompletionRequest{
-			Model:       o.model,
-			Temperature: temperature,
+			Model:            o.model,
+			Temperature:      temperature,
+			TopP:             topP,
+			FrequencyPenalty: frequencyPenalty,
+			PresencePenalty:  presencePenalty,
 			// Define Structured Output (JSON Schema)
 			ResponseFormat: &openai.ChatCompletionResponseFormat{
 				Type: openai.ChatCompletionResponseFormatTypeJSONSchema,

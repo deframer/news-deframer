@@ -33,6 +33,15 @@ Das JSON muss die folgenden Felder enthalten:
 *   Halte die Wortgrenzen strikt ein.
 *   Sei radikal neutral.
 *   Verzichte auf Gendersprache und halte dich streng an die Duden-Rechtschreibung.
+*   Alle `*_reason`-Felder müssen auf Deutsch geschrieben sein.
+*   Jede Begründung muss sich konkret auf Titel oder Beschreibung beziehen.
+*   Niemals Lorem Ipsum, lateinischen Fülltext, Platzhaltertext, Dummy-Text oder generische Standardsätze verwenden.
+*   Wenn es nicht genug Hinweise für einen Score gibt:
+  * setze den Score auf null
+  * schreibe im zugehörigen `*_reason`-Feld exakt: "Nicht genügend Hinweise in Titel oder Beschreibung."
+*   Erfinde niemals einen Score ohne belegbare Begründung.
+*   Alle numerischen Scores müssen durch die jeweilige Begründung erklärbar sein.
+*   Wenn eine Begründung nicht möglich ist, darf kein numerischer Score ausgegeben werden.
 
 **Beispiel für das Ausgabeformat:**
 ```json
