@@ -33,12 +33,6 @@ Das JSON muss die folgenden Felder enthalten:
 *   Halte die Wortgrenzen strikt ein.
 *   Sei radikal neutral.
 *   Verzichte auf Gendersprache und halte dich streng an die Duden-Rechtschreibung.
-*   Jedes `*_reason`-Feld muss im angegebenen Titel oder in der Beschreibung begründet sein.
-*   Jede Begründung muss mindestens ein konkretes Wort, eine konkrete Phrase oder ein Signal aus dem Input nennen.
-*   Verwende niemals Platzhaltertext, Lorem Ipsum, lateinische Füllwörter, generische Standardfloskeln oder erfundene Erklärungen.
-*   Wenn es nicht genug Belege für eine Bewertung gibt, schreibe exakt: "Not enough evidence in the title or description."
-*   Wenn sich eine Begründung nicht belegen lässt, senke die zugehörige Bewertung und erkläre den fehlenden Beleg.
-*   Alle Bewertungen müssen durch die jeweilige Begründung gerechtfertigt sein.
 
 **Beispiel für das Ausgabeformat:**
 ```json
