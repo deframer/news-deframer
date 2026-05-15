@@ -25,6 +25,14 @@
    docker compose up -d --scale thinker=3 --scale thinker-fixer=2
    ```
 
+### Connect to Postgres
+
+Use `docker compose exec` to open a `psql` shell inside the Postgres container:
+
+```bash
+docker compose exec postgres psql -U deframer -d deframer
+```
+
 ## Handling Feeds
 
 - Run `docker compose exec service admin -h`
