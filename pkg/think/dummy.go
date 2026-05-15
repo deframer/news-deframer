@@ -32,21 +32,21 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 
 	result := &database.ThinkResult{
 		TitleCorrected:              request.Title,
-		TitleCorrectionReason:       "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+		TitleCorrectionReason:       "Dummy output, not AI-generated.",
 		DescriptionCorrected:        request.Description,
-		DescriptionCorrectionReason: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+		DescriptionCorrectionReason: "Dummy output, not AI-generated.",
 		Framing:                     framing,
-		FramingReason:               "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
+		FramingReason:               "Dummy output, not AI-generated.",
 		Clickbait:                   clickbait,
-		ClickbaitReason:             "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.",
+		ClickbaitReason:             "Dummy output, not AI-generated.",
 		Persuasive:                  persuasive,
-		PersuasiveReason:            "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
+		PersuasiveReason:            "Dummy output, not AI-generated.",
 		HyperStimulus:               hyperStimulus,
-		HyperStimulusReason:         "Curabitur pretium tincidunt lacus. Nulla gravida orci a odio.",
+		HyperStimulusReason:         "Dummy output, not AI-generated.",
 		Speculative:                 speculative,
-		SpeculativeReason:           "Nullam varius, turpis et commodo pharetra, est eros bibendum elit, nec luctus magna felis sollicitudin mauris.",
+		SpeculativeReason:           "Dummy output, not AI-generated.",
 		Overall:                     overall,
-		OverallReason:               "Integer in mauris eu nibh euismod gravida. Duis ac tellus et risus vulputate vehicula.",
+		OverallReason:               "Dummy output, not AI-generated.",
 	}
 
 	category, err := categorypkg.FirstLocalizedCategory(language)
