@@ -440,12 +440,12 @@ func TestDetermineLanguage(t *testing.T) {
 
 // Mocks for testing processItem
 type mockThink struct {
-	runFunc func(scope string, language string, req think.Request) (*database.ThinkResult, error)
+	runFunc func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error)
 }
 
-func (m *mockThink) Run(scope string, language string, req think.Request) (*database.ThinkResult, error) {
+func (m *mockThink) Run(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 	if m.runFunc != nil {
-		return m.runFunc(scope, language, req)
+		return m.runFunc(scope, language, req, ignoreCategoryErrors)
 	}
 	return &database.ThinkResult{}, nil
 }

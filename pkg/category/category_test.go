@@ -15,3 +15,9 @@ func TestValidateEnglishCategory(t *testing.T) {
 		t.Fatalf("expected unknown to fail")
 	}
 }
+
+func TestGetUnknowCategory(t *testing.T) {
+	if got := GetUnknowCategory(); got != "other" {
+		t.Fatalf("expected other, got %q", got)
+	}
+}

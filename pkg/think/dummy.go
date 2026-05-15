@@ -14,7 +14,7 @@ func newDummy() *dummy {
 	return &dummy{}
 }
 
-func (d *dummy) Run(prompt string, language string, request Request) (*database.ThinkResult, error) {
+func (d *dummy) Run(prompt string, language string, request Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
 	if _, err := categorypkg.LocalizedCategoriesFor(language); err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (d *dummy) Run(prompt string, language string, request Request) (*database.
 	}
 	result.Category = category
 
-	if err := verifyThinkResult(language, result); err != nil {
+	if err := validateAndNormalizeThinkResult(language, result, ignoreCategoryErrors); err != nil {
 		return nil, err
 	}
 

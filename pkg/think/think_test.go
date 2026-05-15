@@ -59,17 +59,17 @@ func TestNormalizeCategory(t *testing.T) {
 func TestDummy_Run(t *testing.T) {
 	d := newDummy()
 
-	_, err := d.Run("deframer", "en", Request{})
+	_, err := d.Run("deframer", "en", Request{}, false)
 	assert.NoError(t, err)
 
-	_, err = d.Run("deframer", "fr", Request{})
+	_, err = d.Run("deframer", "fr", Request{}, false)
 	assert.Error(t, err)
 }
 
 func TestFail_Run(t *testing.T) {
 	f := newFail()
 
-	_, err := f.Run("deframer", "en", Request{})
+	_, err := f.Run("deframer", "en", Request{}, false)
 	assert.Error(t, err)
 	assert.EqualError(t, err, "intentionally failed")
 }
@@ -97,7 +97,7 @@ func TestNew_Gemini(t *testing.T) {
 		Description: "THEY are coming for you! A terrifying whistleblower tape PROVES the \"Mars Attack\" is starting! YOU will own NOTHING! Don't be a sheep—CLICK HERE to secure the ONLY asset that survives the crash before it’s ILLEGAL! ACT NOW OR PERISH!",
 	}
 
-	resp, err := g.Run("deframer", "en", req)
+	resp, err := g.Run("deframer", "en", req, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 }
@@ -126,24 +126,24 @@ func TestNew_OpenAI(t *testing.T) {
 		Description: "THEY are coming for you! A terrifying whistleblower tape PROVES the \"Mars Attack\" is starting! YOU will own NOTHING! Don't be a sheep—CLICK HERE to secure the ONLY asset that survives the crash before it’s ILLEGAL! ACT NOW OR PERISH!",
 	}
 
-	resp, err := o.Run("deframer", "en", req)
+	resp, err := o.Run("deframer", "en", req, false)
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 }
 
-func TestVerifyThinkResult(t *testing.T) {
-	err := verifyThinkResult("en", nil)
+func TestValidateAndNormalizeThinkResult(t *testing.T) {
+	err := validateAndNormalizeThinkResult("en", nil, false)
 	assert.NoError(t, err)
 
-	err = verifyThinkResult("en", &database.ThinkResult{Category: "other"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Category: "other"}, false)
 	assert.NoError(t, err)
 
 	res := &database.ThinkResult{Category: "meinung"}
-	err = verifyThinkResult("de", res)
+	err = validateAndNormalizeThinkResult("de", res, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "opinion", res.Category)
 
-	err = verifyThinkResult("en", &database.ThinkResult{
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{
 		Framing:       0.5,
 		Clickbait:     0.5,
 		Persuasive:    0.5,
@@ -151,36 +151,41 @@ func TestVerifyThinkResult(t *testing.T) {
 		Speculative:   0.5,
 		Overall:       0.5,
 		Category:      "business",
-	})
+	}, false)
 	assert.NoError(t, err)
 
-	err = verifyThinkResult("en", &database.ThinkResult{Framing: -0.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Framing: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Framing")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Framing: 1.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Framing: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Framing")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Clickbait: -0.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Clickbait: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Clickbait")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Persuasive: 1.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Persuasive: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Persuasive")
 
-	err = verifyThinkResult("en", &database.ThinkResult{HyperStimulus: -0.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{HyperStimulus: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "HyperStimulus")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Speculative: 1.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Speculative: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Speculative")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Overall: -0.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Overall: -0.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Overall")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Overall: 1.1, Category: "business"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Overall: 1.1, Category: "business"}, false)
 	assert.ErrorContains(t, err, "Overall")
 
-	err = verifyThinkResult("en", &database.ThinkResult{Category: "wirtschaft"})
+	err = validateAndNormalizeThinkResult("en", &database.ThinkResult{Category: "wirtschaft"}, false)
 	assert.ErrorContains(t, err, "invalid category")
 
-	err = verifyThinkResult("fr", &database.ThinkResult{Category: "opinion"})
+	err = validateAndNormalizeThinkResult("fr", &database.ThinkResult{Category: "opinion"}, false)
 	assert.ErrorContains(t, err, "no localized categories configured")
+
+	res = &database.ThinkResult{Category: "wirtschaft"}
+	err = validateAndNormalizeThinkResult("en", res, true)
+	assert.NoError(t, err)
+	assert.Equal(t, "other", res.Category)
 }
