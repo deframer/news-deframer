@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"strings"
 
+	"net/url"
+
 	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
-	"net/url"
 
 	"golang.org/x/net/html"
 )
@@ -185,7 +186,24 @@ func applyMediaData(item *gofeed.Item, data *MediaData) {
 }
 
 func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
-	if item == nil || item.Extensions == nil {
+	if item == nil {
+		return nil, nil
+	}
+
+	for _, enc := range item.Enclosures {
+		if strings.HasPrefix(enc.Type, "image/") && enc.URL != "" {
+			w, h := parseDimensions(enc.URL)
+			return &database.MediaContent{
+				URL:    enc.URL,
+				Type:   enc.Type,
+				Medium: "image",
+				Width:  w,
+				Height: h,
+			}, nil
+		}
+	}
+
+	if item.Extensions == nil {
 		return nil, nil
 	}
 
