@@ -187,7 +187,9 @@ func (s *Syncer) processThinkerBatch() bool {
 }
 
 func (s *Syncer) processThinkerFixerBatch(lookback time.Duration) bool {
-	log.Debugf(s.ctx, "processThinkerFixerBatch")
+	log.Printf(log.With(s.ctx,
+		log.KV{K: "llm_base_url", V: s.cfg.LLM_BaseURL},
+	), "processThinkerFixerBatch")
 	since := time.Time{}
 	if lookback > 0 {
 		since = time.Now().Add(-lookback)
