@@ -134,6 +134,136 @@ func TestProcessItem_EmptyAuthors(t *testing.T) {
 	assert.Equal(t, database.StringArray{}, capturedItem.Authors)
 }
 
+func TestProcessItem_FromRSSXML(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
+		t.Fatal("syncItem must not call think")
+		return nil, nil
+	}}
+	s.feeds = &mockFeeds{}
+
+	rssContent := `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <item>
+      <title>Example title</title>
+      <link>https://example.test/story#ref=rss</link>
+      <description>Example description</description>
+      <content:encoded>Example description</content:encoded>
+      <category>Example category</category>
+      <enclosure type="image/jpeg" url="https://example.test/image.jpg" length="0"/>
+      <guid isPermaLink="false">example-guid</guid>
+      <pubDate>Sat, 16 May 2026 16:38:00 +0200</pubDate>
+    </item>
+  </channel>
+</rss>`
+
+	feed, err := gofeed.NewParser().Parse(strings.NewReader(rssContent))
+	assert.NoError(t, err)
+	if assert.Len(t, feed.Items, 1) {
+		var capturedItem *database.Item
+		repo.upsertItemFunc = func(dbItem *database.Item) error {
+			capturedItem = dbItem
+			return nil
+		}
+
+		baseFeed := &database.Feed{Base: database.Base{ID: uuid.New()}}
+		s.syncItem(baseFeed, "test-hash", feed.Items[0], "de")
+
+		if assert.NotNil(t, capturedItem) {
+			assert.Equal(t, baseFeed.ID, capturedItem.FeedID)
+			assert.Equal(t, "test-hash", capturedItem.Hash)
+			assert.Equal(t, "https://example.test/story", capturedItem.URL)
+			assert.NotNil(t, capturedItem.MediaContent)
+			if assert.NotNil(t, capturedItem.MediaContent) {
+				assert.Equal(t, "https://example.test/image.jpg", capturedItem.MediaContent.URL)
+				assert.Equal(t, "image/jpeg", capturedItem.MediaContent.Type)
+				assert.Equal(t, "image", capturedItem.MediaContent.Medium)
+				assert.Equal(t, 1920, capturedItem.MediaContent.Width)
+				assert.Equal(t, 1080, capturedItem.MediaContent.Height)
+			}
+		}
+	}
+}
+
+func TestThinkItem_PreservesMediaContentFromSyncedItem(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	s.think = &mockThinkEH{runFunc: func(scope string, language string, req think.Request, ignoreCategoryErrors bool) (*database.ThinkResult, error) {
+		return &database.ThinkResult{
+			TitleCorrected:       "Corrected title",
+			DescriptionCorrected: "Corrected description",
+			OverallReason:        "Reason",
+		}, nil
+	}}
+	s.feeds = feeds.NewFeeds(context.Background(), cfg)
+
+	rssContent := `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <item>
+      <title>Example title</title>
+      <link>https://example.test/story#ref=rss</link>
+      <description>Example description</description>
+      <content:encoded>Example description</content:encoded>
+      <category>Example category</category>
+      <enclosure type="image/jpeg" url="https://example.test/image.jpg" length="0"/>
+      <guid isPermaLink="false">example-guid</guid>
+      <pubDate>Sat, 16 May 2026 16:38:00 +0200</pubDate>
+    </item>
+  </channel>
+</rss>`
+
+	feed, err := gofeed.NewParser().Parse(strings.NewReader(rssContent))
+	assert.NoError(t, err)
+	if assert.Len(t, feed.Items, 1) {
+		feedMeta := &database.Feed{Base: database.Base{ID: uuid.New()}}
+
+		var syncedItem *database.Item
+		repo.upsertItemFunc = func(dbItem *database.Item) error {
+			syncedItem = dbItem
+			return nil
+		}
+
+		s.syncItem(feedMeta, "test-hash", feed.Items[0], "de")
+
+		if assert.NotNil(t, syncedItem) {
+			assert.Equal(t, "https://example.test/story", syncedItem.URL)
+			assert.NotNil(t, syncedItem.MediaContent)
+			assert.Equal(t, "https://example.test/image.jpg", syncedItem.MediaContent.URL)
+			assert.NotContains(t, syncedItem.Content, "enclosure")
+		}
+
+		var finalItem *database.Item
+		repo.upsertItemInvalidateFunc = func(updated *database.Item) error {
+			finalItem = updated
+			return nil
+		}
+
+		s.thinkItem(syncedItem)
+
+		if assert.NotNil(t, finalItem) {
+			assert.NotNil(t, finalItem.MediaContent)
+			assert.Equal(t, "https://example.test/image.jpg", finalItem.MediaContent.URL)
+			assert.Equal(t, "image/jpeg", finalItem.MediaContent.Type)
+			assert.Equal(t, "image", finalItem.MediaContent.Medium)
+			assert.Equal(t, 1920, finalItem.MediaContent.Width)
+			assert.Equal(t, 1080, finalItem.MediaContent.Height)
+		}
+	}
+}
+
 func TestThinkItem_Authors(t *testing.T) {
 	repo := &mockRepo{}
 	cfg, err := config.Load()
