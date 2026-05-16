@@ -46,6 +46,7 @@ type FeedSyncer interface {
 
 type Syncer struct {
 	ctx   context.Context
+	cfg   *config.Config
 	repo  database.Repository
 	dl    downloader.Downloader
 	feeds feeds.Feeds
@@ -60,6 +61,7 @@ func New(ctx context.Context, cfg *config.Config, repo database.Repository) (*Sy
 
 	return &Syncer{
 		ctx:   ctx,
+		cfg:   cfg,
 		repo:  repo,
 		dl:    downloader.NewDownloader(ctx, cfg),
 		feeds: feeds.NewFeeds(ctx, cfg),
@@ -163,7 +165,9 @@ func (s *Syncer) pollThinkerFixer(lookback time.Duration) {
 }
 
 func (s *Syncer) processThinkerBatch() bool {
-	log.Printf(s.ctx, "processThinkerBatch")
+	log.Printf(log.With(s.ctx,
+		log.KV{K: "llm_base_url", V: s.cfg.LLM_BaseURL},
+	), "processThinkerBatch")
 	items, err := s.repo.BeginThinkerBatch(thinkerBatchSize, time.Time{}, 0, maxThinkRetries, config.DefaultLockDuration)
 	if err != nil {
 		log.Errorf(s.ctx, err, "Failed to query thinker candidates")
