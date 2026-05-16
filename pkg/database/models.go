@@ -29,10 +29,11 @@ func (base *Base) BeforeCreate(tx *gorm.DB) error {
 
 type Feed struct {
 	Base
-	URL               string        `gorm:"index"`                 // we can't enforce uniqueness here (because of the soft deletes)
-	RootDomain        *string       `gorm:"index"`                 // example.com
-	PortalUrl         *string       `gorm:"type:text"`             // web.foo.bar/whatever
-	Language          *string       `gorm:"type:char(2)"`          // ISO 639-1 language code
+	URL               string        `gorm:"index"`        // we can't enforce uniqueness here (because of the soft deletes)
+	RootDomain        *string       `gorm:"index"`        // example.com
+	PortalUrl         *string       `gorm:"type:text"`    // web.foo.bar/whatever
+	Language          *string       `gorm:"type:char(2)"` // ISO 639-1 language code
+	Country           string        `gorm:"type:text;not null;default:''"`
 	EnforceFeedDomain bool          `gorm:"not null;default:true"` // item url must be from our URL
 	Enabled           bool          `gorm:"not null;default:false;index"`
 	Polling           bool          `gorm:"not null;default:false"`
@@ -40,6 +41,7 @@ type Feed struct {
 	ResolveItemUrl    bool          `gorm:"not null;default:false"`
 	LastSyncedAt      *time.Time    `gorm:"index"`
 	Categories        StringArray   `gorm:"type:text[];not null;default:'{}'"`
+	Tags              StringArray   `gorm:"type:text[];not null;default:'{}'"`
 	FeedSchedule      *FeedSchedule `gorm:"foreignKey:ID;references:ID"`
 }
 
