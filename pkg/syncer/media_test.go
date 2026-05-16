@@ -359,6 +359,22 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Image Enclosure",
+			item: &gofeed.Item{
+				Enclosures: []*gofeed.Enclosure{{
+					URL:  "https://example.test/media/image.jpg?width=1280",
+					Type: "image/jpeg",
+				}},
+			},
+			expected: &database.MediaContent{
+				URL:    "https://example.test/media/image.jpg?width=1280",
+				Type:   "image/jpeg",
+				Medium: "image",
+				Width:  1280,
+				Height: 720,
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -420,27 +436,6 @@ func TestUpdateContent(t *testing.T) {
 			expectedMediaURL:    "https://example.test/media/hero.jpg",
 			expectedWidth:       "1920",
 			expectedHeight:      "1080",
-		},
-		{
-			name: "With Image Enclosure",
-			item: &gofeed.Item{
-				Title:       "Enclosure Test",
-				Description: "Desc",
-				Enclosures: []*gofeed.Enclosure{{
-					URL:  "https://example.test/media/image.jpg?width=1280",
-					Type: "image/jpeg",
-				}},
-			},
-			res: &database.ThinkResult{
-				TitleCorrected:       "Corrected Enclosure",
-				DescriptionCorrected: "Corrected Desc",
-			},
-			expectedTitle:       "Corrected Enclosure",
-			expectedDescription: "Corrected Desc<br/><br/>",
-			expectedContent:     "",
-			expectedMediaURL:    "https://example.test/media/image.jpg?width=1280",
-			expectedWidth:       "1280",
-			expectedHeight:      "720",
 		},
 		{
 			name: "Preserves Media Group",
