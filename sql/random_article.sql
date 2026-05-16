@@ -1,11 +1,23 @@
 WITH config AS (
     SELECT
-        ARRAY['spiegel.de', 'tagesschau.de', 'stern.de', 'nzz.de'] AS driving_domains,
         'de' AS language,
+        'de' AS country,
         -- 'politik' as category,
         8 AS period_hours,
         3 AS associate_limit,
         2 AS min_shared_nouns
+), driving_domains AS (
+    SELECT
+        COALESCE(ARRAY_AGG(DISTINCT f.root_domain), ARRAY[]::text[]) AS driving_domains
+    FROM feeds f
+    CROSS JOIN config s
+    WHERE f.language = s.language
+      AND f.country = s.country
+      AND f.tags @> ARRAY['lead']::text[]
+      AND f.enabled = true
+      AND f.deleted_at IS NULL
+      AND f.root_domain IS NOT NULL
+      AND f.root_domain <> ''
 ), driver_candidates AS (
     SELECT
         i.id,
@@ -15,10 +27,12 @@ WITH config AS (
         t.noun_stems,
         i.pub_date
     FROM config s
+    CROSS JOIN driving_domains dd
     JOIN items i ON i.language = s.language
     JOIN feeds f ON f.id = i.feed_id
     JOIN public.trends t ON t.item_id = i.id
-    WHERE f.root_domain = ANY(s.driving_domains)
+    WHERE f.root_domain = ANY(dd.driving_domains)
+      AND f.country = s.country
       AND i.pub_date >= NOW() - (s.period_hours * INTERVAL '1 HOUR')
       AND f.enabled = true
       AND f.deleted_at IS NULL
@@ -54,14 +68,16 @@ WITH config AS (
         i.pub_date
     FROM driver d
     CROSS JOIN config s
+    CROSS JOIN driving_domains dd
     JOIN items i ON i.language = s.language
     JOIN feeds f ON f.id = i.feed_id
     JOIN public.trends t ON t.item_id = i.id
     WHERE i.pub_date >= NOW() - (s.period_hours * INTERVAL '1 HOUR')
+      AND f.country = s.country
       AND f.root_domain IS NOT NULL
       AND f.root_domain <> ''
       AND f.root_domain <> d.domain
-      AND NOT (f.root_domain = ANY(s.driving_domains))
+      AND NOT (f.root_domain = ANY(dd.driving_domains))
       AND f.enabled = true
       AND f.deleted_at IS NULL
       AND NOT EXISTS (
