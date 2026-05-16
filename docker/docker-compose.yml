@@ -10,7 +10,10 @@ services:
     # this is postgres with the pg_duckdb extension precompiled
     # https://pgxman.com/x/pg_duckdb
     # https://github.com/duckdb/pg_duckdb
-    image: pgduckdb/pgduckdb:18-main
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    image: news-deframer-postgres:docker
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-deframer}
