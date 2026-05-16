@@ -448,6 +448,9 @@ func (s *Syncer) thinkItem(dbItem *database.Item) {
 	if err != nil {
 		return
 	}
+	if result.mediaContent == nil {
+		result.mediaContent = dbItem.MediaContent
+	}
 
 	if result.pubDate != nil {
 		if result.pubDate.After(time.Now().Add(publicationDateGracePeriod)) {
