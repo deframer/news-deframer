@@ -1,3 +1,5 @@
+BEGIN;
+
 WITH extracted_authors AS (
   SELECT
     id,
@@ -69,3 +71,5 @@ SET authors = COALESCE(aggregated_authors.authors, '{}'::text[])
 FROM aggregated_authors
 WHERE items.id = aggregated_authors.id
   AND (items.authors IS NULL OR items.authors = '{}'::text[]);
+
+ROLLBACK;
