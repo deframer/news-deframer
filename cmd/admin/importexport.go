@@ -46,7 +46,9 @@ var exportCmd = &cobra.Command{
 type ImportFeed struct {
 	URL               string   `json:"url"`
 	Language          *string  `json:"language,omitempty"`
+	Country           *string  `json:"country,omitempty"`
 	Categories        []string `json:"categories,omitempty"`
+	Tags              []string `json:"tags,omitempty"`
 	RootDomain        *string  `json:"root_domain,omitempty"`
 	PortalUrl         *string  `json:"portal_url,omitempty"`
 	Enabled           *bool    `json:"enabled,omitempty"`
@@ -83,6 +85,9 @@ func importFeeds() {
 
 	for _, f := range feeds {
 		f.Categories = validateCategoryList(f.Categories)
+		if f.Tags == nil {
+			f.Tags = []string{}
+		}
 
 		u, err := parseAndNormalizeURL(f.URL)
 		if err != nil {
@@ -156,6 +161,10 @@ func importFeeds() {
 }
 
 func createNewFeed(u *url.URL, f ImportFeed) *database.Feed {
+	if f.Tags == nil {
+		f.Tags = []string{}
+	}
+
 	var rootDomain *string
 	if f.RootDomain != nil {
 		rootDomain = f.RootDomain
@@ -190,11 +199,18 @@ func createNewFeed(u *url.URL, f ImportFeed) *database.Feed {
 	}
 
 	return &database.Feed{
-		URL:               u.String(),
-		RootDomain:        rootDomain,
-		PortalUrl:         f.PortalUrl,
-		Language:          f.Language,
+		URL:        u.String(),
+		RootDomain: rootDomain,
+		PortalUrl:  f.PortalUrl,
+		Language:   f.Language,
+		Country: func() string {
+			if f.Country != nil {
+				return *f.Country
+			}
+			return ""
+		}(),
 		Categories:        f.Categories,
+		Tags:              f.Tags,
 		Enabled:           enabled,
 		EnforceFeedDomain: enforce,
 		Polling:           polling,
@@ -207,7 +223,11 @@ func updateExistingFeed(existing *database.Feed, f ImportFeed) {
 	if f.Language != nil {
 		existing.Language = f.Language
 	}
+	if f.Country != nil {
+		existing.Country = *f.Country
+	}
 	existing.Categories = f.Categories
+	existing.Tags = f.Tags
 	if f.RootDomain != nil {
 		existing.RootDomain = f.RootDomain
 	}
@@ -240,10 +260,20 @@ func exportFeeds() {
 
 	var exportFeeds []ImportFeed
 	for _, f := range feeds {
+		tags := f.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+		var country *string
+		if f.Country != "" {
+			country = &f.Country
+		}
 		exportFeeds = append(exportFeeds, ImportFeed{
 			URL:               f.URL,
 			Language:          f.Language,
+			Country:           country,
 			Categories:        f.Categories,
+			Tags:              tags,
 			RootDomain:        f.RootDomain,
 			PortalUrl:         f.PortalUrl,
 			Enabled:           &f.Enabled,

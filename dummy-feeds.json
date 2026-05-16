@@ -5,35 +5,35 @@
     "root_domain": "wordpress",
     "polling": true,
     "categories": [
-      "local",
-      "testing"
-    ]
+      "other"
+    ],
+    "country": ""
   },
   {
     "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
     "language": "en",
     "polling": true,
     "categories": [
-      "politics",
-      "uk"
-    ]
+      "politics"
+    ],
+    "country": "UK"
   },
   {
     "url": "https://www.spiegel.de/international/index.rss",
     "language": "en",
     "polling": true,
     "categories": [
-      "politics",
-      "de"
-    ]
+      "politics"
+    ],
+    "country": "Germany"
   },
   {
     "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
     "language": "en",
     "polling": true,
     "categories": [
-      "politics",
-      "us"
-    ]
+      "politics"
+    ],
+    "country": "US"
   }
 ]

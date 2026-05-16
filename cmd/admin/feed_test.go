@@ -65,6 +65,23 @@ func TestParseAndNormalizeURL(t *testing.T) {
 	}
 }
 
+func TestFeedImportHelpers(t *testing.T) {
+	u, err := url.Parse("http://example.com/rss")
+	assert.NoError(t, err)
+
+	country := "US"
+	feed := createNewFeed(u, ImportFeed{URL: u.String(), Country: &country})
+	assert.NotNil(t, feed)
+	assert.Empty(t, feed.Tags)
+	assert.Equal(t, "US", feed.Country)
+
+	existing := &database.Feed{Tags: []string{"old"}, Country: "DE"}
+	updatedCountry := "FR"
+	updateExistingFeed(existing, ImportFeed{Tags: []string{"alpha", "beta"}, Country: &updatedCountry})
+	assert.Equal(t, database.StringArray{"alpha", "beta"}, existing.Tags)
+	assert.Equal(t, "FR", existing.Country)
+}
+
 func TestFeedCommands(t *testing.T) {
 	// Setup Mock
 	mock := NewMockRepo()
@@ -82,6 +99,49 @@ func TestFeedCommands(t *testing.T) {
 	assert.Contains(t, out, "Added feed")
 	assert.Contains(t, out, testURL)
 
+	out = captureOutput(func() {
+		setTags(testURL, "tag-one, tag-two")
+	})
+	assert.Contains(t, out, "Set tags to [tag-one tag-two]")
+
+	out = captureOutput(func() {
+		setCountry(testURL, "US")
+	})
+	assert.Contains(t, out, "Set country to US")
+
+	out = captureOutput(func() {
+		listFeeds(false, false)
+	})
+	assert.Contains(t, out, "Tags")
+	assert.Contains(t, out, "tag-one,tag-two")
+	assert.Contains(t, out, "US")
+
+	out = captureOutput(func() {
+		exportFeeds()
+	})
+	var exported []ImportFeed
+	err = json.Unmarshal([]byte(out), &exported)
+	assert.NoError(t, err)
+	var foundExport *ImportFeed
+	for i := range exported {
+		if exported[i].URL == testURL {
+			foundExport = &exported[i]
+		}
+	}
+	assert.NotNil(t, foundExport)
+	assert.Equal(t, []string{"tag-one", "tag-two"}, foundExport.Tags)
+	assert.Equal(t, "US", *foundExport.Country)
+
+	out = captureOutput(func() {
+		setCountry(testURL, "")
+	})
+	assert.Contains(t, out, "Set country to ")
+
+	out = captureOutput(func() {
+		setTags(testURL, "")
+	})
+	assert.Contains(t, out, "Set tags to []")
+
 	// 2. Sync Feed (Create Schedule)
 	out = captureOutput(func() {
 		syncFeed(testURL)
@@ -98,6 +158,8 @@ func TestFeedCommands(t *testing.T) {
 	assert.Len(t, feeds, 1)
 	assert.Equal(t, testURL, feeds[0].URL)
 	assert.True(t, feeds[0].Enabled)
+	assert.Empty(t, feeds[0].Country)
+	assert.Empty(t, feeds[0].Tags)
 	assert.NotNil(t, feeds[0].FeedSchedule)
 	assert.NotNil(t, feeds[0].RootDomain)
 	assert.Equal(t, "example.com", *feeds[0].RootDomain)

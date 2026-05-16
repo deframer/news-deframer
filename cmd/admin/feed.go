@@ -51,9 +51,15 @@ func init() {
 	languageCmd.AddCommand(deleteLanguageCmd)
 	feedCmd.AddCommand(languageCmd)
 
+	countryCmd.AddCommand(setCountryCmd)
+	feedCmd.AddCommand(countryCmd)
+
 	categoriesCmd.AddCommand(setCategoriesCmd)
 	categoriesCmd.AddCommand(deleteCategoriesCmd)
 	feedCmd.AddCommand(categoriesCmd)
+
+	tagsCmd.AddCommand(setTagsCmd)
+	feedCmd.AddCommand(tagsCmd)
 
 	addCmd.Flags().BoolVar(&feedEnabled, "enabled", DefaultFeedEnabled, "Enable the feed")
 	addCmd.Flags().BoolVar(&polling, "polling", DefaultFeedPolling, "Enable polling")
@@ -211,6 +217,20 @@ var deleteLanguageCmd = &cobra.Command{
 	},
 }
 
+var countryCmd = &cobra.Command{
+	Use:   "country",
+	Short: "Manage feed country",
+}
+
+var setCountryCmd = &cobra.Command{
+	Use:   "set <uuid|url> <country>",
+	Short: "Set the country for a feed",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		setCountry(args[0], args[1])
+	},
+}
+
 var categoriesCmd = &cobra.Command{
 	Use:   "categories",
 	Short: "Manage feed categories",
@@ -234,6 +254,20 @@ var deleteCategoriesCmd = &cobra.Command{
 	},
 }
 
+var tagsCmd = &cobra.Command{
+	Use:   "tags",
+	Short: "Manage feed tags",
+}
+
+var setTagsCmd = &cobra.Command{
+	Use:   "set <uuid|url> <tag1,tag2,...>",
+	Short: "Set the tags for a feed",
+	Args:  cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		setTags(args[0], args[1])
+	},
+}
+
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all feeds",
@@ -250,6 +284,11 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	if asJson {
+		for i := range feeds {
+			if feeds[i].Tags == nil {
+				feeds[i].Tags = []string{}
+			}
+		}
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		if err := enc.Encode(feeds); err != nil {
@@ -260,7 +299,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCategories\tID\tURL\tRootDomain\tPortalUrl\tEnforceDomain\tSync Status\tMining Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCountry\tCategories\tTags\tID\tURL\tRootDomain\tPortalUrl\tEnforceDomain\tSync Status\tMining Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -305,12 +344,22 @@ func listFeeds(asJson bool, showDeleted bool) {
 			language = *f.Language
 		}
 
+		country := "-"
+		if f.Country != "" {
+			country = f.Country
+		}
+
 		categories := "-"
 		if len(f.Categories) > 0 {
 			categories = strings.Join(f.Categories, ",")
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, categories, f.ID, f.URL, rootDomain, portalUrl, f.EnforceFeedDomain, syncState, miningState); err != nil {
+		tags := "-"
+		if len(f.Tags) > 0 {
+			tags = strings.Join(f.Tags, ",")
+		}
+
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, country, categories, tags, f.ID, f.URL, rootDomain, portalUrl, f.EnforceFeedDomain, syncState, miningState); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
@@ -369,6 +418,7 @@ func addFeed(feedUrl string, enabled bool, polling bool, mining bool, noRootDoma
 		Language:          languagePtr,
 		ResolveItemUrl:    resolveItemUrl,
 		Categories:        categories,
+		Tags:              []string{},
 	}
 
 	if err := repo.UpsertFeed(newFeed); err != nil {
@@ -650,6 +700,18 @@ func deleteLanguage(input string) {
 	fmt.Printf("Deleted language for url=%s with id=%s\n", feed.URL, feed.ID)
 }
 
+func setCountry(input string, country string) {
+	feed := resolveFeed(input, false)
+
+	feed.Country = strings.TrimSpace(country)
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set country: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Set country to %s for url=%s with id=%s\n", feed.Country, feed.URL, feed.ID)
+}
+
 func parseAndNormalizeURL(rawURL string) (*url.URL, error) {
 	rawURL = strings.TrimSpace(rawURL)
 	rawURL = strings.TrimSuffix(rawURL, "/")
@@ -679,4 +741,30 @@ func deleteCategories(input string) {
 	}
 
 	fmt.Printf("Deleted categories for url=%s with id=%s\n", feed.URL, feed.ID)
+}
+
+func setTags(input string, tagsStr string) {
+	feed := resolveFeed(input, false)
+
+	if strings.TrimSpace(tagsStr) == "" {
+		feed.Tags = []string{}
+	} else {
+		tags := strings.Split(tagsStr, ",")
+		filtered := make([]string, 0, len(tags))
+		for i := range tags {
+			tag := strings.TrimSpace(tags[i])
+			if tag == "" {
+				continue
+			}
+			filtered = append(filtered, tag)
+		}
+		feed.Tags = filtered
+	}
+
+	if err := repo.UpsertFeed(feed); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to set tags: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("Set tags to %v for url=%s with id=%s\n", feed.Tags, feed.URL, feed.ID)
 }
