@@ -36,6 +36,7 @@ docker compose exec postgres psql -U deframer -d deframer
 ## Handling Feeds
 
 - Run `docker compose exec service admin -h`
+- Run the migrator with `docker compose run --rm --entrypoint migration service`
 - Add the example feeds `cat feed-example.json | docker compose exec -T ingester admin feed import`
 - List `docker compose exec ingester admin feed list`
 - Force a Sync `docker compose exec ingester admin feed sync-all`

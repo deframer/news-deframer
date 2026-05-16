@@ -15,7 +15,7 @@ COPY . .
 RUN goa gen github.com/deframer/news-deframer/pkg/design
 
 # We disable CGO for a static binary (easier for Alpine/Scratch)
-RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /out/ ./cmd/service ./cmd/admin
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build -o /out/ ./cmd/service ./cmd/admin ./cmd/migration
 
 FROM gcr.io/distroless/static-debian13
 
@@ -27,6 +27,7 @@ WORKDIR /
 
 COPY --from=builder /out/service /usr/bin/service
 COPY --from=builder /out/admin /usr/bin/admin
+COPY --from=builder /out/migration /usr/bin/migration
 COPY --from=builder /app/gen/http/openapi3.json /gen/http/openapi3.json
 
 USER nonroot:nonroot
