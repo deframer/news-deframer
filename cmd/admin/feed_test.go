@@ -704,6 +704,30 @@ func TestFeedCommands(t *testing.T) {
 	assert.NotNil(t, foundMineNoMining.FeedSchedule.NextMiningAt, "NextMiningAt should be set for the immediate mine")
 }
 
+func TestFeedErrorsCommand(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+
+	rootDomain := "example.com"
+	lastError := "boom"
+	assert.NoError(t, mock.UpsertFeed(&database.Feed{
+		URL:        "http://example.com/rss",
+		RootDomain: &rootDomain,
+		LastError:  &lastError,
+	}))
+
+	out := captureOutput(func() {
+		listFeedErrors()
+	})
+
+	assert.Contains(t, out, "RootDomain")
+	assert.Contains(t, out, "URL")
+	assert.Contains(t, out, "Error")
+	assert.Contains(t, out, "example.com")
+	assert.Contains(t, out, "http://example.com/rss")
+	assert.Contains(t, out, "boom")
+}
+
 // --- Mock Repository ---
 
 type MockRepo struct {
@@ -773,6 +797,21 @@ func (m *MockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error) {
 		feeds = append(feeds, *f)
 	}
 	return feeds, nil
+}
+
+func (m *MockRepo) GetAllFeedErrors() ([]database.FeedError, error) {
+	var feedErrors []database.FeedError
+	for _, f := range m.feeds {
+		if f.LastError == nil {
+			continue
+		}
+		feedErrors = append(feedErrors, database.FeedError{
+			RootDomain: f.RootDomain,
+			URL:        f.URL,
+			Error:      *f.LastError,
+		})
+	}
+	return feedErrors, nil
 }
 
 func (m *MockRepo) DeleteFeedById(id uuid.UUID) error {

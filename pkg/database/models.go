@@ -46,6 +46,12 @@ type Feed struct {
 	FeedSchedule      *FeedSchedule `gorm:"foreignKey:ID;references:ID"`
 }
 
+type FeedError struct {
+	RootDomain *string `gorm:"column:root_domain" json:"root_domain,omitempty"`
+	URL        string  `gorm:"column:url" json:"url"`
+	Error      string  `gorm:"column:error" json:"error"`
+}
+
 // StringArray aliases []string to implement sql.Scanner and driver.Valuer for PostgreSQL text[]
 type StringArray []string
 

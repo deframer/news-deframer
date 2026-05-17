@@ -41,6 +41,7 @@ func init() {
 	feedCmd.AddCommand(enableCmd)
 	feedCmd.AddCommand(disableCmd)
 	feedCmd.AddCommand(listCmd)
+	feedCmd.AddCommand(errorsCmd)
 	feedCmd.AddCommand(pollingCmd)
 	feedCmd.AddCommand(miningCmd)
 	feedCmd.AddCommand(resolveItemUrlCmd)
@@ -279,6 +280,14 @@ var listCmd = &cobra.Command{
 	},
 }
 
+var errorsCmd = &cobra.Command{
+	Use:   "errors",
+	Short: "List feed errors",
+	Run: func(cmd *cobra.Command, args []string) {
+		listFeedErrors()
+	},
+}
+
 func listFeeds(asJson bool, showDeleted bool) {
 	feeds, err := repo.GetAllFeeds(showDeleted)
 	if err != nil {
@@ -363,6 +372,34 @@ func listFeeds(asJson bool, showDeleted bool) {
 		}
 
 		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, country, categories, tags, f.ID, f.URL, rootDomain, portalUrl, f.EnforceFeedDomain, syncState, miningState); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
+			os.Exit(1)
+		}
+	}
+	if err := w.Flush(); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to flush to stdout: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func listFeedErrors() {
+	feedErrors, err := repo.GetAllFeedErrors()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to list feed errors: %v\n", err)
+		os.Exit(1)
+	}
+
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	if _, err := fmt.Fprintln(w, "RootDomain\tURL\tError"); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
+		os.Exit(1)
+	}
+	for _, f := range feedErrors {
+		rootDomain := "-"
+		if f.RootDomain != nil && *f.RootDomain != "" {
+			rootDomain = *f.RootDomain
+		}
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\n", rootDomain, f.URL, f.Error); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}

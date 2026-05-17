@@ -90,6 +90,10 @@ func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error) {
 	return nil, nil
 }
 
+func (m *mockRepo) GetAllFeedErrors() ([]database.FeedError, error) {
+	return nil, nil
+}
+
 func (m *mockRepo) DeleteFeedById(id uuid.UUID) error {
 	if m.deleteFeedById != nil {
 		return m.deleteFeedById(id)
