@@ -8,7 +8,6 @@ import (
 	"github.com/deframer/news-deframer/pkg/config"
 	applog "github.com/deframer/news-deframer/pkg/logger"
 	"github.com/spf13/cobra"
-	"goa.design/clue/log"
 )
 
 var (
@@ -26,8 +25,8 @@ var rootCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		ctx := applog.NewLoggerContext(context.Background(), cfg.DebugLog)
-		log.Print(ctx, log.KV{K: "component", V: "admin"})
+		debugLog := false
+		ctx := applog.NewLoggerContext(context.Background(), debugLog)
 		cmd.SetContext(ctx)
 	},
 }
