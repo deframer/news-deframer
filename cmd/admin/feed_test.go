@@ -710,10 +710,12 @@ func TestFeedErrorsCommand(t *testing.T) {
 
 	rootDomain := "example.com"
 	lastError := "boom"
+	lastSyncedAt := time.Date(2026, time.May, 17, 12, 34, 0, 0, time.UTC)
 	assert.NoError(t, mock.UpsertFeed(&database.Feed{
-		URL:        "http://example.com/rss",
-		RootDomain: &rootDomain,
-		LastError:  &lastError,
+		URL:          "http://example.com/rss",
+		RootDomain:   &rootDomain,
+		LastError:    &lastError,
+		LastSyncedAt: &lastSyncedAt,
 	}))
 
 	out := captureOutput(func() {
@@ -722,9 +724,11 @@ func TestFeedErrorsCommand(t *testing.T) {
 
 	assert.Contains(t, out, "RootDomain")
 	assert.Contains(t, out, "URL")
+	assert.Contains(t, out, "LastSyncedAt")
 	assert.Contains(t, out, "Error")
 	assert.Contains(t, out, "example.com")
 	assert.Contains(t, out, "http://example.com/rss")
+	assert.Contains(t, out, "2026-05-17 12:34")
 	assert.Contains(t, out, "boom")
 }
 
@@ -806,9 +810,10 @@ func (m *MockRepo) GetAllFeedErrors() ([]database.FeedError, error) {
 			continue
 		}
 		feedErrors = append(feedErrors, database.FeedError{
-			RootDomain: f.RootDomain,
-			URL:        f.URL,
-			Error:      *f.LastError,
+			RootDomain:   f.RootDomain,
+			URL:          f.URL,
+			Error:        *f.LastError,
+			LastSyncedAt: f.LastSyncedAt,
 		})
 	}
 	return feedErrors, nil

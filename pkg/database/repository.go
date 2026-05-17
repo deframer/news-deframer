@@ -811,7 +811,7 @@ func (r *repository) GetAllFeeds(deleted bool) ([]Feed, error) {
 func (r *repository) GetAllFeedErrors() ([]FeedError, error) {
 	var feedErrors []FeedError
 	if err := r.db.Model(&Feed{}).
-		Select("root_domain, url, last_error AS error").
+		Select("root_domain, url, last_error AS error, last_synced_at").
 		Where("last_error IS NOT NULL").
 		Order("root_domain ASC, url ASC").
 		Scan(&feedErrors).Error; err != nil {
