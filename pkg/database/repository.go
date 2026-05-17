@@ -524,21 +524,18 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 			return err
 		}
 
+		feedUpdates := map[string]interface{}{
+			"last_synced_at": gorm.Expr("NOW()"),
+			"updated_at":     gorm.Expr("NOW()"),
+		}
 		if jobErr == nil {
-			if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(map[string]interface{}{
-				"last_synced_at": gorm.Expr("NOW()"),
-				"last_error":     nil,
-				"updated_at":     gorm.Expr("NOW()"),
-			}).Error; err != nil {
-				return err
-			}
+			feedUpdates["last_error"] = nil
 		} else {
-			if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(map[string]interface{}{
-				"last_error": jobErr.Error(),
-				"updated_at": gorm.Expr("NOW()"),
-			}).Error; err != nil {
-				return err
-			}
+			feedUpdates["last_error"] = jobErr.Error()
+		}
+
+		if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(feedUpdates).Error; err != nil {
+			return err
 		}
 
 		if jobErr == nil && feed.Enabled && feed.Polling {
