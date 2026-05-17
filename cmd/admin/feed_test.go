@@ -5,13 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/downloader"
 	"github.com/deframer/news-deframer/pkg/syncer"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -80,6 +84,147 @@ func TestFeedImportHelpers(t *testing.T) {
 	updateExistingFeed(existing, ImportFeed{Tags: []string{"alpha", "beta"}, Country: &updatedCountry})
 	assert.Equal(t, database.StringArray{"alpha", "beta"}, existing.Tags)
 	assert.Equal(t, "FR", existing.Country)
+}
+
+func TestValidateImportFeeds(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+
+	existing := &database.Feed{URL: "http://existing.example/rss", Enabled: true, Polling: true, Mining: true}
+	assert.NoError(t, mock.UpsertFeed(existing))
+
+	country := "US"
+	language := "en"
+	rootDomain := "new.example"
+	feeds := []ImportFeed{
+		{
+			URL:        "http://new.example/rss/",
+			Country:    &country,
+			Language:   &language,
+			RootDomain: &rootDomain,
+			Polling:    boolPtr(true),
+			Mining:     boolPtr(false),
+			Enabled:    boolPtr(true),
+			Categories: []string{"politics", "culture"},
+			Tags:       []string{"lead"},
+		},
+		{
+			URL:        "http://existing.example/rss",
+			Country:    &country,
+			Language:   &language,
+			Categories: []string{"politics"},
+		},
+	}
+
+	var out bytes.Buffer
+	hadErrors := validateImportFeeds(context.Background(), feeds, &out, false)
+	assert.False(t, hadErrors)
+	assert.Contains(t, out.String(), "1 OK would insert url=http://new.example/rss")
+	assert.Contains(t, out.String(), "2 OK would update url=http://existing.example/rss")
+	assert.Contains(t, out.String(), "validated 2 feeds (0 errors)")
+}
+
+func TestValidateImportFeedsRejectsDuplicates(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+
+	feeds := []ImportFeed{
+		{URL: "http://dup.example/rss/", Categories: []string{"politics"}},
+		{URL: "http://dup.example/rss", Categories: []string{"politics"}},
+	}
+
+	var out bytes.Buffer
+	hadErrors := validateImportFeeds(context.Background(), feeds, &out, false)
+	assert.True(t, hadErrors)
+	assert.Contains(t, out.String(), "ERROR duplicate url http://dup.example/rss (also in row 1)")
+	assert.Contains(t, out.String(), "validated 2 feeds (1 errors)")
+}
+
+func TestValidateImportFeedsRejectsInvalidCategory(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+
+	feeds := []ImportFeed{{URL: "http://example.com/rss", Categories: []string{"politics", "not-a-category"}}}
+
+	var out bytes.Buffer
+	hadErrors := validateImportFeeds(context.Background(), feeds, &out, false)
+	assert.True(t, hadErrors)
+	assert.Contains(t, out.String(), "invalid category \"not-a-category\"")
+	assert.Contains(t, out.String(), "validated 1 feeds (1 errors)")
+}
+
+func TestValidateImportFeedsRejectsInvalidLanguage(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+
+	language := "eng"
+	feeds := []ImportFeed{{URL: "http://example.com/rss", Language: &language, Categories: []string{"politics"}}}
+
+	var out bytes.Buffer
+	hadErrors := validateImportFeeds(context.Background(), feeds, &out, false)
+	assert.True(t, hadErrors)
+	assert.Contains(t, out.String(), "invalid language \"eng\"")
+	assert.Contains(t, out.String(), "validated 1 feeds (1 errors)")
+}
+
+func TestReadImportFeedsRejectsInvalidJSON(t *testing.T) {
+	path := t.TempDir() + "/invalid.json"
+	assert.NoError(t, os.WriteFile(path, []byte("not-json"), 0o600))
+
+	_, err := readImportFeeds(path)
+	assert.Error(t, err)
+}
+
+func TestValidateImportFeedsFetchFollowsRedirectAndAcceptsXML(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+	feedDownloader = downloader.NewDownloader(context.Background(), &config.Config{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/feed":
+			assert.Contains(t, r.Header.Get("Accept"), "application/rss+xml")
+			assert.Contains(t, r.Header.Get("User-Agent"), "Chrome/136.0.0.0")
+			assert.Contains(t, r.Header.Get("Sec-CH-UA"), "Chromium")
+			assert.Equal(t, "priority: u=0, i", r.Header.Get("Priority"))
+			w.Header().Set("Content-Type", "application/rss+xml")
+			_, _ = io.WriteString(w, `<?xml version="1.0" encoding="UTF-8"?><rss><channel><title>ok</title></channel></rss>`)
+		case "/redirect":
+			http.Redirect(w, r, "/feed", http.StatusFound)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	feeds := []ImportFeed{{URL: server.URL + "/redirect", Categories: []string{"politics"}}}
+	var out bytes.Buffer
+	hadErrors := validateImportFeeds(context.Background(), feeds, &out, true)
+	assert.False(t, hadErrors)
+	assert.NotContains(t, out.String(), "ERROR")
+}
+
+func TestValidateImportFeedsFetchRejectsNonXML(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+	feedDownloader = downloader.NewDownloader(context.Background(), &config.Config{})
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = io.WriteString(w, "<html><body>no feed</body></html>")
+	}))
+	defer server.Close()
+
+	feeds := []ImportFeed{{URL: server.URL, Categories: []string{"politics"}}}
+	var out bytes.Buffer
+	hadErrors := validateImportFeeds(context.Background(), feeds, &out, true)
+	assert.True(t, hadErrors)
+	assert.Contains(t, out.String(), "ERROR not rss/atom")
+	assert.True(t, strings.Contains(out.String(), "validated 1 feeds (1 errors)"))
+}
+
+func boolPtr(v bool) *bool {
+	return &v
 }
 
 func TestFeedCommands(t *testing.T) {

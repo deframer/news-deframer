@@ -11,6 +11,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/deframer/news-deframer/pkg/database"
+	"github.com/deframer/news-deframer/pkg/downloader"
 	"github.com/deframer/news-deframer/pkg/syncer"
 	"github.com/deframer/news-deframer/pkg/util/netutil"
 	"github.com/google/uuid"
@@ -31,6 +32,7 @@ var (
 	portalUrl      string
 	repo           database.Repository
 	feedSyncer     *syncer.Syncer
+	feedDownloader downloader.Downloader
 )
 
 func init() {
@@ -94,6 +96,7 @@ var feedCmd = &cobra.Command{
 			fmt.Fprintf(os.Stderr, "Failed to create syncer: %v\n", err)
 			os.Exit(1)
 		}
+		feedDownloader = downloader.NewDownloader(cmd.Context(), cfg)
 	},
 }
 

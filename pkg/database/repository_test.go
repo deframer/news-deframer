@@ -1043,6 +1043,7 @@ func TestEndFeedUpdate(t *testing.T) {
 		var updatedFeed Feed
 		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
 		assert.NotNil(t, updatedFeed.LastSyncedAt)
+		assert.Nil(t, updatedFeed.LastError)
 		assert.WithinDuration(t, time.Now(), *updatedFeed.LastSyncedAt, 5*time.Second)
 		// Should be scheduled for future (now + pollingInterval)
 		assert.WithinDuration(t, time.Now().Add(pollingInterval), *s.NextThinkerAt, 5*time.Second)
@@ -1070,6 +1071,8 @@ func TestEndFeedUpdate(t *testing.T) {
 		var updatedFeed Feed
 		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
 		assert.Nil(t, updatedFeed.LastSyncedAt)
+		assert.NotNil(t, updatedFeed.LastError)
+		assert.Equal(t, "something went wrong", *updatedFeed.LastError)
 	})
 
 	t.Run("Polling_Disabled", func(t *testing.T) {
@@ -1096,6 +1099,7 @@ func TestEndFeedUpdate(t *testing.T) {
 		var updatedFeed Feed
 		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
 		assert.NotNil(t, updatedFeed.LastSyncedAt)
+		assert.Nil(t, updatedFeed.LastError)
 		assert.WithinDuration(t, time.Now(), *updatedFeed.LastSyncedAt, 5*time.Second)
 	})
 }
