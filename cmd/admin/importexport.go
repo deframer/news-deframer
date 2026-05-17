@@ -207,7 +207,7 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 		line := idx + 1
 		rawURL := strings.TrimSpace(f.URL)
 		if rawURL == "" {
-			fmt.Fprintf(w, "%d ERROR missing url\n", line)
+			_, _ = fmt.Fprintf(w, "%d ERROR missing url\n", line)
 			hadErrors = true
 			errorRows++
 			continue
@@ -215,7 +215,7 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 
 		u, err := parseAndNormalizeURL(rawURL)
 		if err != nil {
-			fmt.Fprintf(w, "%d ERROR invalid url %q: %v\n", line, rawURL, err)
+			_, _ = fmt.Fprintf(w, "%d ERROR invalid url %q: %v\n", line, rawURL, err)
 			hadErrors = true
 			errorRows++
 			continue
@@ -223,7 +223,7 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 
 		normalizedURL := u.String()
 		if firstLine, ok := seen[normalizedURL]; ok {
-			fmt.Fprintf(w, "%d ERROR duplicate url %s (also in row %d)\n", line, normalizedURL, firstLine)
+			_, _ = fmt.Fprintf(w, "%d ERROR duplicate url %s (also in row %d)\n", line, normalizedURL, firstLine)
 			hadErrors = true
 			errorRows++
 			continue
@@ -233,7 +233,7 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 		_, categoryErrors := validateCategoryListStrict(f.Categories)
 		if len(categoryErrors) > 0 {
 			for _, categoryError := range categoryErrors {
-				fmt.Fprintf(w, "%d ERROR %s\n", line, categoryError)
+				_, _ = fmt.Fprintf(w, "%d ERROR %s\n", line, categoryError)
 			}
 			hadErrors = true
 			errorRows++
@@ -243,7 +243,7 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 		if f.Language != nil {
 			language := strings.TrimSpace(*f.Language)
 			if len(language) != 2 {
-				fmt.Fprintf(w, "%d ERROR invalid language %q; expected a two-letter ISO 639-1 code\n", line, language)
+				_, _ = fmt.Fprintf(w, "%d ERROR invalid language %q; expected a two-letter ISO 639-1 code\n", line, language)
 				hadErrors = true
 				errorRows++
 				continue
@@ -252,7 +252,7 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 
 		existing, err := repo.FindFeedByUrlAndAvailability(u, false)
 		if err != nil {
-			fmt.Fprintf(w, "%d ERROR failed to check existing feed %s: %v\n", line, normalizedURL, err)
+			_, _ = fmt.Fprintf(w, "%d ERROR failed to check existing feed %s: %v\n", line, normalizedURL, err)
 			hadErrors = true
 			errorRows++
 			continue
@@ -263,49 +263,49 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 			status = "would update"
 		}
 
-		fmt.Fprintf(w, "%d OK %s url=%s", line, status, normalizedURL)
+		row := fmt.Sprintf("%d OK %s url=%s", line, status, normalizedURL)
 		if f.Language != nil {
-			fmt.Fprintf(w, " language=%s", strings.TrimSpace(*f.Language))
+			row += " language=" + strings.TrimSpace(*f.Language)
 		}
 		if f.Country != nil && strings.TrimSpace(*f.Country) != "" {
-			fmt.Fprintf(w, " country=%s", strings.TrimSpace(*f.Country))
+			row += " country=" + strings.TrimSpace(*f.Country)
 		}
 		if f.RootDomain != nil {
-			fmt.Fprintf(w, " root_domain=%s", strings.TrimSpace(*f.RootDomain))
+			row += " root_domain=" + strings.TrimSpace(*f.RootDomain)
 		}
 		if f.PortalUrl != nil {
-			fmt.Fprintf(w, " portal_url=%s", strings.TrimSpace(*f.PortalUrl))
+			row += " portal_url=" + strings.TrimSpace(*f.PortalUrl)
 		}
 		if f.Enabled != nil {
-			fmt.Fprintf(w, " enabled=%v", *f.Enabled)
+			row += fmt.Sprintf(" enabled=%v", *f.Enabled)
 		}
 		if f.Polling != nil {
-			fmt.Fprintf(w, " polling=%v", *f.Polling)
+			row += fmt.Sprintf(" polling=%v", *f.Polling)
 		}
 		if f.Mining != nil {
-			fmt.Fprintf(w, " mining=%v", *f.Mining)
+			row += fmt.Sprintf(" mining=%v", *f.Mining)
 		}
 		if f.ResolveItemUrl != nil {
-			fmt.Fprintf(w, " resolve_item_url=%v", *f.ResolveItemUrl)
+			row += fmt.Sprintf(" resolve_item_url=%v", *f.ResolveItemUrl)
 		}
 		if len(f.Categories) > 0 {
-			fmt.Fprintf(w, " categories=%s", strings.Join(f.Categories, ","))
+			row += " categories=" + strings.Join(f.Categories, ",")
 		}
 		if len(f.Tags) > 0 {
-			fmt.Fprintf(w, " tags=%s", strings.Join(f.Tags, ","))
+			row += " tags=" + strings.Join(f.Tags, ",")
 		}
-		fmt.Fprintln(w)
+		_, _ = fmt.Fprintln(w, row)
 
 		if fetch {
 			if err := probeFeedXML(ctx, u); err != nil {
-				fmt.Fprintf(w, "%d ERROR %s\n", line, err)
+				_, _ = fmt.Fprintf(w, "%d ERROR %s\n", line, err)
 				hadErrors = true
 				errorRows++
 			}
 		}
 	}
 
-	fmt.Fprintf(w, "validated %d feeds (%d errors)\n", len(feeds), errorRows)
+	_, _ = fmt.Fprintf(w, "validated %d feeds (%d errors)\n", len(feeds), errorRows)
 	return hadErrors
 }
 
