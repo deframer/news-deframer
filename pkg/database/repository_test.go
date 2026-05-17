@@ -1070,9 +1070,10 @@ func TestEndFeedUpdate(t *testing.T) {
 
 		var updatedFeed Feed
 		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
-		assert.Nil(t, updatedFeed.LastSyncedAt)
+		assert.NotNil(t, updatedFeed.LastSyncedAt)
 		assert.NotNil(t, updatedFeed.LastError)
 		assert.Equal(t, "something went wrong", *updatedFeed.LastError)
+		assert.WithinDuration(t, time.Now(), *updatedFeed.LastSyncedAt, 5*time.Second)
 	})
 
 	t.Run("Polling_Disabled", func(t *testing.T) {

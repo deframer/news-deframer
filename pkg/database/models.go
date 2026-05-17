@@ -47,9 +47,10 @@ type Feed struct {
 }
 
 type FeedError struct {
-	RootDomain *string `gorm:"column:root_domain" json:"root_domain,omitempty"`
-	URL        string  `gorm:"column:url" json:"url"`
-	Error      string  `gorm:"column:error" json:"error"`
+	RootDomain   *string    `gorm:"column:root_domain" json:"root_domain,omitempty"`
+	URL          string     `gorm:"column:url" json:"url"`
+	Error        string     `gorm:"column:error" json:"error"`
+	LastSyncedAt *time.Time `gorm:"column:last_synced_at" json:"last_synced_at,omitempty"`
 }
 
 // StringArray aliases []string to implement sql.Scanner and driver.Valuer for PostgreSQL text[]

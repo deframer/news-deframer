@@ -390,7 +390,7 @@ func listFeedErrors() {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "RootDomain\tURL\tError"); err != nil {
+	if _, err := fmt.Fprintln(w, "RootDomain\tURL\tLastSyncedAt\tError"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -399,7 +399,11 @@ func listFeedErrors() {
 		if f.RootDomain != nil && *f.RootDomain != "" {
 			rootDomain = *f.RootDomain
 		}
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\n", rootDomain, f.URL, f.Error); err != nil {
+		lastSyncedAt := "-"
+		if f.LastSyncedAt != nil {
+			lastSyncedAt = f.LastSyncedAt.Format("2006-01-02 15:04")
+		}
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", rootDomain, f.URL, lastSyncedAt, f.Error); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}

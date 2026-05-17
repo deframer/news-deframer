@@ -524,21 +524,18 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 			return err
 		}
 
+		feedUpdates := map[string]interface{}{
+			"last_synced_at": gorm.Expr("NOW()"),
+			"updated_at":     gorm.Expr("NOW()"),
+		}
 		if jobErr == nil {
-			if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(map[string]interface{}{
-				"last_synced_at": gorm.Expr("NOW()"),
-				"last_error":     nil,
-				"updated_at":     gorm.Expr("NOW()"),
-			}).Error; err != nil {
-				return err
-			}
+			feedUpdates["last_error"] = nil
 		} else {
-			if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(map[string]interface{}{
-				"last_error": jobErr.Error(),
-				"updated_at": gorm.Expr("NOW()"),
-			}).Error; err != nil {
-				return err
-			}
+			feedUpdates["last_error"] = jobErr.Error()
+		}
+
+		if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(feedUpdates).Error; err != nil {
+			return err
 		}
 
 		if jobErr == nil && feed.Enabled && feed.Polling {
@@ -814,7 +811,7 @@ func (r *repository) GetAllFeeds(deleted bool) ([]Feed, error) {
 func (r *repository) GetAllFeedErrors() ([]FeedError, error) {
 	var feedErrors []FeedError
 	if err := r.db.Model(&Feed{}).
-		Select("root_domain, url, last_error AS error").
+		Select("root_domain, url, last_error AS error, last_synced_at").
 		Where("last_error IS NOT NULL").
 		Order("root_domain ASC, url ASC").
 		Scan(&feedErrors).Error; err != nil {
