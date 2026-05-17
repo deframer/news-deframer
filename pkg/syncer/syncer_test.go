@@ -42,6 +42,7 @@ func (m *mockRepo) FindFeedById(feedID uuid.UUID) (*database.Feed, error) { retu
 func (m *mockRepo) UpsertFeed(feed *database.Feed) error                  { return nil }
 func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error)    { return nil, nil }
 func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error)     { return nil, nil }
+func (m *mockRepo) GetAllFeedErrors() ([]database.FeedError, error)       { return nil, nil }
 func (m *mockRepo) DeleteFeedById(id uuid.UUID) error                     { return nil }
 func (m *mockRepo) RemoveSync(id uuid.UUID) error {
 	m.removeSyncCalled = true

@@ -104,6 +104,7 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 
 		// Mimic a browser to avoid some anti-bot protections
 		req.Header.Set("User-Agent", d.userAgent)
+		req.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.1")
 		req.Header.Set("Sec-CH-UA", d.sec_CH_UA)
 		req.Header.Set("Priority", d.priority)
 
@@ -134,6 +135,7 @@ func (d *downloader) ResolveRedirect(ctx context.Context, targetURL string) (str
 
 	// Mimic a browser to avoid some anti-bot protections
 	req.Header.Set("User-Agent", d.userAgent)
+	req.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.1")
 	req.Header.Set("Sec-CH-UA", d.sec_CH_UA)
 	req.Header.Set("Priority", d.priority)
 

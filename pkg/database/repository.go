@@ -174,6 +174,7 @@ type Repository interface {
 	FindItemsByUrl(u *url.URL) ([]Item, error)
 	FindItemsByRootDomain(rootDomain string, limit int) ([]Item, error)
 	GetAllFeeds(deleted bool) ([]Feed, error)
+	GetAllFeedErrors() ([]FeedError, error)
 	DeleteFeedById(id uuid.UUID) error
 	PurgeFeedById(id uuid.UUID) error
 	EnqueueSync(id uuid.UUID, pollingInterval time.Duration) error
@@ -526,7 +527,15 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 		if jobErr == nil {
 			if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(map[string]interface{}{
 				"last_synced_at": gorm.Expr("NOW()"),
+				"last_error":     nil,
 				"updated_at":     gorm.Expr("NOW()"),
+			}).Error; err != nil {
+				return err
+			}
+		} else {
+			if err := tx.Model(&Feed{}).Where("id = ?", id).Updates(map[string]interface{}{
+				"last_error": jobErr.Error(),
+				"updated_at": gorm.Expr("NOW()"),
 			}).Error; err != nil {
 				return err
 			}
@@ -800,6 +809,18 @@ func (r *repository) GetAllFeeds(deleted bool) ([]Feed, error) {
 		return nil, err
 	}
 	return feeds, nil
+}
+
+func (r *repository) GetAllFeedErrors() ([]FeedError, error) {
+	var feedErrors []FeedError
+	if err := r.db.Model(&Feed{}).
+		Select("root_domain, url, last_error AS error").
+		Where("last_error IS NOT NULL").
+		Order("root_domain ASC, url ASC").
+		Scan(&feedErrors).Error; err != nil {
+		return nil, err
+	}
+	return feedErrors, nil
 }
 
 func (r *repository) FindItemsByUrl(u *url.URL) ([]Item, error) {
