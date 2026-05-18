@@ -8,14 +8,14 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.12.3
 	github.com/mmcdole/gofeed v1.3.0
-	github.com/pb33f/libopenapi v0.36.3
+	github.com/pb33f/libopenapi v0.36.4
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 	goa.design/clue v1.2.5
 	goa.design/goa/v3 v3.26.0
 	golang.org/x/net v0.54.0
-	google.golang.org/genai v1.56.0
+	google.golang.org/genai v1.57.0
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
