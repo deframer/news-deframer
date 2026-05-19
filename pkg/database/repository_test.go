@@ -1066,7 +1066,9 @@ func TestEndFeedUpdate(t *testing.T) {
 
 		var s FeedSchedule
 		assert.NoError(t, tx.First(&s, feed.ID).Error)
-		assert.Nil(t, s.NextThinkerAt)
+		assert.NotNil(t, s.NextThinkerAt)
+		assert.WithinDuration(t, time.Now().Add(time.Minute), *s.NextThinkerAt, 5*time.Second)
+		assert.Nil(t, s.ThinkerLockedUntil)
 
 		var updatedFeed Feed
 		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
