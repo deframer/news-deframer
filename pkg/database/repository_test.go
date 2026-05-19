@@ -1049,10 +1049,10 @@ func TestEndFeedUpdate(t *testing.T) {
 		assert.WithinDuration(t, time.Now().Add(pollingInterval), *s.NextThinkerAt, 5*time.Second)
 	})
 
-		t.Run("With_Error", func(t *testing.T) {
-			tx := baseDB.Begin()
-			defer tx.Rollback()
-			repo := NewFromDB(tx)
+	t.Run("With_Error", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
 
 		feed := Feed{URL: "http://end-error.test", Enabled: true, Polling: true}
 		assert.NoError(t, tx.Create(&feed).Error)
@@ -1064,16 +1064,16 @@ func TestEndFeedUpdate(t *testing.T) {
 		err := repo.EndFeedUpdate(feed.ID, jobErr, time.Minute)
 		assert.NoError(t, err)
 
-			var s FeedSchedule
-			assert.NoError(t, tx.First(&s, feed.ID).Error)
-			assert.NotNil(t, s.NextThinkerAt)
-			assert.WithinDuration(t, time.Now().Add(time.Minute), *s.NextThinkerAt, 5*time.Second)
-			assert.Nil(t, s.ThinkerLockedUntil)
+		var s FeedSchedule
+		assert.NoError(t, tx.First(&s, feed.ID).Error)
+		assert.NotNil(t, s.NextThinkerAt)
+		assert.WithinDuration(t, time.Now().Add(time.Minute), *s.NextThinkerAt, 5*time.Second)
+		assert.Nil(t, s.ThinkerLockedUntil)
 
-			var updatedFeed Feed
-			assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
-			assert.NotNil(t, updatedFeed.LastSyncedAt)
-			assert.NotNil(t, updatedFeed.LastError)
+		var updatedFeed Feed
+		assert.NoError(t, tx.First(&updatedFeed, feed.ID).Error)
+		assert.NotNil(t, updatedFeed.LastSyncedAt)
+		assert.NotNil(t, updatedFeed.LastError)
 		assert.Equal(t, "something went wrong", *updatedFeed.LastError)
 		assert.WithinDuration(t, time.Now(), *updatedFeed.LastSyncedAt, 5*time.Second)
 	})
