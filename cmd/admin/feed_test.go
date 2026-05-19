@@ -78,6 +78,7 @@ func TestFeedImportHelpers(t *testing.T) {
 	assert.NotNil(t, feed)
 	assert.Empty(t, feed.Tags)
 	assert.Equal(t, "US", feed.Country)
+	assert.Nil(t, feed.Language)
 
 	existing := &database.Feed{Tags: []string{"old"}, Country: "DE"}
 	updatedCountry := "FR"
@@ -165,6 +166,20 @@ func TestValidateImportFeedsRejectsInvalidLanguage(t *testing.T) {
 	assert.True(t, hadErrors)
 	assert.Contains(t, out.String(), "invalid language \"eng\"")
 	assert.Contains(t, out.String(), "validated 1 feeds (1 errors)")
+}
+
+func TestValidateImportFeedsAllowsEmptyLanguage(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+
+	empty := ""
+	feeds := []ImportFeed{{URL: "http://example.com/rss", Language: &empty, Categories: []string{"politics"}}}
+
+	var out bytes.Buffer
+	hadErrors := validateImportFeeds(context.Background(), feeds, &out, false)
+	assert.False(t, hadErrors)
+	assert.NotContains(t, out.String(), "ERROR")
+	assert.Contains(t, out.String(), "validated 1 feeds (0 errors)")
 }
 
 func TestReadImportFeedsRejectsInvalidJSON(t *testing.T) {
