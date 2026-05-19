@@ -512,12 +512,10 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 			"updated_at":           gorm.Expr("NOW()"),
 		}
 
-		if jobErr != nil {
+		if !feed.Polling {
+			// If polling was disabled while a worker was already running, clear
+			// the next run so the feed does not get picked up again later.
 			updates["next_thinker_at"] = nil
-		} else {
-			if !feed.Polling {
-				updates["next_thinker_at"] = nil
-			}
 		}
 
 		if err := tx.Model(&FeedSchedule{}).Where("id = ?", id).Updates(updates).Error; err != nil {
@@ -538,7 +536,7 @@ func (r *repository) EndFeedUpdate(id uuid.UUID, jobErr error, pollingInterval t
 			return err
 		}
 
-		if jobErr == nil && feed.Enabled && feed.Polling {
+		if feed.Enabled && feed.Polling {
 			return r.enqueueSyncTx(tx, id, pollingInterval)
 		}
 
