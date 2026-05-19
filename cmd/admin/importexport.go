@@ -242,7 +242,7 @@ func validateImportFeeds(ctx context.Context, feeds []ImportFeed, w io.Writer, f
 
 		if f.Language != nil {
 			language := strings.TrimSpace(*f.Language)
-			if len(language) != 2 {
+			if language != "" && len(language) != 2 {
 				_, _ = fmt.Fprintf(w, "%d ERROR invalid language %q; expected a two-letter ISO 639-1 code\n", line, language)
 				hadErrors = true
 				errorRows++
@@ -378,7 +378,7 @@ func createNewFeed(u *url.URL, f ImportFeed) *database.Feed {
 		URL:        u.String(),
 		RootDomain: rootDomain,
 		PortalUrl:  f.PortalUrl,
-		Language:   f.Language,
+		Language:   normalizeImportLanguage(f.Language),
 		Country: func() string {
 			if f.Country != nil {
 				return *f.Country
@@ -397,7 +397,7 @@ func createNewFeed(u *url.URL, f ImportFeed) *database.Feed {
 
 func updateExistingFeed(existing *database.Feed, f ImportFeed) {
 	if f.Language != nil {
-		existing.Language = f.Language
+		existing.Language = normalizeImportLanguage(f.Language)
 	}
 	if f.Country != nil {
 		existing.Country = *f.Country
@@ -425,6 +425,17 @@ func updateExistingFeed(existing *database.Feed, f ImportFeed) {
 	if f.ResolveItemUrl != nil {
 		existing.ResolveItemUrl = *f.ResolveItemUrl
 	}
+}
+
+func normalizeImportLanguage(language *string) *string {
+	if language == nil {
+		return nil
+	}
+	trimmed := strings.TrimSpace(*language)
+	if trimmed == "" {
+		return nil
+	}
+	return &trimmed
 }
 
 func exportFeeds() {

@@ -304,13 +304,13 @@ func (s *Syncer) wantedDomains(feed *database.Feed) ([]string, error) {
 }
 
 func (s *Syncer) determineLanguage(feed *database.Feed, parsedFeed *gofeed.Feed) string {
+	if feed.Language != nil && *feed.Language != "" {
+		// database value wins
+		return *feed.Language
+	}
 	if l := strings.TrimSpace(parsedFeed.Language); l != "" {
 		// from feed
 		return strings.ToLower(strings.Split(l, "-")[0])
-	}
-	if feed.Language != nil && *feed.Language != "" {
-		// user override
-		return *feed.Language
 	}
 	// this is a wild guess and will not match!
 	log.Errorf(s.ctx, fmt.Errorf("no language specified in feed or database"), "No language specified in feed or database, defaulting to 'en' feed_url=%s feed_id=%s", feed.URL, feed.ID)
