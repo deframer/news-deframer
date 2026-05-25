@@ -1,0 +1,11 @@
+[project]
+name = "db-joiner"
+version = "0.1.0"
+description = "Merge source database feeds/items/trends into destination"
+requires-python = ">=3.11"
+dependencies = [
+  "psycopg[binary]>=3.2.0",
+]
+
+[tool.uv]
+package = false
