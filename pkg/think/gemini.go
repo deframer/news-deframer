@@ -147,6 +147,7 @@ func (g *gemini) Run(prompt string, language string, request Request, ignoreCate
 	if err := json.Unmarshal([]byte(resp.Candidates[0].Content.Parts[0].Text), &result); err != nil {
 		return nil, err
 	}
+	result.LLMModel = g.model
 
 	if err := validateAndNormalizeThinkResult(language, &result, ignoreCategoryErrors); err != nil {
 		return nil, err

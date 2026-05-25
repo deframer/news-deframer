@@ -22,6 +22,8 @@ var SentimentScores = Type("SentimentScores", func() {
 
 var ThinkResult = Type("ThinkResult", func() {
 	Description("Analysis result for an article.")
+	// Internal note: llm_model exists in the persisted database ThinkResult,
+	// but it is intentionally not exposed via REST DTOs.
 	Attribute("title_original", String, "Original title")
 	Attribute("description_original", String, "Original description")
 	Attribute("title_corrected", String, "Corrected title")

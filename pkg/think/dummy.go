@@ -31,6 +31,7 @@ func (d *dummy) Run(prompt string, language string, request Request, ignoreCateg
 	overall := (framing + clickbait + persuasive + hyperStimulus + speculative) / 5.0
 
 	result := &database.ThinkResult{
+		LLMModel:                    "dummy",
 		TitleCorrected:              request.Title,
 		TitleCorrectionReason:       "Dummy output, not AI-generated.",
 		DescriptionCorrected:        request.Description,

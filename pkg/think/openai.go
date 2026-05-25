@@ -182,6 +182,7 @@ func (o *openaiProvider) Run(prompt string, language string, request Request, ig
 	if err := json.Unmarshal([]byte(resp.Choices[0].Message.Content), &result); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal result: %w", err)
 	}
+	result.LLMModel = o.model
 
 	if err := validateAndNormalizeThinkResult(language, &result, ignoreCategoryErrors); err != nil {
 		return nil, err

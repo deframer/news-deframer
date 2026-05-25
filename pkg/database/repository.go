@@ -152,6 +152,9 @@ func (a AnalyzedItem) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
+		// Internal-only metadata: do not expose the underlying LLM model via REST.
+		delete(thinkResultMap, "llm_model")
+
 		// Merge ThinkResult fields into the result map
 		for k, v := range thinkResultMap {
 			result[k] = v
