@@ -76,6 +76,7 @@ type FeedSchedule struct {
 
 // ThinkResult we make omitempty to not serialize default e.g. 0.0 or ""
 type ThinkResult struct {
+	LLMModel                    string  `json:"llm_model,omitempty"`
 	TitleOriginal               string  `json:"title_original,omitempty"`
 	DescriptionOriginal         string  `json:"description_original,omitempty"`
 	TitleCorrected              string  `json:"title_corrected,omitempty"`
