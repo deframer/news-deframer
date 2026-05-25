@@ -1,7 +1,6 @@
-PYTHON ?= python3
 UV ?= uv
 
-.PHONY: venv sync validate run dry-run apply join-feed lint help
+.PHONY: venv sync validate run dry-run apply join-feed lint typecheck format-check help
 
 help:
 	@printf "Targets:\n"
@@ -11,7 +10,7 @@ help:
 	@printf "  make dry-run             Run merge in dry-run mode\n"
 	@printf "  make apply               Run merge with --apply\n"
 	@printf "  make join-feed           Run join for one FEED_URL\n"
-	@printf "  make lint                Syntax check script\n"
+	@printf "  make lint                Run ruff, format, mypy\n"
 
 venv:
 	$(UV) venv
@@ -40,5 +39,13 @@ join-feed:
 	@test -n "$(FEED_URL)" || (printf "FEED_URL is required\n" && exit 1)
 	$(UV) run db_joiner.py --source-dsn "$(SOURCE_DSN)" --dest-dsn "$(DEST_DSN)" --join --feed-url "$(FEED_URL)"
 
+format-check:
+	$(UV) run --with ruff ruff format --check db_joiner.py
+
+typecheck:
+	$(UV) run --with mypy mypy db_joiner.py
+
 lint:
-	$(PYTHON) -m py_compile db_joiner.py
+	$(UV) run --with ruff ruff check db_joiner.py
+	$(MAKE) format-check
+	$(MAKE) typecheck

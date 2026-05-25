@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import sys
-import uuid
 from dataclasses import dataclass
+from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
@@ -92,8 +92,12 @@ VALUES (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Merge source DB into destination DB")
     parser.add_argument("--source-dsn", required=True, help="PostgreSQL DSN for source")
-    parser.add_argument("--dest-dsn", required=True, help="PostgreSQL DSN for destination")
-    parser.add_argument("--apply", action="store_true", help="Apply join changes (default: dry-run)")
+    parser.add_argument(
+        "--dest-dsn", required=True, help="PostgreSQL DSN for destination"
+    )
+    parser.add_argument(
+        "--apply", action="store_true", help="Apply join changes (default: dry-run)"
+    )
     parser.add_argument("--join", action="store_true", help="Alias for --apply")
     parser.add_argument(
         "--validate-schema",
@@ -222,9 +226,10 @@ def print_diff(label: str, source_set, dest_set) -> bool:
 
 
 def validate_schema(source_dsn: str, dest_dsn: str) -> bool:
-    with psycopg.connect(source_dsn, autocommit=True) as src_conn, psycopg.connect(
-        dest_dsn, autocommit=True
-    ) as dest_conn:
+    with (
+        psycopg.connect(source_dsn, autocommit=True) as src_conn,
+        psycopg.connect(dest_dsn, autocommit=True) as dest_conn,
+    ):
         src_cols = normalize_column_rows(fetch_table_columns(src_conn))
         dst_cols = normalize_column_rows(fetch_table_columns(dest_conn))
         src_idx = normalize_index_rows(fetch_indexes(src_conn))
@@ -239,7 +244,9 @@ def validate_schema(source_dsn: str, dest_dsn: str) -> bool:
     return ok_columns and ok_indexes and ok_constraints
 
 
-def fetch_source_feeds(src_conn: psycopg.Connection, feed_url: str | None, limit: int | None):
+def fetch_source_feeds(
+    src_conn: psycopg.Connection, feed_url: str | None, limit: int | None
+) -> list[dict[str, Any]]:
     sql = """
     SELECT id, created_at, updated_at, deleted_at, url, root_domain, portal_url, language,
            country, enforce_feed_domain, enabled, polling, mining, resolve_item_url,
@@ -247,7 +254,7 @@ def fetch_source_feeds(src_conn: psycopg.Connection, feed_url: str | None, limit
     FROM feeds
     WHERE deleted_at IS NULL
     """
-    params = []
+    params: list[Any] = []
     if feed_url:
         sql += " AND url = %s"
         params.append(feed_url)
@@ -260,7 +267,9 @@ def fetch_source_feeds(src_conn: psycopg.Connection, feed_url: str | None, limit
         return cur.fetchall()
 
 
-def find_dest_feed_by_url(dest_cur: psycopg.Cursor, url: str):
+def find_dest_feed_by_url(
+    dest_cur: psycopg.Cursor[Any], url: str
+) -> dict[str, Any] | None:
     dest_cur.execute(
         """
         SELECT id
@@ -274,7 +283,9 @@ def find_dest_feed_by_url(dest_cur: psycopg.Cursor, url: str):
     return dest_cur.fetchone()
 
 
-def source_items_for_feed(src_conn: psycopg.Connection, source_feed_id):
+def source_items_for_feed(
+    src_conn: psycopg.Connection, source_feed_id: Any
+) -> list[dict[str, Any]]:
     with src_conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
@@ -290,32 +301,38 @@ def source_items_for_feed(src_conn: psycopg.Connection, source_feed_id):
         return cur.fetchall()
 
 
-def source_trend_for_item(src_conn: psycopg.Connection, source_item_id):
+def source_trends_for_feed(
+    src_conn: psycopg.Connection, source_feed_id: Any
+) -> list[dict[str, Any]]:
     with src_conn.cursor(row_factory=dict_row) as cur:
         cur.execute(
             """
-            SELECT item_id, feed_id, language, pub_date, category_stems, noun_stems,
-                   verb_stems, adjective_stems, root_domain, sentiments, sentiments_deframed
-            FROM trends
-            WHERE item_id = %s
+            SELECT t.item_id AS source_item_id,
+                   t.feed_id,
+                   t.language,
+                   t.pub_date,
+                   t.category_stems,
+                   t.noun_stems,
+                   t.verb_stems,
+                   t.adjective_stems,
+                   t.root_domain,
+                   t.sentiments,
+                   t.sentiments_deframed
+            FROM trends t
+            JOIN items i ON i.id = t.item_id
+            WHERE i.feed_id = %s
             """,
-            (source_item_id,),
+            (source_feed_id,),
         )
-        return cur.fetchone()
-
-
-def ensure_unique_item_id(dest_cur: psycopg.Cursor, item_id):
-    dest_cur.execute("SELECT 1 FROM items WHERE id = %s", (item_id,))
-    if dest_cur.fetchone() is None:
-        return item_id
-    return uuid.uuid4()
+        return cur.fetchall()
 
 
 def merge(args: argparse.Namespace) -> Stats:
     stats = Stats()
-    with psycopg.connect(args.source_dsn, autocommit=False) as src_conn, psycopg.connect(
-        args.dest_dsn, autocommit=False
-    ) as dest_conn:
+    with (
+        psycopg.connect(args.source_dsn, autocommit=False) as src_conn,
+        psycopg.connect(args.dest_dsn, autocommit=False) as dest_conn,
+    ):
         src_feeds = fetch_source_feeds(src_conn, args.feed_url, args.limit_feeds)
         for src_feed in src_feeds:
             # One transaction per feed so feed update + item replacements + trend inserts
@@ -338,48 +355,182 @@ def merge(args: argparse.Namespace) -> Stats:
                         stats.feeds_updated += 1
 
                     src_items = source_items_for_feed(src_conn, src_feed["id"])
-                    for src_item in src_items:
-                        dest_cur.execute(
-                            "SELECT id FROM items WHERE feed_id = %s AND url = %s LIMIT 1",
-                            (dest_feed_id, src_item["url"]),
+                    src_trends = source_trends_for_feed(src_conn, src_feed["id"])
+
+                    if not src_items:
+                        continue
+
+                    dest_cur.execute(
+                        """
+                        CREATE TEMP TABLE stg_items (
+                          source_item_id uuid,
+                          created_at timestamptz,
+                          updated_at timestamptz,
+                          hash char(64),
+                          url text,
+                          language char(2),
+                          content text,
+                          pub_date timestamptz,
+                          media_content jsonb,
+                          think_result jsonb,
+                          think_error text,
+                          think_error_count integer,
+                          think_rating double precision,
+                          categories text[],
+                          authors text[]
+                        ) ON COMMIT DROP
+                        """
+                    )
+                    dest_cur.execute(
+                        """
+                        CREATE TEMP TABLE stg_trends (
+                          source_item_id uuid,
+                          language text,
+                          pub_date timestamptz,
+                          category_stems text[],
+                          noun_stems text[],
+                          verb_stems text[],
+                          adjective_stems text[],
+                          root_domain text,
+                          sentiments jsonb,
+                          sentiments_deframed jsonb
+                        ) ON COMMIT DROP
+                        """
+                    )
+
+                    dest_cur.executemany(
+                        """
+                        INSERT INTO stg_items (
+                          source_item_id, created_at, updated_at, hash, url, language, content,
+                          pub_date, media_content, think_result, think_error, think_error_count,
+                          think_rating, categories, authors
                         )
-                        existing_item = dest_cur.fetchone()
+                        VALUES (
+                          %(id)s, %(created_at)s, %(updated_at)s, %(hash)s, %(url)s, %(language)s,
+                          %(content)s, %(pub_date)s, %(media_content)s, %(think_result)s,
+                          %(think_error)s, %(think_error_count)s, %(think_rating)s,
+                          %(categories)s, %(authors)s
+                        )
+                        """,
+                        src_items,
+                    )
 
-                        if existing_item is not None:
-                            stats.items_replaced += 1
-                            if args.apply:
-                                dest_cur.execute("DELETE FROM trends WHERE item_id = %s", (existing_item["id"],))
-                                dest_cur.execute("DELETE FROM items WHERE id = %s", (existing_item["id"],))
+                    if src_trends:
+                        dest_cur.executemany(
+                            """
+                            INSERT INTO stg_trends (
+                              source_item_id, language, pub_date, category_stems, noun_stems,
+                              verb_stems, adjective_stems, root_domain, sentiments, sentiments_deframed
+                            )
+                            VALUES (
+                              %(source_item_id)s, %(language)s, %(pub_date)s, %(category_stems)s,
+                              %(noun_stems)s, %(verb_stems)s, %(adjective_stems)s, %(root_domain)s,
+                              %(sentiments)s, %(sentiments_deframed)s
+                            )
+                            """,
+                            src_trends,
+                        )
 
-                        else:
-                            stats.items_inserted += 1
+                    dest_cur.execute(
+                        """
+                        SELECT COUNT(*)
+                        FROM stg_items s
+                        JOIN items i ON i.feed_id = %s AND i.url = s.url
+                        """,
+                        (dest_feed_id,),
+                    )
+                    replaced_row = dest_cur.fetchone()
+                    replaced_count = (
+                        int(replaced_row["count"]) if replaced_row is not None else 0
+                    )
+                    stats.items_replaced += replaced_count
+                    stats.items_inserted += len(src_items) - replaced_count
 
-                        new_item = dict(src_item)
-                        new_item["feed_id"] = dest_feed_id
-                        new_item["id"] = ensure_unique_item_id(dest_cur, src_item["id"])
+                    if args.apply:
+                        dest_cur.execute(
+                            """
+                            CREATE TEMP TABLE item_id_map (
+                              source_item_id uuid PRIMARY KEY,
+                              new_item_id uuid NOT NULL
+                            ) ON COMMIT DROP
+                            """
+                        )
 
-                        if args.apply:
-                            dest_cur.execute(ITEM_INSERT_SQL, new_item)
+                        dest_cur.execute(
+                            """
+                            CREATE TEMP TABLE replaced_items AS
+                            SELECT i.id
+                            FROM stg_items s
+                            JOIN items i ON i.feed_id = %s AND i.url = s.url
+                            """,
+                            (dest_feed_id,),
+                        )
+                        dest_cur.execute(
+                            """
+                            SELECT COUNT(*)
+                            FROM trends t
+                            JOIN replaced_items r ON r.id = t.item_id
+                            """
+                        )
+                        replaced_trends_row = dest_cur.fetchone()
+                        stats.trends_replaced += (
+                            int(replaced_trends_row["count"])
+                            if replaced_trends_row is not None
+                            else 0
+                        )
 
-                        source_trend = source_trend_for_item(src_conn, src_item["id"])
-                        if source_trend is None:
-                            continue
+                        dest_cur.execute(
+                            "DELETE FROM trends WHERE item_id IN (SELECT id FROM replaced_items)"
+                        )
+                        dest_cur.execute(
+                            "DELETE FROM items WHERE id IN (SELECT id FROM replaced_items)"
+                        )
 
-                        trend_payload = dict(source_trend)
-                        trend_payload["item_id"] = new_item["id"]
-                        trend_payload["feed_id"] = dest_feed_id
+                        dest_cur.execute(
+                            """
+                            INSERT INTO item_id_map(source_item_id, new_item_id)
+                            SELECT s.source_item_id,
+                                   CASE
+                                     WHEN EXISTS (SELECT 1 FROM items i WHERE i.id = s.source_item_id)
+                                       THEN uuid_generate_v4()
+                                     ELSE s.source_item_id
+                                   END AS new_item_id
+                            FROM stg_items s
+                            """
+                        )
 
-                        dest_cur.execute("SELECT 1 FROM trends WHERE item_id = %s", (new_item["id"],))
-                        has_trend = dest_cur.fetchone() is not None
-                        if has_trend:
-                            stats.trends_replaced += 1
-                            if args.apply:
-                                dest_cur.execute("DELETE FROM trends WHERE item_id = %s", (new_item["id"],))
-                        else:
-                            stats.trends_inserted += 1
+                        dest_cur.execute(
+                            """
+                            INSERT INTO items (
+                              id, created_at, updated_at, hash, feed_id, url, language, content,
+                              pub_date, media_content, think_result, think_error, think_error_count,
+                              think_rating, categories, authors
+                            )
+                            SELECT m.new_item_id, s.created_at, s.updated_at, s.hash, %s, s.url,
+                                   s.language, s.content, s.pub_date, s.media_content, s.think_result,
+                                   s.think_error, s.think_error_count, s.think_rating, s.categories, s.authors
+                            FROM stg_items s
+                            JOIN item_id_map m ON m.source_item_id = s.source_item_id
+                            """,
+                            (dest_feed_id,),
+                        )
 
-                        if args.apply:
-                            dest_cur.execute(TREND_INSERT_SQL, trend_payload)
+                        if src_trends:
+                            dest_cur.execute(
+                                """
+                                INSERT INTO trends (
+                                  item_id, feed_id, language, pub_date, category_stems, noun_stems,
+                                  verb_stems, adjective_stems, root_domain, sentiments, sentiments_deframed
+                                )
+                                SELECT m.new_item_id, %s, t.language, t.pub_date, t.category_stems,
+                                       t.noun_stems, t.verb_stems, t.adjective_stems, t.root_domain,
+                                       t.sentiments, t.sentiments_deframed
+                                FROM stg_trends t
+                                JOIN item_id_map m ON m.source_item_id = t.source_item_id
+                                """,
+                                (dest_feed_id,),
+                            )
+                            stats.trends_inserted += len(src_trends)
 
         if not args.apply:
             dest_conn.rollback()

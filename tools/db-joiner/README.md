@@ -10,6 +10,7 @@ Merge source -> destination for `feeds`, `items`, and `trends`.
 - If item exists: delete destination trend + item, then insert source item fresh.
 - Insert trends after items using final destination `feed_id` and `item_id`.
 - Use one destination transaction per feed (atomic per-feed merge).
+- Item/trend work is set-based per feed using temporary staging tables.
 
 ## Quickstart
 
