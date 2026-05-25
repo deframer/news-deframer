@@ -569,6 +569,12 @@ def main() -> int:
     print(f"items inserted: {stats.items_inserted}")
     print(f"trends replaced: {stats.trends_replaced}")
     print(f"trends inserted: {stats.trends_inserted}")
+
+    if args.apply:
+        print("post-join actions:")
+        print("  ./bin/admin feed sync-all")
+        print("  ./bin/admin feed mine-all")
+
     return 0
 
 

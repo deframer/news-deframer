@@ -47,3 +47,12 @@ Direct script form for one feed:
 ```bash
 uv run db_joiner.py --source-dsn "..." --dest-dsn "..." --join --feed-url "https://example.com/rss"
 ```
+
+## After Join
+
+After a successful join/apply run, trigger scheduler work:
+
+```bash
+./bin/admin feed sync-all
+./bin/admin feed mine-all
+```
