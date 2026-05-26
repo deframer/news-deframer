@@ -2,6 +2,7 @@ WITH config AS (
     SELECT
         'de' AS language,
         'de' AS country,
+        'politics' as category,
         8 AS period_hours,
         3 AS associate_limit,
         2 AS min_shared_nouns
@@ -32,6 +33,7 @@ WITH config AS (
     JOIN public.trends t ON t.item_id = i.id
     WHERE f.root_domain = ANY(dd.driving_domains)
       AND f.country = s.country
+      AND LOWER(COALESCE(i.think_result ->> 'category', '')) = LOWER(s.category)
       AND i.pub_date >= NOW() - (s.period_hours * INTERVAL '1 HOUR')
       AND f.enabled = true
       AND f.deleted_at IS NULL
@@ -52,6 +54,7 @@ WITH config AS (
     JOIN public.trends t ON t.item_id = i.id
     WHERE i.pub_date >= NOW() - (s.period_hours * INTERVAL '1 HOUR')
       AND f.country = s.country
+      AND LOWER(COALESCE(i.think_result ->> 'category', '')) = LOWER(s.category)
       AND f.root_domain IS NOT NULL
       AND f.root_domain <> ''
       AND NOT (f.root_domain = ANY(dd.driving_domains))
