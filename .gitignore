@@ -30,4 +30,4 @@ coverage.*
 /feeds.json
 *.log
 goa*
-sql/.~lock.*.xlsx#
+*.xlsx#
