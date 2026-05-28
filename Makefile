@@ -64,7 +64,7 @@ tidy: gen
 gen:
 	goa gen github.com/deframer/news-deframer/pkg/design
 
-example: tidy gen
+example:
 	goa example github.com/deframer/news-deframer/pkg/design && mkdir -p pkg/service && for f in *.go; do [ -e "$$f" ] || continue; if [ -e "pkg/service/$$f" ]; then rm -f "$$f"; else mv -f "$$f" "pkg/service/$$f"; fi; done
 
 docker-all: $(addprefix docker-,$(notdir $(wildcard build/package/*)))
