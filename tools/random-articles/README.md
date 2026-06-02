@@ -17,11 +17,9 @@ Each item includes:
 - `id`
 - `url`
 - `root_domain`
-- `title_corrected`
-- `description_corrected`
-- `overall`
-- `overall_reason`
-- `category`
+- `thinker_result`
+- `sentiments`
+- `sentiments_deframed`
 - `media`
 - `authors`
 - `pubDate`

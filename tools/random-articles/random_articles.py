@@ -51,12 +51,15 @@ def fetch_items(conn: psycopg.Connection[Any], limit_per_feed: int) -> list[dict
         i.media_content,
         i.authors,
         i.think_result,
+        t.sentiments,
+        t.sentiments_deframed,
         ROW_NUMBER() OVER (
           PARTITION BY i.feed_id
           ORDER BY i.pub_date DESC, i.created_at DESC
         ) AS rn
       FROM items i
       JOIN feeds f ON f.id = i.feed_id
+      LEFT JOIN trends t ON t.item_id = i.id
       WHERE f.enabled = TRUE
         AND f.deleted_at IS NULL
         AND COALESCE(f.root_domain, '') <> ''
@@ -71,11 +74,9 @@ def fetch_items(conn: psycopg.Connection[Any], limit_per_feed: int) -> list[dict
       id,
       url,
       root_domain,
-      think_result->>'title_corrected' AS title_corrected,
-      think_result->>'description_corrected' AS description_corrected,
-      (think_result->>'overall')::double precision AS overall,
-      think_result->>'overall_reason' AS overall_reason,
-      think_result->>'category' AS category,
+      think_result AS thinker_result,
+      sentiments,
+      sentiments_deframed,
       media_content,
       authors,
       pub_date
@@ -99,11 +100,9 @@ def fetch_items(conn: psycopg.Connection[Any], limit_per_feed: int) -> list[dict
                 "id": row["id"],
                 "url": row["url"],
                 "root_domain": row["root_domain"],
-                "title_corrected": row["title_corrected"],
-                "description_corrected": row["description_corrected"],
-                "overall": row["overall"],
-                "overall_reason": row["overall_reason"],
-                "category": row["category"],
+                "thinker_result": row["thinker_result"],
+                "sentiments": row["sentiments"],
+                "sentiments_deframed": row["sentiments_deframed"],
                 "media": row["media_content"],
                 "authors": row["authors"] or [],
                 "pubDate": to_rfc3339_utc(pub_date),
