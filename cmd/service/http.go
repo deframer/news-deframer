@@ -81,6 +81,8 @@ func handleHTTPServer(ctx context.Context, u *url.URL, infraEndpoints *infra.End
 	handler = log.HTTP(ctx, log.WithPathFilter(noLogRegexp))(handler)
 	// Allow browser and mobile clients to call the API across origins.
 	handler = corsMiddleware(handler)
+	// 404 redirects
+	handler = redirect404Middleware(handler)
 	// handler = log.HTTP(ctx)(handler)
 	// Start HTTP server using default configuration, change the code to
 	// configure the server as required by your service.
