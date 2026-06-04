@@ -20,14 +20,4 @@ var _ = Service("infra", func() {
 			})
 		})
 	})
-
-	Method("hostname", func() {
-		Description("Return the current host name.")
-		Result(HostnameResponse)
-		HTTP(func() {
-			GET("/hostname")
-			Response(StatusOK)
-			Response("not_found", StatusNotFound)
-		})
-	})
 })

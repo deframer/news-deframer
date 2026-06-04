@@ -2,12 +2,6 @@ package design
 
 import . "goa.design/goa/v3/dsl" //nolint:staticcheck
 
-var HostnameResponse = Type("HostnameResponse", func() {
-	Description("Current host name.")
-	Attribute("hostname", String, "Machine hostname")
-	Required("hostname")
-})
-
 var SentimentScores = Type("SentimentScores", func() {
 	Description("Sentiment score set.")
 	Attribute("valence", Float64, "Valence score")
