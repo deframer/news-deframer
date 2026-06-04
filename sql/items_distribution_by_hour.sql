@@ -55,6 +55,9 @@ WITH config AS (
     FROM utc_counts
 )
 SELECT
+    utc_percentages.domain,
+    utc_percentages.language,
+    utc_percentages.country,
     COALESCE(MAX(utc_percentages.percent) FILTER (WHERE utc_percentages.hour_of_day = 0), 0) AS "0h",
     COALESCE(MAX(utc_percentages.percent) FILTER (WHERE utc_percentages.hour_of_day = 1), 0) AS "1h",
     COALESCE(MAX(utc_percentages.percent) FILTER (WHERE utc_percentages.hour_of_day = 2), 0) AS "2h",
