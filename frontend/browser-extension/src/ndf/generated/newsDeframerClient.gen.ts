@@ -200,6 +200,8 @@ export interface DomainEntry {
   language: string;
   /** Portal URL */
   portal_url?: string;
+  /** Feed tags */
+  tags?: string[];
 }
 
 /**

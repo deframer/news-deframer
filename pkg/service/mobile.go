@@ -9,6 +9,9 @@ import (
 	"goa.design/goa/v3/security"
 )
 
+// WARNING: This file is a thin adapter over webimpl.go.
+// Keep it in sync with pkg/service/webimpl.go for every endpoint and DTO change.
+// If webimpl.go changes, this file must be updated too, or mobile will silently diverge.
 type mobilesrvc struct {
 	svc web.Service
 }
@@ -265,6 +268,7 @@ func convertMobileDomainEntry(entry *web.DomainEntry) *mobile.DomainEntry {
 	return &mobile.DomainEntry{
 		Domain:    entry.Domain,
 		Language:  entry.Language,
+		Tags:      append([]string{}, entry.Tags...),
 		PortalURL: entry.PortalURL,
 	}
 }

@@ -43,7 +43,7 @@ const DomainComparisonUtilityThreshold = 1.0
 const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
 
-var SupportedAnalyzedItemTags = StringArray{"public_service_media"}
+var SupportedUserTags = StringArray{"public_service_media"}
 
 type TrendMetric struct {
 	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
@@ -1031,7 +1031,7 @@ func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, erro
 		Select(query).
 		Joins("JOIN feeds ON feeds.id = items.feed_id").
 		Joins("LEFT JOIN trends ON trends.item_id = items.id").
-		Joins("CROSS JOIN (SELECT ?::text[] AS supported_tags) AS supported_tags", SupportedAnalyzedItemTags).
+		Joins("CROSS JOIN (SELECT ?::text[] AS supported_tags) AS supported_tags", SupportedUserTags).
 		Where("items.url = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", u.String(), true).
 		Order("items.pub_date DESC").
 		First(&item).Error; err != nil {

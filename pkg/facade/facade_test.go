@@ -427,6 +427,7 @@ func TestGetRootDomains(t *testing.T) {
 				RootDomain: &domainB, // b.com
 				Language:   &langEn,
 				PortalUrl:  &portalUrl,
+				Tags:       database.StringArray{"lead", "public_service_media"},
 			},
 			{
 				Base:       database.Base{},
@@ -439,6 +440,7 @@ func TestGetRootDomains(t *testing.T) {
 				Enabled:    true,
 				RootDomain: &domainB, // Duplicate b.com
 				Language:   &langEn,
+				Tags:       database.StringArray{"lead"},
 			},
 			{
 				Base:       database.Base{},
@@ -464,7 +466,7 @@ func TestGetRootDomains(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, []DomainEntry{
 			{Domain: "a.com", Language: "de"},
-			{Domain: "b.com", Language: "en", PortalUrl: &portalUrl},
+			{Domain: "b.com", Language: "en", Tags: database.StringArray{"public_service_media"}, PortalUrl: &portalUrl},
 		}, domains)
 	})
 

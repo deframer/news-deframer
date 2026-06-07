@@ -147,6 +147,7 @@ func (w *WebImpl) Domains(ctx context.Context, p *web.DomainsPayload) (res []*we
 		res = append(res, &web.DomainEntry{
 			Domain:    domains[i].Domain,
 			Language:  domains[i].Language,
+			Tags:      append([]string{}, domains[i].Tags...),
 			PortalURL: domains[i].PortalUrl,
 		})
 	}
