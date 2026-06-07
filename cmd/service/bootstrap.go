@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/deframer/news-deframer/pkg/config"
+	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/joho/godotenv"
 	"goa.design/clue/log"
 )
@@ -17,6 +18,9 @@ func bootstrap(ctx context.Context, httpPortF *string, outDbgF *bool) (outHttpPo
 
 	if err != nil {
 		log.Fatalf(ctx, err, "can't initialize config")
+	}
+	if err := database.Connect(ctx, cfg); err != nil {
+		log.Fatalf(ctx, err, "can't connect to database")
 	}
 
 	log.Printf(ctx, "starting: %v", cfg.ApplicationName)
