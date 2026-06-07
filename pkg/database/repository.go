@@ -9,8 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
 	"github.com/google/uuid"

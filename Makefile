@@ -9,7 +9,7 @@ ifneq ("$(wildcard .env)","")
   export $(shell sed 's/=.*//' .env)
 endif
 
-.PHONY: all build clean test help coverage lint tidy gen example
+.PHONY: all build clean test help coverage lint tidy gen example format-check
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
 .PHONY: docker-all add-feeds service worker thinker thinker-fixer
 
@@ -42,11 +42,17 @@ coverage:
 	go test -v -coverprofile=coverage.out ./...
 	go tool cover -html=coverage.out -o coverage.html
 
-lint:
+lint: format-check
 	golangci-lint run
 	gosec -conf .gosec.json ./...
-	govulncheck ./...; \
-	gofmt -l .
+	govulncheck ./...
+
+format-check:
+	@if [ -n "$$(gofmt -l .)" ]; then \
+		echo "Go code is not formatted:"; \
+		gofmt -d .; \
+		exit 1; \
+	fi
 
 tools-install:
 	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
