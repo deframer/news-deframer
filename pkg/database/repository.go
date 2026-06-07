@@ -1001,7 +1001,7 @@ func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int)
 func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, error) {
 	var item AnalyzedItem
 	query := `items.*, 
-		feeds.tags AS tags,
+		CASE WHEN COALESCE(feeds.tags, '{}'::text[]) && supported_tags.supported_tags THEN supported_tags.supported_tags ELSE '{}'::text[] END AS tags,
 		CASE WHEN trends.sentiments IS NOT NULL AND trends.sentiments <> '{}'::jsonb THEN
 			jsonb_build_object(
 				'valence', (trends.sentiments->>'v')::double precision,
@@ -1031,7 +1031,7 @@ func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, erro
 		Select(query).
 		Joins("JOIN feeds ON feeds.id = items.feed_id").
 		Joins("LEFT JOIN trends ON trends.item_id = items.id").
-		Where("feeds.tags && ?", SupportedAnalyzedItemTags).
+		Joins("CROSS JOIN (SELECT ?::text[] AS supported_tags) AS supported_tags", SupportedAnalyzedItemTags).
 		Where("items.url = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", u.String(), true).
 		Order("items.pub_date DESC").
 		First(&item).Error; err != nil {

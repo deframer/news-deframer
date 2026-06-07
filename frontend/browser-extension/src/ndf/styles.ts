@@ -12,8 +12,14 @@ export const ndfStyles = `
 .page-header { background-color: var(--header-bg); color: var(--text-color); padding: 8px 1.5em; text-align: left; border-bottom: 1px solid var(--border-color); z-index: 1001; display: flex; align-items: center; justify-content: space-between; }
 .btn-back { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--accent-color); border-radius: 8px; background-color: var(--accent-color); color: var(--accent-text); font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background-color 0.2s; text-decoration: none; }
 .btn-back:hover { background-color: var(--accent-hover); }
-.btn-hide { padding: 8px 12px; border: 1px solid var(--btn-border); border-radius: 8px; background-color: var(--btn-bg); color: var(--btn-text); font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
-.btn-hide:hover { background-color: var(--btn-hover-bg); }
+.page-header-center { flex: 1; display: flex; justify-content: center; align-items: center; min-width: 0; padding: 0 0.75em; }
+.article-info-badge { display: inline-flex; align-items: center; color: var(--text-color); font-size: 0.9em; font-weight: 700; white-space: nowrap; }
+.btn-hide { padding: 8px 12px; border: 1px solid var(--btn-border); border-radius: 8px; background-color: var(--btn-bg); color: var(--btn-text); font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; box-shadow: var(--shadow-soft); }
+.btn-hide:hover { background-color: var(--btn-hover-bg); border-color: var(--border-strong); }
+.btn-back:focus-visible, .btn-hide:focus-visible, .btn:focus-visible, .tab-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
 .article-container { max-width: 800px; margin: 0; background-color: var(--card-bg); border-radius: 0; box-shadow: none; padding-bottom: 20px; color: var(--text-color); }
 .image-container img { width: 100%; height: auto; border-radius: 0; display: block; }
 .main-content { padding: 1.5em; }
@@ -26,8 +32,8 @@ h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
 .reason { margin: 5px 0 0; font-size: 0.95em; color: var(--secondary-text); line-height: 1.4; }
 .original-content { margin-top: 2em; padding-top: 1em; border-top: 1px solid var(--border-color); }
 .action-buttons { display: flex; justify-content: space-around; gap: 10px; padding: 1.5em; background-color: var(--card-bg); border-top: 1px solid var(--border-color); }
-.btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 1px solid var(--btn-border); border-radius: 8px; background-color: var(--btn-bg); color: var(--btn-text); font-size: 0.95em; font-weight: 500; cursor: pointer; transition: background-color 0.2s; text-decoration: none; }
-.btn:hover { background-color: var(--btn-hover-bg); }
+.btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px; border: 1px solid var(--btn-border); border-radius: 8px; background-color: var(--btn-bg); color: var(--btn-text); font-size: 0.95em; font-weight: 500; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; text-decoration: none; box-shadow: var(--shadow-soft); }
+.btn:hover { background-color: var(--btn-hover-bg); border-color: var(--border-strong); }
 .btn-primary { background-color: var(--accent-color); color: var(--accent-text); border-color: var(--accent-color); }
 .btn-primary:hover { background-color: var(--accent-hover); }
 
