@@ -115,6 +115,7 @@ type SentimentItem struct {
 
 type AnalyzedItem struct {
 	Hash               string           `json:"hash"`
+	Tags               StringArray      `gorm:"type:text[]" json:"tags,omitempty"`
 	URL                string           `json:"url"`
 	ThinkResult        *ThinkResult     `gorm:"type:jsonb"`
 	Sentiments         *SentimentScores `gorm:"type:jsonb" json:"sentiments,omitempty"`
@@ -134,6 +135,9 @@ func (a AnalyzedItem) MarshalJSON() ([]byte, error) {
 
 	// Add all the regular AnalyzedItem fields
 	result["hash"] = a.Hash
+	if len(a.Tags) > 0 {
+		result["tags"] = a.Tags
+	}
 	result["url"] = a.URL
 	result["sentiments"] = a.Sentiments
 	result["sentiments_deframed"] = a.SentimentsDeframed
@@ -977,7 +981,7 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int) ([]AnalyzedItem, error) {
 	var items []AnalyzedItem
 	subQuery := r.db.Model(&Item{}).
-		Select("DISTINCT ON (items.url) items.*").
+		Select("DISTINCT ON (items.url) items.*, feeds.tags AS tags").
 		Joins("JOIN feeds ON feeds.id = items.feed_id").
 		Where("feeds.root_domain = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", rootDomain, true).
 		Where("items.think_result IS NOT NULL AND items.think_error IS NULL AND items.think_error_count = 0").
@@ -997,6 +1001,7 @@ func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int)
 func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, error) {
 	var item AnalyzedItem
 	query := `items.*, 
+		feeds.tags AS tags,
 		CASE WHEN trends.sentiments IS NOT NULL AND trends.sentiments <> '{}'::jsonb THEN
 			jsonb_build_object(
 				'valence', (trends.sentiments->>'v')::double precision,
