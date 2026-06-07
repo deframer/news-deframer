@@ -27,7 +27,13 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
   type DetailMode = 'closed' | 'original' | 'details';
   const [mode, setMode] = useState<DetailMode>('closed');
 
-  const toggleMode = (next: Exclude<DetailMode, 'closed'>) => {
+  const handleModeClick = (next: Exclude<DetailMode, 'closed'>) => {
+    if (activeTab !== 'article') {
+      setActiveTab('article');
+      setMode(next);
+      return;
+    }
+
     setMode((current) => current === next ? 'closed' : next);
   };
   const [sentimentType, setSentimentType] = useState<'sentiments' | 'sentiments_deframed'>('sentiments');
@@ -195,8 +201,8 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
         </div>
 
         <div className="action-buttons">
-          <button onClick={() => toggleMode('original')} className={`btn ${mode === 'original' ? 'btn-primary' : ''}`}>{t('article.btn_original_title')}</button>
-          <button onClick={() => toggleMode('details')} className={`btn ${mode === 'details' ? 'btn-primary' : ''}`}>{t('article.btn_details')}</button>
+          <button onClick={() => handleModeClick('original')} className={`btn ${mode === 'original' ? 'btn-primary' : ''}`}>{t('article.btn_original_title')}</button>
+          <button onClick={() => handleModeClick('details')} className={`btn ${mode === 'details' ? 'btn-primary' : ''}`}>{t('article.btn_details')}</button>
           <button onClick={bypassAndReload} className="btn">{t('article.btn_view_original')}</button>
         </div>
 
