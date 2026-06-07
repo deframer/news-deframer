@@ -686,8 +686,8 @@ func TestFindFirstAnalyzedItemByUrl_FiltersTags(t *testing.T) {
 			FeedID:      feed.ID,
 			URL:         itemURL,
 			Content:     "content",
-			ThinkResult:  &ThinkResult{TitleCorrected: "Corrected"},
-			ThinkRating:  0.8,
+			ThinkResult: &ThinkResult{TitleCorrected: "Corrected"},
+			ThinkRating: 0.8,
 			PubDate:     time.Now(),
 		}
 		assert.NoError(t, tx.Create(&item).Error)
@@ -720,12 +720,12 @@ func TestFindFirstAnalyzedItemByUrl_FiltersTags(t *testing.T) {
 		assert.NoError(t, tx.Create(&feed).Error)
 
 		item := Item{
-			Hash:       "hash-empty-" + uid,
-			FeedID:     feed.ID,
-			URL:        itemURL,
-			Content:    "content",
+			Hash:        "hash-empty-" + uid,
+			FeedID:      feed.ID,
+			URL:         itemURL,
+			Content:     "content",
 			ThinkResult: &ThinkResult{TitleCorrected: "Corrected"},
-			PubDate:    time.Now(),
+			PubDate:     time.Now(),
 		}
 		assert.NoError(t, tx.Create(&item).Error)
 
