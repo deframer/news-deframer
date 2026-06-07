@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
+import { setBypassForCurrentTab } from '../../shared/session-bypass';
 import { AnalyzedItem, DomainEntry } from '../client';
 import { Footer } from '../components/Footer';
 import { TabPortal } from '../components/TabPortal';
@@ -22,11 +23,16 @@ export const PortalPage = ({ items, domain, availableDomains, searchEngineUrl }:
   const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
   const [activeTab, setActiveTab] = useState<'portal' | 'trends'>('portal');
 
-  const bypassAndReload = () => {
+  const bypassAndReload = async () => {
     window.scrollTo(0, 0);
     log.debug('Bypassing for this session and reloading.');
-    sessionStorage.setItem('__ndf-bypass', 'true');
-    window.location.reload();
+    try {
+      await setBypassForCurrentTab();
+    } catch (err) {
+      log.error('Failed to set bypass:', err);
+    } finally {
+      window.location.reload();
+    }
   };
 
   return (

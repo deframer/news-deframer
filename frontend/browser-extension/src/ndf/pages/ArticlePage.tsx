@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
+import { setBypassForCurrentTab } from '../../shared/session-bypass';
 import type { AnalysisOutput, EmotionVector } from '../../shared/sentiments';
 import { sentimentsToLabels } from '../../shared/sentiments';
 import { AnalyzedItem } from '../client';
@@ -90,11 +91,16 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
     setIsTooltipOpen(false);
   };
 
-  const bypassAndReload = () => {
+  const bypassAndReload = async () => {
     window.scrollTo(0, 0);
     log.debug('Bypassing for this session and reloading.');
-    sessionStorage.setItem('__ndf-bypass', 'true');
-    window.location.reload();
+    try {
+      await setBypassForCurrentTab();
+    } catch (err) {
+      log.error('Failed to set bypass:', err);
+    } finally {
+      window.location.reload();
+    }
   };
 
   return (
