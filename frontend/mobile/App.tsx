@@ -129,6 +129,7 @@ function App() {
   const [settingsErrorMessage, setSettingsErrorMessage] = useState<string | null>(null);
   const [hasAutoTestedRef] = useState(() => ({ current: false }));
   const palette = useMemo(() => themeService.getPalette(settings, colorScheme), [colorScheme, settings]);
+  const client = useMemo(() => new NewsDeframerClient(settings), [settings]);
   const visibleDomains = configured ? domains : [];
   const visibleDomainsLoading = configured ? domainsLoading : false;
   const activePortalBackAction = screen === 'portal' ? portalBackAction : null;
@@ -292,25 +293,21 @@ function App() {
     };
   }, [booting, configured, screen, settings]);
 
-  useEffect(() => {
-    if (screen !== 'settings' || booting || hasAutoTestedRef.current) {
-      return;
-    }
-
-    hasAutoTestedRef.current = true;
-    handleTestConnection();
-  }, [booting, handleTestConnection, screen, hasAutoTestedRef]);
-
   const handlePortalBackActionChange = useCallback((action: (() => void) | null) => {
     setPortalBackAction(() => action);
   }, []);
 
-  const openScreen = (nextScreen: Screen) => {
-    setDrawerOpen(false);
-    setSelectedArticle(null);
-    setPortalBackAction(null);
-    setScreen(nextScreen);
-  };
+  const handleOpenPortalArticle = useCallback(async (item: AnalyzedItem) => {
+    try {
+      const fullItem = await withTimeout(client.getItem(item.url), CONNECTION_TIMEOUT_MS);
+      setSelectedArticle(fullItem ?? item);
+    } catch (error) {
+      logger.error('Failed to load article detail', { url: item.url, error: String(error) });
+      setSelectedArticle(item);
+    } finally {
+      setScreen('article');
+    }
+  }, [client]);
 
   const handleTestConnection = useCallback(async (nextSettings: Settings = settings) => {
     setStatus('loading');
@@ -347,6 +344,22 @@ function App() {
       setSettingsErrorMessage(error instanceof Error ? error.message : String(error));
     }
   }, [settings, t]);
+
+  useEffect(() => {
+    if (screen !== 'settings' || booting || hasAutoTestedRef.current) {
+      return;
+    }
+
+    hasAutoTestedRef.current = true;
+    handleTestConnection();
+  }, [booting, handleTestConnection, screen, hasAutoTestedRef]);
+
+  const openScreen = (nextScreen: Screen) => {
+    setDrawerOpen(false);
+    setSelectedArticle(null);
+    setPortalBackAction(null);
+    setScreen(nextScreen);
+  };
 
   const renderScreen = () => {
     if (booting) {
@@ -388,10 +401,7 @@ function App() {
               domain={selectedDomain}
               settings={settings}
               onBackRequestChange={handlePortalBackActionChange}
-              onOpenArticle={(item) => {
-                setSelectedArticle(item);
-                setScreen('article');
-              }}
+              onOpenArticle={handleOpenPortalArticle}
             />
           </View>
         </View>
