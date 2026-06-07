@@ -35,10 +35,10 @@ export const cssVariables = {
     --border-subtle: #dddddd;
     --border-strong: #cccccc;
     --secondary-text: #666666;
-    --btn-bg: #ffffff;
-    --btn-text: #333333;
-    --btn-border: #dddddd;
-    --btn-hover-bg: #f8f9fa;
+    --btn-bg: #f1f4f8;
+    --btn-text: #20262e;
+    --btn-border: #aab2bf;
+    --btn-hover-bg: #e4e9f0;
     --accent-color: #0056b3;
     --accent-hover: #004494;
     --accent-text: #ffffff;

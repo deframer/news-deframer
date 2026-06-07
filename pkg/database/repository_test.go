@@ -662,6 +662,85 @@ func TestFindItemsByUrl(t *testing.T) {
 	})
 }
 
+func TestFindFirstAnalyzedItemByUrl_FiltersTags(t *testing.T) {
+	_, baseDB := mustOpenTestRepo(t)
+
+	t.Run("ReturnsOnlySupportedTag", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		uid := uuid.New().String()
+		feedURL := "http://item-tags.test/rss-" + uid
+		itemURL := "http://item-tags.test/article-" + uid
+
+		feed := Feed{
+			URL:     feedURL,
+			Enabled: true,
+			Tags:    StringArray{"lead", "public_service_media"},
+		}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		item := Item{
+			Hash:        "hash-" + uid,
+			FeedID:      feed.ID,
+			URL:         itemURL,
+			Content:     "content",
+			ThinkResult:  &ThinkResult{TitleCorrected: "Corrected"},
+			ThinkRating:  0.8,
+			PubDate:     time.Now(),
+		}
+		assert.NoError(t, tx.Create(&item).Error)
+
+		u, err := url.Parse(itemURL)
+		assert.NoError(t, err)
+
+		found, err := repo.FindFirstAnalyzedItemByUrl(u)
+		assert.NoError(t, err)
+		if assert.NotNil(t, found) {
+			assert.Equal(t, StringArray{"public_service_media"}, found.Tags)
+			assert.Equal(t, itemURL, found.URL)
+		}
+	})
+
+	t.Run("ReturnsEmptyTagsWhenUnsupported", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		uid := uuid.New().String()
+		feedURL := "http://item-tags-empty.test/rss-" + uid
+		itemURL := "http://item-tags-empty.test/article-" + uid
+
+		feed := Feed{
+			URL:     feedURL,
+			Enabled: true,
+			Tags:    StringArray{"lead", "world"},
+		}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		item := Item{
+			Hash:       "hash-empty-" + uid,
+			FeedID:     feed.ID,
+			URL:        itemURL,
+			Content:    "content",
+			ThinkResult: &ThinkResult{TitleCorrected: "Corrected"},
+			PubDate:    time.Now(),
+		}
+		assert.NoError(t, tx.Create(&item).Error)
+
+		u, err := url.Parse(itemURL)
+		assert.NoError(t, err)
+
+		found, err := repo.FindFirstAnalyzedItemByUrl(u)
+		assert.NoError(t, err)
+		if assert.NotNil(t, found) {
+			assert.Empty(t, found.Tags)
+			assert.Equal(t, itemURL, found.URL)
+		}
+	})
+}
+
 func TestFindItemsByRootDomain(t *testing.T) {
 	_, baseDB := mustOpenTestRepo(t)
 

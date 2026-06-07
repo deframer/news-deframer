@@ -9,6 +9,9 @@ import (
 	"goa.design/goa/v3/security"
 )
 
+// WARNING: This file is a thin adapter over webimpl.go.
+// Keep it in sync with pkg/service/webimpl.go for every endpoint and DTO change.
+// If webimpl.go changes, this file must be updated too, or mobile will silently diverge.
 type mobilesrvc struct {
 	svc web.Service
 }
@@ -143,6 +146,7 @@ func convertMobileAnalyzedItem(item *web.AnalyzedItem) *mobile.AnalyzedItem {
 	}
 	return &mobile.AnalyzedItem{
 		Hash:                        item.Hash,
+		Tags:                        append([]string{}, item.Tags...),
 		URL:                         item.URL,
 		TitleOriginal:               item.TitleOriginal,
 		DescriptionOriginal:         item.DescriptionOriginal,
@@ -177,31 +181,16 @@ func convertMobileAnalyzedSiteItem(item *web.AnalyzedSiteItem) *mobile.AnalyzedS
 		return nil
 	}
 	return &mobile.AnalyzedSiteItem{
-		Hash:                        item.Hash,
-		URL:                         item.URL,
-		TitleOriginal:               item.TitleOriginal,
-		DescriptionOriginal:         item.DescriptionOriginal,
-		TitleCorrected:              item.TitleCorrected,
-		TitleCorrectionReason:       item.TitleCorrectionReason,
-		DescriptionCorrected:        item.DescriptionCorrected,
-		DescriptionCorrectionReason: item.DescriptionCorrectionReason,
-		Framing:                     item.Framing,
-		FramingReason:               item.FramingReason,
-		Clickbait:                   item.Clickbait,
-		ClickbaitReason:             item.ClickbaitReason,
-		Persuasive:                  item.Persuasive,
-		PersuasiveReason:            item.PersuasiveReason,
-		HyperStimulus:               item.HyperStimulus,
-		HyperStimulusReason:         item.HyperStimulusReason,
-		Speculative:                 item.Speculative,
-		SpeculativeReason:           item.SpeculativeReason,
-		Overall:                     item.Overall,
-		OverallReason:               item.OverallReason,
-		Category:                    item.Category,
-		Media:                       convertMobileMediaContent(item.Media),
-		Rating:                      item.Rating,
-		Authors:                     append([]string{}, item.Authors...),
-		PubDate:                     item.PubDate,
+		URL:                  item.URL,
+		TitleOriginal:        item.TitleOriginal,
+		DescriptionOriginal:  item.DescriptionOriginal,
+		TitleCorrected:       item.TitleCorrected,
+		DescriptionCorrected: item.DescriptionCorrected,
+		OverallReason:        item.OverallReason,
+		Media:                convertMobileMediaContent(item.Media),
+		Rating:               item.Rating,
+		Authors:              append([]string{}, item.Authors...),
+		PubDate:              item.PubDate,
 	}
 }
 
@@ -279,6 +268,8 @@ func convertMobileDomainEntry(entry *web.DomainEntry) *mobile.DomainEntry {
 	return &mobile.DomainEntry{
 		Domain:    entry.Domain,
 		Language:  entry.Language,
+		Country:   entry.Country,
+		Tags:      append([]string{}, entry.Tags...),
 		PortalURL: entry.PortalURL,
 	}
 }

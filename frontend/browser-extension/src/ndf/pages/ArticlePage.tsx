@@ -39,6 +39,7 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
   const title = item.title_corrected || stripHtml(item.title_original) || t('article.no_title');
   const description = item.description_corrected || stripHtml(item.description_original)|| t('article.no_description');
   const imageUrl = item.media?.medium === 'image' ? item.media.url : '';
+  const isPublicServiceMedia = item.tags?.some((tag) => tag.includes('public_service_media')) ?? false;
 
   const metrics = [
     { id: 'framing', label: t('metrics.framing'), value: item.framing, reason: item.framing_reason },
@@ -95,6 +96,11 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
       <div className="article-container">
         <header className="page-header">
           <a href="/" className="btn-back" title={t('article.back_tooltip', { domain: rootDomain })}>{t('article.back')}</a>
+          <div className="page-header-center">
+            {isPublicServiceMedia && (
+              <span className="article-info-badge">{t('article.public_service_media')}</span>
+            )}
+          </div>
           <button onClick={bypassAndReload} className="btn-hide">{t('article.hide')}</button>
         </header>
 

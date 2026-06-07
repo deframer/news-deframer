@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 import { AnalyzedItem } from '../client';
 import { ArticlePage } from '../pages/ArticlePage';
@@ -34,5 +34,11 @@ describe('ArticlePage', () => {
   it('renders without crashing', () => {
     const { container } = render(<ArticlePage item={mockItem} />);
     expect(container).not.toBeNull();
+  });
+
+  it('shows public service media badge when tagged', () => {
+    render(<ArticlePage item={{ ...mockItem, tags: ['news', 'public_service_media'] }} />);
+
+    expect(screen.getByText('article.public_service_media')).toBeInTheDocument();
   });
 });

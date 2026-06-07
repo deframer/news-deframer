@@ -74,7 +74,9 @@ const resources = {
         "original_section": "Original",
         "btn_original_title": "Original title",
         "btn_details": "Details",
-        "btn_open_article": "Open article"
+        "btn_open_article": "Open article",
+        "public_service_media": "Public service media",
+        "hide_public_service_media": "Hide public service media"
       },
       "metrics": {
         "framing": "Framing",
@@ -214,7 +216,9 @@ const resources = {
         "original_section": "Original",
         "btn_original_title": "Originaltitel",
         "btn_details": "Details",
-        "btn_open_article": "Artikel öffnen"
+        "btn_open_article": "Artikel öffnen",
+        "public_service_media": "Öffentlich-rechtliche Medien",
+        "hide_public_service_media": "Öffentlich-rechtliche Medien ausblenden"
       },
       "metrics": {
         "framing": "Framing",

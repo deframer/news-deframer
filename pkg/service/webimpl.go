@@ -147,6 +147,8 @@ func (w *WebImpl) Domains(ctx context.Context, p *web.DomainsPayload) (res []*we
 		res = append(res, &web.DomainEntry{
 			Domain:    domains[i].Domain,
 			Language:  domains[i].Language,
+			Country:   domains[i].Country,
+			Tags:      append([]string{}, domains[i].Tags...),
 			PortalURL: domains[i].PortalUrl,
 		})
 	}
@@ -324,6 +326,7 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 	}
 	return &web.AnalyzedItem{
 		Hash:                        item.Hash,
+		Tags:                        append([]string{}, item.Tags...),
 		URL:                         item.URL,
 		TitleOriginal:               titleOriginal,
 		DescriptionOriginal:         descriptionOriginal,
@@ -358,73 +361,30 @@ func convertAnalyzedSiteItem(item *database.AnalyzedItem) *web.AnalyzedSiteItem 
 		return nil
 	}
 	var (
-		titleOriginal               *string
-		descriptionOriginal         *string
-		titleCorrected              *string
-		titleCorrectionReason       *string
-		descriptionCorrected        *string
-		descriptionCorrectionReason *string
-		framing                     *float64
-		framingReason               *string
-		clickbait                   *float64
-		clickbaitReason             *string
-		persuasive                  *float64
-		persuasiveReason            *string
-		hyperStimulus               *float64
-		hyperStimulusReason         *string
-		speculative                 *float64
-		speculativeReason           *string
-		overall                     *float64
-		overallReason               *string
-		category                    *string
+		titleOriginal        *string
+		descriptionOriginal  *string
+		titleCorrected       *string
+		descriptionCorrected *string
+		overallReason        *string
 	)
 	if tr := item.ThinkResult; tr != nil {
 		titleOriginal = stringPtr(tr.TitleOriginal)
 		descriptionOriginal = stringPtr(tr.DescriptionOriginal)
 		titleCorrected = stringPtr(tr.TitleCorrected)
-		titleCorrectionReason = stringPtr(tr.TitleCorrectionReason)
 		descriptionCorrected = stringPtr(tr.DescriptionCorrected)
-		descriptionCorrectionReason = stringPtr(tr.DescriptionCorrectionReason)
-		framing = float64Ptr(tr.Framing)
-		framingReason = stringPtr(tr.FramingReason)
-		clickbait = float64Ptr(tr.Clickbait)
-		clickbaitReason = stringPtr(tr.ClickbaitReason)
-		persuasive = float64Ptr(tr.Persuasive)
-		persuasiveReason = stringPtr(tr.PersuasiveReason)
-		hyperStimulus = float64Ptr(tr.HyperStimulus)
-		hyperStimulusReason = stringPtr(tr.HyperStimulusReason)
-		speculative = float64Ptr(tr.Speculative)
-		speculativeReason = stringPtr(tr.SpeculativeReason)
-		overall = float64Ptr(tr.Overall)
 		overallReason = stringPtr(tr.OverallReason)
-		category = stringPtr(tr.Category)
 	}
 	return &web.AnalyzedSiteItem{
-		Hash:                        item.Hash,
-		URL:                         item.URL,
-		TitleOriginal:               titleOriginal,
-		DescriptionOriginal:         descriptionOriginal,
-		TitleCorrected:              titleCorrected,
-		TitleCorrectionReason:       titleCorrectionReason,
-		DescriptionCorrected:        descriptionCorrected,
-		DescriptionCorrectionReason: descriptionCorrectionReason,
-		Framing:                     framing,
-		FramingReason:               framingReason,
-		Clickbait:                   clickbait,
-		ClickbaitReason:             clickbaitReason,
-		Persuasive:                  persuasive,
-		PersuasiveReason:            persuasiveReason,
-		HyperStimulus:               hyperStimulus,
-		HyperStimulusReason:         hyperStimulusReason,
-		Speculative:                 speculative,
-		SpeculativeReason:           speculativeReason,
-		Overall:                     overall,
-		OverallReason:               overallReason,
-		Category:                    category,
-		Media:                       convertMediaContent(item.MediaContent),
-		Rating:                      item.ThinkRating,
-		Authors:                     append([]string{}, item.Authors...),
-		PubDate:                     item.PubDate.Format(time.RFC3339),
+		URL:                  item.URL,
+		TitleOriginal:        titleOriginal,
+		DescriptionOriginal:  descriptionOriginal,
+		TitleCorrected:       titleCorrected,
+		DescriptionCorrected: descriptionCorrected,
+		OverallReason:        overallReason,
+		Media:                convertMediaContent(item.MediaContent),
+		Rating:               item.ThinkRating,
+		Authors:              append([]string{}, item.Authors...),
+		PubDate:              item.PubDate.Format(time.RFC3339),
 	}
 }
 

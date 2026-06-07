@@ -6,6 +6,7 @@ const {
   Github,
   Info,
   Menu,
+  Radio,
   Search,
 } = require('lucide-react-native/icons');
 
@@ -17,5 +18,6 @@ module.exports = {
   Github,
   Info,
   Menu,
+  Radio,
   Search,
 };

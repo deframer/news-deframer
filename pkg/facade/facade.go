@@ -14,9 +14,11 @@ import (
 const MaxItemsForRootDomain = 30
 
 type DomainEntry struct {
-	Domain    string  `json:"domain"`
-	Language  string  `json:"language"`
-	PortalUrl *string `json:"portal_url,omitempty"`
+	Domain    string               `json:"domain"`
+	Language  string               `json:"language"`
+	Country   string               `json:"country"`
+	Tags      database.StringArray `json:"tags,omitempty"`
+	PortalUrl *string              `json:"portal_url,omitempty"`
 }
 
 type Facade interface {
@@ -81,7 +83,8 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 			if feed.Language != nil {
 				lang = *feed.Language
 			}
-			key := *feed.RootDomain + "|" + lang
+			country := feed.Country
+			key := *feed.RootDomain + "|" + lang + "|" + country
 
 			var portalUrl *string
 			if existing, ok := entryMap[key]; ok {
@@ -90,7 +93,15 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 			if feed.PortalUrl != nil {
 				portalUrl = feed.PortalUrl
 			}
-			entryMap[key] = DomainEntry{Domain: *feed.RootDomain, Language: lang, PortalUrl: portalUrl}
+
+			tags := getSupportedDomainTags(feed.Tags)
+			if existing, ok := entryMap[key]; ok {
+				if len(existing.Tags) > 0 {
+					tags = existing.Tags
+				}
+			}
+
+			entryMap[key] = DomainEntry{Domain: *feed.RootDomain, Language: lang, Country: country, Tags: tags, PortalUrl: portalUrl}
 		}
 	}
 
@@ -108,6 +119,17 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 	})
 
 	return domains, nil
+}
+
+func getSupportedDomainTags(tags database.StringArray) database.StringArray {
+	for _, tag := range tags {
+		for _, supportedTag := range database.SupportedUserTags {
+			if tag == supportedTag {
+				return database.SupportedUserTags
+			}
+		}
+	}
+	return nil
 }
 
 func (f *facade) GetTopTrendByDomain(ctx context.Context, domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error) {

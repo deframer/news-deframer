@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { ExternalLink } from '../components/icons';
+import { ExternalLink, Info } from '../components/icons';
 import { useTranslation } from 'react-i18next';
 
 import { formatTime } from '../../../shared/formatTime';
@@ -44,11 +44,14 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
   const [mode, setMode] = useState<DetailMode>('closed');
   const [overallY, setOverallY] = useState<number | null>(null);
   const [pendingScrollTarget, setPendingScrollTarget] = useState<ScrollTarget | null>(null);
+  const [hiddenPublicServiceBadgeUrls, setHiddenPublicServiceBadgeUrls] = useState<Record<string, boolean>>({});
   const scrollRef = useRef<ScrollView>(null);
 
   const title = item.title_corrected || stripHtml(item.title_original) || t('article.no_title', 'No Title');
   const description = item.description_corrected || stripHtml(item.description_original) || t('article.no_description', 'No Description');
   const imageUrl = item.media?.medium === 'image' ? item.media.url : undefined;
+  const hasPublicServiceBadge = Boolean(item.tags?.includes('public_service_media'));
+  const showPublicServiceBadge = hasPublicServiceBadge && !hiddenPublicServiceBadgeUrls[item.url];
   const author = item.authors?.join(', ');
   const timeAgo = item.pubDate ? formatTime(item.pubDate, i18n.language) : '';
 
@@ -136,6 +139,21 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
                 <ExternalLink color={palette.buttonText} size={14} strokeWidth={2.2} />
                 <Text style={[styles.openButtonText, { color: palette.buttonText }]}>{t('article.btn_open_article', 'Open article')}</Text>
               </Pressable>
+              {showPublicServiceBadge && hasPublicServiceBadge ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t('article.hide_public_service_media', 'Hide public service media')}
+                  hitSlop={8}
+                  onPress={(event) => {
+                    event?.stopPropagation?.();
+                    setHiddenPublicServiceBadgeUrls((current) => ({ ...current, [item.url]: true }));
+                  }}
+                  style={[styles.publicServiceBadge, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}
+                >
+                  <Info color={palette.buttonText} size={14} strokeWidth={2.2} />
+                  <Text style={[styles.publicServiceBadgeText, { color: palette.buttonText }]}>{t('article.public_service_media', 'Public service media')}</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
           <View style={[styles.heroTextBlock, !imageUrl ? styles.heroTextBlockNoImage : null]}>
@@ -250,6 +268,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
+  publicServiceBadge: {
+    position: 'absolute',
+    bottom: 10,
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderRadius: 999,
+    minHeight: 30,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 6,
+  },
+  publicServiceBadgeText: { fontSize: 12, fontWeight: '700' },
   heroTextBlock: { gap: 10 },
   heroTextBlockNoImage: {
     position: 'relative',
