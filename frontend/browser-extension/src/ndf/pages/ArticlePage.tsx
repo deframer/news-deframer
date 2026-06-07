@@ -5,9 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
 
 import log from '../../shared/logger';
-import { setBypassForCurrentTab } from '../../shared/session-bypass';
 import type { AnalysisOutput, EmotionVector } from '../../shared/sentiments';
 import { sentimentsToLabels } from '../../shared/sentiments';
+import { setBypassForCurrentTab } from '../../shared/session-bypass';
 import { AnalyzedItem } from '../client';
 import { Footer } from '../components/Footer';
 import { MetaData } from '../components/MetaData';
