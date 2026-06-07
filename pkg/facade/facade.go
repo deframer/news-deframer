@@ -16,6 +16,7 @@ const MaxItemsForRootDomain = 30
 type DomainEntry struct {
 	Domain    string               `json:"domain"`
 	Language  string               `json:"language"`
+	Country   string               `json:"country"`
 	Tags      database.StringArray `json:"tags,omitempty"`
 	PortalUrl *string              `json:"portal_url,omitempty"`
 }
@@ -82,7 +83,8 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 			if feed.Language != nil {
 				lang = *feed.Language
 			}
-			key := *feed.RootDomain + "|" + lang
+			country := feed.Country
+			key := *feed.RootDomain + "|" + lang + "|" + country
 
 			var portalUrl *string
 			if existing, ok := entryMap[key]; ok {
@@ -99,7 +101,7 @@ func (f *facade) GetRootDomains(ctx context.Context) ([]DomainEntry, error) {
 				}
 			}
 
-			entryMap[key] = DomainEntry{Domain: *feed.RootDomain, Language: lang, Tags: tags, PortalUrl: portalUrl}
+			entryMap[key] = DomainEntry{Domain: *feed.RootDomain, Language: lang, Country: country, Tags: tags, PortalUrl: portalUrl}
 		}
 	}
 

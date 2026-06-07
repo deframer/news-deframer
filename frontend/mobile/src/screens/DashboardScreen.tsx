@@ -7,6 +7,8 @@ import { LoadingSpinner } from '../components/LoadingSpinner';
 import { AppPalette } from '../theme';
 import { DomainEntry } from '../services/newsDeframerClient';
 
+const formatDomainLocale = (country: string, language: string) => `${country.toUpperCase()} | ${language}`;
+
 export const DashboardScreen = ({
   palette,
   domains,
@@ -38,7 +40,7 @@ export const DashboardScreen = ({
               style={[styles.domainRow, index > 0 ? [styles.domainRowDivider, { borderTopColor: palette.border }] : null]}
             >
               <Text style={[styles.domainName, { color: palette.text }]}>{domain.domain}</Text>
-              <Text style={[styles.domainMeta, { color: palette.secondaryText }]}>{domain.language}</Text>
+              <Text style={[styles.domainMeta, { color: palette.secondaryText }]}>{formatDomainLocale(domain.country, domain.language)}</Text>
             </Pressable>
           ))
         )}

@@ -65,11 +65,12 @@ var DomainEntry = Type("DomainEntry", func() {
 	Description("Root domain entry.")
 	Attribute("domain", String, "Root domain")
 	Attribute("language", String, "Language code")
+	Attribute("country", String, "Country code")
 	Attribute("tags", ArrayOf(String), "Feed tags")
 	Attribute("portal_url", String, "Portal URL", func() {
 		Format(FormatURI)
 	})
-	Required("domain", "language")
+	Required("domain", "language", "country")
 })
 
 var TrendMetric = Type("TrendMetric", func() {

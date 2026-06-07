@@ -268,6 +268,7 @@ func convertMobileDomainEntry(entry *web.DomainEntry) *mobile.DomainEntry {
 	return &mobile.DomainEntry{
 		Domain:    entry.Domain,
 		Language:  entry.Language,
+		Country:   entry.Country,
 		Tags:      append([]string{}, entry.Tags...),
 		PortalURL: entry.PortalURL,
 	}

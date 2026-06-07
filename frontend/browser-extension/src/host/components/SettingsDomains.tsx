@@ -14,6 +14,7 @@ interface SettingsDomainsProps {
 }
 
 const normalizeDomain = (value: string) => getDomain(value) || value;
+const formatDomainLocale = (country: string, language: string) => `${country.toUpperCase()} | ${language}`;
 
 export const SettingsDomains = ({ domains, domainsLoading, domainsUnavailable, settings, onSelectedDomainsChange }: SettingsDomainsProps) => {
   const { t } = useTranslation();
@@ -74,13 +75,13 @@ export const SettingsDomains = ({ domains, domainsLoading, domainsUnavailable, s
                 <span className={`domain-checkbox ${checked ? 'checked' : ''}`} aria-hidden="true">
                   <span className="domain-checkbox-mark" />
                 </span>
-                <span className="domain-option-content">
-                  <span className="domain-option-header">
-                    <span className="domain-option-name">{entry.rootDomain}</span>
-                    <span className="domain-option-language">{entry.language}</span>
+                  <span className="domain-option-content">
+                    <span className="domain-option-header">
+                      <span className="domain-option-name">{entry.rootDomain}</span>
+                      <span className="domain-option-language">{formatDomainLocale(entry.country, entry.language)}</span>
+                    </span>
+                    {entry.domain !== entry.rootDomain ? <span className="domain-option-source">{entry.domain}</span> : null}
                   </span>
-                  {entry.domain !== entry.rootDomain ? <span className="domain-option-source">{entry.domain}</span> : null}
-                </span>
               </label>
             );
           })}

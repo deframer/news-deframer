@@ -426,6 +426,7 @@ func TestGetRootDomains(t *testing.T) {
 				Enabled:    true,
 				RootDomain: &domainB, // b.com
 				Language:   &langEn,
+				Country:    "de",
 				PortalUrl:  &portalUrl,
 				Tags:       database.StringArray{"lead", "public_service_media"},
 			},
@@ -434,23 +435,27 @@ func TestGetRootDomains(t *testing.T) {
 				Enabled:    true,
 				RootDomain: &domainA, // a.com
 				Language:   &langDe,
+				Country:    "de",
 			},
 			{
 				Base:       database.Base{},
 				Enabled:    true,
 				RootDomain: &domainB, // Duplicate b.com
 				Language:   &langEn,
+				Country:    "de",
 				Tags:       database.StringArray{"lead"},
 			},
 			{
 				Base:       database.Base{},
 				Enabled:    false,
 				RootDomain: &domainC, // Disabled, should be ignored
+				Country:    "de",
 			},
 			{
 				Base:       database.Base{},
 				Enabled:    true,
 				RootDomain: nil, // Nil, should be ignored
+				Country:    "de",
 			},
 		}
 
@@ -465,8 +470,8 @@ func TestGetRootDomains(t *testing.T) {
 		domains, err := f.GetRootDomains(ctx)
 		assert.NoError(t, err)
 		assert.Equal(t, []DomainEntry{
-			{Domain: "a.com", Language: "de"},
-			{Domain: "b.com", Language: "en", Tags: database.StringArray{"public_service_media"}, PortalUrl: &portalUrl},
+			{Domain: "a.com", Language: "de", Country: "de"},
+			{Domain: "b.com", Language: "en", Country: "de", Tags: database.StringArray{"public_service_media"}, PortalUrl: &portalUrl},
 		}, domains)
 	})
 

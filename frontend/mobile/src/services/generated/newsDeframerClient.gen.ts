@@ -194,6 +194,8 @@ export interface DomainComparison {
  * Root domain entry.
  */
 export interface DomainEntry {
+  /** Country code */
+  country: string;
   /** Root domain */
   domain: string;
   /** Language code */
