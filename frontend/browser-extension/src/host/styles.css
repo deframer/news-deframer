@@ -76,7 +76,8 @@ body { margin: 0; overflow-y: auto; overflow-x: hidden; }
 .domain-option-content { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
 .domain-option-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .domain-option-name { font-size: 15px; font-weight: 600; color: var(--text-color); word-break: break-word; }
-.domain-option-language { color: var(--secondary-text); font-size: 14px; font-weight: 500; flex-shrink: 0; }
+.domain-option-language { color: var(--secondary-text); font-size: 14px; font-weight: 500; flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.domain-option-public-service-icon { display: inline-flex; width: 14px; height: 14px; color: var(--secondary-text); flex-shrink: 0; }
 .domain-option-source { color: var(--secondary-text); font-size: 12px; word-break: break-word; }
 .toggle-container { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .toggle-container.disabled { opacity: 0.6; cursor: not-allowed; }

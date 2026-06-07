@@ -1,3 +1,4 @@
+import { Radio } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getDomain } from 'tldts';
@@ -75,13 +76,20 @@ export const SettingsDomains = ({ domains, domainsLoading, domainsUnavailable, s
                 <span className={`domain-checkbox ${checked ? 'checked' : ''}`} aria-hidden="true">
                   <span className="domain-checkbox-mark" />
                 </span>
-                  <span className="domain-option-content">
-                    <span className="domain-option-header">
-                      <span className="domain-option-name">{entry.rootDomain}</span>
-                      <span className="domain-option-language">{formatDomainLocale(entry.country, entry.language)}</span>
+                <span className="domain-option-content">
+                  <span className="domain-option-header">
+                    <span className="domain-option-name">{entry.rootDomain}</span>
+                    <span className="domain-option-language">
+                      {entry.tags?.includes('public_service_media') ? (
+                        <span className="domain-option-public-service-icon" title={t('article.public_service_media')} aria-label={t('article.public_service_media')}>
+                          <Radio size={14} strokeWidth={2.2} aria-hidden="true" focusable="false" />
+                        </span>
+                      ) : null}
+                      <span>{formatDomainLocale(entry.country, entry.language)}</span>
                     </span>
-                    {entry.domain !== entry.rootDomain ? <span className="domain-option-source">{entry.domain}</span> : null}
                   </span>
+                  {entry.domain !== entry.rootDomain ? <span className="domain-option-source">{entry.domain}</span> : null}
+                </span>
               </label>
             );
           })}
