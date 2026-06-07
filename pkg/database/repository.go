@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/deframer/news-deframer/pkg/config"
@@ -209,22 +210,56 @@ type repository struct {
 	db  *gorm.DB
 }
 
+var (
+	dbInstance *gorm.DB
+	dbOnce     sync.Once
+	dbErr      error
+)
+
+// Connect initializes the process-wide database singleton.
+func Connect(ctx context.Context, cfg *config.Config) error {
+	_, err := connect(ctx, cfg)
+	return err
+}
+
+func connect(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
+	if dbInstance != nil {
+		return dbInstance, nil
+	}
+	if cfg == nil {
+		return nil, fmt.Errorf("config is required")
+	}
+
+	dbOnce.Do(func() {
+		gormLogger := logger.Default.LogMode(logger.Silent)
+		if cfg.DatabaseLogging {
+			gormLogger = NewCustomGormLogger(ctx)
+		}
+
+		db, err := gorm.Open(postgres.Open(cfg.DSN+" application_name="+cfg.ApplicationName), &gorm.Config{
+			Logger: gormLogger,
+		})
+		if err != nil {
+			dbErr = fmt.Errorf("failed to connect to database: %w", err)
+			return
+		}
+
+		if err := Migrate(db, false); err != nil {
+			dbErr = fmt.Errorf("failed to migrate database: %w", err)
+			return
+		}
+
+		dbInstance = db
+	})
+
+	return dbInstance, dbErr
+}
+
 // NewRepository initializes a new repository with a database connection from config.
 func NewRepository(ctx context.Context, cfg *config.Config) (Repository, error) {
-	gormLogger := logger.Default.LogMode(logger.Silent)
-	if cfg.DatabaseLogging {
-		gormLogger = NewCustomGormLogger(ctx)
-	}
-
-	db, err := gorm.Open(postgres.Open(cfg.DSN), &gorm.Config{
-		Logger: gormLogger,
-	})
+	db, err := connect(ctx, cfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	if err := Migrate(db, false); err != nil {
-		return nil, fmt.Errorf("failed to migrate database: %w", err)
+		return nil, err
 	}
 
 	return &repository{ctx: ctx, db: db}, nil
