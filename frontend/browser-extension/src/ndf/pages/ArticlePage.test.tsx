@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 import { AnalyzedItem } from '../client';
 import { ArticlePage } from '../pages/ArticlePage';
@@ -40,5 +40,25 @@ describe('ArticlePage', () => {
     render(<ArticlePage item={{ ...mockItem, tags: ['news', 'public_service_media'] }} />);
 
     expect(screen.getByText('article.public_service_media')).toBeInTheDocument();
+  });
+
+  it('switches back to the article tab when opening original content from sentiments', () => {
+    render(<ArticlePage item={mockItem} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'article.tab_sentiments' }));
+    fireEvent.click(screen.getByRole('button', { name: 'article.btn_original_title' }));
+
+    expect(screen.getByRole('button', { name: 'article.tab_article' })).toHaveClass('active');
+    expect(screen.getByText('article.original_section')).toBeInTheDocument();
+  });
+
+  it('switches back to the article tab when opening details from sentiments', () => {
+    render(<ArticlePage item={mockItem} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'article.tab_sentiments' }));
+    fireEvent.click(screen.getByRole('button', { name: 'article.btn_details' }));
+
+    expect(screen.getByRole('button', { name: 'article.tab_article' })).toHaveClass('active');
+    expect(screen.getByText('metrics.clickbait')).toBeInTheDocument();
   });
 });
