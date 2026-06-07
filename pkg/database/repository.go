@@ -43,6 +43,8 @@ const DomainComparisonUtilityThreshold = 1.0
 const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
 
+var SupportedAnalyzedItemTags = StringArray{"public_service_media"}
+
 type TrendMetric struct {
 	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
 	Frequency    int64     `gorm:"column:frequency" json:"frequency"`
@@ -994,7 +996,7 @@ func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int)
 
 func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, error) {
 	var item AnalyzedItem
-	query := `items.*,
+	query := `items.*, 
 		CASE WHEN trends.sentiments IS NOT NULL AND trends.sentiments <> '{}'::jsonb THEN
 			jsonb_build_object(
 				'valence', (trends.sentiments->>'v')::double precision,
@@ -1024,6 +1026,7 @@ func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, erro
 		Select(query).
 		Joins("JOIN feeds ON feeds.id = items.feed_id").
 		Joins("LEFT JOIN trends ON trends.item_id = items.id").
+		Where("feeds.tags && ?", SupportedAnalyzedItemTags).
 		Where("items.url = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", u.String(), true).
 		Order("items.pub_date DESC").
 		First(&item).Error; err != nil {
