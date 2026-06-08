@@ -114,16 +114,18 @@ func (j *ThinkResult) Scan(value interface{}) error {
 }
 
 type MediaThumbnail struct {
-	URL    string `xml:"url,attr" json:"url,omitempty"`
-	Height int    `xml:"height,attr" json:"height,omitempty"`
-	Width  int    `xml:"width,attr" json:"width,omitempty"`
+	URL             string `xml:"url,attr" json:"url,omitempty"`
+	Height          int    `xml:"height,attr" json:"height,omitempty"`
+	Width           int    `xml:"width,attr" json:"width,omitempty"`
+	HasExplicitDims bool   `xml:"has_explicit_dims,attr" json:"has_explicit_dims,omitempty"`
 }
 
 type MediaContent struct {
 	// Technical attributes required for <img src> or <video src>
-	URL    string `xml:"url,attr" json:"url,omitempty"`
-	Type   string `xml:"type,attr" json:"type,omitempty"`     // e.g., "image/jpeg"
-	Medium string `xml:"medium,attr" json:"medium,omitempty"` // e.g., "image" or "video"
+	URL             string `xml:"url,attr" json:"url,omitempty"`
+	Type            string `xml:"type,attr" json:"type,omitempty"`     // e.g., "image/jpeg"
+	Medium          string `xml:"medium,attr" json:"medium,omitempty"` // e.g., "image" or "video"
+	HasExplicitDims bool   `xml:"has_explicit_dims,attr" json:"has_explicit_dims,omitempty"`
 
 	// Dimensions are essential for preventing HTML Layout Shift (CLS)
 	Height int `xml:"height,attr" json:"height,omitempty"`

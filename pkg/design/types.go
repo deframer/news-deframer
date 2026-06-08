@@ -44,6 +44,7 @@ var MediaThumbnail = Type("MediaThumbnail", func() {
 	Attribute("url", String, "Thumbnail URL")
 	Attribute("height", Int, "Thumbnail height")
 	Attribute("width", Int, "Thumbnail width")
+	Attribute("has_explicit_dims", Boolean, "True when width and height come from the source")
 	Required("url")
 })
 
@@ -54,6 +55,7 @@ var MediaContent = Type("MediaContent", func() {
 	Attribute("medium", String, "Media type")
 	Attribute("height", Int, "Media height")
 	Attribute("width", Int, "Media width")
+	Attribute("has_explicit_dims", Boolean, "True when width and height come from the source")
 	Attribute("title", String, "Media title")
 	Attribute("description", String, "Media description")
 	Attribute("thumbnail", MediaThumbnail, "Media thumbnail")

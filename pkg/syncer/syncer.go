@@ -530,14 +530,19 @@ func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string,
 		thinkError = &errStr
 		nextErrorCount++
 	} else {
-		err = updateContent(parsedItem, res)
+		synthesizedMedia, err := updateContent(parsedItem, res)
 		if err != nil {
 			log.Errorf(s.ctx, err, "%s", formatLogKeys("update content failed", logKeys...))
 			return nil, err
 		}
-		mediaContent, err = extractMediaContent(parsedItem)
-		if err != nil {
-			log.Errorf(s.ctx, err, "%s", formatLogKeys("extract media content failed", logKeys...))
+		// Prefer synthesized media here; re-extracting would lose the explicit-dims signal.
+		if synthesizedMedia != nil {
+			mediaContent = mediaContentFromData(synthesizedMedia)
+		} else {
+			mediaContent, err = extractMediaContent(parsedItem)
+			if err != nil {
+				log.Errorf(s.ctx, err, "%s", formatLogKeys("extract media content failed", logKeys...))
+			}
 		}
 		if res != nil {
 			thinkRating = res.Overall
