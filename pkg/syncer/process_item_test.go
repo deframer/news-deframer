@@ -187,6 +187,7 @@ func TestProcessItem_FromRSSXML(t *testing.T) {
 				assert.Equal(t, "image", capturedItem.MediaContent.Medium)
 				assert.Equal(t, 1920, capturedItem.MediaContent.Width)
 				assert.Equal(t, 1080, capturedItem.MediaContent.Height)
+				assert.False(t, capturedItem.MediaContent.HasExplicitDims)
 			}
 		}
 	}
@@ -242,6 +243,7 @@ func TestThinkItem_PreservesMediaContentFromSyncedItem(t *testing.T) {
 			assert.Equal(t, "https://example.test/story", syncedItem.URL)
 			assert.NotNil(t, syncedItem.MediaContent)
 			assert.Equal(t, "https://example.test/image.jpg", syncedItem.MediaContent.URL)
+			assert.False(t, syncedItem.MediaContent.HasExplicitDims)
 			assert.NotContains(t, syncedItem.Content, "enclosure")
 		}
 
@@ -260,6 +262,7 @@ func TestThinkItem_PreservesMediaContentFromSyncedItem(t *testing.T) {
 			assert.Equal(t, "image", finalItem.MediaContent.Medium)
 			assert.Equal(t, 1920, finalItem.MediaContent.Width)
 			assert.Equal(t, 1080, finalItem.MediaContent.Height)
+			assert.False(t, finalItem.MediaContent.HasExplicitDims)
 		}
 	}
 }

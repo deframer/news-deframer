@@ -16,11 +16,12 @@ import (
 
 // MediaData represents our target structure
 type MediaData struct {
-	URL    string
-	Width  int
-	Height int
-	Medium string
-	Alt    string
+	URL             string
+	Width           int
+	Height          int
+	Medium          string
+	Alt             string
+	HasExplicitDims bool
 }
 
 func transformContent(content string) (MediaData, error) {
@@ -109,9 +110,9 @@ func extractFromDescriptionFallback(res *database.ThinkResult) *MediaData {
 	return nil
 }
 
-func updateContent(item *gofeed.Item, res *database.ThinkResult) error {
+func updateContent(item *gofeed.Item, res *database.ThinkResult) (*MediaData, error) {
 	if item == nil || res == nil {
-		return nil
+		return nil, nil
 	}
 
 	// Save originals before any rewrite.
@@ -144,7 +145,20 @@ func updateContent(item *gofeed.Item, res *database.ThinkResult) error {
 		applyMediaData(item, mediaData)
 	}
 
-	return nil
+	return mediaData, nil
+}
+
+func mediaContentFromData(data *MediaData) *database.MediaContent {
+	if data == nil {
+		return nil
+	}
+	return &database.MediaContent{
+		URL:             data.URL,
+		Medium:          data.Medium,
+		Width:           data.Width,
+		Height:          data.Height,
+		HasExplicitDims: data.HasExplicitDims,
+	}
 }
 
 func applyMediaData(item *gofeed.Item, data *MediaData) {
@@ -194,11 +208,12 @@ func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
 		if strings.HasPrefix(enc.Type, "image/") && enc.URL != "" {
 			w, h := parseDimensions(enc.URL)
 			return &database.MediaContent{
-				URL:    enc.URL,
-				Type:   enc.Type,
-				Medium: "image",
-				Width:  w,
-				Height: h,
+				URL:             enc.URL,
+				Type:            enc.Type,
+				Medium:          "image",
+				Width:           w,
+				Height:          h,
+				HasExplicitDims: false,
 			}, nil
 		}
 	}
@@ -221,9 +236,10 @@ func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
 	}
 
 	mc := &database.MediaContent{
-		URL:    contentExt.Attrs["url"],
-		Type:   contentExt.Attrs["type"],
-		Medium: contentExt.Attrs["medium"],
+		URL:             contentExt.Attrs["url"],
+		Type:            contentExt.Attrs["type"],
+		Medium:          contentExt.Attrs["medium"],
+		HasExplicitDims: hasExplicitDimensions(contentExt.Attrs),
 	}
 
 	if mc.Medium == "" {
@@ -274,7 +290,7 @@ func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
 	if thumbs, ok := mediaExt["thumbnail"]; ok && len(thumbs) > 0 {
 		tExt := thumbs[0]
 		if tURL := tExt.Attrs["url"]; tURL != "" {
-			mt := &database.MediaThumbnail{URL: tURL}
+			mt := &database.MediaThumbnail{URL: tURL, HasExplicitDims: hasExplicitDimensions(tExt.Attrs)}
 			tw, _ := strconv.Atoi(tExt.Attrs["width"])
 			th, _ := strconv.Atoi(tExt.Attrs["height"])
 			if tw == 0 || th == 0 {
@@ -334,6 +350,15 @@ func mediaExtensionScore(ext *ext.Extension) int {
 		w, h = parseDimensions(ext.Attrs["url"])
 	}
 	return w * h
+}
+
+func hasExplicitDimensions(attrs map[string]string) bool {
+	if attrs == nil {
+		return false
+	}
+	w, errW := strconv.Atoi(attrs["width"])
+	h, errH := strconv.Atoi(attrs["height"])
+	return errW == nil && errH == nil && w > 0 && h > 0
 }
 
 // parseDimensions pulls width from query string and calculates 16:9 height

@@ -112,17 +112,19 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "http://example.com/video.mp4",
-				Type:   "video/mp4",
-				Medium: "video",
-				Width:  1920,
-				Height: 1080,
-				Title:  "Video Title",
-				Credit: "Getty Images",
+				URL:             "http://example.com/video.mp4",
+				Type:            "video/mp4",
+				Medium:          "video",
+				Width:           1920,
+				Height:          1080,
+				HasExplicitDims: true,
+				Title:           "Video Title",
+				Credit:          "Getty Images",
 				Thumbnail: &database.MediaThumbnail{
-					URL:    "http://example.com/thumb.jpg",
-					Width:  300,
-					Height: 200,
+					URL:             "http://example.com/thumb.jpg",
+					Width:           300,
+					Height:          200,
+					HasExplicitDims: true,
 				},
 			},
 		},
@@ -144,12 +146,13 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "http://example.com/image.jpg",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  1920,
-				Height: 1080,
-				Credit: "AP Photo",
+				URL:             "http://example.com/image.jpg",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           1920,
+				Height:          1080,
+				HasExplicitDims: false,
+				Credit:          "AP Photo",
 			},
 		},
 		{
@@ -171,11 +174,12 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "http://example.com/image.jpg",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  1920,
-				Height: 1080,
+				URL:             "http://example.com/image.jpg",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           1920,
+				Height:          1080,
+				HasExplicitDims: true,
 			},
 		},
 		{
@@ -195,11 +199,12 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "http://example.com/image.jpg",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  1920,
-				Height: 1080,
+				URL:             "http://example.com/image.jpg",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           1920,
+				Height:          1080,
+				HasExplicitDims: false,
 			},
 		},
 		{
@@ -221,11 +226,12 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "http://example.com/image.jpg?width=800",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  800,
-				Height: 450, // 800 * 9 / 16
+				URL:             "http://example.com/image.jpg?width=800",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           800,
+				Height:          450, // 800 * 9 / 16
+				HasExplicitDims: false,
 			},
 		},
 		{
@@ -247,11 +253,12 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "https://bar/foo.jpg",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  931,
-				Height: 523,
+				URL:             "https://bar/foo.jpg",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           931,
+				Height:          523,
+				HasExplicitDims: true,
 			},
 		},
 		{
@@ -279,11 +286,12 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "https://foo.jpg",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  300,
-				Height: 180,
+				URL:             "https://foo.jpg",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           300,
+				Height:          180,
+				HasExplicitDims: true,
 			},
 		},
 		{
@@ -324,11 +332,12 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "https://example.com/image-large.jpg",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  870,
-				Height: 522,
+				URL:             "https://example.com/image-large.jpg",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           870,
+				Height:          522,
+				HasExplicitDims: true,
 			},
 		},
 		{
@@ -348,14 +357,16 @@ func TestExtractMediaContent(t *testing.T) {
 				},
 			},
 			expected: &database.MediaContent{
-				URL:    "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/039e/live/9ebb4470-f496-11f0-a422-4ba8a094a8fa.jpg",
-				Medium: "image", // Default injected
-				Width:  240,
-				Height: 135,
+				URL:             "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/039e/live/9ebb4470-f496-11f0-a422-4ba8a094a8fa.jpg",
+				Medium:          "image", // Default injected
+				Width:           240,
+				Height:          135,
+				HasExplicitDims: true,
 				Thumbnail: &database.MediaThumbnail{
-					URL:    "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/039e/live/9ebb4470-f496-11f0-a422-4ba8a094a8fa.jpg",
-					Width:  240,
-					Height: 135,
+					URL:             "https://ichef.bbci.co.uk/ace/standard/240/cpsprodpb/039e/live/9ebb4470-f496-11f0-a422-4ba8a094a8fa.jpg",
+					Width:           240,
+					Height:          135,
+					HasExplicitDims: true,
 				},
 			},
 		},
@@ -368,11 +379,12 @@ func TestExtractMediaContent(t *testing.T) {
 				}},
 			},
 			expected: &database.MediaContent{
-				URL:    "https://example.test/media/image.jpg?width=1280",
-				Type:   "image/jpeg",
-				Medium: "image",
-				Width:  1280,
-				Height: 720,
+				URL:             "https://example.test/media/image.jpg?width=1280",
+				Type:            "image/jpeg",
+				Medium:          "image",
+				Width:           1280,
+				Height:          720,
+				HasExplicitDims: false,
 			},
 		},
 	}
@@ -488,13 +500,23 @@ func TestUpdateContent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := updateContent(tt.item, tt.res)
+			synthesizedMedia, err := updateContent(tt.item, tt.res)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedTitle, tt.item.Title)
 			assert.Equal(t, tt.expectedDescription, tt.item.Description)
 			assert.Equal(t, tt.expectedContent, tt.item.Content)
 
 			if tt.expectedMediaURL != "" {
+				if tt.assertGroup {
+					assert.Nil(t, synthesizedMedia)
+				} else if assert.NotNil(t, synthesizedMedia) {
+					assert.Equal(t, tt.expectedMediaURL, synthesizedMedia.URL)
+					assert.Equal(t, tt.expectedWidth, fmt.Sprintf("%d", synthesizedMedia.Width))
+					assert.Equal(t, tt.expectedHeight, fmt.Sprintf("%d", synthesizedMedia.Height))
+					assert.Equal(t, "image", synthesizedMedia.Medium)
+					assert.False(t, synthesizedMedia.HasExplicitDims)
+				}
+
 				got, err := extractMediaContent(tt.item)
 				assert.NoError(t, err)
 				if assert.NotNil(t, got) {

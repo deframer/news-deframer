@@ -239,15 +239,16 @@ func convertMobileMediaContent(content *web.MediaContent) *mobile.MediaContent {
 		return nil
 	}
 	return &mobile.MediaContent{
-		URL:         content.URL,
-		Type:        content.Type,
-		Medium:      content.Medium,
-		Height:      content.Height,
-		Width:       content.Width,
-		Title:       content.Title,
-		Description: content.Description,
-		Thumbnail:   convertMobileMediaThumbnail(content.Thumbnail),
-		Credit:      content.Credit,
+		URL:             content.URL,
+		Type:            content.Type,
+		Medium:          content.Medium,
+		Height:          content.Height,
+		Width:           content.Width,
+		HasExplicitDims: content.HasExplicitDims,
+		Title:           content.Title,
+		Description:     content.Description,
+		Thumbnail:       convertMobileMediaThumbnail(content.Thumbnail),
+		Credit:          content.Credit,
 	}
 }
 
@@ -256,9 +257,10 @@ func convertMobileMediaThumbnail(thumb *web.MediaThumbnail) *mobile.MediaThumbna
 		return nil
 	}
 	return &mobile.MediaThumbnail{
-		URL:    thumb.URL,
-		Height: thumb.Height,
-		Width:  thumb.Width,
+		URL:             thumb.URL,
+		Height:          thumb.Height,
+		Width:           thumb.Width,
+		HasExplicitDims: thumb.HasExplicitDims,
 	}
 }
 

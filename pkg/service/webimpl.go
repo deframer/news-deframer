@@ -440,15 +440,16 @@ func convertMediaContent(content *database.MediaContent) *web.MediaContent {
 		return nil
 	}
 	return &web.MediaContent{
-		URL:         content.URL,
-		Type:        stringPtr(content.Type),
-		Medium:      stringPtr(content.Medium),
-		Height:      intPtr(content.Height),
-		Width:       intPtr(content.Width),
-		Title:       stringPtr(content.Title),
-		Description: stringPtr(content.Description),
-		Thumbnail:   convertMediaThumbnail(content.Thumbnail),
-		Credit:      stringPtr(content.Credit),
+		URL:             content.URL,
+		Type:            stringPtr(content.Type),
+		Medium:          stringPtr(content.Medium),
+		Height:          intPtr(content.Height),
+		Width:           intPtr(content.Width),
+		HasExplicitDims: boolPtr(content.HasExplicitDims),
+		Title:           stringPtr(content.Title),
+		Description:     stringPtr(content.Description),
+		Thumbnail:       convertMediaThumbnail(content.Thumbnail),
+		Credit:          stringPtr(content.Credit),
 	}
 }
 
@@ -457,9 +458,10 @@ func convertMediaThumbnail(thumb *database.MediaThumbnail) *web.MediaThumbnail {
 		return nil
 	}
 	return &web.MediaThumbnail{
-		URL:    thumb.URL,
-		Height: intPtr(thumb.Height),
-		Width:  intPtr(thumb.Width),
+		URL:             thumb.URL,
+		Height:          intPtr(thumb.Height),
+		Width:           intPtr(thumb.Width),
+		HasExplicitDims: boolPtr(thumb.HasExplicitDims),
 	}
 }
 
@@ -484,6 +486,13 @@ func float64Ptr(v float64) *float64 {
 
 func intPtr(v int) *int {
 	if v == 0 {
+		return nil
+	}
+	return &v
+}
+
+func boolPtr(v bool) *bool {
+	if !v {
 		return nil
 	}
 	return &v

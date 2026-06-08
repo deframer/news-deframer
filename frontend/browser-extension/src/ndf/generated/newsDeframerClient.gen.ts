@@ -25,6 +25,8 @@ export interface AnalyzedArticle {
  * Media thumbnail metadata.
  */
 export interface MediaThumbnail {
+  /** True when width and height come from the source */
+  has_explicit_dims?: boolean;
   /** Thumbnail height */
   height?: number;
   /** Thumbnail URL */
@@ -41,6 +43,8 @@ export interface MediaContent {
   credit?: string;
   /** Media description */
   description?: string;
+  /** True when width and height come from the source */
+  has_explicit_dims?: boolean;
   /** Media height */
   height?: number;
   /** Media type */
