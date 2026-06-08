@@ -9,6 +9,7 @@ import type { AnalysisOutput, EmotionVector } from '../../shared/sentiments';
 import { sentimentsToLabels } from '../../shared/sentiments';
 import { setBypassForCurrentTab } from '../../shared/session-bypass';
 import { AnalyzedItem } from '../client';
+import { AnalysisSource } from '../components/AnalysisSource';
 import { Footer } from '../components/Footer';
 import { MetaData } from '../components/MetaData';
 import { RatingBar } from '../components/RatingBar';
@@ -170,7 +171,9 @@ export const ArticlePage = ({ item }: ArticlePageProps) => {
                      <p>{stripHtml(item.description_original || '')}</p>
                    </div>
                 )}
-             </div>
+
+                <AnalysisSource llmModel={item.llm_model} />
+              </div>
             ) : (
               <div className="sentiment-panel sentiment-layout-vertical">
                 <SentimentsToggle

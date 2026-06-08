@@ -2,6 +2,8 @@ import '@testing-library/jest-dom';
 
 import { render, screen } from '@testing-library/react';
 
+import { NEWS_DEFRAMER_URL } from '../../shared/links';
+import { REFERENCE_TAB_TARGET } from '../../shared/links';
 import { Footer } from './Footer';
 
 jest.mock('react-i18next', () => ({
@@ -25,7 +27,8 @@ describe('Footer', () => {
     expect(linkElement).toBeInTheDocument();
     expect(linkElement).toHaveAttribute(
       'href',
-      'https://deframer.github.io/',
+      NEWS_DEFRAMER_URL,
     );
+    expect(linkElement).toHaveAttribute('target', REFERENCE_TAB_TARGET);
   });
 });

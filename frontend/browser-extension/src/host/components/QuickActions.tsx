@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { FEEDBACK_EMAIL } from '../../shared/links';
+import { FEEDBACK_EMAIL, NEWS_DEFRAMER_URL } from '../../shared/links';
 
 interface QuickActionsProps {
   onOpenSettings: () => void;
@@ -21,9 +21,10 @@ export const QuickActions = ({ onOpenSettings }: QuickActionsProps) => {
         <button className="action-button action-button-enabled" onClick={onOpenSettings} type="button">
           {t('options.open_settings', 'Open Settings')}
         </button>
+        {/* This popup is an extension context, so a shared target name is not reusable here. */}
         <a
           className="action-button action-button-enabled quick-link"
-          href="https://deframer.github.io/"
+          href={NEWS_DEFRAMER_URL}
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleProjectClick}
