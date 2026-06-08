@@ -4,11 +4,12 @@ import { getDomain } from 'tldts';
 
 import i18n from '../shared/i18n';
 import log from '../shared/logger';
+import { consumeBypassForCurrentTab, setBypassForCurrentTab } from '../shared/session-bypass';
 import { getSettings, Settings } from '../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../shared/theme';
 import { AnalyzedItem, DomainEntry, NewsDeframerClient } from './client';
 import { Spinner } from './components/Spinner';
-import { purgeOverlayElements, resetElementAttributes, shouldKeepNode } from './domGuard';
+import { installPreemptiveDomGuard, purgeOverlayElements, resetElementAttributes, shouldKeepNode } from './domGuard';
 import { ArticlePage } from './pages/ArticlePage';
 import { PortalPage } from './pages/PortalPage';
 import { ndfStyles } from './styles';
@@ -152,10 +153,13 @@ const App = ({ theme }: { theme: string }) => {
       return;
     }
 
-    sessionStorage.setItem('__ndf-bypass', 'true');
-    chrome.runtime.sendMessage({ type: 'SET_BYPASS', value: true }, () => {
-      window.location.reload();
-    });
+    void setBypassForCurrentTab()
+      .catch((err) => {
+        log.error('Failed to set bypass after error:', err);
+      })
+      .finally(() => {
+        window.location.reload();
+      });
   }, [error]);
 
   if (error) {
@@ -190,8 +194,7 @@ const App = ({ theme }: { theme: string }) => {
 };
 
 export const start = async (providedSettings?: Settings) => {
-  if (sessionStorage.getItem('__ndf-bypass')) {
-    sessionStorage.removeItem('__ndf-bypass');
+  if (await consumeBypassForCurrentTab()) {
     log.debug('Bypass detected. Not starting NDF.');
     return;
   }
@@ -227,86 +230,92 @@ export const start = async (providedSettings?: Settings) => {
       log.debug(`Page detected as ${type}.`);
       // window.stop(); // we rely on the DOM guard instead
 
-      const html = document.documentElement;
-      if (html) {
-        resetElementAttributes(html);
-        const domain = getCurrentRootDomain();
-        html.innerHTML = `<head><title>NDF • ${domain}</title></head><body></body>`;
-      }
+      const guard = installPreemptiveDomGuard({ allowedIds: ['ndf-root', 'ndf-global-styles'] });
 
-      // Ensure body exists and is accessible
-      let body = document.body;
-      if (!body) {
-        body = document.createElement('body');
+      try {
+        const html = document.documentElement;
         if (html) {
-          html.appendChild(body);
-        } else {
-          document.appendChild(body);
+          resetElementAttributes(html);
+          const domain = getCurrentRootDomain();
+          html.innerHTML = `<head><title>NDF • ${domain}</title></head><body></body>`;
         }
-      }
-      resetElementAttributes(body);
 
-      const rootEl = document.createElement('div');
-      rootEl.id = 'ndf-root';
-      body.appendChild(rootEl);
-
-      // Watch for any Light DOM changes. If a late script tries to add
-      // elements or attributes, we remove them so the old page never returns.
-      const observer = new MutationObserver((mutations) => {
-        let needsCleanup = false;
-
-        mutations.forEach((mutation) => {
-          if (
-            mutation.type === 'attributes' &&
-            (mutation.target === html || mutation.target === document.body)
-          ) {
-            needsCleanup = true;
-            return;
+        // Ensure body exists and is accessible
+        let body = document.body;
+        if (!body) {
+          body = document.createElement('body');
+          if (html) {
+            html.appendChild(body);
+          } else {
+            document.appendChild(body);
           }
+        }
+        resetElementAttributes(body);
 
-          // If the mutation happens inside our root or styles, ignore it
-          if (rootEl.contains(mutation.target)) return;
-          if (
-            mutation.target instanceof Element &&
-            mutation.target.id === 'ndf-global-styles'
-          )
-            return;
+        const rootEl = document.createElement('div');
+        rootEl.id = 'ndf-root';
+        body.appendChild(rootEl);
 
-          mutation.addedNodes.forEach((node) => {
-            // Allow our critical elements
-            if (shouldKeepNode(node, { rootEl })) {
+        // Watch for any Light DOM changes. If a late script tries to add
+        // elements or attributes, we remove them so the old page never returns.
+        const observer = new MutationObserver((mutations) => {
+          let needsCleanup = false;
+
+          mutations.forEach((mutation) => {
+            if (
+              mutation.type === 'attributes' &&
+              (mutation.target === html || mutation.target === document.body)
+            ) {
+              needsCleanup = true;
               return;
             }
 
+            // If the mutation happens inside our root or styles, ignore it
+            if (rootEl.contains(mutation.target)) return;
             if (
-              node.parentNode &&
-              !(node instanceof Element &&
-              (node.id === 'ndf-root' || node.id === 'ndf-global-styles'))
-            ) {
-              node.parentNode.removeChild(node);
-            }
+              mutation.target instanceof Element &&
+              mutation.target.id === 'ndf-global-styles'
+            )
+              return;
+
+            mutation.addedNodes.forEach((node) => {
+              // Allow our critical elements
+              if (shouldKeepNode(node, { rootEl })) {
+                return;
+              }
+
+              if (
+                node.parentNode &&
+                !(node instanceof Element &&
+                (node.id === 'ndf-root' || node.id === 'ndf-global-styles'))
+              ) {
+                node.parentNode.removeChild(node);
+              }
+            });
           });
+
+          if (needsCleanup) {
+            resetElementAttributes(html);
+            resetElementAttributes(document.body);
+            purgeOverlayElements();
+          }
         });
 
-        if (needsCleanup) {
-          resetElementAttributes(html);
-          resetElementAttributes(document.body);
-          purgeOverlayElements();
-        }
-      });
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+        });
 
-      observer.observe(document.documentElement, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-      });
+        const shadowRoot = rootEl.attachShadow({ mode: 'open' });
+        const appContainer = document.createElement('div');
+        shadowRoot.appendChild(appContainer);
 
-      const shadowRoot = rootEl.attachShadow({ mode: 'open' });
-      const appContainer = document.createElement('div');
-      shadowRoot.appendChild(appContainer);
-
-      const root = createRoot(appContainer);
-      root.render(<App theme={settings.theme} />);
+        const root = createRoot(appContainer);
+        root.render(<App theme={settings.theme} />);
+      } finally {
+        guard?.release();
+      }
     }
   } catch (e) {
     log.error('Could not start NDF', e);

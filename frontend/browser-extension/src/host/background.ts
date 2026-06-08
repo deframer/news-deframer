@@ -1,4 +1,5 @@
 import log from '../shared/logger';
+import { getBypassStorageKey } from '../shared/session-bypass';
 import { CONNECTION_TIMEOUT_MS, getSettings } from '../shared/settings';
 import { ProxyResponse } from '../shared/types';
 
@@ -67,7 +68,54 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
 
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.type === 'SET_BYPASS') {
-    sendResponse({ ok: true });
+    const tabId = _sender.tab?.id;
+    const url = _sender.url;
+
+    if (typeof tabId !== 'number' || !url) {
+      sendResponse({ ok: false, error: 'Missing tab context for bypass.' });
+      return false;
+    }
+
+    const key = getBypassStorageKey(tabId, url);
+    chrome.storage.session.set({ [key]: true })
+      .then(() => sendResponse({ ok: true }))
+      .catch((err) => {
+        log.error('Failed to set bypass:', err);
+        sendResponse({ ok: false, error: String(err) });
+      });
+    return true;
+  }
+
+  if (request.type === 'CONSUME_BYPASS') {
+    const tabId = _sender.tab?.id;
+    const url = _sender.url;
+
+    if (typeof tabId !== 'number' || !url) {
+      sendResponse({ ok: false, bypass: false, error: 'Missing tab context for bypass.' });
+      return false;
+    }
+
+    const key = getBypassStorageKey(tabId, url);
+    chrome.storage.session.get(key)
+      .then((result) => {
+        const bypass = Boolean(result[key]);
+
+        if (!bypass) {
+          sendResponse({ ok: true, bypass: false });
+          return;
+        }
+
+        chrome.storage.session.remove(key)
+          .then(() => sendResponse({ ok: true, bypass: true }))
+          .catch((err) => {
+            log.error('Failed to clear bypass:', err);
+            sendResponse({ ok: false, bypass: false, error: String(err) });
+          });
+      })
+      .catch((err) => {
+        log.error('Failed to consume bypass:', err);
+        sendResponse({ ok: false, bypass: false, error: String(err) });
+      });
     return true;
   }
 

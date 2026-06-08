@@ -1,8 +1,8 @@
 import { getDomain } from 'tldts';
 
-import { installPreemptiveDomGuard } from '../ndf/domGuard';
 import * as ndf from '../ndf/index';
 import log from '../shared/logger';
+import { consumeBypassForCurrentTab } from '../shared/session-bypass';
 import { getSettings, Settings } from '../shared/settings';
 
 const getCurrentRootDomain = () => getDomain(window.location.hostname.replace(/:\d+$/, '')) || window.location.hostname;
@@ -25,39 +25,24 @@ const isCurrentDomainSelected = (settings: Settings) => {
 };
 
 async function startNdf() {
-  if (sessionStorage.getItem('__ndf-bypass')) {
+  if (await consumeBypassForCurrentTab()) {
     log.debug('Bypass flag detected. Skipping NDF for this load.');
-    sessionStorage.removeItem('__ndf-bypass');
     return;
   }
 
-  // Install guard immediately to block popups, even before we know if we are enabled.
-  // If we are disabled, we will reload the page without the guard.
-  const guard = installPreemptiveDomGuard({ allowedIds: ['ndf-root', 'ndf-global-styles'] });
-
   const settings = await getSettings();
   if (!settings.enabled) {
-    log.debug('NDF is disabled by user settings. Reloading without guard.');
-    guard?.release();
-    sessionStorage.setItem('__ndf-bypass', 'true');
-    window.location.reload();
+    log.debug('NDF is disabled by user settings.');
     return;
   }
 
   if (!isCurrentDomainSelected(settings)) {
-    log.debug('Current domain is not selected. Reloading without guard.');
-    guard?.release();
-    sessionStorage.setItem('__ndf-bypass', 'true');
-    window.location.reload();
+    log.debug('Current domain is not selected.');
     return;
   }
 
   log.debug('Starting NDF...');
-  try {
-    await ndf.start(settings);
-  } finally {
-    guard?.release();
-  }
+  await ndf.start(settings);
 }
 
 // Early exit if the content is not HTML.
