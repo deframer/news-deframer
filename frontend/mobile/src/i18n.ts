@@ -76,7 +76,9 @@ const resources = {
         "btn_details": "Details",
         "btn_open_article": "Open article",
         "public_service_media": "Public service media",
-        "hide_public_service_media": "Hide public service media"
+        "hide_public_service_media": "Hide public service media",
+        "analysis_source_llm_model_label": "LLM Model:",
+        "analysis_source_prompt_link": "Prompt"
       },
       "metrics": {
         "framing": "Framing",
@@ -218,7 +220,9 @@ const resources = {
         "btn_details": "Details",
         "btn_open_article": "Artikel öffnen",
         "public_service_media": "Öffentlich-rechtliche Medien",
-        "hide_public_service_media": "Öffentlich-rechtliche Medien ausblenden"
+        "hide_public_service_media": "Öffentlich-rechtliche Medien ausblenden",
+        "analysis_source_llm_model_label": "LLM-Modell:",
+        "analysis_source_prompt_link": "Prompt"
       },
       "metrics": {
         "framing": "Framing",

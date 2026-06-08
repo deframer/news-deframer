@@ -8,6 +8,7 @@ import { Card } from '../components/Card';
 import { getRatingColors, stripHtml, toPercent } from '../lib/articleFormat';
 import { AnalyzedItem } from '../services/newsDeframerClient';
 import { AppPalette } from '../theme';
+import { PROMPTS_URL } from '../../../shared/links';
 
 type DetailMode = 'closed' | 'original' | 'details';
 type ScrollTarget = 'top' | 'overall' | 'original';
@@ -30,7 +31,7 @@ const RatingRow = ({
   return (
     <View style={styles.metricBlock}>
       <Text style={[styles.metricTitle, { color: palette.text }]}>{label}</Text>
-      <View style={[styles.metricTrack, { backgroundColor: palette.ratingBackground }]}> 
+      <View style={[styles.metricTrack, { backgroundColor: palette.ratingBackground }]}>
         <View style={[styles.metricFill, { width: `${percentage}%`, backgroundColor: colors.backgroundColor }]} />
         <Text style={[styles.metricPercent, { color: colors.textColor }]}>{percentage}%</Text>
       </View>
@@ -116,6 +117,10 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
     Linking.openURL(item.url).catch(() => undefined);
   };
 
+  const openPrompts = () => {
+    Linking.openURL(PROMPTS_URL).catch(() => undefined);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: palette.background }]}> 
       <ScrollView ref={scrollRef} style={styles.screen} contentContainerStyle={styles.content}>
@@ -199,12 +204,29 @@ export const ArticleScreen = ({ palette, item }: { palette: AppPalette; item: An
         ) : null}
 
         {mode === 'original' || mode === 'details' ? (
-          <View style={[styles.originalSection, { borderTopColor: palette.border }]}>
+          <View style={[styles.originalSection, { borderTopColor: palette.border }]}> 
             <Text style={[styles.originalHeading, { color: palette.text }]}>{t('article.original_section')}</Text>
             <Text style={[styles.originalTitle, { color: palette.text }]}>{stripHtml(item.title_original || '')}</Text>
             <Text style={[styles.originalBody, { color: palette.secondaryText }]}>{stripHtml(item.description_original || '')}</Text>
           </View>
         ) : null}
+
+        <View style={[styles.analysisSourceSection, { borderTopColor: palette.border }]}> 
+          <View style={[styles.analysisSourceRule, { borderTopColor: palette.border }]} />
+          {item.llm_model ? (
+            <View style={styles.analysisSourceLine}>
+              <Text style={[styles.analysisSourceModel, { color: palette.secondaryText }]}>{item.llm_model}</Text>
+              <Text style={[styles.analysisSourceSeparator, { color: palette.secondaryText }]}> / </Text>
+              <Pressable onPress={openPrompts}>
+                <Text style={[styles.analysisSourceLink, { color: palette.accent }]}>{t('article.analysis_source_prompt_link')}</Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Pressable onPress={openPrompts}>
+              <Text style={[styles.analysisSourceLink, { color: palette.accent }]}>{t('article.analysis_source_prompt_link')}</Text>
+            </Pressable>
+          )}
+        </View>
         </Card>
       </ScrollView>
 
@@ -306,6 +328,12 @@ const styles = StyleSheet.create({
   originalHeading: { fontSize: 18, fontWeight: '700', lineHeight: 24 },
   originalTitle: { fontSize: 20, fontWeight: '700', lineHeight: 26 },
   originalBody: { fontSize: 15, lineHeight: 22 },
+  analysisSourceSection: { marginTop: 20, gap: 10, paddingTop: 14, alignItems: 'center' },
+  analysisSourceRule: { width: '100%', borderTopWidth: 1 },
+  analysisSourceLine: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', justifyContent: 'center' },
+  analysisSourceModel: { fontSize: 13, lineHeight: 18, fontStyle: 'italic', textAlign: 'center' },
+  analysisSourceSeparator: { fontSize: 13, lineHeight: 18, textAlign: 'center' },
+  analysisSourceLink: { fontSize: 13, lineHeight: 18, fontStyle: 'italic', textDecorationLine: 'underline' },
   actionsDock: {
     position: 'absolute',
     left: 0,
