@@ -106,6 +106,8 @@ export interface AnalyzedItem {
   hyper_stimulus?: number;
   /** Hyper stimulus explanation */
   hyper_stimulus_reason?: string;
+  /** LLM model */
+  llm_model?: string;
   media?: MediaContent;
   /** Overall score */
   overall?: number;

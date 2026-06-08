@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strings"
@@ -686,7 +687,7 @@ func TestFindFirstAnalyzedItemByUrl_FiltersTags(t *testing.T) {
 			FeedID:      feed.ID,
 			URL:         itemURL,
 			Content:     "content",
-			ThinkResult: &ThinkResult{TitleCorrected: "Corrected"},
+			ThinkResult: &ThinkResult{TitleCorrected: "Corrected", LLMModel: "gpt-4.1-mini"},
 			ThinkRating: 0.8,
 			PubDate:     time.Now(),
 		}
@@ -700,6 +701,13 @@ func TestFindFirstAnalyzedItemByUrl_FiltersTags(t *testing.T) {
 		if assert.NotNil(t, found) {
 			assert.Equal(t, StringArray{"public_service_media"}, found.Tags)
 			assert.Equal(t, itemURL, found.URL)
+			if assert.NotNil(t, found.LLMModel) {
+				assert.Equal(t, "gpt-4.1-mini", *found.LLMModel)
+			}
+
+			b, err := json.Marshal(found)
+			assert.NoError(t, err)
+			assert.Contains(t, string(b), `"llm_model":"gpt-4.1-mini"`)
 		}
 	})
 
@@ -724,7 +732,7 @@ func TestFindFirstAnalyzedItemByUrl_FiltersTags(t *testing.T) {
 			FeedID:      feed.ID,
 			URL:         itemURL,
 			Content:     "content",
-			ThinkResult: &ThinkResult{TitleCorrected: "Corrected"},
+			ThinkResult: &ThinkResult{TitleCorrected: "Corrected", LLMModel: "gpt-4.1-mini"},
 			PubDate:     time.Now(),
 		}
 		assert.NoError(t, tx.Create(&item).Error)
@@ -737,6 +745,9 @@ func TestFindFirstAnalyzedItemByUrl_FiltersTags(t *testing.T) {
 		if assert.NotNil(t, found) {
 			assert.Empty(t, found.Tags)
 			assert.Equal(t, itemURL, found.URL)
+			if assert.NotNil(t, found.LLMModel) {
+				assert.Equal(t, "gpt-4.1-mini", *found.LLMModel)
+			}
 		}
 	})
 }

@@ -117,6 +117,7 @@ type AnalyzedItem struct {
 	Hash               string           `json:"hash"`
 	Tags               StringArray      `gorm:"type:text[]" json:"tags,omitempty"`
 	URL                string           `json:"url"`
+	LLMModel           *string          `gorm:"->;column:llm_model" json:"llm_model,omitempty"`
 	ThinkResult        *ThinkResult     `gorm:"type:jsonb"`
 	Sentiments         *SentimentScores `gorm:"type:jsonb" json:"sentiments,omitempty"`
 	SentimentsDeframed *SentimentScores `gorm:"type:jsonb" json:"sentiments_deframed,omitempty"`
@@ -145,6 +146,11 @@ func (a AnalyzedItem) MarshalJSON() ([]byte, error) {
 	result["rating"] = a.ThinkRating
 	result["authors"] = a.Authors
 	result["pubDate"] = a.PubDate
+	if a.LLMModel != nil && *a.LLMModel != "" {
+		result["llm_model"] = *a.LLMModel
+	} else if a.ThinkResult != nil && a.ThinkResult.LLMModel != "" {
+		result["llm_model"] = a.ThinkResult.LLMModel
+	}
 
 	// Only include ThinkResult fields if ThinkRating is not 0
 	if a.ThinkRating != 0 && a.ThinkResult != nil {
@@ -159,7 +165,7 @@ func (a AnalyzedItem) MarshalJSON() ([]byte, error) {
 			return nil, err
 		}
 
-		// Internal-only metadata: do not expose the underlying LLM model via REST.
+		// Keep llm_model as an explicit top-level field on AnalyzedItem.
 		delete(thinkResultMap, "llm_model")
 
 		// Merge ThinkResult fields into the result map
@@ -981,7 +987,7 @@ func (r *repository) FindItemsByRootDomain(rootDomain string, limit int) ([]Item
 func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int) ([]AnalyzedItem, error) {
 	var items []AnalyzedItem
 	subQuery := r.db.Model(&Item{}).
-		Select("DISTINCT ON (items.url) items.*, feeds.tags AS tags").
+		Select("DISTINCT ON (items.url) items.*, NULLIF(items.think_result->>'llm_model', '') AS llm_model, feeds.tags AS tags").
 		Joins("JOIN feeds ON feeds.id = items.feed_id").
 		Where("feeds.root_domain = ? AND feeds.enabled = ? AND feeds.deleted_at IS NULL", rootDomain, true).
 		Where("items.think_result IS NOT NULL AND items.think_error IS NULL AND items.think_error_count = 0").
@@ -1001,6 +1007,7 @@ func (r *repository) FindAnalyzedItemsByRootDomain(rootDomain string, limit int)
 func (r *repository) FindFirstAnalyzedItemByUrl(u *url.URL) (*AnalyzedItem, error) {
 	var item AnalyzedItem
 	query := `items.*, 
+		NULLIF(items.think_result->>'llm_model', '') AS llm_model,
 		CASE WHEN COALESCE(feeds.tags, '{}'::text[]) && supported_tags.supported_tags THEN supported_tags.supported_tags ELSE '{}'::text[] END AS tags,
 		CASE WHEN trends.sentiments IS NOT NULL AND trends.sentiments <> '{}'::jsonb THEN
 			jsonb_build_object(

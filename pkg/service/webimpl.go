@@ -283,6 +283,7 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 		return nil
 	}
 	var (
+		llmModel                    *string
 		titleOriginal               *string
 		descriptionOriginal         *string
 		titleCorrected              *string
@@ -303,7 +304,13 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 		overallReason               *string
 		category                    *string
 	)
+	if item.LLMModel != nil {
+		llmModel = item.LLMModel
+	}
 	if tr := item.ThinkResult; tr != nil {
+		if llmModel == nil && tr.LLMModel != "" {
+			llmModel = stringPtr(tr.LLMModel)
+		}
 		titleOriginal = stringPtr(tr.TitleOriginal)
 		descriptionOriginal = stringPtr(tr.DescriptionOriginal)
 		titleCorrected = stringPtr(tr.TitleCorrected)
@@ -328,6 +335,7 @@ func convertAnalyzedItem(item *database.AnalyzedItem) *web.AnalyzedItem {
 		Hash:                        item.Hash,
 		Tags:                        append([]string{}, item.Tags...),
 		URL:                         item.URL,
+		LlmModel:                    llmModel,
 		TitleOriginal:               titleOriginal,
 		DescriptionOriginal:         descriptionOriginal,
 		TitleCorrected:              titleCorrected,
