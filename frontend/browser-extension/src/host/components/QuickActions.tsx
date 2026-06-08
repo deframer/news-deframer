@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 
-import { FEEDBACK_EMAIL } from '../../shared/contact';
+import { FEEDBACK_EMAIL } from '../../shared/links';
 
 interface QuickActionsProps {
   onOpenSettings: () => void;
