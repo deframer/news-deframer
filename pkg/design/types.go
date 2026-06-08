@@ -16,8 +16,8 @@ var SentimentScores = Type("SentimentScores", func() {
 
 var ThinkResult = Type("ThinkResult", func() {
 	Description("Analysis result for an article.")
-	// Internal note: llm_model exists in the persisted database ThinkResult,
-	// but it is intentionally not exposed via REST DTOs.
+	// Internal note: llm_model exists in the persisted database ThinkResult;
+	// it is surfaced separately on AnalyzedItem.
 	Attribute("title_original", String, "Original title")
 	Attribute("description_original", String, "Original description")
 	Attribute("title_corrected", String, "Corrected title")
@@ -137,6 +137,7 @@ var AnalyzedItem = Type("AnalyzedItem", func() {
 	Attribute("hash", String, "Item hash")
 	Attribute("tags", ArrayOf(String), "Feed tags")
 	Attribute("url", String, "Item URL")
+	Attribute("llm_model", String, "LLM model")
 	Attribute("title_original", String, "Original title")
 	Attribute("description_original", String, "Original description")
 	Attribute("title_corrected", String, "Corrected title")

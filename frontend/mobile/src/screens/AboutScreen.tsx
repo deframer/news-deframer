@@ -7,6 +7,7 @@ import { APP_VERSION } from '../appInfo';
 import { AppLogo } from '../components/AppLogo';
 import { Card } from '../components/Card';
 import { AppPalette } from '../theme';
+import { NEWS_DEFRAMER_URL } from '../../../shared/links';
 
 export const AboutScreen = ({ palette, onClose }: { palette: AppPalette; onClose: () => void }) => {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ export const AboutScreen = ({ palette, onClose }: { palette: AppPalette; onClose
         <Text style={[styles.title, { color: palette.text }]}>News Deframer</Text>
         <Text style={[styles.subtitle, { color: palette.secondaryText }]}>Mobile</Text>
         <Text style={[styles.version, { color: palette.secondaryText }]}>{APP_VERSION}</Text>
-        <Pressable onPress={() => Linking.openURL('https://deframer.github.io/')} style={styles.linkRow}> 
+        <Pressable onPress={() => Linking.openURL(NEWS_DEFRAMER_URL)} style={styles.linkRow}> 
           <Github color={palette.accent} size={18} strokeWidth={2.1} />
           <Text style={[styles.linkText, { color: palette.accent }]}>{t('mobile.open_project')}</Text>
         </Pressable>

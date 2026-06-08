@@ -148,6 +148,7 @@ func convertMobileAnalyzedItem(item *web.AnalyzedItem) *mobile.AnalyzedItem {
 		Hash:                        item.Hash,
 		Tags:                        append([]string{}, item.Tags...),
 		URL:                         item.URL,
+		LlmModel:                    item.LlmModel,
 		TitleOriginal:               item.TitleOriginal,
 		DescriptionOriginal:         item.DescriptionOriginal,
 		TitleCorrected:              item.TitleCorrected,

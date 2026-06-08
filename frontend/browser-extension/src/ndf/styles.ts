@@ -26,6 +26,38 @@ export const ndfStyles = `
 h1 { margin: 0 0 10px; font-size: 2em; color: var(--text-color); }
 .description { font-size: 1.1em; color: var(--secondary-text); margin-bottom: 0.5em; }
 .analysis-section { padding-top: 1em; margin-top: 1em; }
+.analysis-source {
+  margin-top: 1.5em;
+  text-align: center;
+}
+.analysis-source-line {
+  margin: 0;
+  color: var(--secondary-text);
+  line-height: 1.45;
+}
+.analysis-source-label {
+  color: inherit;
+}
+.analysis-source-value {
+  word-break: break-word;
+  font-style: italic;
+}
+.analysis-source-link,
+.analysis-source-link:visited,
+.page-footer-text a,
+.page-footer-text a:visited {
+  color: var(--secondary-text);
+  text-decoration: underline;
+}
+.analysis-source-link:hover,
+.page-footer-text a:hover {
+  color: var(--text-color);
+}
+.analysis-source-link:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
 .metric-item { display: block; margin-bottom: 1.5em; }
 .metric-label { font-weight: bold; font-size: 1.1em; margin-bottom: 5px; display: block; color: var(--text-color); }
 .metric-details { display: block; width: 100%; }
@@ -123,13 +155,6 @@ h1 { margin: 0; font-size: 1.5em; }
   color: var(--secondary-text);
   font-size: 0.9em;
   line-height: 1.5;
-}
-.page-footer-text a {
-  color: var(--secondary-text);
-  text-decoration: underline;
-}
-.page-footer-text a:hover {
-  color: var(--text-color);
 }
 
 /* RatingBarOverlay.tsx */
