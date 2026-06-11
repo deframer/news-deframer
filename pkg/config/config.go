@@ -67,7 +67,7 @@ type Config struct {
 	RedirectWebRequest404URL string `env:"REDIRECT_WEBREQUEST_404_URL" envDefault:""`
 
 	LLM_Type    LLMType `env:"LLM_TYPE" envDefault:"dummy"`
-	LLM_Model   string  `env:"LLM_MODEL" envDefault:""`
+	LLM_Model   string  `env:"LLM_MODEL" required:"true"`
 	LLM_APIKey  string  `env:"LLM_API_KEY" envDefault:""`
 	LLM_BaseURL string  `env:"LLM_BASE_URL" envDefault:""`
 

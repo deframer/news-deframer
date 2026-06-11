@@ -33,9 +33,10 @@ const publicationDateGracePeriod = 10 * time.Minute
 type Mode string
 
 const (
-	ModeIngester     Mode = "ingester"
-	ModeThinker      Mode = "thinker"
-	ModeThinkerFixer Mode = "thinker-fixer"
+	ModeIngester              Mode = "ingester"
+	ModeThinker               Mode = "thinker"
+	ModeThinkerFixer          Mode = "thinker-fixer"
+	ModeThinkerUpdateLLMModel Mode = "thinker-update-llm-model"
 )
 
 type FeedSyncer interface {
@@ -87,6 +88,10 @@ func (s *Syncer) Poll(mode Mode) {
 	}
 	if mode == ModeThinkerFixer {
 		s.pollThinkerFixer(thinkerFixerLookback)
+		return
+	}
+	if mode == ModeThinkerUpdateLLMModel {
+		s.pollThinkerUpdateLLMModel()
 		return
 	}
 	if mode != ModeIngester {
@@ -164,6 +169,29 @@ func (s *Syncer) pollThinkerFixer(lookback time.Duration) {
 	}
 }
 
+func (s *Syncer) pollThinkerUpdateLLMModel() {
+	for {
+		if s.ctx.Err() != nil {
+			log.Printf(s.ctx, "Stopping poller")
+			return
+		}
+
+		if s.processThinkerUpdateLLMModelBatch() {
+			log.Printf(s.ctx, "Thinker update llm model batch checked")
+			continue
+		}
+
+		log.Debugf(s.ctx, "Thinker update llm model sleep duration=%s", config.IdleSleepTime)
+
+		select {
+		case <-s.ctx.Done():
+			log.Printf(s.ctx, "Stopping poller")
+			return
+		case <-time.After(config.IdleSleepTime):
+		}
+	}
+}
+
 func (s *Syncer) processThinkerBatch() bool {
 	log.Printf(log.With(s.ctx,
 		log.KV{K: "llm_base_url", V: s.cfg.LLM_BaseURL},
@@ -204,6 +232,29 @@ func (s *Syncer) processThinkerFixerBatch(lookback time.Duration) bool {
 	}
 
 	log.Printf(s.ctx, "Thinker fixer candidates fetched count=%d", len(items))
+	for i := range items {
+		current := i + 1
+		log.Debugf(s.ctx, "processThinkerItem item_id=%s feed_id=%s progress=%d/%d", items[i].ID, items[i].FeedID, current, len(items))
+		s.thinkItem(&items[i])
+	}
+	return true
+}
+
+func (s *Syncer) processThinkerUpdateLLMModelBatch() bool {
+	log.Printf(log.With(s.ctx,
+		log.KV{K: "llm_base_url", V: s.cfg.LLM_BaseURL},
+		log.KV{K: "llm_model", V: s.cfg.LLM_Model},
+	), "processThinkerUpdateLLMModelBatch")
+	items, err := s.repo.BeginThinkerUpdateLLMModelBatch(thinkerBatchSize, s.cfg.LLM_Model, config.DefaultLockDuration)
+	if err != nil {
+		log.Errorf(s.ctx, err, "Failed to query thinker update llm model candidates")
+		return false
+	}
+	if len(items) == 0 {
+		return false
+	}
+
+	log.Printf(s.ctx, "Thinker update llm model candidates fetched count=%d", len(items))
 	for i := range items {
 		current := i + 1
 		log.Debugf(s.ctx, "processThinkerItem item_id=%s feed_id=%s progress=%d/%d", items[i].ID, items[i].FeedID, current, len(items))

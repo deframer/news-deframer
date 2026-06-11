@@ -1430,6 +1430,44 @@ func TestBeginThinkerBatch(t *testing.T) {
 	})
 }
 
+func TestBeginThinkerUpdateLLMModelBatch(t *testing.T) {
+	_, baseDB := mustOpenTestRepo(t)
+
+	t.Run("SelectsMissingOrDifferentModels", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		feed := Feed{URL: "http://thinker-update-llm-model.test/" + uuid.New().String(), Enabled: true, Polling: true}
+		assert.NoError(t, tx.Create(&feed).Error)
+
+		older := time.Now().Add(-2 * time.Hour)
+		currentModel := "gpt-4.1-mini"
+
+		item1 := Item{FeedID: feed.ID, Hash: "u1", URL: "http://itemu1/" + uuid.New().String(), Content: "c1", ThinkResult: &ThinkResult{LLMModel: "old-model"}}
+		item2 := Item{FeedID: feed.ID, Hash: "u2", URL: "http://itemu2/" + uuid.New().String(), Content: "c2", ThinkResult: &ThinkResult{LLMModel: ""}}
+		item3 := Item{FeedID: feed.ID, Hash: "u3", URL: "http://itemu3/" + uuid.New().String(), Content: "c3", ThinkResult: &ThinkResult{LLMModel: currentModel}}
+		item4 := Item{FeedID: feed.ID, Hash: "u4", URL: "http://itemu4/" + uuid.New().String(), Content: "c4"}
+		assert.NoError(t, tx.Create(&item1).Error)
+		assert.NoError(t, tx.Create(&item2).Error)
+		assert.NoError(t, tx.Create(&item3).Error)
+		assert.NoError(t, tx.Create(&item4).Error)
+
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item1.ID).UpdateColumn("updated_at", older).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item2.ID).UpdateColumn("updated_at", older).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item3.ID).UpdateColumn("updated_at", older).Error)
+		assert.NoError(t, tx.Model(&Item{}).Where("id = ?", item4.ID).UpdateColumn("updated_at", older).Error)
+
+		items, err := repo.BeginThinkerUpdateLLMModelBatch(10, currentModel, time.Minute)
+		assert.NoError(t, err)
+		if assert.Len(t, items, 2) {
+			hashes := []string{strings.TrimSpace(items[0].Hash), strings.TrimSpace(items[1].Hash)}
+			assert.Contains(t, hashes, "u1")
+			assert.Contains(t, hashes, "u2")
+		}
+	})
+}
+
 func TestFindFeedScheduleById(t *testing.T) {
 	baseRepo, baseDB := mustOpenTestRepo(t)
 

@@ -913,6 +913,10 @@ func (m *MockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCo
 	return nil, nil
 }
 
+func (m *MockRepo) BeginThinkerUpdateLLMModelBatch(limit int, llmModel string, lockDuration time.Duration) ([]database.Item, error) {
+	return nil, nil
+}
+
 func (m *MockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	if f, ok := m.feeds[feedID]; ok {
 		return f.FeedSchedule, nil

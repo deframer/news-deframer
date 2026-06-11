@@ -20,9 +20,9 @@
    docker compose pull
    docker compose up -d
    ```
-   If you want multiple `thinker` or `thinker-fixer` workers, scale them at startup:
+   If you want multiple `thinker`, `thinker-fixer`, or `thinker-update-llm-model` workers, scale them at startup:
    ```bash
-   docker compose up -d --scale thinker=3 --scale thinker-fixer=2
+   docker compose up -d --scale thinker=3 --scale thinker-fixer=2 --scale thinker-update-llm-model=1
    ```
 
 ### Connect to Postgres
@@ -43,6 +43,7 @@ docker compose exec postgres psql -U deframer -d deframer
 - Force a Miner Run `docker compose exec ingester admin feed mine-all`
 - Start multiple thinker workers with `docker compose up -d --scale thinker=3`.
 - Start multiple thinker-fixer workers with `docker compose up -d --scale thinker-fixer=2`.
+- Start `thinker-update-llm-model` workers with `docker compose up -d --scale thinker-update-llm-model=1`.
 - You can combine both scales in one command.
 You can manage feeds using the `admin` CLI tool inside the running container.
 

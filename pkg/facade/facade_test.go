@@ -187,6 +187,10 @@ func (m *mockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCo
 	return nil, nil
 }
 
+func (m *mockRepo) BeginThinkerUpdateLLMModelBatch(limit int, llmModel string, lockDuration time.Duration) ([]database.Item, error) {
+	return nil, nil
+}
+
 func (m *mockRepo) FindFeedScheduleById(feedID uuid.UUID) (*database.FeedSchedule, error) {
 	if m.findFeedScheduleById != nil {
 		return m.findFeedScheduleById(feedID)
