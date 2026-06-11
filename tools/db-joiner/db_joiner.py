@@ -420,6 +420,75 @@ def find_locked_item_urls(
     return {row["url"] for row in dest_cur.fetchall()}
 
 
+def fetch_existing_items_for_feed(
+    dest_cur: psycopg.Cursor[Any], dest_feed_id: Any, hashes: list[str], urls: list[str]
+) -> list[dict[str, Any]]:
+    if not hashes and not urls:
+        return []
+
+    dest_cur.execute(
+        """
+        SELECT
+          i.id,
+          i.hash,
+          i.url,
+          i.think_result IS NOT NULL AS has_think_result,
+          EXISTS (SELECT 1 FROM trends t WHERE t.item_id = i.id) AS has_trend
+        FROM items i
+        WHERE i.feed_id = %s
+          AND (i.hash = ANY(%s) OR i.url = ANY(%s))
+        """,
+        (dest_feed_id, hashes, urls),
+    )
+    return dest_cur.fetchall()
+
+
+def plan_item_actions(
+    src_items: list[dict[str, Any]],
+    existing_items: list[dict[str, Any]],
+    force_replace: bool,
+) -> tuple[list[dict[str, Any]], int, int, int, int]:
+    existing_by_hash = {row["hash"]: row for row in existing_items}
+    existing_by_url = {row["url"]: row for row in existing_items}
+
+    plans: list[dict[str, Any]] = []
+    skipped_count = 0
+    replaced_count = 0
+    inserted_count = 0
+    replaced_trends_count = 0
+
+    for item in src_items:
+        existing = existing_by_hash.get(item["hash"])
+        if existing is None:
+            existing = existing_by_url.get(item["url"])
+
+        locked = (
+            existing is not None
+            and existing["has_think_result"]
+            and existing["has_trend"]
+        )
+        if locked and not force_replace:
+            skipped_count += 1
+            continue
+
+        old_item_id = existing["id"] if existing is not None else None
+        if old_item_id is not None:
+            replaced_count += 1
+            if existing["has_trend"]:
+                replaced_trends_count += 1
+        else:
+            inserted_count += 1
+
+        plans.append(
+            {
+                "source_item_id": item["id"],
+                "old_item_id": old_item_id,
+            }
+        )
+
+    return plans, skipped_count, replaced_count, inserted_count, replaced_trends_count
+
+
 def merge(args: argparse.Namespace) -> Stats:
     stats = Stats()
     force_replace = env_flag("FORCE_REPLACE")
@@ -466,11 +535,24 @@ def merge(args: argparse.Namespace) -> Stats:
                         )
                     )
                     work_items = [row for row in src_items if row["url"] not in locked_urls]
-                    skipped_item_ids = {row["id"] for row in src_items if row["url"] in locked_urls}
+
+                    existing_items = fetch_existing_items_for_feed(
+                        dest_cur,
+                        dest_feed_id,
+                        [row["hash"] for row in work_items],
+                        [row["url"] for row in work_items],
+                    )
+                    planned_items, skipped_count, replaced_count, inserted_count, replaced_trends_count = plan_item_actions(
+                        work_items, existing_items, force_replace
+                    )
+                    planned_source_ids = {row["source_item_id"] for row in planned_items}
                     work_trends = [
-                        row for row in src_trends if row["source_item_id"] not in skipped_item_ids
+                        row for row in src_trends if row["source_item_id"] in planned_source_ids
                     ]
-                    stg_items = prepare_item_rows(work_items)
+
+                    stg_items = prepare_item_rows(
+                        [row for row in work_items if row["id"] in planned_source_ids]
+                    )
                     stg_trends = prepare_trend_rows(work_trends)
 
                     log_progress(
@@ -479,13 +561,16 @@ def merge(args: argparse.Namespace) -> Stats:
                     if locked_urls:
                         log_progress(f"  skipping {len(locked_urls)} item(s) already published")
                     log_progress(
-                        f"  work items: {len(work_items)}, work trends: {len(work_trends)}"
+                        f"  work items: {len(planned_items)}, insert {inserted_count}, delete+insert {replaced_count}"
                     )
 
-                    stats.items_skipped += len(locked_urls)
+                    stats.items_skipped += skipped_count
+                    stats.items_replaced += replaced_count
+                    stats.items_inserted += len(planned_items)
                     stats.trends_skipped += len(src_trends) - len(work_trends)
+                    stats.trends_replaced += replaced_trends_count
 
-                    if not work_items:
+                    if not planned_items:
                         log_progress("  no remaining items, skipping")
                         if apply_started_at is not None:
                             log_apply_eta(apply_started_at, feed_index, total_feeds)
@@ -562,75 +647,28 @@ def merge(args: argparse.Namespace) -> Stats:
                             stg_trends,
                         )
 
-                    dest_cur.execute(
-                        """
-                        SELECT COUNT(*)
-                        FROM stg_items s
-                        JOIN items i ON i.feed_id = %s AND i.url = s.url
-                        """,
-                        (dest_feed_id,),
-                    )
-                    replaced_row = dest_cur.fetchone()
-                    replaced_count = (
-                        int(replaced_row["count"]) if replaced_row is not None else 0
-                    )
-                    stats.items_replaced += replaced_count
-                    stats.items_inserted += len(work_items) - replaced_count
-                    log_progress(
-                        f"  items: skip {len(locked_urls)}, replace {replaced_count}, insert {len(work_items) - replaced_count}"
-                    )
-
                     if args.apply:
                         dest_cur.execute(
                             """
-                            CREATE TEMP TABLE item_id_map (
+                            CREATE TEMP TABLE item_plan (
                               source_item_id uuid PRIMARY KEY,
-                              new_item_id uuid NOT NULL
+                              old_item_id uuid
                             ) ON COMMIT DROP
                             """
                         )
-
-                        dest_cur.execute(
+                        dest_cur.executemany(
                             """
-                            CREATE TEMP TABLE replaced_items AS
-                            SELECT i.id
-                            FROM stg_items s
-                            JOIN items i ON i.feed_id = %s AND i.url = s.url
+                            INSERT INTO item_plan (source_item_id, old_item_id)
+                            VALUES (%(source_item_id)s, %(old_item_id)s)
                             """,
-                            (dest_feed_id,),
-                        )
-                        dest_cur.execute(
-                            """
-                            SELECT COUNT(*)
-                            FROM trends t
-                            JOIN replaced_items r ON r.id = t.item_id
-                            """
-                        )
-                        replaced_trends_row = dest_cur.fetchone()
-                        stats.trends_replaced += (
-                            int(replaced_trends_row["count"])
-                            if replaced_trends_row is not None
-                            else 0
+                            planned_items,
                         )
 
                         dest_cur.execute(
-                            "DELETE FROM trends WHERE item_id IN (SELECT id FROM replaced_items)"
+                            "DELETE FROM trends WHERE item_id IN (SELECT old_item_id FROM item_plan WHERE old_item_id IS NOT NULL)"
                         )
                         dest_cur.execute(
-                            "DELETE FROM items WHERE id IN (SELECT id FROM replaced_items)"
-                        )
-
-                        dest_cur.execute(
-                            """
-                            INSERT INTO item_id_map(source_item_id, new_item_id)
-                            SELECT s.source_item_id,
-                                   CASE
-                                     WHEN EXISTS (SELECT 1 FROM items i WHERE i.id = s.source_item_id)
-                                       THEN uuid_generate_v4()
-                                     ELSE s.source_item_id
-                                   END AS new_item_id
-                            FROM stg_items s
-                            """
+                            "DELETE FROM items WHERE id IN (SELECT old_item_id FROM item_plan WHERE old_item_id IS NOT NULL)"
                         )
 
                         dest_cur.execute(
@@ -640,11 +678,13 @@ def merge(args: argparse.Namespace) -> Stats:
                               pub_date, media_content, think_result, think_error, think_error_count,
                               think_rating, categories, authors
                             )
-                            SELECT m.new_item_id, s.created_at, s.updated_at, s.hash, %s, s.url,
-                                   s.language, s.content, s.pub_date, s.media_content, s.think_result,
-                                   s.think_error, s.think_error_count, s.think_rating, s.categories, s.authors
+                            SELECT
+                              s.source_item_id AS id,
+                              s.created_at, s.updated_at, s.hash, %s, s.url,
+                              s.language, s.content, s.pub_date, s.media_content, s.think_result,
+                              s.think_error, s.think_error_count, s.think_rating, s.categories, s.authors
                             FROM stg_items s
-                            JOIN item_id_map m ON m.source_item_id = s.source_item_id
+                            JOIN item_plan p ON p.source_item_id = s.source_item_id
                             """,
                             (dest_feed_id,),
                         )
@@ -656,11 +696,15 @@ def merge(args: argparse.Namespace) -> Stats:
                                   item_id, feed_id, language, pub_date, category_stems, noun_stems,
                                   verb_stems, adjective_stems, root_domain, sentiments, sentiments_deframed
                                 )
-                                SELECT m.new_item_id, %s, t.language, t.pub_date, t.category_stems,
-                                       t.noun_stems, t.verb_stems, t.adjective_stems, t.root_domain,
-                                       t.sentiments, t.sentiments_deframed
+                                SELECT
+                                  s.source_item_id AS item_id,
+                                  %s,
+                                  t.language, t.pub_date, t.category_stems,
+                                  t.noun_stems, t.verb_stems, t.adjective_stems, t.root_domain,
+                                  t.sentiments, t.sentiments_deframed
                                 FROM stg_trends t
-                                JOIN item_id_map m ON m.source_item_id = t.source_item_id
+                                JOIN item_plan p ON p.source_item_id = t.source_item_id
+                                JOIN stg_items s ON s.source_item_id = t.source_item_id
                                 """,
                                 (dest_feed_id,),
                             )

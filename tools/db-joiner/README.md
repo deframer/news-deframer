@@ -9,6 +9,7 @@ Merge source -> destination for `feeds`, `items`, and `trends`.
 - If a matching destination feed does not exist, insert the source feed.
 - Match items by `(feed_id, url)` in destination.
 - By default, skip replacing a destination item if it already has a `think_result` and at least one `trend`.
+- If an existing item has no `think_result` and no `trend`, delete it and insert the source item as new.
 - Set `FORCE_REPLACE=1` to force the old delete-and-reinsert behavior.
 - If item is eligible for replacement: delete destination trend + item, then insert source item fresh.
 - During `make apply`, print a light feed-based ETA/progress line to stderr.
