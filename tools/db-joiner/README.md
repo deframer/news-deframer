@@ -11,6 +11,7 @@ Merge source -> destination for `feeds`, `items`, and `trends`.
 - By default, skip replacing a destination item if it already has a `think_result` and at least one `trend`.
 - Set `FORCE_REPLACE=1` to force the old delete-and-reinsert behavior.
 - If item is eligible for replacement: delete destination trend + item, then insert source item fresh.
+- During `make apply`, print a light feed-based ETA/progress line to stderr.
 - Insert trends after items using final destination `feed_id` and `item_id`.
 - Use one destination transaction per feed (atomic per-feed merge).
 - Item/trend work is set-based per feed using temporary staging tables.

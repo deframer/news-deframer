@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -370,6 +371,30 @@ def log_progress(message: str) -> None:
     print(message, file=sys.stderr, flush=True)
 
 
+def format_duration(seconds: float) -> str:
+    total_seconds = max(0, int(round(seconds)))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{secs:02d}s"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+def log_apply_eta(started_at: float, completed: int, total: int) -> None:
+    elapsed = time.monotonic() - started_at
+    if completed < total:
+        eta = elapsed / completed * (total - completed)
+        log_progress(
+            f"  apply progress: {completed}/{total} feeds, elapsed {format_duration(elapsed)}, eta {format_duration(eta)}"
+        )
+    else:
+        log_progress(
+            f"  apply progress: {completed}/{total} feeds, elapsed {format_duration(elapsed)}, done"
+        )
+
+
 def env_flag(name: str) -> bool:
     value = os.getenv(name)
     return value is not None and value.lower() not in {"", "0", "false", "no"}
@@ -398,6 +423,7 @@ def find_locked_item_urls(
 def merge(args: argparse.Namespace) -> Stats:
     stats = Stats()
     force_replace = env_flag("FORCE_REPLACE")
+    apply_started_at = time.monotonic() if args.apply else None
     with (
         psycopg.connect(args.source_dsn, autocommit=False) as src_conn,
         psycopg.connect(args.dest_dsn, autocommit=False) as dest_conn,
@@ -461,6 +487,8 @@ def merge(args: argparse.Namespace) -> Stats:
 
                     if not work_items:
                         log_progress("  no remaining items, skipping")
+                        if apply_started_at is not None:
+                            log_apply_eta(apply_started_at, feed_index, total_feeds)
                         continue
 
                     dest_cur.execute(
@@ -637,6 +665,9 @@ def merge(args: argparse.Namespace) -> Stats:
                                 (dest_feed_id,),
                             )
                             stats.trends_inserted += len(work_trends)
+
+                    if apply_started_at is not None:
+                        log_apply_eta(apply_started_at, feed_index, total_feeds)
 
         if not args.apply:
             dest_conn.rollback()
