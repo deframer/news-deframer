@@ -116,7 +116,6 @@ def fetch_table_columns(conn: psycopg.Connection):
             SELECT
               table_name,
               column_name,
-              ordinal_position,
               is_nullable,
               data_type,
               udt_name,
@@ -124,7 +123,7 @@ def fetch_table_columns(conn: psycopg.Connection):
             FROM information_schema.columns
             WHERE table_schema = 'public'
               AND table_name = ANY(%s)
-            ORDER BY table_name, ordinal_position
+            ORDER BY table_name, column_name
             """,
             (list(TABLES),),
         )
@@ -173,7 +172,6 @@ def normalize_column_rows(rows):
         (
             r["table_name"],
             r["column_name"],
-            r["ordinal_position"],
             r["is_nullable"],
             r["data_type"],
             r["udt_name"],
