@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from dataclasses import dataclass
 from typing import Any
@@ -16,8 +17,10 @@ from psycopg.types.json import Jsonb
 class Stats:
     feeds_inserted: int = 0
     feeds_updated: int = 0
+    items_skipped: int = 0
     items_replaced: int = 0
     items_inserted: int = 0
+    trends_skipped: int = 0
     trends_inserted: int = 0
     trends_replaced: int = 0
 
@@ -252,6 +255,9 @@ def fetch_source_feeds(
            last_synced_at, last_error, categories, tags
     FROM feeds
     WHERE deleted_at IS NULL
+      AND enabled IS TRUE
+      AND url IS NOT NULL
+      AND url <> ''
     """
     params: list[Any] = []
     if feed_url:
@@ -360,16 +366,51 @@ def prepare_trend_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return prepared
 
 
+def log_progress(message: str) -> None:
+    print(message, file=sys.stderr, flush=True)
+
+
+def env_flag(name: str) -> bool:
+    value = os.getenv(name)
+    return value is not None and value.lower() not in {"", "0", "false", "no"}
+
+
+def find_locked_item_urls(
+    dest_cur: psycopg.Cursor[Any], dest_feed_id: Any, urls: list[str]
+) -> set[str]:
+    if not urls:
+        return set()
+
+    dest_cur.execute(
+        """
+        SELECT DISTINCT i.url
+        FROM items i
+        JOIN trends t ON t.item_id = i.id
+        WHERE i.feed_id = %s
+          AND i.think_result IS NOT NULL
+          AND i.url = ANY(%s)
+        """,
+        (dest_feed_id, urls),
+    )
+    return {row["url"] for row in dest_cur.fetchall()}
+
+
 def merge(args: argparse.Namespace) -> Stats:
     stats = Stats()
+    force_replace = env_flag("FORCE_REPLACE")
     with (
         psycopg.connect(args.source_dsn, autocommit=False) as src_conn,
         psycopg.connect(args.dest_dsn, autocommit=False) as dest_conn,
     ):
         src_feeds = fetch_source_feeds(src_conn, args.feed_url, args.limit_feeds)
-        for src_feed in src_feeds:
+        total_feeds = len(src_feeds)
+        log_progress(f"merge: processing {total_feeds} feed(s)")
+        if force_replace:
+            log_progress("merge: FORCE_REPLACE enabled")
+        for feed_index, src_feed in enumerate(src_feeds, start=1):
             # One transaction per feed so feed update + item replacements + trend inserts
             # are atomic for that feed.
+            log_progress(f"[{feed_index}/{total_feeds}] {src_feed['url']}")
             with dest_conn.transaction():
                 with dest_conn.cursor(row_factory=dict_row) as dest_cur:
                     dest_feed = find_dest_feed_by_url(dest_cur, src_feed["url"])
@@ -389,10 +430,37 @@ def merge(args: argparse.Namespace) -> Stats:
 
                     src_items = source_items_for_feed(src_conn, src_feed["id"])
                     src_trends = source_trends_for_feed(src_conn, src_feed["id"])
-                    stg_items = prepare_item_rows(src_items)
-                    stg_trends = prepare_trend_rows(src_trends)
+                    locked_urls = (
+                        set()
+                        if force_replace
+                        else find_locked_item_urls(
+                            dest_cur,
+                            dest_feed_id,
+                            [row["url"] for row in src_items],
+                        )
+                    )
+                    work_items = [row for row in src_items if row["url"] not in locked_urls]
+                    skipped_item_ids = {row["id"] for row in src_items if row["url"] in locked_urls}
+                    work_trends = [
+                        row for row in src_trends if row["source_item_id"] not in skipped_item_ids
+                    ]
+                    stg_items = prepare_item_rows(work_items)
+                    stg_trends = prepare_trend_rows(work_trends)
 
-                    if not src_items:
+                    log_progress(
+                        f"  source items: {len(src_items)}, source trends: {len(src_trends)}"
+                    )
+                    if locked_urls:
+                        log_progress(f"  skipping {len(locked_urls)} item(s) already published")
+                    log_progress(
+                        f"  work items: {len(work_items)}, work trends: {len(work_trends)}"
+                    )
+
+                    stats.items_skipped += len(locked_urls)
+                    stats.trends_skipped += len(src_trends) - len(work_trends)
+
+                    if not work_items:
+                        log_progress("  no remaining items, skipping")
                         continue
 
                     dest_cur.execute(
@@ -479,7 +547,10 @@ def merge(args: argparse.Namespace) -> Stats:
                         int(replaced_row["count"]) if replaced_row is not None else 0
                     )
                     stats.items_replaced += replaced_count
-                    stats.items_inserted += len(src_items) - replaced_count
+                    stats.items_inserted += len(work_items) - replaced_count
+                    log_progress(
+                        f"  items: skip {len(locked_urls)}, replace {replaced_count}, insert {len(work_items) - replaced_count}"
+                    )
 
                     if args.apply:
                         dest_cur.execute(
@@ -550,7 +621,7 @@ def merge(args: argparse.Namespace) -> Stats:
                             (dest_feed_id,),
                         )
 
-                        if src_trends:
+                        if stg_trends:
                             dest_cur.execute(
                                 """
                                 INSERT INTO trends (
@@ -565,7 +636,7 @@ def merge(args: argparse.Namespace) -> Stats:
                                 """,
                                 (dest_feed_id,),
                             )
-                            stats.trends_inserted += len(src_trends)
+                            stats.trends_inserted += len(work_trends)
 
         if not args.apply:
             dest_conn.rollback()
@@ -600,8 +671,10 @@ def main() -> int:
     print("merge complete")
     print(f"feeds inserted: {stats.feeds_inserted}")
     print(f"feeds updated: {stats.feeds_updated}")
+    print(f"items skipped: {stats.items_skipped}")
     print(f"items replaced: {stats.items_replaced}")
     print(f"items inserted: {stats.items_inserted}")
+    print(f"trends skipped: {stats.trends_skipped}")
     print(f"trends replaced: {stats.trends_replaced}")
     print(f"trends inserted: {stats.trends_inserted}")
 
