@@ -11,7 +11,7 @@ endif
 
 .PHONY: all build clean test help coverage lint tidy gen example format-check
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
-.PHONY: docker-all add-feeds service worker thinker thinker-fixer
+.PHONY: docker-all add-feeds service worker thinker thinker-fixer thinker-update-llm-model
 
 all: build
 
@@ -100,6 +100,9 @@ thinker: build
 
 thinker-fixer: build
 	./bin/worker --mode thinker-fixer
+
+thinker-update-llm-model: build
+	./bin/worker --mode thinker-update-llm-model
 
 SQL_DIR := sql
 

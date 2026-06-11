@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	mode := flag.String("mode", string(syncer.ModeIngester), "Run mode: ingester, thinker, or thinker-fixer")
+	mode := flag.String("mode", string(syncer.ModeIngester), "Run mode: ingester, thinker, thinker-fixer, or thinker-update-llm-model")
 	flag.Usage = func() {
 		// #nosec G705: usage string is escaped before printing
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", html.EscapeString(os.Args[0]))
@@ -27,9 +27,9 @@ func main() {
 
 	selectedMode := syncer.Mode(*mode)
 	switch selectedMode {
-	case syncer.ModeIngester, syncer.ModeThinker, syncer.ModeThinkerFixer:
+	case syncer.ModeIngester, syncer.ModeThinker, syncer.ModeThinkerFixer, syncer.ModeThinkerUpdateLLMModel:
 	default:
-		fmt.Fprintf(os.Stderr, "Invalid mode: %s (expected %s, %s, or %s)\n", *mode, syncer.ModeIngester, syncer.ModeThinker, syncer.ModeThinkerFixer)
+		fmt.Fprintf(os.Stderr, "Invalid mode: %s (expected %s, %s, %s, or %s)\n", *mode, syncer.ModeIngester, syncer.ModeThinker, syncer.ModeThinkerFixer, syncer.ModeThinkerUpdateLLMModel)
 		os.Exit(2)
 	}
 

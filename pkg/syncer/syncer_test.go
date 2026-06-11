@@ -17,20 +17,22 @@ import (
 )
 
 type mockRepo struct {
-	enqueueSyncCalled        bool
-	lastId                   uuid.UUID
-	removeSyncCalled         bool
-	upsertItemFunc           func(item *database.Item) error
-	upsertItemInvalidateFunc func(item *database.Item) error
-	beginThinkerBatchFunc    func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
-	beginThinkerFixerFunc    func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
-	beginThinkerBatchCalls   int
-	getTopTrendByDomainFunc  func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
-	getContextByDomainFunc   func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
-	getLifecycleByDomainFunc func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
-	getDomainComparisonFunc  func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
-	getArticlesByTrendFunc   func(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
-	getSentimentsByTrendFunc func(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
+	enqueueSyncCalled                    bool
+	lastId                               uuid.UUID
+	removeSyncCalled                     bool
+	upsertItemFunc                       func(item *database.Item) error
+	upsertItemInvalidateFunc             func(item *database.Item) error
+	beginThinkerBatchFunc                func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
+	beginThinkerFixerFunc                func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
+	beginThinkerUpdateLLMModelBatchFunc  func(limit int, llmModel string, lockDuration time.Duration) ([]database.Item, error)
+	beginThinkerBatchCalls               int
+	beginThinkerUpdateLLMModelBatchCalls int
+	getTopTrendByDomainFunc              func(domain string, language string, date *time.Time, days int) ([]database.TrendMetric, error)
+	getContextByDomainFunc               func(term string, domain string, language string, date *time.Time, days int) ([]database.TrendContext, error)
+	getLifecycleByDomainFunc             func(term string, domain string, language string, date *time.Time, days int) ([]database.Lifecycle, error)
+	getDomainComparisonFunc              func(domainA string, domainB string, language string, date *time.Time, days int, utilityThreshold float64, outlierRatioThreshold float64, limit int) ([]database.DomainComparison, error)
+	getArticlesByTrendFunc               func(term string, domain string, date *time.Time, days int, offset int, limit int) ([]database.AnalyzedArticle, error)
+	getSentimentsByTrendFunc             func(term string, domain string, date *time.Time, days int) (*database.SentimentItem, error)
 }
 
 // Implement database.Repository interface stubs
@@ -90,6 +92,13 @@ func (m *mockRepo) BeginThinkerBatch(limit int, since time.Time, minErrorCount i
 func (m *mockRepo) BeginThinkerFixerBatch(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error) {
 	if m.beginThinkerFixerFunc != nil {
 		return m.beginThinkerFixerFunc(limit, since, minErrorCount, maxErrorCount, lockDuration)
+	}
+	return nil, nil
+}
+func (m *mockRepo) BeginThinkerUpdateLLMModelBatch(limit int, llmModel string, lockDuration time.Duration) ([]database.Item, error) {
+	m.beginThinkerUpdateLLMModelBatchCalls++
+	if m.beginThinkerUpdateLLMModelBatchFunc != nil {
+		return m.beginThinkerUpdateLLMModelBatchFunc(limit, llmModel, lockDuration)
 	}
 	return nil, nil
 }
@@ -219,6 +228,46 @@ func TestProcessThinkerBatchUsesSingleQuery(t *testing.T) {
 	ok := s.processThinkerBatch()
 	assert.False(t, ok)
 	assert.Equal(t, 1, repo.beginThinkerBatchCalls)
+}
+
+func TestProcessThinkerUpdateLLMModelBatchUsesSingleQuery(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	repo.beginThinkerUpdateLLMModelBatchFunc = func(limit int, llmModel string, lockDuration time.Duration) ([]database.Item, error) {
+		assert.Equal(t, thinkerBatchSize, limit)
+		assert.Equal(t, cfg.LLM_Model, llmModel)
+		assert.Equal(t, config.DefaultLockDuration, lockDuration)
+		return nil, nil
+	}
+
+	s, err := New(context.Background(), cfg, repo)
+	assert.NoError(t, err)
+
+	ok := s.processThinkerUpdateLLMModelBatch()
+	assert.False(t, ok)
+	assert.Equal(t, 1, repo.beginThinkerUpdateLLMModelBatchCalls)
+}
+
+func TestPollThinkerUpdateLLMModel(t *testing.T) {
+	repo := &mockRepo{}
+	cfg, err := config.Load()
+	assert.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	repo.beginThinkerUpdateLLMModelBatchFunc = func(limit int, llmModel string, lockDuration time.Duration) ([]database.Item, error) {
+		cancel()
+		return nil, nil
+	}
+
+	s, err := New(ctx, cfg, repo)
+	assert.NoError(t, err)
+
+	s.Poll(ModeThinkerUpdateLLMModel)
+	assert.Equal(t, 1, repo.beginThinkerUpdateLLMModelBatchCalls)
 }
 
 func TestStopPolling(t *testing.T) {
