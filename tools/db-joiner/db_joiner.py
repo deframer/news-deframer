@@ -3,20 +3,25 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+import time
 from dataclasses import dataclass
 from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 
 @dataclass
 class Stats:
     feeds_inserted: int = 0
     feeds_updated: int = 0
+    items_skipped: int = 0
     items_replaced: int = 0
     items_inserted: int = 0
+    trends_skipped: int = 0
     trends_inserted: int = 0
     trends_replaced: int = 0
 
@@ -251,6 +256,9 @@ def fetch_source_feeds(
            last_synced_at, last_error, categories, tags
     FROM feeds
     WHERE deleted_at IS NULL
+      AND enabled IS TRUE
+      AND url IS NOT NULL
+      AND url <> ''
     """
     params: list[Any] = []
     if feed_url:
@@ -325,16 +333,179 @@ def source_trends_for_feed(
         return cur.fetchall()
 
 
+def prepare_item_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    prepared: list[dict[str, Any]] = []
+    for row in rows:
+        prepared.append(
+            {
+                **row,
+                "media_content": Jsonb(row["media_content"])
+                if row["media_content"] is not None
+                else None,
+                "think_result": Jsonb(row["think_result"])
+                if row["think_result"] is not None
+                else None,
+            }
+        )
+    return prepared
+
+
+def prepare_trend_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    prepared: list[dict[str, Any]] = []
+    for row in rows:
+        prepared.append(
+            {
+                **row,
+                "sentiments": Jsonb(row["sentiments"])
+                if row["sentiments"] is not None
+                else None,
+                "sentiments_deframed": Jsonb(row["sentiments_deframed"])
+                if row["sentiments_deframed"] is not None
+                else None,
+            }
+        )
+    return prepared
+
+
+def log_progress(message: str) -> None:
+    print(message, file=sys.stderr, flush=True)
+
+
+def format_duration(seconds: float) -> str:
+    total_seconds = max(0, int(round(seconds)))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{secs:02d}s"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+def log_apply_eta(started_at: float, completed: int, total: int) -> None:
+    elapsed = time.monotonic() - started_at
+    if completed < total:
+        eta = elapsed / completed * (total - completed)
+        log_progress(
+            f"  apply progress: {completed}/{total} feeds, elapsed {format_duration(elapsed)}, eta {format_duration(eta)}"
+        )
+    else:
+        log_progress(
+            f"  apply progress: {completed}/{total} feeds, elapsed {format_duration(elapsed)}, done"
+        )
+
+
+def env_flag(name: str) -> bool:
+    value = os.getenv(name)
+    return value is not None and value.lower() not in {"", "0", "false", "no"}
+
+
+def find_locked_item_urls(
+    dest_cur: psycopg.Cursor[Any], dest_feed_id: Any, urls: list[str]
+) -> set[str]:
+    if not urls:
+        return set()
+
+    dest_cur.execute(
+        """
+        SELECT DISTINCT i.url
+        FROM items i
+        JOIN trends t ON t.item_id = i.id
+        WHERE i.feed_id = %s
+          AND i.think_result IS NOT NULL
+          AND i.url = ANY(%s)
+        """,
+        (dest_feed_id, urls),
+    )
+    return {row["url"] for row in dest_cur.fetchall()}
+
+
+def fetch_existing_items_for_feed(
+    dest_cur: psycopg.Cursor[Any], dest_feed_id: Any, hashes: list[str], urls: list[str]
+) -> list[dict[str, Any]]:
+    if not hashes and not urls:
+        return []
+
+    dest_cur.execute(
+        """
+        SELECT
+          i.id,
+          i.hash,
+          i.url,
+          i.think_result IS NOT NULL AS has_think_result,
+          EXISTS (SELECT 1 FROM trends t WHERE t.item_id = i.id) AS has_trend
+        FROM items i
+        WHERE i.feed_id = %s
+          AND (i.hash = ANY(%s) OR i.url = ANY(%s))
+        """,
+        (dest_feed_id, hashes, urls),
+    )
+    return dest_cur.fetchall()
+
+
+def plan_item_actions(
+    src_items: list[dict[str, Any]],
+    existing_items: list[dict[str, Any]],
+    force_replace: bool,
+) -> tuple[list[dict[str, Any]], int, int, int, int]:
+    existing_by_hash = {row["hash"]: row for row in existing_items}
+    existing_by_url = {row["url"]: row for row in existing_items}
+
+    plans: list[dict[str, Any]] = []
+    skipped_count = 0
+    replaced_count = 0
+    inserted_count = 0
+    replaced_trends_count = 0
+
+    for item in src_items:
+        existing = existing_by_hash.get(item["hash"])
+        if existing is None:
+            existing = existing_by_url.get(item["url"])
+
+        locked = (
+            existing is not None
+            and existing["has_think_result"]
+            and existing["has_trend"]
+        )
+        if locked and not force_replace:
+            skipped_count += 1
+            continue
+
+        old_item_id = existing["id"] if existing is not None else None
+        if old_item_id is not None:
+            replaced_count += 1
+            if existing["has_trend"]:
+                replaced_trends_count += 1
+        else:
+            inserted_count += 1
+
+        plans.append(
+            {
+                "source_item_id": item["id"],
+                "old_item_id": old_item_id,
+            }
+        )
+
+    return plans, skipped_count, replaced_count, inserted_count, replaced_trends_count
+
+
 def merge(args: argparse.Namespace) -> Stats:
     stats = Stats()
+    force_replace = env_flag("FORCE_REPLACE")
+    apply_started_at = time.monotonic() if args.apply else None
     with (
         psycopg.connect(args.source_dsn, autocommit=False) as src_conn,
         psycopg.connect(args.dest_dsn, autocommit=False) as dest_conn,
     ):
         src_feeds = fetch_source_feeds(src_conn, args.feed_url, args.limit_feeds)
-        for src_feed in src_feeds:
+        total_feeds = len(src_feeds)
+        log_progress(f"merge: processing {total_feeds} feed(s)")
+        if force_replace:
+            log_progress("merge: FORCE_REPLACE enabled")
+        for feed_index, src_feed in enumerate(src_feeds, start=1):
             # One transaction per feed so feed update + item replacements + trend inserts
             # are atomic for that feed.
+            log_progress(f"[{feed_index}/{total_feeds}] {src_feed['url']}")
             with dest_conn.transaction():
                 with dest_conn.cursor(row_factory=dict_row) as dest_cur:
                     dest_feed = find_dest_feed_by_url(dest_cur, src_feed["url"])
@@ -354,8 +525,55 @@ def merge(args: argparse.Namespace) -> Stats:
 
                     src_items = source_items_for_feed(src_conn, src_feed["id"])
                     src_trends = source_trends_for_feed(src_conn, src_feed["id"])
+                    locked_urls = (
+                        set()
+                        if force_replace
+                        else find_locked_item_urls(
+                            dest_cur,
+                            dest_feed_id,
+                            [row["url"] for row in src_items],
+                        )
+                    )
+                    work_items = [row for row in src_items if row["url"] not in locked_urls]
 
-                    if not src_items:
+                    existing_items = fetch_existing_items_for_feed(
+                        dest_cur,
+                        dest_feed_id,
+                        [row["hash"] for row in work_items],
+                        [row["url"] for row in work_items],
+                    )
+                    planned_items, skipped_count, replaced_count, inserted_count, replaced_trends_count = plan_item_actions(
+                        work_items, existing_items, force_replace
+                    )
+                    planned_source_ids = {row["source_item_id"] for row in planned_items}
+                    work_trends = [
+                        row for row in src_trends if row["source_item_id"] in planned_source_ids
+                    ]
+
+                    stg_items = prepare_item_rows(
+                        [row for row in work_items if row["id"] in planned_source_ids]
+                    )
+                    stg_trends = prepare_trend_rows(work_trends)
+
+                    log_progress(
+                        f"  source items: {len(src_items)}, source trends: {len(src_trends)}"
+                    )
+                    if locked_urls:
+                        log_progress(f"  skipping {len(locked_urls)} item(s) already published")
+                    log_progress(
+                        f"  work items: {len(planned_items)}, insert {inserted_count}, delete+insert {replaced_count}"
+                    )
+
+                    stats.items_skipped += skipped_count
+                    stats.items_replaced += replaced_count
+                    stats.items_inserted += len(planned_items)
+                    stats.trends_skipped += len(src_trends) - len(work_trends)
+                    stats.trends_replaced += replaced_trends_count
+
+                    if not planned_items:
+                        log_progress("  no remaining items, skipping")
+                        if apply_started_at is not None:
+                            log_apply_eta(apply_started_at, feed_index, total_feeds)
                         continue
 
                     dest_cur.execute(
@@ -410,10 +628,10 @@ def merge(args: argparse.Namespace) -> Stats:
                           %(categories)s, %(authors)s
                         )
                         """,
-                        src_items,
+                        stg_items,
                     )
 
-                    if src_trends:
+                    if stg_trends:
                         dest_cur.executemany(
                             """
                             INSERT INTO stg_trends (
@@ -426,75 +644,31 @@ def merge(args: argparse.Namespace) -> Stats:
                               %(sentiments)s, %(sentiments_deframed)s
                             )
                             """,
-                            src_trends,
+                            stg_trends,
                         )
-
-                    dest_cur.execute(
-                        """
-                        SELECT COUNT(*)
-                        FROM stg_items s
-                        JOIN items i ON i.feed_id = %s AND i.url = s.url
-                        """,
-                        (dest_feed_id,),
-                    )
-                    replaced_row = dest_cur.fetchone()
-                    replaced_count = (
-                        int(replaced_row["count"]) if replaced_row is not None else 0
-                    )
-                    stats.items_replaced += replaced_count
-                    stats.items_inserted += len(src_items) - replaced_count
 
                     if args.apply:
                         dest_cur.execute(
                             """
-                            CREATE TEMP TABLE item_id_map (
+                            CREATE TEMP TABLE item_plan (
                               source_item_id uuid PRIMARY KEY,
-                              new_item_id uuid NOT NULL
+                              old_item_id uuid
                             ) ON COMMIT DROP
                             """
                         )
-
-                        dest_cur.execute(
+                        dest_cur.executemany(
                             """
-                            CREATE TEMP TABLE replaced_items AS
-                            SELECT i.id
-                            FROM stg_items s
-                            JOIN items i ON i.feed_id = %s AND i.url = s.url
+                            INSERT INTO item_plan (source_item_id, old_item_id)
+                            VALUES (%(source_item_id)s, %(old_item_id)s)
                             """,
-                            (dest_feed_id,),
-                        )
-                        dest_cur.execute(
-                            """
-                            SELECT COUNT(*)
-                            FROM trends t
-                            JOIN replaced_items r ON r.id = t.item_id
-                            """
-                        )
-                        replaced_trends_row = dest_cur.fetchone()
-                        stats.trends_replaced += (
-                            int(replaced_trends_row["count"])
-                            if replaced_trends_row is not None
-                            else 0
+                            planned_items,
                         )
 
                         dest_cur.execute(
-                            "DELETE FROM trends WHERE item_id IN (SELECT id FROM replaced_items)"
+                            "DELETE FROM trends WHERE item_id IN (SELECT old_item_id FROM item_plan WHERE old_item_id IS NOT NULL)"
                         )
                         dest_cur.execute(
-                            "DELETE FROM items WHERE id IN (SELECT id FROM replaced_items)"
-                        )
-
-                        dest_cur.execute(
-                            """
-                            INSERT INTO item_id_map(source_item_id, new_item_id)
-                            SELECT s.source_item_id,
-                                   CASE
-                                     WHEN EXISTS (SELECT 1 FROM items i WHERE i.id = s.source_item_id)
-                                       THEN uuid_generate_v4()
-                                     ELSE s.source_item_id
-                                   END AS new_item_id
-                            FROM stg_items s
-                            """
+                            "DELETE FROM items WHERE id IN (SELECT old_item_id FROM item_plan WHERE old_item_id IS NOT NULL)"
                         )
 
                         dest_cur.execute(
@@ -504,31 +678,40 @@ def merge(args: argparse.Namespace) -> Stats:
                               pub_date, media_content, think_result, think_error, think_error_count,
                               think_rating, categories, authors
                             )
-                            SELECT m.new_item_id, s.created_at, s.updated_at, s.hash, %s, s.url,
-                                   s.language, s.content, s.pub_date, s.media_content, s.think_result,
-                                   s.think_error, s.think_error_count, s.think_rating, s.categories, s.authors
+                            SELECT
+                              s.source_item_id AS id,
+                              s.created_at, s.updated_at, s.hash, %s, s.url,
+                              s.language, s.content, s.pub_date, s.media_content, s.think_result,
+                              s.think_error, s.think_error_count, s.think_rating, s.categories, s.authors
                             FROM stg_items s
-                            JOIN item_id_map m ON m.source_item_id = s.source_item_id
+                            JOIN item_plan p ON p.source_item_id = s.source_item_id
                             """,
                             (dest_feed_id,),
                         )
 
-                        if src_trends:
+                        if stg_trends:
                             dest_cur.execute(
                                 """
                                 INSERT INTO trends (
                                   item_id, feed_id, language, pub_date, category_stems, noun_stems,
                                   verb_stems, adjective_stems, root_domain, sentiments, sentiments_deframed
                                 )
-                                SELECT m.new_item_id, %s, t.language, t.pub_date, t.category_stems,
-                                       t.noun_stems, t.verb_stems, t.adjective_stems, t.root_domain,
-                                       t.sentiments, t.sentiments_deframed
+                                SELECT
+                                  s.source_item_id AS item_id,
+                                  %s,
+                                  t.language, t.pub_date, t.category_stems,
+                                  t.noun_stems, t.verb_stems, t.adjective_stems, t.root_domain,
+                                  t.sentiments, t.sentiments_deframed
                                 FROM stg_trends t
-                                JOIN item_id_map m ON m.source_item_id = t.source_item_id
+                                JOIN item_plan p ON p.source_item_id = t.source_item_id
+                                JOIN stg_items s ON s.source_item_id = t.source_item_id
                                 """,
                                 (dest_feed_id,),
                             )
-                            stats.trends_inserted += len(src_trends)
+                            stats.trends_inserted += len(work_trends)
+
+                    if apply_started_at is not None:
+                        log_apply_eta(apply_started_at, feed_index, total_feeds)
 
         if not args.apply:
             dest_conn.rollback()
@@ -563,8 +746,10 @@ def main() -> int:
     print("merge complete")
     print(f"feeds inserted: {stats.feeds_inserted}")
     print(f"feeds updated: {stats.feeds_updated}")
+    print(f"items skipped: {stats.items_skipped}")
     print(f"items replaced: {stats.items_replaced}")
     print(f"items inserted: {stats.items_inserted}")
+    print(f"trends skipped: {stats.trends_skipped}")
     print(f"trends replaced: {stats.trends_replaced}")
     print(f"trends inserted: {stats.trends_inserted}")
 
