@@ -9,6 +9,7 @@ from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
 
 @dataclass
@@ -325,6 +326,40 @@ def source_trends_for_feed(
         return cur.fetchall()
 
 
+def prepare_item_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    prepared: list[dict[str, Any]] = []
+    for row in rows:
+        prepared.append(
+            {
+                **row,
+                "media_content": Jsonb(row["media_content"])
+                if row["media_content"] is not None
+                else None,
+                "think_result": Jsonb(row["think_result"])
+                if row["think_result"] is not None
+                else None,
+            }
+        )
+    return prepared
+
+
+def prepare_trend_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    prepared: list[dict[str, Any]] = []
+    for row in rows:
+        prepared.append(
+            {
+                **row,
+                "sentiments": Jsonb(row["sentiments"])
+                if row["sentiments"] is not None
+                else None,
+                "sentiments_deframed": Jsonb(row["sentiments_deframed"])
+                if row["sentiments_deframed"] is not None
+                else None,
+            }
+        )
+    return prepared
+
+
 def merge(args: argparse.Namespace) -> Stats:
     stats = Stats()
     with (
@@ -354,6 +389,8 @@ def merge(args: argparse.Namespace) -> Stats:
 
                     src_items = source_items_for_feed(src_conn, src_feed["id"])
                     src_trends = source_trends_for_feed(src_conn, src_feed["id"])
+                    stg_items = prepare_item_rows(src_items)
+                    stg_trends = prepare_trend_rows(src_trends)
 
                     if not src_items:
                         continue
@@ -410,10 +447,10 @@ def merge(args: argparse.Namespace) -> Stats:
                           %(categories)s, %(authors)s
                         )
                         """,
-                        src_items,
+                        stg_items,
                     )
 
-                    if src_trends:
+                    if stg_trends:
                         dest_cur.executemany(
                             """
                             INSERT INTO stg_trends (
@@ -426,7 +463,7 @@ def merge(args: argparse.Namespace) -> Stats:
                               %(sentiments)s, %(sentiments_deframed)s
                             )
                             """,
-                            src_trends,
+                            stg_trends,
                         )
 
                     dest_cur.execute(
