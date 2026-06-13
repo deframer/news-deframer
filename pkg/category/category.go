@@ -11,6 +11,9 @@ var localizedCategories = map[string][]string{
 	"en": {"politics", "world", "business", "sport", "culture", "technology", "health", "finance", "science", "environment", "travel", "lifestyle", "games", "history", "opinion", "other"},
 	"de": {"politik", "welt", "wirtschaft", "sport", "kultur", "technologie", "gesundheit", "finanzen", "wissenschaft", "umwelt", "reisen", "lifestyle", "spiele", "geschichte", "meinung", "sonstiges"},
 	"da": {"politik", "verden", "erhverv", "sport", "kultur", "teknologi", "sundhed", "finans", "videnskab", "miljo", "rejse", "livsstil", "spil", "historie", "mening", "andet"},
+	"es": {"política", "mundo", "negocios", "deporte", "cultura", "tecnología", "salud", "finanzas", "ciencia", "medio ambiente", "viajes", "estilo de vida", "videojuegos", "historia", "opinión", "otro"},
+	"fr": {"politique", "monde", "affaires", "sport", "culture", "technologie", "santé", "finance", "science", "environnement", "voyages", "art de vivre", "jeux vidéo", "histoire", "opinion", "autre"},
+	"nl": {"politiek", "wereld", "bedrijfsleven", "sport", "cultuur", "technologie", "gezondheid", "financiën", "wetenschap", "milieu", "reizen", "levensstijl", "videogames", "geschiedenis", "opinie", "overig"},
 }
 
 var canonicalCategories = localizedCategories["en"]

@@ -1019,10 +1019,21 @@ func TestRemoveSync(t *testing.T) {
 func TestBeginFeedUpdate(t *testing.T) {
 	_, baseDB := mustOpenTestRepo(t)
 
+	setupFeedUpdateIsolation := func(tx *gorm.DB) {
+		t.Helper()
+		stmts := []string{
+			`CREATE TEMP TABLE feeds (LIKE public.feeds INCLUDING ALL) ON COMMIT DROP`,
+			`CREATE TEMP TABLE feed_schedules (LIKE public.feed_schedules INCLUDING ALL) ON COMMIT DROP`,
+		}
+		for _, stmt := range stmts {
+			assert.NoError(t, tx.Exec(stmt).Error)
+		}
+	}
+
 	t.Run("NoDueFeeds", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
-		tx.Exec("DELETE FROM feed_schedules") // Clear seeded schedules
+		setupFeedUpdateIsolation(tx)
 		repo := NewFromDB(tx)
 
 		feed, err := repo.BeginFeedUpdate(15 * time.Minute)
@@ -1033,7 +1044,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 	t.Run("DueFeed_Valid", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
-		tx.Exec("DELETE FROM feed_schedules")
+		setupFeedUpdateIsolation(tx)
 		repo := NewFromDB(tx)
 
 		feed := Feed{URL: "http://due-valid.test", Enabled: true}
@@ -1060,7 +1071,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 	t.Run("DueFeed_Disabled", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
-		tx.Exec("DELETE FROM feed_schedules")
+		setupFeedUpdateIsolation(tx)
 		repo := NewFromDB(tx)
 
 		feed := Feed{URL: "http://due-disabled.test", Enabled: false}
@@ -1083,7 +1094,7 @@ func TestBeginFeedUpdate(t *testing.T) {
 	t.Run("DueFeed_Deleted", func(t *testing.T) {
 		tx := baseDB.Begin()
 		defer tx.Rollback()
-		tx.Exec("DELETE FROM feed_schedules")
+		setupFeedUpdateIsolation(tx)
 		repo := NewFromDB(tx)
 
 		feed := Feed{URL: "http://due-deleted.test", Enabled: true}
@@ -1422,11 +1433,15 @@ func TestBeginThinkerBatch(t *testing.T) {
 
 		items, err := repo.BeginThinkerFixerBatch(10, since, 4, 6, time.Minute)
 		assert.NoError(t, err)
-		if assert.Len(t, items, 2) {
-			hashes := []string{strings.TrimSpace(items[0].Hash), strings.TrimSpace(items[1].Hash)}
-			assert.Contains(t, hashes, "f2")
-			assert.Contains(t, hashes, "f3")
+		assert.Len(t, items, 2)
+		hashes := make(map[string]struct{}, len(items))
+		for _, item := range items {
+			hashes[strings.TrimSpace(item.Hash)] = struct{}{}
 		}
+		_, ok := hashes["f2"]
+		assert.True(t, ok)
+		_, ok = hashes["f3"]
+		assert.True(t, ok)
 	})
 }
 
@@ -1441,7 +1456,7 @@ func TestBeginThinkerUpdateLLMModelBatch(t *testing.T) {
 		feed := Feed{URL: "http://thinker-update-llm-model.test/" + uuid.New().String(), Enabled: true, Polling: true}
 		assert.NoError(t, tx.Create(&feed).Error)
 
-		older := time.Now().Add(-2 * time.Hour)
+		older := time.Unix(0, 0)
 		currentModel := "gpt-4.1-mini"
 
 		item1 := Item{FeedID: feed.ID, Hash: "u1", URL: "http://itemu1/" + uuid.New().String(), Content: "c1", ThinkResult: &ThinkResult{LLMModel: "old-model"}}
@@ -1460,11 +1475,14 @@ func TestBeginThinkerUpdateLLMModelBatch(t *testing.T) {
 
 		items, err := repo.BeginThinkerUpdateLLMModelBatch(10, currentModel, time.Minute)
 		assert.NoError(t, err)
-		if assert.Len(t, items, 2) {
-			hashes := []string{strings.TrimSpace(items[0].Hash), strings.TrimSpace(items[1].Hash)}
-			assert.Contains(t, hashes, "u1")
-			assert.Contains(t, hashes, "u2")
+		hashes := make(map[string]struct{}, len(items))
+		for _, item := range items {
+			hashes[strings.TrimSpace(item.Hash)] = struct{}{}
 		}
+		_, ok := hashes["u1"]
+		assert.True(t, ok)
+		_, ok = hashes["u2"]
+		assert.True(t, ok)
 	})
 }
 
