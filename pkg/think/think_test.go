@@ -29,6 +29,15 @@ func TestLocalizedCategoryValidation(t *testing.T) {
 	err = categorypkg.ValidateLocalizedCategory("da", "erhverv")
 	assert.NoError(t, err)
 
+	err = categorypkg.ValidateLocalizedCategory("es", "negocios")
+	assert.NoError(t, err)
+
+	err = categorypkg.ValidateLocalizedCategory("fr", "opinion")
+	assert.NoError(t, err)
+
+	err = categorypkg.ValidateLocalizedCategory("nl", "bedrijfsleven")
+	assert.NoError(t, err)
+
 	err = categorypkg.ValidateLocalizedCategory("en", "wirtschaft")
 	assert.Error(t, err)
 
@@ -49,10 +58,22 @@ func TestNormalizeCategory(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "business", value)
 
+	value, err = categorypkg.NormalizeCategory("es", "negocios")
+	assert.NoError(t, err)
+	assert.Equal(t, "business", value)
+
+	value, err = categorypkg.NormalizeCategory("fr", "opinion")
+	assert.NoError(t, err)
+	assert.Equal(t, "opinion", value)
+
+	value, err = categorypkg.NormalizeCategory("nl", "bedrijfsleven")
+	assert.NoError(t, err)
+	assert.Equal(t, "business", value)
+
 	_, err = categorypkg.NormalizeCategory("de", "business")
 	assert.Error(t, err)
 
-	_, err = categorypkg.NormalizeCategory("fr", "opinion")
+	_, err = categorypkg.NormalizeCategory("fr", "business")
 	assert.Error(t, err)
 }
 
@@ -62,8 +83,9 @@ func TestDummy_Run(t *testing.T) {
 	_, err := d.Run("deframer", "en", Request{}, false)
 	assert.NoError(t, err)
 
-	_, err = d.Run("deframer", "fr", Request{}, false)
-	assert.Error(t, err)
+	resp, err := d.Run("deframer", "fr", Request{}, false)
+	assert.NoError(t, err)
+	assert.NotNil(t, resp)
 }
 
 func TestFail_Run(t *testing.T) {
@@ -182,7 +204,13 @@ func TestValidateAndNormalizeThinkResult(t *testing.T) {
 	assert.ErrorContains(t, err, "invalid category")
 
 	err = validateAndNormalizeThinkResult("fr", &database.ThinkResult{Category: "opinion"}, false)
-	assert.ErrorContains(t, err, "no localized categories configured")
+	assert.NoError(t, err)
+
+	err = validateAndNormalizeThinkResult("es", &database.ThinkResult{Category: "negocios"}, false)
+	assert.NoError(t, err)
+
+	err = validateAndNormalizeThinkResult("nl", &database.ThinkResult{Category: "bedrijfsleven"}, false)
+	assert.NoError(t, err)
 
 	res = &database.ThinkResult{Category: "wirtschaft"}
 	err = validateAndNormalizeThinkResult("en", res, true)
