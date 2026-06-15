@@ -38,6 +38,7 @@ func main() {
 		log.Fatalf(context.Background(), err, "Failed to load config")
 		os.Exit(1)
 	}
+	cfg.ApplicationName = fmt.Sprintf("%s (%s)", cfg.ApplicationName, selectedMode)
 
 	logCtx := applog.NewLoggerContext(context.Background(), cfg.DebugLog)
 

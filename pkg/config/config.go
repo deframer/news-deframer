@@ -53,7 +53,7 @@ func (t *LLMType) UnmarshalText(text []byte) error {
 }
 
 type Config struct {
-	ApplicationName string `env:"APPLICATION_NAME" envDefault:"News Deframer Browser Extension Service"`
+	ApplicationName string `env:"APPLICATION_NAME" envDefault:"News Deframer"`
 
 	// HTTP Port
 	Port string `env:"PORT" envDefault:"8080"`
