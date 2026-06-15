@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,6 +45,15 @@ const DomainComparisonOutlierRatioThreshold = 1.5
 const DomainComparisonLimit = 10
 
 var SupportedUserTags = StringArray{"public_service_media"}
+
+func postgresDSNWithApplicationName(dsn, applicationName string) string {
+	if applicationName == "" {
+		return dsn
+	}
+
+	escaped := strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(applicationName)
+	return dsn + " application_name='" + escaped + "'"
+}
 
 type TrendMetric struct {
 	TrendTopic   string    `gorm:"column:trend_topic" json:"trend_topic"`
@@ -249,7 +259,7 @@ func connect(ctx context.Context, cfg *config.Config) (*gorm.DB, error) {
 			gormLogger = NewCustomGormLogger(ctx)
 		}
 
-		db, err := gorm.Open(postgres.Open(cfg.DSN+" application_name="+cfg.ApplicationName), &gorm.Config{
+		db, err := gorm.Open(postgres.Open(postgresDSNWithApplicationName(cfg.DSN, cfg.ApplicationName)), &gorm.Config{
 			Logger: gormLogger,
 		})
 		if err != nil {

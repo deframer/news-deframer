@@ -19,6 +19,7 @@ func bootstrap(ctx context.Context, httpPortF *string, outDbgF *bool) (outHttpPo
 	if err != nil {
 		log.Fatalf(ctx, err, "can't initialize config")
 	}
+	cfg.ApplicationName = cfg.ApplicationName + " (Browser Extension Service)"
 	if err := database.Connect(ctx, cfg); err != nil {
 		log.Fatalf(ctx, err, "can't connect to database")
 	}
