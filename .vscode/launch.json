@@ -25,7 +25,7 @@
         "migration",
         "admin"
       ],
-      "default": "server"
+      "default": "service"
     }
   ]
 }
