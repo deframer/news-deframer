@@ -13,6 +13,7 @@ import (
 
 	"github.com/deframer/news-deframer/pkg/database"
 	"github.com/deframer/news-deframer/pkg/util/netutil"
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 )
 
@@ -64,8 +65,7 @@ type ImportFeed struct {
 	Language          *string  `json:"language,omitempty"`
 	Country           *string  `json:"country,omitempty"`
 	Categories        []string `json:"categories,omitempty"`
-	// Deferred on purpose: feed import/export should eventually support
-	// stop_words: [...] but that is not implemented yet.
+	StopWords         []string `json:"stop_words,omitempty"`
 	Tags              []string `json:"tags,omitempty"`
 	RootDomain        *string  `json:"root_domain,omitempty"`
 	PortalUrl         *string  `json:"portal_url,omitempty"`
@@ -108,6 +108,9 @@ func importFeeds() {
 			if err := repo.UpsertFeed(existing); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to update feed %s: %v\n", u.String(), err)
 			}
+			if err := syncImportedFeedStopWords(existing, f); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to sync stopwords for feed %s: %v\n", u.String(), err)
+			}
 			if err := repo.CreateFeedSchedule(existing.ID); err != nil {
 				fmt.Fprintf(os.Stderr, "Failed to ensure schedule for feed %s: %v\n", u.String(), err)
 			}
@@ -141,6 +144,9 @@ func importFeeds() {
 		if err := repo.UpsertFeed(newFeed); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create feed %s: %v\n", u.String(), err)
 			continue
+		}
+		if err := syncImportedFeedStopWords(newFeed, f); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to sync stopwords for feed %s: %v\n", u.String(), err)
 		}
 		if err := repo.CreateFeedSchedule(newFeed.ID); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to create schedule for feed %s: %v\n", u.String(), err)
@@ -447,6 +453,20 @@ func exportFeeds() {
 		os.Exit(1)
 	}
 
+	stopWords, err := repo.ListStopWords()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to list stopwords: %v\n", err)
+		os.Exit(1)
+	}
+
+	stopWordsByFeedID := make(map[uuid.UUID][]string)
+	for i := range stopWords {
+		if stopWords[i].FeedID == nil {
+			continue
+		}
+		stopWordsByFeedID[*stopWords[i].FeedID] = append([]string{}, stopWords[i].NounStems...)
+	}
+
 	var exportFeeds []ImportFeed
 	for _, f := range feeds {
 		tags := f.Tags
@@ -462,6 +482,7 @@ func exportFeeds() {
 			Language:          f.Language,
 			Country:           country,
 			Categories:        f.Categories,
+			StopWords:         stopWordsByFeedID[f.ID],
 			Tags:              tags,
 			RootDomain:        f.RootDomain,
 			PortalUrl:         f.PortalUrl,
@@ -497,4 +518,24 @@ func exportFeeds() {
 		fmt.Fprintf(os.Stderr, "Failed to encode JSON: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func syncImportedFeedStopWords(feed *database.Feed, f ImportFeed) error {
+	if f.StopWords == nil {
+		return repo.DeleteStopWordsByFeedID(feed.ID)
+	}
+
+	if len(f.StopWords) == 0 {
+		return repo.DeleteStopWordsByFeedID(feed.ID)
+	}
+
+	if feed.Language == nil || strings.TrimSpace(*feed.Language) == "" {
+		return fmt.Errorf("feed language is required when stop_words are provided")
+	}
+
+	return repo.UpsertStopWords(&database.StopWords{
+		Language:  strings.ToLower(strings.TrimSpace(*feed.Language)),
+		FeedID:    &feed.ID,
+		NounStems: normalizeStopWordStems(f.StopWords),
+	})
 }

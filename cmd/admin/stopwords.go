@@ -16,11 +16,13 @@ import (
 
 var (
 	stopWordsFile string
+	stopWordsJSON bool
 )
 
 func init() {
 	stopWordsImportCmd.Flags().StringVarP(&stopWordsFile, "file", "f", "", "File to import from (default: stdin)")
 	stopWordsExportCmd.Flags().StringVarP(&stopWordsFile, "file", "f", "", "File to export to (default: stdout)")
+	stopWordsListCmd.Flags().BoolVar(&stopWordsJSON, "json", false, "Output as JSON")
 
 	stopWordsCmd.AddCommand(stopWordsImportCmd)
 	stopWordsCmd.AddCommand(stopWordsExportCmd)
@@ -67,7 +69,7 @@ var stopWordsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List stopwords",
 	Run: func(cmd *cobra.Command, args []string) {
-		listStopWords()
+		listStopWords(stopWordsJSON)
 	},
 }
 
@@ -146,8 +148,37 @@ func exportStopWords() {
 		os.Exit(1)
 	}
 
+	entries := buildStopWordsEntries(stopWords, false)
+
+	var w io.Writer = os.Stdout
+	if stopWordsFile != "" {
+		cleanPath := filepath.Clean(stopWordsFile)
+		f, err := os.Create(cleanPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to create file %s: %v\n", cleanPath, err)
+			os.Exit(1)
+		}
+		defer func() {
+			if err := f.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to close file %s: %v\n", cleanPath, err)
+			}
+		}()
+		w = f
+	}
+
+	writeStopWordsJSON(w, entries)
+}
+
+func buildStopWordsEntries(stopWords []database.StopWords, includeFeedSpecific bool) []importStopWordsEntry {
+
 	entries := make([]importStopWordsEntry, 0, len(stopWords))
 	for i := range stopWords {
+		if len(stopWords[i].NounStems) == 0 {
+			continue
+		}
+		if !includeFeedSpecific && stopWords[i].FeedID != nil {
+			continue
+		}
 		entry := importStopWordsEntry{
 			Language:  stopWords[i].Language,
 			NounStems: []string(stopWords[i].NounStems),
@@ -167,22 +198,10 @@ func exportStopWords() {
 		entries = append(entries, entry)
 	}
 
-	var w io.Writer = os.Stdout
-	if stopWordsFile != "" {
-		cleanPath := filepath.Clean(stopWordsFile)
-		f, err := os.Create(cleanPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to create file %s: %v\n", cleanPath, err)
-			os.Exit(1)
-		}
-		defer func() {
-			if err := f.Close(); err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to close file %s: %v\n", cleanPath, err)
-			}
-		}()
-		w = f
-	}
+	return entries
+}
 
+func writeStopWordsJSON(w io.Writer, entries []importStopWordsEntry) {
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(entries); err != nil {
@@ -191,11 +210,17 @@ func exportStopWords() {
 	}
 }
 
-func listStopWords() {
+func listStopWords(asJSON bool) {
 	stopWords, err := repo.ListStopWords()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to list stopwords: %v\n", err)
 		os.Exit(1)
+	}
+
+	entries := buildStopWordsEntries(stopWords, true)
+	if asJSON {
+		writeStopWordsJSON(os.Stdout, entries)
+		return
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
@@ -203,25 +228,20 @@ func listStopWords() {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
-	for i := range stopWords {
-		rootDomain := "-"
-		feedID := "-"
-		feedURL := "-"
-		if stopWords[i].FeedID != nil {
-			feedID = stopWords[i].FeedID.String()
-			feed, err := repo.FindFeedById(*stopWords[i].FeedID)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Failed to resolve feed: %v\n", err)
-				os.Exit(1)
-			}
-			if feed != nil {
-				if feed.RootDomain != nil {
-					rootDomain = *feed.RootDomain
-				}
-				feedURL = feed.URL
-			}
+	for i := range entries {
+		rootDomain := ""
+		if entries[i].RootDomain != nil {
+			rootDomain = *entries[i].RootDomain
 		}
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", stopWords[i].Language, rootDomain, feedID, feedURL, strings.Join(stopWords[i].NounStems, ",")); err != nil {
+		feedID := ""
+		if entries[i].FeedID != nil {
+			feedID = entries[i].FeedID.String()
+		}
+		feedURL := ""
+		if entries[i].FeedURL != nil {
+			feedURL = *entries[i].FeedURL
+		}
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", entries[i].Language, rootDomain, feedID, feedURL, strings.Join(entries[i].NounStems, ",")); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
