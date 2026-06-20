@@ -64,6 +64,8 @@ type ImportFeed struct {
 	Language          *string  `json:"language,omitempty"`
 	Country           *string  `json:"country,omitempty"`
 	Categories        []string `json:"categories,omitempty"`
+	// Deferred on purpose: feed import/export should eventually support
+	// stop_words: [...] but that is not implemented yet.
 	Tags              []string `json:"tags,omitempty"`
 	RootDomain        *string  `json:"root_domain,omitempty"`
 	PortalUrl         *string  `json:"portal_url,omitempty"`

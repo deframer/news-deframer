@@ -1,0 +1,44 @@
+[
+  {
+    "language": "de",
+    "noun_stems": [
+      "montag",
+      "dienstag",
+      "mittwoch",
+      "donnerstag",
+      "freitag",
+      "samstag",
+      "sonntag",
+      "horoskop",
+      "wetter"
+    ]
+  },
+  {
+    "language": "en",
+    "noun_stems": [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+      "horoscop",
+      "weather"
+    ]
+  },
+  {
+    "language": "da",
+    "noun_stems": [
+      "mandag",
+      "tirsdag",
+      "onsdag",
+      "torsdag",
+      "fredag",
+      "lordag",
+      "sondag",
+      "horoskop",
+      "vejr"
+    ]
+  }
+]

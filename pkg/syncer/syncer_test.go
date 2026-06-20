@@ -48,6 +48,10 @@ func (m *mockRepo) UpsertFeed(feed *database.Feed) error {
 	m.lastUpsertedFeed = feed
 	return nil
 }
+func (m *mockRepo) UpsertStopWords(stopWords *database.StopWords) error { return nil }
+func (m *mockRepo) ListStopWords() ([]database.StopWords, error)        { return nil, nil }
+func (m *mockRepo) DeleteStopWordsByLanguage(language string) error     { return nil }
+func (m *mockRepo) DeleteStopWordsByFeedID(feedID uuid.UUID) error      { return nil }
 func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error)    { return nil, nil }
 func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error)     { return nil, nil }
 func (m *mockRepo) GetAllFeedErrors() ([]database.FeedError, error)       { return nil, nil }
