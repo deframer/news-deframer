@@ -96,7 +96,7 @@ type importStopWordsEntry struct {
 	RootDomain *string    `json:"root_domain,omitempty"`
 	FeedID     *uuid.UUID `json:"feed_id,omitempty"`
 	FeedURL    *string    `json:"feed_url,omitempty"`
-	NounStems  []string   `json:"noun_stems"`
+	StopWords  []string   `json:"stop_words"`
 }
 
 func importStopWords() {
@@ -115,7 +115,7 @@ func importStopWords() {
 
 		var stopWords database.StopWords
 		stopWords.Language = language
-		stopWords.NounStems = normalizeStopWordStems(entry.NounStems)
+		stopWords.NounStems = normalizeStopWordStems(entry.StopWords)
 
 		if entry.FeedID != nil {
 			feed, err := repo.FindFeedById(*entry.FeedID)
@@ -181,7 +181,7 @@ func buildStopWordsEntries(stopWords []database.StopWords, includeFeedSpecific b
 		}
 		entry := importStopWordsEntry{
 			Language:  stopWords[i].Language,
-			NounStems: []string(stopWords[i].NounStems),
+			StopWords: []string(stopWords[i].NounStems),
 		}
 		if stopWords[i].FeedID != nil {
 			feed, err := repo.FindFeedById(*stopWords[i].FeedID)
@@ -224,7 +224,7 @@ func listStopWords(asJSON bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Language\tRootDomain\tFeedID\tFeedURL\tNounStems"); err != nil {
+	if _, err := fmt.Fprintln(w, "Language\tRootDomain\tFeedID\tFeedURL\tStopWords"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -241,7 +241,7 @@ func listStopWords(asJSON bool) {
 		if entries[i].FeedURL != nil {
 			feedURL = *entries[i].FeedURL
 		}
-		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", entries[i].Language, rootDomain, feedID, feedURL, strings.Join(entries[i].NounStems, ",")); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", entries[i].Language, rootDomain, feedID, feedURL, strings.Join(entries[i].StopWords, ",")); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}
