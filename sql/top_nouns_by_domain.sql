@@ -29,5 +29,5 @@ SELECT
     stem,
     frequency
 FROM ranked
-WHERE rn <= 10
+WHERE rn <= 20
 ORDER BY root_domain ASC, frequency DESC, stem ASC;

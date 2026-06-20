@@ -599,7 +599,6 @@ func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string,
 			thinkRating = res.Overall
 		}
 
-		applyFancyRatingText(parsedItem, res, thinkRating, language)
 		nextErrorCount = 0
 	}
 
