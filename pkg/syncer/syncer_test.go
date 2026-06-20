@@ -20,6 +20,8 @@ type mockRepo struct {
 	enqueueSyncCalled                    bool
 	lastId                               uuid.UUID
 	removeSyncCalled                     bool
+	upsertFeedCalled                      bool
+	lastUpsertedFeed                      *database.Feed
 	upsertItemFunc                       func(item *database.Item) error
 	upsertItemInvalidateFunc             func(item *database.Item) error
 	beginThinkerBatchFunc                func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
@@ -41,7 +43,11 @@ func (m *mockRepo) FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*
 	return nil, nil
 }
 func (m *mockRepo) FindFeedById(feedID uuid.UUID) (*database.Feed, error) { return nil, nil }
-func (m *mockRepo) UpsertFeed(feed *database.Feed) error                  { return nil }
+func (m *mockRepo) UpsertFeed(feed *database.Feed) error {
+	m.upsertFeedCalled = true
+	m.lastUpsertedFeed = feed
+	return nil
+}
 func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error)    { return nil, nil }
 func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error)     { return nil, nil }
 func (m *mockRepo) GetAllFeedErrors() ([]database.FeedError, error)       { return nil, nil }
@@ -486,6 +492,22 @@ func TestDetermineLanguage(t *testing.T) {
 			assert.Equal(t, tc.expectedLang, lang)
 		})
 	}
+}
+
+func TestSyncPendingFeedItemsUpdatesFeedLanguageWhenMissing(t *testing.T) {
+	repo := &mockRepo{}
+	s := &Syncer{ctx: context.Background(), repo: repo}
+	feed := &database.Feed{Base: database.Base{ID: uuid.New()}, URL: "https://example.com/feed.xml"}
+	parsedFeed := &gofeed.Feed{Language: "de"}
+
+	count, err := s.syncPendingFeedItems(feed, parsedFeed, nil, []string{"hash-1"})
+
+	assert.NoError(t, err)
+	assert.GreaterOrEqual(t, count, 0)
+	if assert.NotNil(t, feed.Language) {
+		assert.Equal(t, "de", *feed.Language)
+	}
+	assert.True(t, repo.upsertFeedCalled)
 }
 
 // Mocks for testing processItem

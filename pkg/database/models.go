@@ -53,6 +53,13 @@ type FeedError struct {
 	LastSyncedAt *time.Time `gorm:"column:last_synced_at" json:"last_synced_at,omitempty"`
 }
 
+type StopWords struct {
+	Base
+	Language  string      `gorm:"type:char(2);not null;uniqueIndex:idx_stop_words_language_global,where:feed_id IS NULL;uniqueIndex:idx_stop_words_language_feed,where:feed_id IS NOT NULL" json:"language"`
+	FeedID    *uuid.UUID  `gorm:"type:uuid;index;uniqueIndex:idx_stop_words_language_feed,where:feed_id IS NOT NULL" json:"feed_id,omitempty"`
+	NounStems StringArray `gorm:"type:text[];not null;default:'{}'" json:"noun_stems"`
+}
+
 // StringArray aliases []string to implement sql.Scanner and driver.Valuer for PostgreSQL text[]
 type StringArray []string
 

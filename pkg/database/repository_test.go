@@ -357,6 +357,52 @@ func TestUpsertFeed(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "already exists")
 	})
+
+	t.Run("CreateStopWordsForFeedLanguage", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		language := "de"
+		feed := &Feed{
+			URL:      "http://upsert-stopwords.test/" + uuid.New().String(),
+			Enabled:  true,
+			Language: &language,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		var stopWords StopWords
+		assert.NoError(t, tx.Where("feed_id = ?", feed.ID).First(&stopWords).Error)
+		assert.Equal(t, language, stopWords.Language)
+		if assert.NotNil(t, stopWords.FeedID) {
+			assert.Equal(t, feed.ID, *stopWords.FeedID)
+		}
+	})
+
+	t.Run("KeepExistingStopWordsLanguage", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		language := "de"
+		feed := &Feed{
+			URL:      "http://upsert-stopwords-existing.test/" + uuid.New().String(),
+			Enabled:  true,
+			Language: &language,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		existingLanguage := "en"
+		assert.NoError(t, tx.Model(&StopWords{}).Where("feed_id = ?", feed.ID).Update("language", existingLanguage).Error)
+
+		language = "fr"
+		feed.Language = &language
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		var stopWords StopWords
+		assert.NoError(t, tx.Where("feed_id = ?", feed.ID).First(&stopWords).Error)
+		assert.Equal(t, existingLanguage, stopWords.Language)
+	})
 }
 
 func TestUpsertItem(t *testing.T) {

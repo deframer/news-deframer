@@ -342,7 +342,31 @@ func (r *repository) UpsertFeed(feed *Feed) error {
 			return fmt.Errorf("feed with url %q already exists", feed.URL)
 		}
 
-		return tx.Save(feed).Error
+		if err := tx.Save(feed).Error; err != nil {
+			return err
+		}
+
+		// Keep feed-scoped stop words aligned with feed creation: when a feed has a
+		// language and no stop_words row exists for that feed yet, create one.
+		if feed.Language == nil || strings.TrimSpace(*feed.Language) == "" {
+			return nil
+		}
+
+		language := strings.ToLower(strings.TrimSpace(*feed.Language))
+		var stopWords StopWords
+		err := tx.Where("feed_id = ?", feed.ID).First(&stopWords).Error
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			return tx.Create(&StopWords{
+				Language: language,
+				FeedID:   &feed.ID,
+			}).Error
+		}
+
+		return nil
 	})
 }
 
