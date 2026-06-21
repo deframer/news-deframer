@@ -403,6 +403,95 @@ func TestUpsertFeed(t *testing.T) {
 		assert.NoError(t, tx.Where("feed_id = ?", feed.ID).First(&stopWords).Error)
 		assert.Equal(t, existingLanguage, stopWords.Language)
 	})
+
+	t.Run("DeleteStopWordsByFeedIDHardDeletes", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		language := "de"
+		feed := &Feed{
+			URL:      "http://delete-stopwords-feed.test/" + uuid.New().String(),
+			Enabled:  true,
+			Language: &language,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+		assert.NoError(t, repo.DeleteStopWordsByFeedID(feed.ID))
+
+		var count int64
+		assert.NoError(t, tx.Unscoped().Model(&StopWords{}).Where("feed_id = ?", feed.ID).Count(&count).Error)
+		assert.Equal(t, int64(0), count)
+	})
+
+	t.Run("DeleteStopWordsByLanguageHardDeletes", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		assert.NoError(t, repo.UpsertStopWords(&StopWords{
+			Language:  "da",
+			NounStems: StringArray{"mandag"},
+		}))
+		assert.NoError(t, repo.DeleteStopWordsByLanguage("da"))
+
+		var count int64
+		assert.NoError(t, tx.Unscoped().Model(&StopWords{}).Where("language = ? AND feed_id IS NULL", "da").Count(&count).Error)
+		assert.Equal(t, int64(0), count)
+	})
+
+	t.Run("CreateStopWordsAfterLegacySoftDelete", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		language := "de"
+		feed := &Feed{
+			URL:      "http://upsert-stopwords-legacy-soft-delete.test/" + uuid.New().String(),
+			Enabled:  true,
+			Language: &language,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+		assert.NoError(t, tx.Where("feed_id = ?", feed.ID).Delete(&StopWords{}).Error)
+
+		assert.NoError(t, repo.UpsertFeed(feed))
+
+		var count int64
+		assert.NoError(t, tx.Unscoped().Model(&StopWords{}).Where("feed_id = ?", feed.ID).Count(&count).Error)
+		assert.Equal(t, int64(1), count)
+
+		var stopWords StopWords
+		assert.NoError(t, tx.Where("feed_id = ?", feed.ID).First(&stopWords).Error)
+		assert.Equal(t, language, stopWords.Language)
+	})
+
+	t.Run("UpsertStopWordsAfterLegacySoftDelete", func(t *testing.T) {
+		tx := baseDB.Begin()
+		defer tx.Rollback()
+		repo := NewFromDB(tx)
+
+		language := "en"
+		feed := &Feed{
+			URL:      "http://upsert-stopwords-sync-legacy-soft-delete.test/" + uuid.New().String(),
+			Enabled:  true,
+			Language: &language,
+		}
+		assert.NoError(t, repo.UpsertFeed(feed))
+		assert.NoError(t, tx.Where("feed_id = ?", feed.ID).Delete(&StopWords{}).Error)
+
+		assert.NoError(t, repo.UpsertStopWords(&StopWords{
+			Language:  language,
+			FeedID:    &feed.ID,
+			NounStems: StringArray{"monday", "weather"},
+		}))
+
+		var count int64
+		assert.NoError(t, tx.Unscoped().Model(&StopWords{}).Where("feed_id = ?", feed.ID).Count(&count).Error)
+		assert.Equal(t, int64(1), count)
+
+		var stopWords StopWords
+		assert.NoError(t, tx.Where("feed_id = ?", feed.ID).First(&stopWords).Error)
+		assert.Equal(t, StringArray{"monday", "weather"}, stopWords.NounStems)
+	})
 }
 
 func TestUpsertItem(t *testing.T) {

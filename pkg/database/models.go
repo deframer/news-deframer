@@ -54,10 +54,19 @@ type FeedError struct {
 }
 
 type StopWords struct {
-	Base
+	ID        uuid.UUID   `gorm:"primary_key;type:uuid;default:uuid_generate_v4()"`
+	CreatedAt time.Time   `gorm:"not null;default:now()"`
+	UpdatedAt time.Time   `gorm:"not null;default:now()"`
 	Language  string      `gorm:"type:char(2);not null;uniqueIndex:idx_stop_words_language_global,where:feed_id IS NULL;uniqueIndex:idx_stop_words_language_feed,where:feed_id IS NOT NULL" json:"language"`
 	FeedID    *uuid.UUID  `gorm:"type:uuid;index;uniqueIndex:idx_stop_words_language_feed,where:feed_id IS NOT NULL" json:"feed_id,omitempty"`
 	NounStems StringArray `gorm:"type:text[];not null;default:'{}'" json:"noun_stems"`
+}
+
+func (s *StopWords) BeforeCreate(tx *gorm.DB) error {
+	if s.ID == uuid.Nil {
+		s.ID = uuid.New()
+	}
+	return nil
 }
 
 // StringArray aliases []string to implement sql.Scanner and driver.Valuer for PostgreSQL text[]
