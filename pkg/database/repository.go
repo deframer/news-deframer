@@ -364,6 +364,10 @@ func (r *repository) UpsertFeed(feed *Feed) error {
 				return err
 			}
 
+			if err := tx.Unscoped().Where("feed_id = ?", feed.ID).Delete(&StopWords{}).Error; err != nil {
+				return err
+			}
+
 			return tx.Create(&StopWords{
 				Language: language,
 				FeedID:   &feed.ID,
@@ -388,6 +392,17 @@ func (r *repository) UpsertStopWords(stopWords *StopWords) error {
 			if !errors.Is(err, gorm.ErrRecordNotFound) {
 				return err
 			}
+
+			cleanup := tx.Unscoped().Where("language = ?", stopWords.Language)
+			if stopWords.FeedID == nil {
+				cleanup = cleanup.Where("feed_id IS NULL")
+			} else {
+				cleanup = cleanup.Where("feed_id = ?", *stopWords.FeedID)
+			}
+			if err := cleanup.Delete(&StopWords{}).Error; err != nil {
+				return err
+			}
+
 			return tx.Create(stopWords).Error
 		}
 
@@ -405,11 +420,11 @@ func (r *repository) ListStopWords() ([]StopWords, error) {
 }
 
 func (r *repository) DeleteStopWordsByLanguage(language string) error {
-	return r.db.Where("language = ?", language).Delete(&StopWords{}).Error
+	return r.db.Unscoped().Where("language = ?", language).Delete(&StopWords{}).Error
 }
 
 func (r *repository) DeleteStopWordsByFeedID(feedID uuid.UUID) error {
-	return r.db.Where("feed_id = ?", feedID).Delete(&StopWords{}).Error
+	return r.db.Unscoped().Where("feed_id = ?", feedID).Delete(&StopWords{}).Error
 }
 
 func (r *repository) UpsertItem(item *Item) error {
