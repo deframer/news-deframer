@@ -20,8 +20,8 @@ type mockRepo struct {
 	enqueueSyncCalled                    bool
 	lastId                               uuid.UUID
 	removeSyncCalled                     bool
-	upsertFeedCalled                      bool
-	lastUpsertedFeed                      *database.Feed
+	upsertFeedCalled                     bool
+	lastUpsertedFeed                     *database.Feed
 	upsertItemFunc                       func(item *database.Item) error
 	upsertItemInvalidateFunc             func(item *database.Item) error
 	beginThinkerBatchFunc                func(limit int, since time.Time, minErrorCount int, maxErrorCount int, lockDuration time.Duration) ([]database.Item, error)
@@ -52,10 +52,10 @@ func (m *mockRepo) UpsertStopWords(stopWords *database.StopWords) error { return
 func (m *mockRepo) ListStopWords() ([]database.StopWords, error)        { return nil, nil }
 func (m *mockRepo) DeleteStopWordsByLanguage(language string) error     { return nil }
 func (m *mockRepo) DeleteStopWordsByFeedID(feedID uuid.UUID) error      { return nil }
-func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error)    { return nil, nil }
-func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error)     { return nil, nil }
-func (m *mockRepo) GetAllFeedErrors() ([]database.FeedError, error)       { return nil, nil }
-func (m *mockRepo) DeleteFeedById(id uuid.UUID) error                     { return nil }
+func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error)  { return nil, nil }
+func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error)   { return nil, nil }
+func (m *mockRepo) GetAllFeedErrors() ([]database.FeedError, error)     { return nil, nil }
+func (m *mockRepo) DeleteFeedById(id uuid.UUID) error                   { return nil }
 func (m *mockRepo) RemoveSync(id uuid.UUID) error {
 	m.removeSyncCalled = true
 	m.lastId = id
