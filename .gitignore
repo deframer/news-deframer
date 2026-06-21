@@ -28,6 +28,7 @@ coverage.*
 /worker
 /admin
 /feeds.json
+/stopwords.json
 *.log
 goa*
 *.xlsx#

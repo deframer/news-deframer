@@ -11,7 +11,7 @@ endif
 
 .PHONY: all build clean test help coverage lint tidy gen example format-check
 .PHONY: infra-env-start infra-env-stop infra-env-down infra-env-zap
-.PHONY: docker-all add-feeds service worker thinker thinker-fixer thinker-update-llm-model
+.PHONY: docker-all add-feeds import-stopwords service worker thinker thinker-fixer thinker-update-llm-model
 
 all: build
 
@@ -81,6 +81,9 @@ docker-%:
 
 import-feeds: build
 	./bin/admin feed import -f feeds.json
+
+import-stopwords: build
+	./bin/admin stopwords import -f stopwords.json
 
 service-cached: build
 	./bin/service

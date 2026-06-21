@@ -1,0 +1,44 @@
+[
+  {
+    "language": "de",
+    "stop_words": [
+      "montag",
+      "dienstag",
+      "mittwoch",
+      "donnerstag",
+      "freitag",
+      "samstag",
+      "sonntag",
+      "horoskop",
+      "wetter"
+    ]
+  },
+  {
+    "language": "en",
+    "stop_words": [
+      "monday",
+      "tuesday",
+      "wednesday",
+      "thursday",
+      "friday",
+      "saturday",
+      "sunday",
+      "horoscop",
+      "weather"
+    ]
+  },
+  {
+    "language": "da",
+    "stop_words": [
+      "mandag",
+      "tirsdag",
+      "onsdag",
+      "torsdag",
+      "fredag",
+      "lordag",
+      "sondag",
+      "horoskop",
+      "vejr"
+    ]
+  }
+]

@@ -50,7 +50,7 @@ func Migrate(db *gorm.DB, forced bool) error {
 	}
 
 	// AutoMigrate the schema
-	if err := db.AutoMigrate(&Feed{}, &Item{}, &FeedSchedule{}, &Trend{}); err != nil {
+	if err := db.AutoMigrate(&Feed{}, &Item{}, &FeedSchedule{}, &Trend{}, &StopWords{}); err != nil {
 		return err
 	}
 	_ = db.Exec(`DO $$ BEGIN

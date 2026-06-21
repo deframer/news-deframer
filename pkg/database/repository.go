@@ -192,6 +192,10 @@ type Repository interface {
 	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
 	FindFeedById(feedID uuid.UUID) (*Feed, error)
 	UpsertFeed(feed *Feed) error
+	UpsertStopWords(stopWords *StopWords) error
+	ListStopWords() ([]StopWords, error)
+	DeleteStopWordsByLanguage(language string) error
+	DeleteStopWordsByFeedID(feedID uuid.UUID) error
 	// FindItemsByUrl retrieves all items associated with a specific URL.
 	// As per the specification (Syndication), a single URL can legitimately appear in multiple feeds.
 	// Therefore, the system allows multiple Item records for the same URL, distinguished by their FeedID.
@@ -342,8 +346,70 @@ func (r *repository) UpsertFeed(feed *Feed) error {
 			return fmt.Errorf("feed with url %q already exists", feed.URL)
 		}
 
-		return tx.Save(feed).Error
+		if err := tx.Save(feed).Error; err != nil {
+			return err
+		}
+
+		// Keep feed-scoped stop words aligned with feed creation: when a feed has a
+		// language and no stop_words row exists for that feed yet, create one.
+		if feed.Language == nil || strings.TrimSpace(*feed.Language) == "" {
+			return nil
+		}
+
+		language := strings.ToLower(strings.TrimSpace(*feed.Language))
+		var stopWords StopWords
+		err := tx.Where("feed_id = ?", feed.ID).First(&stopWords).Error
+		if err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+
+			return tx.Create(&StopWords{
+				Language: language,
+				FeedID:   &feed.ID,
+			}).Error
+		}
+
+		return nil
 	})
+}
+
+func (r *repository) UpsertStopWords(stopWords *StopWords) error {
+	return r.db.Transaction(func(tx *gorm.DB) error {
+		query := tx.Where("language = ?", stopWords.Language)
+		if stopWords.FeedID == nil {
+			query = query.Where("feed_id IS NULL")
+		} else {
+			query = query.Where("feed_id = ?", *stopWords.FeedID)
+		}
+
+		var existing StopWords
+		if err := query.First(&existing).Error; err != nil {
+			if !errors.Is(err, gorm.ErrRecordNotFound) {
+				return err
+			}
+			return tx.Create(stopWords).Error
+		}
+
+		existing.NounStems = stopWords.NounStems
+		return tx.Save(&existing).Error
+	})
+}
+
+func (r *repository) ListStopWords() ([]StopWords, error) {
+	var stopWords []StopWords
+	if err := r.db.Order("language ASC").Order("feed_id ASC NULLS FIRST").Find(&stopWords).Error; err != nil {
+		return nil, err
+	}
+	return stopWords, nil
+}
+
+func (r *repository) DeleteStopWordsByLanguage(language string) error {
+	return r.db.Where("language = ?", language).Delete(&StopWords{}).Error
+}
+
+func (r *repository) DeleteStopWordsByFeedID(feedID uuid.UUID) error {
+	return r.db.Where("feed_id = ?", feedID).Delete(&StopWords{}).Error
 }
 
 func (r *repository) UpsertItem(item *Item) error {

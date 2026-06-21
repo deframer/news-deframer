@@ -76,6 +76,22 @@ func (m *mockRepo) UpsertFeed(feed *database.Feed) error {
 	return nil
 }
 
+func (m *mockRepo) UpsertStopWords(stopWords *database.StopWords) error {
+	return nil
+}
+
+func (m *mockRepo) ListStopWords() ([]database.StopWords, error) {
+	return nil, nil
+}
+
+func (m *mockRepo) DeleteStopWordsByLanguage(language string) error {
+	return nil
+}
+
+func (m *mockRepo) DeleteStopWordsByFeedID(feedID uuid.UUID) error {
+	return nil
+}
+
 func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error) {
 	if m.findItemsByUrl != nil {
 		return m.findItemsByUrl(u)

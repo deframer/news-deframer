@@ -293,6 +293,26 @@ func TestFeedCommands(t *testing.T) {
 	assert.Equal(t, "US", *foundExport.Country)
 
 	out = captureOutput(func() {
+		setLanguage(testURL, "en")
+	})
+	assert.Contains(t, out, "Set language to en")
+	assert.NoError(t, syncImportedFeedStopWords(mock.feeds[resolveFeed(testURL, false).ID], ImportFeed{StopWords: []string{" monday ", "horoscop", "monday"}}))
+
+	out = captureOutput(func() {
+		exportFeeds()
+	})
+	err = json.Unmarshal([]byte(out), &exported)
+	assert.NoError(t, err)
+	foundExport = nil
+	for i := range exported {
+		if exported[i].URL == testURL {
+			foundExport = &exported[i]
+		}
+	}
+	assert.NotNil(t, foundExport)
+	assert.Equal(t, []string{"monday", "horoscop"}, foundExport.StopWords)
+
+	out = captureOutput(func() {
 		setCountry(testURL, "")
 	})
 	assert.Contains(t, out, "Set country to ")
@@ -747,15 +767,40 @@ func TestFeedErrorsCommand(t *testing.T) {
 	assert.Contains(t, out, "boom")
 }
 
+func TestSyncImportedFeedStopWordsDeletesWhenMissing(t *testing.T) {
+	mock := NewMockRepo()
+	repo = mock
+
+	language := "en"
+	feed := &database.Feed{
+		URL:      "http://example.com/rss",
+		Language: &language,
+	}
+	assert.NoError(t, mock.UpsertFeed(feed))
+	assert.NoError(t, mock.UpsertStopWords(&database.StopWords{
+		Language:  language,
+		FeedID:    &feed.ID,
+		NounStems: database.StringArray{"monday", "weather"},
+	}))
+
+	assert.NoError(t, syncImportedFeedStopWords(feed, ImportFeed{}))
+
+	stopWords, err := mock.ListStopWords()
+	assert.NoError(t, err)
+	assert.Empty(t, stopWords)
+}
+
 // --- Mock Repository ---
 
 type MockRepo struct {
-	feeds map[uuid.UUID]*database.Feed
+	feeds     map[uuid.UUID]*database.Feed
+	stopWords map[uuid.UUID]*database.StopWords
 }
 
 func NewMockRepo() *MockRepo {
 	return &MockRepo{
-		feeds: make(map[uuid.UUID]*database.Feed),
+		feeds:     make(map[uuid.UUID]*database.Feed),
+		stopWords: make(map[uuid.UUID]*database.StopWords),
 	}
 }
 
@@ -792,6 +837,38 @@ func (m *MockRepo) UpsertFeed(feed *database.Feed) error {
 	}
 	feed.UpdatedAt = time.Now()
 	m.feeds[feed.ID] = feed
+	return nil
+}
+
+func (m *MockRepo) UpsertStopWords(stopWords *database.StopWords) error {
+	if stopWords.FeedID == nil {
+		return nil
+	}
+	copyValue := *stopWords
+	copyValue.NounStems = append(database.StringArray{}, stopWords.NounStems...)
+	m.stopWords[*stopWords.FeedID] = &copyValue
+	return nil
+}
+
+func (m *MockRepo) ListStopWords() ([]database.StopWords, error) {
+	res := make([]database.StopWords, 0, len(m.stopWords))
+	for _, sw := range m.stopWords {
+		res = append(res, *sw)
+	}
+	return res, nil
+}
+
+func (m *MockRepo) DeleteStopWordsByLanguage(language string) error {
+	for feedID, sw := range m.stopWords {
+		if sw.Language == language {
+			delete(m.stopWords, feedID)
+		}
+	}
+	return nil
+}
+
+func (m *MockRepo) DeleteStopWordsByFeedID(feedID uuid.UUID) error {
+	delete(m.stopWords, feedID)
 	return nil
 }
 

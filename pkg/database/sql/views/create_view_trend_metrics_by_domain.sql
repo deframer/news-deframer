@@ -1,9 +1,35 @@
 DROP VIEW IF EXISTS view_trend_metrics_by_domain CASCADE;
 CREATE VIEW view_trend_metrics_by_domain AS
-WITH raw_unrolled AS (
+WITH filtered_nouns AS (
+    SELECT
+        t.item_id,
+        t.feed_id,
+        t.pub_date,
+        t."language",
+        t.root_domain,
+        stem,
+        'NOUN' as stem_type
+    FROM public.trends t
+    CROSS JOIN LATERAL unnest(t.noun_stems) as stem
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM public.stop_words sw
+        WHERE sw.language = t."language"
+          AND sw.feed_id IS NULL
+          AND stem = ANY(sw.noun_stems)
+    )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.stop_words sw
+        JOIN public.feeds f ON f.id = sw.feed_id
+        WHERE sw.language = t."language"
+          AND f.root_domain = t.root_domain
+          AND stem = ANY(sw.noun_stems)
+    )
+), raw_unrolled AS (
     -- 1. Unnest stems and include ROOT_DOMAIN
-    SELECT item_id, feed_id, pub_date, "language", root_domain, unnest(noun_stems) as stem, 'NOUN' as stem_type
-    FROM public.trends
+    SELECT item_id, feed_id, pub_date, "language", root_domain, stem, stem_type
+    FROM filtered_nouns
     UNION ALL
     SELECT item_id, feed_id, pub_date, "language", root_domain, unnest(verb_stems) as stem, 'VERB' as stem_type
     FROM public.trends

@@ -4,6 +4,10 @@
     "language": "en",
     "root_domain": "wordpress",
     "polling": true,
+    "stop_words": [
+      "monday",
+      "horoscop"
+    ],
     "categories": [
       "other"
     ],
@@ -13,6 +17,10 @@
     "url": "http://feeds.bbci.co.uk/news/world/rss.xml",
     "language": "en",
     "polling": true,
+    "stop_words": [
+      "weather",
+      "sunday"
+    ],
     "categories": [
       "politics"
     ],
@@ -22,6 +30,10 @@
     "url": "https://www.spiegel.de/international/index.rss",
     "language": "en",
     "polling": true,
+    "stop_words": [
+      "bundesliga",
+      "promi"
+    ],
     "categories": [
       "politics"
     ],
@@ -31,6 +43,10 @@
     "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
     "language": "en",
     "polling": true,
+    "stop_words": [
+      "thursday",
+      "weather"
+    ],
     "categories": [
       "politics"
     ],
