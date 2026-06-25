@@ -268,13 +268,18 @@ func TestFeedCommands(t *testing.T) {
 		setCountry(testURL, "US")
 	})
 	assert.Contains(t, out, "Set country to US")
+	feedID := resolveFeed(testURL, false).ID
+	assert.NoError(t, mock.UpsertItem(&database.Item{FeedID: feedID}))
+	assert.NoError(t, mock.UpsertItem(&database.Item{FeedID: feedID}))
 
 	out = captureOutput(func() {
 		listFeeds(false, false)
 	})
 	assert.Contains(t, out, "Tags")
+	assert.Contains(t, out, "Articles")
 	assert.Contains(t, out, "tag-one,tag-two")
 	assert.Contains(t, out, "US")
+	assert.Regexp(t, `tag-one,tag-two\s+2\s+`, out)
 
 	out = captureOutput(func() {
 		exportFeeds()
@@ -332,7 +337,7 @@ func TestFeedCommands(t *testing.T) {
 	out = captureOutput(func() {
 		listFeeds(true, false)
 	})
-	var feeds []database.Feed
+	var feeds []database.FeedListResult
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 	assert.Len(t, feeds, 1)
@@ -340,6 +345,7 @@ func TestFeedCommands(t *testing.T) {
 	assert.True(t, feeds[0].Enabled)
 	assert.Empty(t, feeds[0].Country)
 	assert.Empty(t, feeds[0].Tags)
+	assert.Equal(t, int64(2), feeds[0].Articles)
 	assert.NotNil(t, feeds[0].FeedSchedule)
 	assert.NotNil(t, feeds[0].RootDomain)
 	assert.Equal(t, "example.com", *feeds[0].RootDomain)
@@ -468,7 +474,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 
-	var foundNoRoot *database.Feed
+	var foundNoRoot *database.FeedListResult
 	for i := range feeds {
 		if feeds[i].URL == testURL3 {
 			foundNoRoot = &feeds[i]
@@ -489,7 +495,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 
-	var foundSub *database.Feed
+	var foundSub *database.FeedListResult
 	for i := range feeds {
 		if feeds[i].URL == testURL4 {
 			foundSub = &feeds[i]
@@ -511,7 +517,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 
-	var foundLang *database.Feed
+	var foundLang *database.FeedListResult
 	for i := range feeds {
 		if feeds[i].URL == testURL5 {
 			foundLang = &feeds[i]
@@ -586,7 +592,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 
-	var foundResolve *database.Feed
+	var foundResolve *database.FeedListResult
 	for i := range feeds {
 		if feeds[i].URL == testURL6 {
 			foundResolve = &feeds[i]
@@ -631,7 +637,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 
-	var foundMine *database.Feed
+	var foundMine *database.FeedListResult
 	for i := range feeds {
 		if feeds[i].URL == testURL7 {
 			foundMine = &feeds[i]
@@ -698,7 +704,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 
-	var foundSync *database.Feed
+	var foundSync *database.FeedListResult
 	for i := range feeds {
 		if feeds[i].URL == testURL9 {
 			foundSync = &feeds[i]
@@ -727,7 +733,7 @@ func TestFeedCommands(t *testing.T) {
 	err = json.Unmarshal([]byte(out), &feeds)
 	assert.NoError(t, err)
 
-	var foundMineNoMining *database.Feed
+	var foundMineNoMining *database.FeedListResult
 	for i := range feeds {
 		if feeds[i].URL == testURL10 {
 			foundMineNoMining = &feeds[i]
@@ -795,12 +801,14 @@ func TestSyncImportedFeedStopWordsDeletesWhenMissing(t *testing.T) {
 type MockRepo struct {
 	feeds     map[uuid.UUID]*database.Feed
 	stopWords map[uuid.UUID]*database.StopWords
+	items     []database.Item
 }
 
 func NewMockRepo() *MockRepo {
 	return &MockRepo{
 		feeds:     make(map[uuid.UUID]*database.Feed),
 		stopWords: make(map[uuid.UUID]*database.StopWords),
+		items:     []database.Item{},
 	}
 }
 
@@ -873,6 +881,7 @@ func (m *MockRepo) DeleteStopWordsByFeedID(feedID uuid.UUID) error {
 }
 
 func (m *MockRepo) UpsertItem(item *database.Item) error {
+	m.items = append(m.items, *item)
 	return nil
 }
 
@@ -891,6 +900,23 @@ func (m *MockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error) {
 			continue
 		}
 		feeds = append(feeds, *f)
+	}
+	return feeds, nil
+}
+
+func (m *MockRepo) GetFeedListResults(deleted bool) ([]database.FeedListResult, error) {
+	var feeds []database.FeedListResult
+	for _, f := range m.feeds {
+		if !deleted && f.DeletedAt.Valid {
+			continue
+		}
+		feedCopy := database.FeedListResult{Feed: *f}
+		for _, item := range m.items {
+			if item.FeedID == feedCopy.ID {
+				feedCopy.Articles++
+			}
+		}
+		feeds = append(feeds, feedCopy)
 	}
 	return feeds, nil
 }

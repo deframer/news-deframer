@@ -274,7 +274,7 @@ var setTagsCmd = &cobra.Command{
 
 var listCmd = &cobra.Command{
 	Use:   "list",
-	Short: "List all feeds",
+	Short: "List all feeds with article counts",
 	Run: func(cmd *cobra.Command, args []string) {
 		listFeeds(jsonOutput, showDeleted)
 	},
@@ -289,7 +289,7 @@ var errorsCmd = &cobra.Command{
 }
 
 func listFeeds(asJson bool, showDeleted bool) {
-	feeds, err := repo.GetAllFeeds(showDeleted)
+	feeds, err := repo.GetFeedListResults(showDeleted)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to list feeds: %v\n", err)
 		os.Exit(1)
@@ -311,7 +311,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 	}
 
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCountry\tCategories\tTags\tID\tURL\tRootDomain\tPortalUrl\tEnforceDomain\tSync Status\tMining Status"); err != nil {
+	if _, err := fmt.Fprintln(w, "Status\tPolling\tMining\tResolveItemUrl\tLanguage\tCountry\tCategories\tTags\tArticles\tID\tURL\tRootDomain\tPortalUrl\tEnforceDomain\tSync Status\tMining Status"); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 		os.Exit(1)
 	}
@@ -371,7 +371,7 @@ func listFeeds(asJson bool, showDeleted bool) {
 			tags = strings.Join(f.Tags, ",")
 		}
 
-		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, country, categories, tags, f.ID, f.URL, rootDomain, portalUrl, f.EnforceFeedDomain, syncState, miningState); err != nil {
+		if _, err := fmt.Fprintf(w, "%s\t%v\t%v\t%v\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%s\t%v\t%s\t%s\n", status, f.Polling, f.Mining, f.ResolveItemUrl, language, country, categories, tags, f.Articles, f.ID, f.URL, rootDomain, portalUrl, f.EnforceFeedDomain, syncState, miningState); err != nil {
 			fmt.Fprintf(os.Stderr, "Failed to write to stdout: %v\n", err)
 			os.Exit(1)
 		}

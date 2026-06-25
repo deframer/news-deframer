@@ -126,8 +126,9 @@ func importStopWords() {
 			if feed == nil {
 				fmt.Fprintf(os.Stderr, "Feed does not exist with UUID: %s\n", entry.FeedID.String())
 				os.Exit(1)
+			} else {
+				stopWords.FeedID = &feed.ID
 			}
-			stopWords.FeedID = &feed.ID
 		} else if entry.FeedURL != nil && strings.TrimSpace(*entry.FeedURL) != "" {
 			feed := resolveFeed(*entry.FeedURL, false)
 			stopWords.FeedID = &feed.ID

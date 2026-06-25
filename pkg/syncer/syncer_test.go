@@ -43,6 +43,9 @@ func (m *mockRepo) FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*
 	return nil, nil
 }
 func (m *mockRepo) FindFeedById(feedID uuid.UUID) (*database.Feed, error) { return nil, nil }
+func (m *mockRepo) GetFeedListResults(deleted bool) ([]database.FeedListResult, error) {
+	return nil, nil
+}
 func (m *mockRepo) UpsertFeed(feed *database.Feed) error {
 	m.upsertFeedCalled = true
 	m.lastUpsertedFeed = feed
