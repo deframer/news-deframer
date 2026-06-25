@@ -15,6 +15,7 @@ type mockRepo struct {
 	findFeedByUrl                 func(u *url.URL) (*database.Feed, error)
 	findFeedByUrlAndAvailability  func(u *url.URL, onlyEnabled bool) (*database.Feed, error)
 	findFeedById                  func(feedID uuid.UUID) (*database.Feed, error)
+	getFeedListResults            func(deleted bool) ([]database.FeedListResult, error)
 	upsertFeed                    func(feed *database.Feed) error
 	findItemsByUrl                func(u *url.URL) ([]database.Item, error)
 	getAllFeeds                   func(deleted bool) ([]database.Feed, error)
@@ -102,6 +103,13 @@ func (m *mockRepo) FindItemsByUrl(u *url.URL) ([]database.Item, error) {
 func (m *mockRepo) GetAllFeeds(deleted bool) ([]database.Feed, error) {
 	if m.getAllFeeds != nil {
 		return m.getAllFeeds(deleted)
+	}
+	return nil, nil
+}
+
+func (m *mockRepo) GetFeedListResults(deleted bool) ([]database.FeedListResult, error) {
+	if m.getFeedListResults != nil {
+		return m.getFeedListResults(deleted)
 	}
 	return nil, nil
 }

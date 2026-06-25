@@ -191,6 +191,7 @@ type Repository interface {
 	FindFeedByUrl(u *url.URL) (*Feed, error)
 	FindFeedByUrlAndAvailability(u *url.URL, onlyEnabled bool) (*Feed, error)
 	FindFeedById(feedID uuid.UUID) (*Feed, error)
+	GetFeedListResults(deleted bool) ([]FeedListResult, error)
 	UpsertFeed(feed *Feed) error
 	UpsertStopWords(stopWords *StopWords) error
 	ListStopWords() ([]StopWords, error)
@@ -235,6 +236,11 @@ type Repository interface {
 type repository struct {
 	ctx context.Context
 	db  *gorm.DB
+}
+
+type FeedListResult struct {
+	Feed     `gorm:"embedded"`
+	Articles int64
 }
 
 var (
@@ -989,6 +995,23 @@ func (r *repository) PurgeFeedById(id uuid.UUID) error {
 func (r *repository) GetAllFeeds(deleted bool) ([]Feed, error) {
 	var feeds []Feed
 	query := r.db.Preload("FeedSchedule").Order("url ASC")
+	if deleted {
+		query = query.Unscoped()
+	}
+	if err := query.Find(&feeds).Error; err != nil {
+		return nil, err
+	}
+	return feeds, nil
+}
+
+func (r *repository) GetFeedListResults(deleted bool) ([]FeedListResult, error) {
+	var feeds []FeedListResult
+	query := r.db.Model(&Feed{}).
+		Select("feeds.*, COUNT(items.id) AS articles").
+		Joins("LEFT JOIN items ON items.feed_id = feeds.id").
+		Preload("FeedSchedule").
+		Group("feeds.id").
+		Order("url ASC")
 	if deleted {
 		query = query.Unscoped()
 	}
