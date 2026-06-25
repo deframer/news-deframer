@@ -18,7 +18,7 @@ jobs:
       server: ${{ steps.force-all.outputs.server || steps.filter.outputs.server_any_changed }}
       any: ${{ steps.force-all.outputs.any || steps.filter.outputs.any_changed }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -80,7 +80,7 @@ jobs:
           apt-get update && apt-get install -y git make curl bash binutils build-essential postgresql-client
 
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -143,7 +143,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -192,7 +192,7 @@ jobs:
       run:
         working-directory: frontend/mobile
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Validate tagged mobile release metadata
         if: startsWith(github.ref, 'refs/tags/v')
@@ -293,7 +293,7 @@ jobs:
       run:
         working-directory: frontend/mobile
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -342,7 +342,7 @@ jobs:
       matrix:
         app: [service, worker]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Log in to the Container registry
         if: github.event_name != 'pull_request'
