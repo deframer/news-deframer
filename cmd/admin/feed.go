@@ -758,7 +758,7 @@ func setCountry(input string, country string) {
 
 func parseAndNormalizeURL(rawURL string) (*url.URL, error) {
 	rawURL = strings.TrimSpace(rawURL)
-	rawURL = strings.TrimSuffix(rawURL, "/")
+	// Keep trailing slashes intact: some upstream feed URLs treat them as distinct.
 	return url.ParseRequestURI(rawURL)
 }
 
