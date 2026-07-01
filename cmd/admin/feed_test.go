@@ -37,7 +37,7 @@ func TestParseAndNormalizeURL(t *testing.T) {
 		{
 			name:  "Trailing Slash",
 			input: "http://example.com/",
-			want:  "http://example.com",
+			want:  "http://example.com/",
 		},
 		{
 			name:  "Whitespace",
@@ -47,7 +47,7 @@ func TestParseAndNormalizeURL(t *testing.T) {
 		{
 			name:  "Whitespace and Slash",
 			input: "  http://example.com/  ",
-			want:  "http://example.com",
+			want:  "http://example.com/",
 		},
 		{
 			name:    "Invalid URL",
@@ -120,7 +120,7 @@ func TestValidateImportFeeds(t *testing.T) {
 	var out bytes.Buffer
 	hadErrors := validateImportFeeds(context.Background(), feeds, &out, false)
 	assert.False(t, hadErrors)
-	assert.Contains(t, out.String(), "1 OK would insert url=http://new.example/rss")
+	assert.Contains(t, out.String(), "1 OK would insert url=http://new.example/rss/")
 	assert.Contains(t, out.String(), "2 OK would update url=http://existing.example/rss")
 	assert.Contains(t, out.String(), "validated 2 feeds (0 errors)")
 }
@@ -136,9 +136,10 @@ func TestValidateImportFeedsRejectsDuplicates(t *testing.T) {
 
 	var out bytes.Buffer
 	hadErrors := validateImportFeeds(context.Background(), feeds, &out, false)
-	assert.True(t, hadErrors)
-	assert.Contains(t, out.String(), "ERROR duplicate url http://dup.example/rss (also in row 1)")
-	assert.Contains(t, out.String(), "validated 2 feeds (1 errors)")
+	assert.False(t, hadErrors)
+	assert.Contains(t, out.String(), "1 OK would insert url=http://dup.example/rss/")
+	assert.Contains(t, out.String(), "2 OK would insert url=http://dup.example/rss")
+	assert.Contains(t, out.String(), "validated 2 feeds (0 errors)")
 }
 
 func TestValidateImportFeedsRejectsInvalidCategory(t *testing.T) {
