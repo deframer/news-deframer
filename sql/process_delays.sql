@@ -73,6 +73,10 @@ WITH config AS (
             2
         ) AS proc_min_p75,
         ROUND(
+            percentile_cont(0.99) WITHIN GROUP (ORDER BY pt.processing_minutes)::numeric,
+            2
+        ) AS proc_min_p99,
+        ROUND(
             MAX(pt.processing_minutes)::numeric,
             2
         ) AS proc_min_p100
@@ -85,6 +89,7 @@ WITH config AS (
         pm.proc_min_p25,
         pm.proc_min_p50,
         pm.proc_min_p75,
+        pm.proc_min_p99,
         pm.proc_min_p100,
         bm.delta_pub_date_lt_24h,
         bm.delta_pub_date_gt_24h,
@@ -100,6 +105,7 @@ FROM (
         fr.proc_min_p25,
         fr.proc_min_p50,
         fr.proc_min_p75,
+        fr.proc_min_p99,
         fr.proc_min_p100,
         fr.delta_pub_date_lt_24h,
         fr.delta_pub_date_gt_24h,
@@ -114,6 +120,7 @@ FROM (
         ROUND(AVG(fr.proc_min_p25), 2) AS proc_min_p25,
         ROUND(AVG(fr.proc_min_p50), 2) AS proc_min_p50,
         ROUND(AVG(fr.proc_min_p75), 2) AS proc_min_p75,
+        ROUND(AVG(fr.proc_min_p99), 2) AS proc_min_p99,
         ROUND(AVG(fr.proc_min_p100), 2) AS proc_min_p100,
         ROUND(AVG(fr.delta_pub_date_lt_24h), 2) AS delta_pub_date_lt_24h,
         ROUND(AVG(fr.delta_pub_date_gt_24h), 2) AS delta_pub_date_gt_24h,
