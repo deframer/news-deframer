@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -115,6 +116,17 @@ func (d *downloader) DownloadRSSFeed(ctx context.Context, feed *url.URL) (io.Rea
 		}
 
 		if resp.StatusCode != http.StatusOK {
+			// we have very stupid rss feeds
+			// we get a 404 - but a RSS feed data
+			// we don't even see this in the browser - this is a workaround
+			peek, err := io.ReadAll(io.LimitReader(resp.Body, 1024))
+			if err == nil && looksLikeRSSFeed(peek) {
+				return &responseReadCloser{
+					Reader: io.MultiReader(bytes.NewReader(peek), resp.Body),
+					Closer: resp.Body,
+				}, nil
+			}
+
 			_ = resp.Body.Close()
 			return nil, fmt.Errorf("HTTP request failed: %s", resp.Status)
 		}
@@ -147,4 +159,18 @@ func (d *downloader) ResolveRedirect(ctx context.Context, targetURL string) (str
 	defer func() { _ = resp.Body.Close() }()
 
 	return resp.Request.URL.String(), nil
+}
+
+type responseReadCloser struct {
+	io.Reader
+	Closer io.Closer
+}
+
+func (r *responseReadCloser) Close() error {
+	return r.Closer.Close()
+}
+
+func looksLikeRSSFeed(peek []byte) bool {
+	trimmed := bytes.TrimSpace(bytes.ToLower(peek))
+	return bytes.HasPrefix(trimmed, []byte("<?xml")) || bytes.HasPrefix(trimmed, []byte("<rss")) || bytes.HasPrefix(trimmed, []byte("<feed"))
 }

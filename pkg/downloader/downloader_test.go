@@ -35,6 +35,47 @@ func TestDownloadRSSFeed_HTTP(t *testing.T) {
 	assert.Equal(t, "mock content", string(content))
 }
 
+func TestDownloadRSSFeed_HTTPNotFoundWithRSSBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>test</title></channel></rss>`))
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{})
+
+	u, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	rc, err := d.DownloadRSSFeed(ctx, u)
+	assert.NoError(t, err)
+	assert.NotNil(t, rc)
+	defer func() { _ = rc.Close() }()
+	content, err := io.ReadAll(rc)
+	assert.NoError(t, err)
+	assert.Contains(t, string(content), "<rss version=\"2.0\">")
+}
+
+func TestDownloadRSSFeed_HTTPNotFoundHTMLBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte("<html><body>not found</body></html>"))
+	}))
+	defer server.Close()
+
+	ctx := context.Background()
+	d := NewDownloader(ctx, &config.Config{})
+
+	u, err := url.Parse(server.URL)
+	assert.NoError(t, err)
+
+	rc, err := d.DownloadRSSFeed(ctx, u)
+	assert.Error(t, err)
+	assert.Nil(t, rc)
+	assert.EqualError(t, err, "HTTP request failed: 404 Not Found")
+}
+
 func TestDownloadRSSFeed_UnsupportedScheme(t *testing.T) {
 	ctx := context.Background()
 	d := NewDownloader(ctx, &config.Config{})
