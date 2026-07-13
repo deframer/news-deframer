@@ -1,7 +1,6 @@
 WITH config AS (
     SELECT
-        90 AS days,
-        ARRAY['circular-technology.com'] AS ignore_domains
+        90 AS days
 )
 SELECT
     feeds.root_domain AS domain,
