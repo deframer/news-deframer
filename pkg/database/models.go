@@ -46,6 +46,15 @@ type Feed struct {
 	FeedSchedule      *FeedSchedule `gorm:"foreignKey:ID;references:ID"`
 }
 
+func (f *Feed) HasTag(tag string) bool {
+	for _, t := range f.Tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
+}
+
 type FeedError struct {
 	RootDomain   *string    `gorm:"column:root_domain" json:"root_domain,omitempty"`
 	URL          string     `gorm:"column:url" json:"url"`

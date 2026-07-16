@@ -159,7 +159,7 @@ func TestThinkRenderAndExtract_Authors(t *testing.T) {
 		},
 	}
 
-	result, err := s.renderThoughtsAndItem(item, "en", 0)
+	result, err := s.renderThoughtsAndItem(item, "en", 0, MediaResolverPreferenceDefault)
 	assert.NoError(t, err)
 	assert.Equal(t, database.StringArray{"Alice", "Bob"}, result.authors)
 }
@@ -183,7 +183,7 @@ func TestThinkRenderAndExtract_UsesIgnoreCategoryErrorsOnRetryBoundary(t *testin
 		Content:     "<p>content</p>",
 	}
 
-	_, err := s.renderThoughtsAndItem(item, "en", maxThinkRetries)
+	_, err := s.renderThoughtsAndItem(item, "en", maxThinkRetries, MediaResolverPreferenceDefault)
 	assert.NoError(t, err)
 	assert.True(t, gotIgnore)
 }
@@ -207,7 +207,7 @@ func TestThinkRenderAndExtract_UsesIgnoreCategoryErrorsOnFixerBoundary(t *testin
 		Content:     "<p>content</p>",
 	}
 
-	_, err := s.renderThoughtsAndItem(item, "en", thinkerFixerMaxErrorCount)
+	_, err := s.renderThoughtsAndItem(item, "en", thinkerFixerMaxErrorCount, MediaResolverPreferenceDefault)
 	assert.NoError(t, err)
 	assert.True(t, gotIgnore)
 }

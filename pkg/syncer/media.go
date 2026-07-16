@@ -24,6 +24,13 @@ type MediaData struct {
 	HasExplicitDims bool
 }
 
+type MediaResolverAffinity int
+
+const (
+	MediaResolverPreferenceDefault MediaResolverAffinity = iota
+	MediaResolverAffinityEnclosure
+)
+
 func transformContent(content string) (MediaData, error) {
 	content = strings.TrimSpace(content)
 	if strings.HasPrefix(content, "<![CDATA[") && strings.HasSuffix(content, "]]>") {
@@ -110,7 +117,7 @@ func extractFromDescriptionFallback(res *database.ThinkResult) *MediaData {
 	return nil
 }
 
-func updateContent(item *gofeed.Item, res *database.ThinkResult) (*MediaData, error) {
+func updateContent(item *gofeed.Item, res *database.ThinkResult, pref MediaResolverAffinity) (*MediaData, error) {
 	if item == nil || res == nil {
 		return nil, nil
 	}
@@ -131,12 +138,22 @@ func updateContent(item *gofeed.Item, res *database.ThinkResult) (*MediaData, er
 	var mediaData *MediaData
 
 	// Keep existing media untouched. Only synthesize media when none exists.
-	if existingMedia, _ := extractMediaContent(item); existingMedia == nil {
-		if mediaData = extractFromContentTag(item); mediaData != nil {
-			item.Content = ""
-		} else if mediaData = extractFromEnclosureTag(item); mediaData != nil {
-			// found in enclosure
-		} else {
+	if existingMedia, _ := extractMediaContent(item, pref); existingMedia == nil {
+		tryEnclosureFirst := pref == MediaResolverAffinityEnclosure
+
+		if tryEnclosureFirst {
+			mediaData = extractFromEnclosureTag(item)
+		}
+		if mediaData == nil {
+			mediaData = extractFromContentTag(item)
+			if mediaData != nil {
+				item.Content = ""
+			}
+		}
+		if mediaData == nil && !tryEnclosureFirst {
+			mediaData = extractFromEnclosureTag(item)
+		}
+		if mediaData == nil {
 			mediaData = extractFromDescriptionFallback(res)
 		}
 	}
@@ -199,7 +216,7 @@ func applyMediaData(item *gofeed.Item, data *MediaData) {
 	}
 }
 
-func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
+func extractMediaContent(item *gofeed.Item, pref MediaResolverAffinity) (*database.MediaContent, error) {
 	if item == nil {
 		return nil, nil
 	}
@@ -216,6 +233,10 @@ func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
 				HasExplicitDims: false,
 			}, nil
 		}
+	}
+
+	if pref == MediaResolverAffinityEnclosure {
+		return nil, nil
 	}
 
 	if item.Extensions == nil {
@@ -235,6 +256,10 @@ func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
 		return nil, nil
 	}
 
+	return buildMediaContent(contentExt, mediaExt), nil
+}
+
+func buildMediaContent(contentExt *ext.Extension, mediaExt map[string][]ext.Extension) *database.MediaContent {
 	mc := &database.MediaContent{
 		URL:             contentExt.Attrs["url"],
 		Type:            contentExt.Attrs["type"],
@@ -302,7 +327,7 @@ func extractMediaContent(item *gofeed.Item) (*database.MediaContent, error) {
 		}
 	}
 
-	return mc, nil
+	return mc
 }
 
 func findBestMediaExtension(exts map[string][]ext.Extension, name string) *ext.Extension {

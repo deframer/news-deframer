@@ -459,9 +459,23 @@ func (s *Syncer) syncItem(feed *database.Feed, hash string, item *gofeed.Item, l
 		return
 	}
 
-	mediaContent, err := extractMediaContent(item)
+	pref := MediaResolverPreferenceDefault
+	if feed.HasTag("image_preference_enclosure") {
+		pref = MediaResolverAffinityEnclosure
+	}
+	mediaContent, err := extractMediaContent(item, pref)
 	if err != nil {
 		log.Errorf(s.ctx, err, "failed to extract media content hash=%s", hash)
+	}
+	if mediaContent == nil && pref == MediaResolverPreferenceDefault {
+		if d, err := transformContent(item.Content); err == nil && d.URL != "" {
+			mediaContent = mediaContentFromData(&d)
+		}
+	}
+	if mediaContent == nil && pref == MediaResolverPreferenceDefault {
+		if d, err := transformContent(item.Description); err == nil && d.URL != "" {
+			mediaContent = mediaContentFromData(&d)
+		}
 	}
 
 	dbItem := &database.Item{
@@ -503,7 +517,11 @@ func (s *Syncer) thinkItem(dbItem *database.Item) {
 		language = *dbItem.Language
 	}
 
-	result, err := s.renderThoughtsAndItem(parsedItem, language, dbItem.ThinkErrorCount, "item_id", dbItem.ID, "item_url", parsedItem.Link)
+	pref := MediaResolverPreferenceDefault
+	if dbItem.Feed.HasTag("image_preference_enclosure") {
+		pref = MediaResolverAffinityEnclosure
+	}
+	result, err := s.renderThoughtsAndItem(parsedItem, language, dbItem.ThinkErrorCount, pref, "item_id", dbItem.ID, "item_url", parsedItem.Link)
 	if err != nil {
 		return
 	}
@@ -553,7 +571,7 @@ func emptyStringArray(values []string) database.StringArray {
 	return database.StringArray(values)
 }
 
-func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string, currentErrorCount int, logKeys ...any) (*thinkerOutcome, error) {
+func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string, currentErrorCount int, pref MediaResolverAffinity, logKeys ...any) (*thinkerOutcome, error) {
 	if parsedItem == nil {
 		return nil, fmt.Errorf("parsed item is nil")
 	}
@@ -581,7 +599,7 @@ func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string,
 		thinkError = &errStr
 		nextErrorCount++
 	} else {
-		synthesizedMedia, err := updateContent(parsedItem, res)
+		synthesizedMedia, err := updateContent(parsedItem, res, pref)
 		if err != nil {
 			log.Errorf(s.ctx, err, "%s", formatLogKeys("update content failed", logKeys...))
 			return nil, err
@@ -590,7 +608,7 @@ func (s *Syncer) renderThoughtsAndItem(parsedItem *gofeed.Item, language string,
 		if synthesizedMedia != nil {
 			mediaContent = mediaContentFromData(synthesizedMedia)
 		} else {
-			mediaContent, err = extractMediaContent(parsedItem)
+			mediaContent, err = extractMediaContent(parsedItem, pref)
 			if err != nil {
 				log.Errorf(s.ctx, err, "%s", formatLogKeys("extract media content failed", logKeys...))
 			}
