@@ -27,7 +27,7 @@ coverage.*
 /service
 /worker
 /admin
-/feeds.json
+/feeds*.json
 /stopwords.json
 *.log
 goa*

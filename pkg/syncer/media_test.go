@@ -8,6 +8,7 @@ import (
 	"github.com/mmcdole/gofeed"
 	ext "github.com/mmcdole/gofeed/extensions"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTransformContent(t *testing.T) {
@@ -391,7 +392,7 @@ func TestExtractMediaContent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := extractMediaContent(tt.item)
+			got, err := extractMediaContent(tt.item, MediaResolverPreferenceDefault)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
 		})
@@ -500,7 +501,7 @@ func TestUpdateContent(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			synthesizedMedia, err := updateContent(tt.item, tt.res)
+			synthesizedMedia, err := updateContent(tt.item, tt.res, MediaResolverPreferenceDefault)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedTitle, tt.item.Title)
 			assert.Equal(t, tt.expectedDescription, tt.item.Description)
@@ -517,7 +518,7 @@ func TestUpdateContent(t *testing.T) {
 					assert.False(t, synthesizedMedia.HasExplicitDims)
 				}
 
-				got, err := extractMediaContent(tt.item)
+				got, err := extractMediaContent(tt.item, MediaResolverPreferenceDefault)
 				assert.NoError(t, err)
 				if assert.NotNil(t, got) {
 					assert.Equal(t, tt.expectedMediaURL, got.URL)
@@ -550,6 +551,112 @@ func TestUpdateContent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestUpdateContent_MediaResolverAffinity(t *testing.T) {
+	t.Run("MediaResolverAffinityEnclosure skips media:content extension, falls through to synthesis", func(t *testing.T) {
+		item := &gofeed.Item{
+			Title:       "Test",
+			Description: "Desc",
+			Content:     `<p><img src="https://example.com/content.jpg" alt="Content Image" /></p>`,
+			Extensions: map[string]map[string][]ext.Extension{
+				"media": {
+					"content": {{
+						Name: "content",
+						Attrs: map[string]string{
+							"url":    "https://example.com/media-content.jpg",
+							"type":   "image/jpeg",
+							"medium": "image",
+						},
+					}},
+				},
+			},
+		}
+		res := &database.ThinkResult{
+			TitleCorrected:       "Corrected",
+			DescriptionCorrected: "Corrected desc",
+			OverallReason:        "Reason",
+		}
+
+		synthesizedMedia, err := updateContent(item, res, MediaResolverAffinityEnclosure)
+		assert.NoError(t, err)
+		require.NotNil(t, synthesizedMedia)
+		assert.Equal(t, "https://example.com/content.jpg", synthesizedMedia.URL)
+	})
+
+	t.Run("MediaResolverPreferenceDefault uses media:content extension, skips synthesis", func(t *testing.T) {
+		item := &gofeed.Item{
+			Title:       "Test",
+			Description: "Desc",
+			Content:     `<p><img src="https://example.com/content.jpg" alt="Content Image" /></p>`,
+			Extensions: map[string]map[string][]ext.Extension{
+				"media": {
+					"content": {{
+						Name: "content",
+						Attrs: map[string]string{
+							"url":    "https://example.com/media-content.jpg",
+							"type":   "image/jpeg",
+							"medium": "image",
+						},
+					}},
+				},
+			},
+		}
+		res := &database.ThinkResult{
+			TitleCorrected:       "Corrected",
+			DescriptionCorrected: "Corrected desc",
+			OverallReason:        "Reason",
+		}
+
+		synthesizedMedia, err := updateContent(item, res, MediaResolverPreferenceDefault)
+		assert.NoError(t, err)
+		assert.Nil(t, synthesizedMedia, "synthesis should be skipped when existing media:content is found")
+	})
+
+	t.Run("MediaResolverAffinityEnclosure preserves existing enclosure", func(t *testing.T) {
+		item := &gofeed.Item{
+			Title:       "Test",
+			Description: "Desc",
+			Content:     `<p><img src="https://example.com/content.jpg" alt="Content Image" /></p>`,
+			Enclosures: []*gofeed.Enclosure{{
+				URL:  "https://example.com/enclosure.jpg?width=800",
+				Type: "image/jpeg",
+			}},
+		}
+		res := &database.ThinkResult{
+			TitleCorrected:       "Corrected",
+			DescriptionCorrected: "Corrected desc",
+			OverallReason:        "Reason",
+		}
+
+		synthesizedMedia, err := updateContent(item, res, MediaResolverAffinityEnclosure)
+		assert.NoError(t, err)
+		assert.Nil(t, synthesizedMedia, "synthesis should be skipped when enclosure exists")
+
+		existingMedia, err := extractMediaContent(item, MediaResolverAffinityEnclosure)
+		assert.NoError(t, err)
+		require.NotNil(t, existingMedia)
+		assert.Equal(t, "https://example.com/enclosure.jpg?width=800", existingMedia.URL)
+		assert.Equal(t, "image", existingMedia.Medium)
+	})
+
+	t.Run("MediaResolverAffinityEnclosure falls back to content html when no media exists", func(t *testing.T) {
+		item := &gofeed.Item{
+			Title:       "Test",
+			Description: "Desc",
+			Content:     `<p><img src="https://example.com/content.jpg" alt="Content Image" /></p>`,
+		}
+		res := &database.ThinkResult{
+			TitleCorrected:       "Corrected",
+			DescriptionCorrected: "Corrected desc",
+			OverallReason:        "Reason",
+		}
+
+		synthesizedMedia, err := updateContent(item, res, MediaResolverAffinityEnclosure)
+		assert.NoError(t, err)
+		require.NotNil(t, synthesizedMedia)
+		assert.Equal(t, "https://example.com/content.jpg", synthesizedMedia.URL)
+	})
 }
 
 func TestParseDimensions(t *testing.T) {
