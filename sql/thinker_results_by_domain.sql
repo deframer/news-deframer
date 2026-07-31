@@ -26,7 +26,6 @@ WHERE
     AND feeds.deleted_at IS NULL
     AND feeds.root_domain IS NOT NULL
     AND feeds.root_domain <> ''
-    AND NOT (feeds.root_domain = ANY(config.ignore_domains))
 GROUP BY
     feeds.root_domain,
     items.language
