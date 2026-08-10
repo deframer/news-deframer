@@ -5,6 +5,6 @@ module.exports = {
   moduleDirectories: ['node_modules', '<rootDir>/node_modules'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transform: {
-    '^.+\\.[jt]sx?$': 'babel-jest',
+    '^.+\\.[jt]sx?$': ['babel-jest', { configFile: require.resolve('./babel.config.js') }],
   },
 };

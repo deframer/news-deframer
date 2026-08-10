@@ -46,7 +46,6 @@ describe('PortalPage', () => {
         items={mockItems} 
         domain={{ domain: 'example.com', portal_url: 'https://example.com', language: 'en' }}
         availableDomains={[]}
-        searchEngineUrl="https://search.brave.com"
       />
     );
     expect(container).not.toBeNull();

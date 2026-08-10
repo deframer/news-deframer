@@ -43,7 +43,6 @@ describe('TabTrend', () => {
       <TabTrend
         domain={{ domain: 'example.com', language: 'en' }}
         availableDomains={[{ domain: 'example.com', language: 'en' }]}
-        searchEngineUrl="https://search.example.com"
       />,
     );
     expect(container).not.toBeNull();
