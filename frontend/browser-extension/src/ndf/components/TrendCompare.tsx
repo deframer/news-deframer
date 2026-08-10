@@ -17,10 +17,7 @@ interface TrendCompareProps {
   availableDomains: DomainOption[];
   onSelectDomain: (domain: string) => void;
   domain: DomainEntry;
-  searchEngineUrl: string;
 }
-
-const BULLET_DELIMITER = '•';
 
 const OpenIcon = ({ onClick, tooltip }: { onClick: () => void; tooltip: ReactNode }) => (
   <div className="open-icon-wrapper">
@@ -42,7 +39,7 @@ const OpenIcon = ({ onClick, tooltip }: { onClick: () => void; tooltip: ReactNod
   </div>
 );
 
-export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSelectDomain, domain, searchEngineUrl, days }: TrendCompareProps) => {
+export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSelectDomain, domain, days }: TrendCompareProps) => {
   const { t } = useTranslation();
   const [items, setItems] = useState<DomainComparison[]>([]);
   const [loading, setLoading] = useState(false);
@@ -94,12 +91,6 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
     }
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
   }, [selected, isMobile]);
-
-  const handleSearch = (term: string, searchDomain: string) => {
-    const query = encodeURIComponent(`${term} site:${searchDomain}`);
-    const baseUrl = searchEngineUrl.replace(/\/$/, '');
-    window.open(`${baseUrl}/search?q=${query}`, '_blank');
-  };
 
   const handleTrendClick = (term: string, trendDomain: string, column: 'A' | 'B' | 'Intersect') => {
     if (selected?.term === term && selected?.domain === trendDomain) {
@@ -213,14 +204,6 @@ export const TrendCompare = ({ baseItems, compareDomain, availableDomains, onSel
               </>
             )}
           </div>
-        </div>
-        <div className="item-actions">
-          {(columnType === 'A' || columnType === 'Intersect') && (
-            <OpenIcon onClick={() => handleSearch(trendTopic, currentDomainName)} tooltip={<>{trendTopic} {BULLET_DELIMITER} {currentDomainName}</>} />
-          )}
-          {compareDomain && (columnType === 'B' || columnType === 'Intersect') && (
-            <OpenIcon onClick={() => handleSearch(trendTopic, comparisonDomainName)} tooltip={<>{trendTopic} {BULLET_DELIMITER} {comparisonDomainName}</>} />
-          )}
         </div>
       </li>
     );

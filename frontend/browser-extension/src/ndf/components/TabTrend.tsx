@@ -16,7 +16,7 @@ const TIME_RANGES = [
   { id: '365d', days: 365, label: 'trends.time_ranges.last_365d' },
 ];
 
-export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain: DomainEntry; availableDomains: DomainEntry[]; searchEngineUrl: string }) => {
+export const TabTrend = ({ domain, availableDomains }: { domain: DomainEntry; availableDomains: DomainEntry[] }) => {
   const { t } = useTranslation();
   const [viewMode, setViewMode] = useState<'cloud' | 'compare' | 'lifecycle'>('cloud');
   const [timeRange, setTimeRange] = useState('7d');
@@ -72,7 +72,7 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
 
       {/* 3. Content Area */}
       <div className="trend-content">
-        {viewMode === 'cloud' && <TrendTagCloud key={`${domain.domain}-${domain.language}-${currentDays}`} domain={domain} days={currentDays} searchEngineUrl={searchEngineUrl} activeTab={detailTab} setActiveTab={setDetailTab} />}
+        {viewMode === 'cloud' && <TrendTagCloud key={`${domain.domain}-${domain.language}-${currentDays}`} domain={domain} days={currentDays} activeTab={detailTab} setActiveTab={setDetailTab} />}
 
         {viewMode === 'compare' && (
           <TrendCompare
@@ -83,7 +83,6 @@ export const TabTrend = ({ domain, availableDomains, searchEngineUrl }: { domain
             availableDomains={domainOptions}
             onSelectDomain={setCompareDomain}
             domain={domain}
-            searchEngineUrl={searchEngineUrl}
           />
         )}
 

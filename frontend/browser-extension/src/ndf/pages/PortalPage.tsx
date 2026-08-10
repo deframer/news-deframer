@@ -15,10 +15,9 @@ interface PortalPageProps {
   items: AnalyzedItem[];
   domain: DomainEntry;
   availableDomains: DomainEntry[];
-  searchEngineUrl: string;
 }
 
-export const PortalPage = ({ items, domain, availableDomains, searchEngineUrl }: PortalPageProps) => {
+export const PortalPage = ({ items, domain, availableDomains }: PortalPageProps) => {
   const { t } = useTranslation();
   const rootDomain = getDomain(window.location.hostname) || window.location.hostname;
   const [activeTab, setActiveTab] = useState<'portal' | 'trends'>('portal');
@@ -61,7 +60,7 @@ export const PortalPage = ({ items, domain, availableDomains, searchEngineUrl }:
           </button>
         </div>
 
-        {activeTab === 'portal' ? <TabPortal items={items} /> : <TabTrend domain={domain} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />}
+        {activeTab === 'portal' ? <TabPortal items={items} /> : <TabTrend domain={domain} availableDomains={availableDomains} />}
 
         <div className={`footer-container ${activeTab}`}>
           <Footer />

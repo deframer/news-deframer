@@ -9,12 +9,10 @@ import { TrendDetails } from './TrendDetails';
 interface TrendTagCloudProps {
   domain: DomainEntry;
   days: number;
-  searchEngineUrl: string;
   activeTab: 'lifecycle' | 'context' | 'articles' | 'sentiments';
   setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles' | 'sentiments'>>;
 }
 
-const BULLET_DELIMITER = '•';
 const DEFAULT_WIDTH = 640;
 
 const approximateMeasureWord = ({ text, fontSize }: MeasureWordOptions) => ({
@@ -51,7 +49,7 @@ const createCanvasMeasureWord = () => {
   };
 };
 
-export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setActiveTab }: TrendTagCloudProps) => {
+export const TrendTagCloud = ({ domain, days, activeTab, setActiveTab }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
@@ -88,13 +86,6 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
   const handleSelect = (term: string) => {
     setSelectedTerm((current) => (current === term ? null : term));
     setTooltip(null);
-  };
-
-  const handleSearch = () => {
-    if (!selectedTerm) return;
-    const query = encodeURIComponent(`${selectedTerm} site:${domain.domain}`);
-    const baseUrl = searchEngineUrl.replace(/\/$/, '');
-    window.open(`${baseUrl}/search?q=${query}`, '_blank');
   };
 
   useEffect(() => {
