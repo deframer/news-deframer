@@ -51,7 +51,6 @@ describe('TrendCompare', () => {
         availableDomains={[]}
         onSelectDomain={jest.fn()}
         domain={{ domain: 'example.com', language: 'en' }}
-        searchEngineUrl="https://search.example.com"
       />,
     );
     expect(container).not.toBeNull();

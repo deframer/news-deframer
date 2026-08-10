@@ -41,20 +41,7 @@ const App = ({ theme }: { theme: string }) => {
   >(null);
   const [currentDomain, setCurrentDomain] = useState<DomainEntry | null>(null);
   const [availableDomains, setAvailableDomains] = useState<DomainEntry[]>([]);
-  const [searchEngineUrl, setSearchEngineUrl] = useState<string>('https://search.brave.com');
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-      if (areaName === 'local' && changes.searchEngineUrl) {
-        setSearchEngineUrl(String(changes.searchEngineUrl.newValue));
-      }
-    };
-    chrome.storage.onChanged.addListener(handleStorageChange);
-    return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
-    };
-  }, []);
 
   useEffect(() => {
     // Inject global styles into the Light DOM to fix body margin and background "frame"
@@ -77,9 +64,6 @@ const App = ({ theme }: { theme: string }) => {
       try {
         // We don't need to check settings here, start() already did.
         const settings = await getSettings();
-        if (settings.searchEngineUrl) {
-          setSearchEngineUrl(settings.searchEngineUrl);
-        }
         const client = new NewsDeframerClient(settings);
         const allDomains = await client.getDomains();
         setAvailableDomains(allDomains);
@@ -185,7 +169,7 @@ const App = ({ theme }: { theme: string }) => {
       return (
         <>
           <style>{getThemeCss(theme as Theme) + globalStyles + ndfStyles}</style>
-          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain!} availableDomains={availableDomains} searchEngineUrl={searchEngineUrl} />
+          <PortalPage items={data as AnalyzedItem[]} domain={currentDomain!} availableDomains={availableDomains} />
         </>
       );
     default:

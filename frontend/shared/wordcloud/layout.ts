@@ -15,14 +15,14 @@ interface Box {
 const intersects = (a: Box, b: Box): boolean =>
   !(a.right <= b.left || a.left >= b.right || a.bottom <= b.top || a.top >= b.bottom);
 
-const getWordBox = <T>(word: WordCloudWord<T>): Box => ({
+const getWordBox = <T,>(word: WordCloudWord<T>): Box => ({
   left: word.x - word.width / 2,
   top: word.y - word.height / 2,
   right: word.x + word.width / 2,
   bottom: word.y + word.height / 2,
 });
 
-const recenterPlacedWords = <T>(words: WordCloudWord<T>[], width: number, height: number): WordCloudWord<T>[] => {
+const recenterPlacedWords = <T,>(words: WordCloudWord<T>[], width: number, height: number): WordCloudWord<T>[] => {
   if (words.length === 0) {
     return words;
   }
@@ -76,7 +76,7 @@ const recenterPlacedWords = <T>(words: WordCloudWord<T>[], width: number, height
   }));
 };
 
-export const layoutWordCloud = <T>({
+export const layoutWordCloud = <T,>({
   words,
   width,
   height,

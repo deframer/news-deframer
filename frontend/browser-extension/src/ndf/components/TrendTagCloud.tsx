@@ -9,12 +9,10 @@ import { TrendDetails } from './TrendDetails';
 interface TrendTagCloudProps {
   domain: DomainEntry;
   days: number;
-  searchEngineUrl: string;
   activeTab: 'lifecycle' | 'context' | 'articles' | 'sentiments';
   setActiveTab: Dispatch<SetStateAction<'lifecycle' | 'context' | 'articles' | 'sentiments'>>;
 }
 
-const BULLET_DELIMITER = '•';
 const DEFAULT_WIDTH = 640;
 
 const approximateMeasureWord = ({ text, fontSize }: MeasureWordOptions) => ({
@@ -51,7 +49,7 @@ const createCanvasMeasureWord = () => {
   };
 };
 
-export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setActiveTab }: TrendTagCloudProps) => {
+export const TrendTagCloud = ({ domain, days, activeTab, setActiveTab }: TrendTagCloudProps) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [selectedTerm, setSelectedTerm] = useState<string | null>(null);
@@ -88,13 +86,6 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
   const handleSelect = (term: string) => {
     setSelectedTerm((current) => (current === term ? null : term));
     setTooltip(null);
-  };
-
-  const handleSearch = () => {
-    if (!selectedTerm) return;
-    const query = encodeURIComponent(`${selectedTerm} site:${domain.domain}`);
-    const baseUrl = searchEngineUrl.replace(/\/$/, '');
-    window.open(`${baseUrl}/search?q=${query}`, '_blank');
   };
 
   useEffect(() => {
@@ -196,35 +187,6 @@ export const TrendTagCloud = ({ domain, days, searchEngineUrl, activeTab, setAct
         className="tag-cloud"
         style={{ width: '100%', height: `${currentHeight}px`, position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
-        {isSelectedTermVisible && selectedTerm && (
-          <div style={{ position: 'absolute', top: '10px', right: '10px', zIndex: 10 }}>
-            <button
-              onClick={handleSearch}
-              className="open-icon-btn"
-              type="button"
-              title={`${selectedTerm} ${BULLET_DELIMITER} ${domain.domain}`}
-              style={{
-                background: 'var(--bg-color)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                padding: '5px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'var(--text-color)',
-                boxShadow: 'var(--shadow-medium)'
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-              </svg>
-            </button>
-          </div>
-        )}
-
         {cloudBounds && (
           <div
             style={{

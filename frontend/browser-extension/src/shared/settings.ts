@@ -8,7 +8,6 @@ export interface Settings {
   password?: string;
   enabled: boolean;
   theme: Theme;
-  searchEngineUrl?: string;
   language?: string;
   selectedDomains?: string[];
 }
@@ -25,7 +24,6 @@ export const getSettings = (): Promise<Settings> => {
         password: '',
         enabled: false,
         theme: 'system',
-        searchEngineUrl: 'https://search.brave.com',
         selectedDomains: [],
       },
       (items: Settings) => {

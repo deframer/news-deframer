@@ -18,7 +18,6 @@ interface SettingsFormProps {
 export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsChange, onLanguageChange, onTestConnection }: SettingsFormProps) => {
   const { t } = useTranslation();
   const isLoading = status === 'loading';
-  const isSearchUrlValid = settings.searchEngineUrl?.startsWith('https://');
   const isCustomServer = settings.backendUrl !== DEFAULT_BACKEND_URL;
   const serverUrlValue = isCustomServer ? settings.backendUrl : DEFAULT_BACKEND_URL;
 
@@ -81,14 +80,6 @@ export const SettingsForm = ({ settings, lang, status, errorMessage, onSettingsC
               </button>
             </>
           ) : null}
-        </div>
-
-        <div className="card">
-          <h3 className="section-title">{t('options.label_search_engine')}</h3>
-          <div className="form-group-last">
-            <input type="text" className={`text-input ${!isSearchUrlValid ? 'error' : ''}`} value={settings.searchEngineUrl || ''} onChange={(e) => onSettingsChange({ ...settings, searchEngineUrl: e.target.value })} />
-            {!isSearchUrlValid && <div className="input-error-message">{t('options.error_https_only')}</div>}
-          </div>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { WordCloudInput } from './types';
 
-export const buildWordCloudWords = <T>(
+export const buildWordCloudWords = <T,>(
   items: T[],
   getText: (item: T) => string,
   getValue: (item: T) => number,

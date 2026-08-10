@@ -22,7 +22,6 @@ export const SettingsPage = () => {
     password: '',
     enabled: false,
     theme: 'system',
-    searchEngineUrl: 'https://search.brave.com',
     selectedDomains: [],
   });
   const [status, setStatus] = useState<HostStatus>('idle');

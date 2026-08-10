@@ -38,7 +38,6 @@ describe('TrendTagCloud', () => {
       <TrendTagCloud
         domain={{ domain: 'example.com', language: 'en' }}
         days={7}
-        searchEngineUrl="https://search.example.com"
         activeTab="lifecycle"
         setActiveTab={jest.fn()}
       />,
