@@ -333,8 +333,11 @@ function App() {
       return;
     }
 
+    const normalizedSettings = { ...nextSettings, backendUrl };
+    setSettings(normalizedSettings);
+
     try {
-      const client = new NewsDeframerClient(nextSettings);
+      const client = new NewsDeframerClient(normalizedSettings);
       await withTimeout(client.getDomains(), CONNECTION_TIMEOUT_MS);
       setStatus('success');
       setSettingsErrorMessage(null);

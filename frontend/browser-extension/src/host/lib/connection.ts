@@ -20,7 +20,7 @@ export const testConnection = async (settings: Settings): Promise<{ connected: b
   } catch {
     return { connected: false, domains: [], errorMessage: i18n.t('options.invalid_server_url', 'Invalid server URL') };
   }
-  const url = settings.backendUrl.replace(/\/$/, '') + '/api/domains';
+  const url = trimmedUrl.replace(/\/$/, '') + '/api/domains';
   const response = await new Promise<ProxyResponse>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       reject(new Error('Connection test timed out'));

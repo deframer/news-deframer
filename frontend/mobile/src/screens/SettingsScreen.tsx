@@ -9,9 +9,8 @@ import { SelectField } from '../components/SelectField';
 import { SegmentedControl } from '../components/SegmentedControl';
 import { HostStatus, StatusBadge } from '../components/StatusBadge';
 import { TextField } from '../components/TextField';
-import { ToggleSwitch } from '../components/ToggleSwitch';
 import { AppPalette } from '../theme';
-import { DEFAULT_BACKEND_URL, Settings } from '../services/settingsService';
+import { Settings } from '../services/settingsService';
 
 export const SettingsScreen = ({
   palette,
@@ -30,8 +29,6 @@ export const SettingsScreen = ({
 }) => {
   const { t } = useTranslation();
   const isLoading = status === 'loading';
-  const isCustomServer = settings.backendUrl !== DEFAULT_BACKEND_URL;
-  const serverUrlValue = isCustomServer ? settings.backendUrl : DEFAULT_BACKEND_URL;
 
   return (
     <ScrollView style={[styles.screen, { backgroundColor: palette.background }]} contentContainerStyle={styles.content}>
@@ -57,38 +54,17 @@ export const SettingsScreen = ({
               </View>
             ) : null}
             <View style={styles.connectionControls}>
-              <ToggleSwitch
-                label={t('options.label_custom_server')}
-                checked={isCustomServer}
-                onChange={(checked) => {
-                  const nextSettings = checked
-                    ? { ...settings, backendUrl: '', username: '', password: '' }
-                    : { ...settings, backendUrl: DEFAULT_BACKEND_URL, username: '', password: '' };
-
-                  onSettingsChange(nextSettings);
-
-                  if (checked) {
-                    return;
-                  }
-
-                  onTestConnection(nextSettings);
-                }}
-                palette={palette}
-              />
-              {isCustomServer ? (
-                <>
-                  <TextField label={t('options.label_server_url')} value={serverUrlValue} onChangeText={(backendUrl) => onSettingsChange({ ...settings, backendUrl })} palette={palette} />
-                  <TextField label={t('options.label_username')} optional={t('options.label_optional')} value={settings.username} onChangeText={(username) => onSettingsChange({ ...settings, username })} palette={palette} />
-                  <TextField label={t('options.label_password')} optional={t('options.label_optional')} value={settings.password} onChangeText={(password) => onSettingsChange({ ...settings, password })} palette={palette} secureTextEntry />
-                  <Pressable onPress={() => onTestConnection(settings)} disabled={isLoading} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
-                    {isLoading ? (
-                      <LoadingSpinner palette={palette} label={t('options.btn_testing')} center />
-                    ) : (
-                      <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('options.btn_test_connection')}</Text>
-                    )}
-                  </Pressable>
-                </>
-              ) : null}
+              <TextField label={t('options.label_server_url')} value={settings.backendUrl} onChangeText={(backendUrl) => onSettingsChange({ ...settings, backendUrl })} palette={palette} />
+              <TextField label={t('options.label_username')} optional={t('options.label_optional')} value={settings.username} onChangeText={(username) => onSettingsChange({ ...settings, username })} palette={palette} />
+              <TextField label={t('options.label_password')} optional={t('options.label_optional')} value={settings.password} onChangeText={(password) => onSettingsChange({ ...settings, password })} palette={palette} secureTextEntry />
+              <Text style={[styles.hintText, { color: palette.secondaryText }]}>{t('options.hint_public_server')}</Text>
+              <Pressable onPress={() => onTestConnection(settings)} disabled={isLoading} style={[styles.actionButton, { backgroundColor: palette.buttonBackground, borderColor: palette.buttonBorder }]}> 
+                {isLoading ? (
+                  <LoadingSpinner palette={palette} label={t('options.btn_testing')} center />
+                ) : (
+                  <Text style={[styles.actionButtonText, { color: palette.buttonText }]}>{t('options.btn_test_connection')}</Text>
+                )}
+              </Pressable>
             </View>
           </Card>
         </View>
@@ -145,4 +121,5 @@ const styles = StyleSheet.create({
   sectionGap: { marginBottom: SECTION_HEADER_GAP },
   actionButton: { borderWidth: 1, borderRadius: 8, minHeight: 54, paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
   actionButtonText: { fontSize: 18, fontWeight: '600' },
+  hintText: { fontSize: 12, lineHeight: 18 },
 });

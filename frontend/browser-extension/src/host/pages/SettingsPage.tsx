@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { DomainEntry, NewsDeframerClient } from '../../ndf/client';
-import { DEFAULT_BACKEND_URL, getSettings, Settings } from '../../shared/settings';
+import { getSettings, Settings } from '../../shared/settings';
 import { getThemeCss, globalStyles, Theme } from '../../shared/theme';
 import { SettingsAbout } from '../components/SettingsAbout';
 import { SettingsDomains } from '../components/SettingsDomains';
@@ -17,7 +17,7 @@ export const SettingsPage = () => {
   const { t, i18n } = useTranslation();
   const version = chrome.runtime.getManifest().version;
   const [settings, setSettings] = useState<Settings>({
-    backendUrl: DEFAULT_BACKEND_URL,
+    backendUrl: '',
     username: '',
     password: '',
     enabled: false,
@@ -205,9 +205,11 @@ export const SettingsPage = () => {
   };
 
   const handleTestConnection = async (nextSettings: Settings = settings) => {
-    const connected = await refreshConnection(nextSettings);
+    const normalizedSettings = { ...nextSettings, backendUrl: nextSettings.backendUrl?.trim() ?? '' };
+    setSettings(normalizedSettings);
+    const connected = await refreshConnection(normalizedSettings);
     if (connected) {
-      await persistSettings(nextSettings);
+      await persistSettings(normalizedSettings);
     }
   };
 
