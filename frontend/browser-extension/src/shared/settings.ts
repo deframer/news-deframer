@@ -12,14 +12,13 @@ export interface Settings {
   selectedDomains?: string[];
 }
 
-export const DEFAULT_BACKEND_URL = 'https://api.deframer.org';
 export const CONNECTION_TIMEOUT_MS = 5000;
 
 export const getSettings = (): Promise<Settings> => {
   return new Promise((resolve) => {
     chrome.storage.local.get(
       {
-        backendUrl: DEFAULT_BACKEND_URL,
+        backendUrl: '',
         username: '',
         password: '',
         enabled: false,

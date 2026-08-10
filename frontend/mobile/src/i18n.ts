@@ -114,6 +114,7 @@ const resources = {
         "label_username": "Username",
         "label_password": "Password",
         "label_optional": "(Optional)",
+        "hint_public_server": "Tip: https://api.deframer.org is a free public server, hosted by Redcap B.V. in the Netherlands.",
         "btn_test_connection": "Test Connection",
         "btn_testing": "Testing...",
         "default_server_hint": "Server: {{url}}"
@@ -258,6 +259,7 @@ const resources = {
         "label_username": "Benutzername",
         "label_password": "Passwort",
         "label_optional": "(Optional)",
+        "hint_public_server": "Tipp: https://api.deframer.org ist ein kostenloser öffentlicher Server, gehostet von Redcap B.V. in den Niederlanden.",
         "btn_test_connection": "Verbindung testen",
         "btn_testing": "Teste...",
         "default_server_hint": "Server: {{url}}"
